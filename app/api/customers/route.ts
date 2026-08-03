@@ -128,8 +128,8 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         phone,
-        shippingAddress,
-        billingAddress,
+        shippingAddress: shippingAddress ?? undefined,
+        billingAddress: billingAddress ?? undefined,
       },
       select: {
         id: true,

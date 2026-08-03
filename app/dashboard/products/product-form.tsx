@@ -40,7 +40,7 @@ type ProductFormState = {
   title: string;
   slug: string;
   description: string;
-  status: "DRAFT" | "ACTIVE";
+  status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string;
 };

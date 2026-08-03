@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { SubscriptionPlan } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import type { SubscriptionPlan } from "@/lib/subscription";
 
 const PLAN_COOKIE = "prado_plan";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;

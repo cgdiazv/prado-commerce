@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { Decimal } from "@prisma/client/runtime/library";
 
 type PageProps = {
   params: Promise<{ domain: string; path?: string[] }>;
@@ -63,7 +62,7 @@ export default async function CustomDomainStorefrontPage({ params }: PageProps) 
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => {
-              const price = product.variants[0]?.price as Decimal | undefined;
+              const price = product.variants[0]?.price;
               const variantId = product.variants[0]?.id;
               return (
                 <div
