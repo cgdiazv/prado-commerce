@@ -1,0 +1,97 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+type Plan = "STARTER" | "PRO" | "ENTERPRISE";
+
+type ManagePlanPanelProps = {
+  merchantId: string;
+  currentPlan: Plan;
+};
+
+export function ManagePlanPanel({ merchantId, currentPlan }: ManagePlanPanelProps) {
+  const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(currentPlan);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  async function handleUpdatePlan(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage(null);
+    setError(null);
+
+    const response = await fetch(`/api/admin/merchants/${merchantId}/plan`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ plan: selectedPlan }),
+    });
+
+    const result = (await response.json()) as { error?: string; plan?: Plan };
+
+    if (!response.ok) {
+      setError(result.error ?? "Failed to update plan.");
+      return;
+    }
+
+    setSelectedPlan((result.plan ?? selectedPlan) as Plan);
+    setMessage("Plan updated. The dashboard will refresh to reflect limits and badges.");
+    startTransition(() => {
+      router.refresh();
+    });
+  }
+
+  return (
+    <article className="rounded-xl border border-cyan-200 bg-cyan-50/70 p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-800">Manage plan (dev only)</h2>
+        <span className="inline-flex rounded-full border border-cyan-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">
+          Current: {currentPlan}
+        </span>
+      </div>
+
+      <p className="mt-3 text-sm text-cyan-900">
+        Use this panel to test Starter, Pro, and Enterprise feature limits in Prado Commerce.
+      </p>
+
+      <form onSubmit={handleUpdatePlan} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label className="flex w-full max-w-xs flex-col gap-2">
+          <span className="text-sm font-medium text-cyan-900">Plan</span>
+          <select
+            value={selectedPlan}
+            onChange={(event) => setSelectedPlan(event.target.value as Plan)}
+            className="rounded-xl border border-cyan-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500"
+            disabled={isPending}
+          >
+            <option value="STARTER">STARTER</option>
+            <option value="PRO">PRO</option>
+            <option value="ENTERPRISE">ENTERPRISE</option>
+          </select>
+        </label>
+
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex items-center justify-center rounded-full bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isPending ? "Refreshing..." : "Update plan"}
+        </button>
+      </form>
+
+      {message ? (
+        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {message}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      ) : null}
+    </article>
+  );
+}

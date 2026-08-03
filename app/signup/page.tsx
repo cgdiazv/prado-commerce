@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [company, setCompany] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -16,7 +17,7 @@ export default function SignupPage() {
     setMessage(null);
 
     try {
-      const response = await fetch("/api/account-requests", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -24,14 +25,17 @@ export default function SignupPage() {
         body: JSON.stringify({ name, email, company }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as {
+        error?: string;
+        onboardUrl?: string;
+      };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Failed to submit request");
+        throw new Error(result.error ?? "Failed to create account");
       }
 
       setStatus("success");
-      setMessage("Account request received. Once approved, you will get an onboarding link to create your password.");
+      setOnboardUrl(result.onboardUrl ?? null);
       setName("");
       setEmail("");
       setCompany("");
@@ -43,7 +47,7 @@ export default function SignupPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-16 text-slate-100">
-      <section className="w-full max-w-md rounded-3xl border border-white/15 bg-white/8 p-8 backdrop-blur-md">
+      <section className="w-full max-w-md rounded-xl border border-white/15 bg-white/8 p-8 backdrop-blur-md">
         <Link
           href="/"
           className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100 transition hover:text-cyan-50"
@@ -52,7 +56,7 @@ export default function SignupPage() {
         </Link>
         <h1 className="mt-3 text-3xl font-semibold text-white">Create account</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Request your Prado Commerce dashboard account. If approved, you will get a link to create your password.
+          Create your Prado Commerce dashboard account.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -60,14 +64,15 @@ export default function SignupPage() {
           <Field label="Work email" value={email} onChange={setEmail} placeholder="jane@brand.com" required />
           <Field label="Company (optional)" value={company} onChange={setCompany} placeholder="North Studio" />
 
-          {message ? (
-            <div
-              className={`rounded-2xl px-4 py-3 text-sm ${
-                status === "success"
-                  ? "border border-emerald-300/40 bg-emerald-400/15 text-emerald-100"
-                  : "border border-rose-300/40 bg-rose-400/15 text-rose-100"
-              }`}
-            >
+          {status === "success" && onboardUrl ? (
+            <div className="rounded-xl border border-emerald-300/40 bg-emerald-400/15 px-4 py-3 text-sm text-emerald-100">
+              Account created.{" "}
+              <a href={onboardUrl} className="font-semibold underline underline-offset-2 hover:text-emerald-50">
+                Click here to set your password.
+              </a>
+            </div>
+          ) : message ? (
+            <div className="rounded-xl border border-rose-300/40 bg-rose-400/15 px-4 py-3 text-sm text-rose-100">
               {message}
             </div>
           ) : null}

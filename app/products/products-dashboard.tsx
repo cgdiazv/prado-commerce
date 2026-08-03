@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 type Store = {
   id: string;
@@ -282,22 +283,21 @@ export function ProductsDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(239,246,255,0.92)_38%,_rgba(226,232,240,0.88))] text-slate-900">
-      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-10 lg:px-10">
-        <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
-          {setupError ? (
-            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {setupError}
-            </div>
-          ) : null}
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl space-y-4">
-              <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Product Studio
-              </p>
-              <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Create products, variants, and storefront pricing.
-              </h1>
+    <>
+      <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+        {setupError ? (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {setupError}
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl space-y-4">
+            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Product Studio
+            </p>
+            <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Create products, variants, and storefront pricing.
+            </h1>
               <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
                 Manage product catalogs per store, keep variant inventory organized, and exercise the `/api/products` endpoints directly.
               </p>
@@ -308,8 +308,9 @@ export function ProductsDashboard({
                 type="button"
                 onClick={openCreateModal}
                 disabled={!activeStoreId}
-                className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                <Plus className="h-4 w-4" />
                 New product
               </button>
               <a
@@ -341,7 +342,7 @@ export function ProductsDashboard({
               <select
                 value={activeStoreId}
                 onChange={(event) => void handleStoreChange(event.target.value)}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
                 {stores.map((store) => (
                   <option key={store.id} value={store.id}>
@@ -356,21 +357,21 @@ export function ProductsDashboard({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by title, slug, or status"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </label>
           </div>
 
           <div className="mt-8 grid gap-5 xl:grid-cols-2">
             {filteredProducts.length === 0 ? (
-              <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">
+              <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">
                 No products yet for this store.
               </div>
             ) : (
               filteredProducts.map((product) => (
                 <article
                   key={product.id}
-                  className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                  className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -422,11 +423,10 @@ export function ProductsDashboard({
             )}
           </div>
         </section>
-      </main>
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-sm">
-          <div className="w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/60 bg-white shadow-2xl">
+          <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-white/60 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -447,7 +447,7 @@ export function ProductsDashboard({
 
             <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6">
               {error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {error}
                 </div>
               ) : null}
@@ -498,7 +498,7 @@ export function ProductsDashboard({
                 />
               </div>
 
-              <div className="space-y-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+              <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-950">Variants</h3>
@@ -507,8 +507,9 @@ export function ProductsDashboard({
                   <button
                     type="button"
                     onClick={addVariantRow}
-                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
+                    <Plus className="h-4 w-4" />
                     Add variant
                   </button>
                 </div>
@@ -517,7 +518,7 @@ export function ProductsDashboard({
                   {variants.map((variant, index) => (
                     <div
                       key={`${index}-${variant.title}`}
-                      className="rounded-2xl border border-slate-200 bg-white p-4"
+                      className="rounded-xl border border-slate-200 bg-white p-4"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <p className="text-sm font-semibold text-slate-700">Variant {index + 1}</p>
@@ -570,7 +571,7 @@ export function ProductsDashboard({
                             onChange={(event) =>
                               updateVariant(index, { trackInventory: event.target.value === "true" })
                             }
-                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                           >
                             <option value="true">Yes</option>
                             <option value="false">No</option>
@@ -609,7 +610,7 @@ export function ProductsDashboard({
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -623,7 +624,7 @@ function StatCard({
   note: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
       <p className="mt-1 text-sm text-slate-500">{note}</p>
@@ -662,7 +663,7 @@ function Field({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
       />
     </label>
   );

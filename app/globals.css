@@ -1,3 +1,11 @@
+body > [data-route-kind="dashboard"] ~ .public-footer {
+  display: none;
+}
+
+body > [data-route-kind="pricing"] ~ .public-footer footer {
+  margin-top: 0;
+}
+
 @import "tailwindcss";
 
 :root {

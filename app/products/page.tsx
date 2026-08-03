@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import { ProductsDashboard } from "./products-dashboard";
 
 type ProductsPageProps = {
@@ -9,9 +10,22 @@ type ProductsPageProps = {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return (
+      <ProductsDashboard
+        initialStores={[]}
+        initialProducts={[]}
+        selectedStoreId={null}
+        setupError="Could not verify your session. Please sign in again after database connectivity is restored."
+      />
+    );
+  }
 
   try {
     const stores = await prisma.store.findMany({
+      where: { ownerUserId: user.id },
       orderBy: {
         createdAt: "desc",
       },

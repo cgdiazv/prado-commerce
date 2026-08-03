@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type RouteContext = {
   params: Promise<{
@@ -59,6 +61,28 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
 
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const owned = await prisma.store.findFirst({
+      where: { id, ownerUserId: user.id },
+      select: {
+        id: true,
+        ownerUser: {
+          select: {
+            plan: true,
+          },
+        },
+      },
+    });
+
+    if (!owned) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
     const body = await req.json();
     const {
       name,
@@ -94,7 +118,19 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     }
 
     if (customDomain !== undefined) {
-      updates.customDomain = customDomain?.trim() || null;
+      updates.customDomain = customDomain?.trim().toLowerCase() || null;
+    }
+
+    if (updates.customDomain) {
+      const ownerPlan = getPlanOrDefault(owned.ownerUser?.plan);
+      const limits = getPlanLimits(ownerPlan);
+
+      if (!limits.allowCustomDomains) {
+        return NextResponse.json(
+          { error: "Custom domains require a Prado Commerce Pro or Enterprise subscription." },
+          { status: 403 },
+        );
+      }
     }
 
     if (typeof currency === "string" && currency.trim()) {
@@ -113,7 +149,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         );
       }
 
-      updates.allowedDomains = allowedDomains.map((domain) => domain.trim()).filter(Boolean);
+      updates.allowedDomains = allowedDomains
+        .map((domain) => domain.trim().toLowerCase())
+        .filter(Boolean);
     }
 
     if (Object.keys(updates).length === 0) {
@@ -171,5 +209,30 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       { error: "Internal Server Error" },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(req: Request, { params }: RouteContext) {
+  try {
+    const { id } = await params;
+
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const owned = await prisma.store.findFirst({ where: { id, ownerUserId: user.id } });
+
+    if (!owned) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    await prisma.store.delete({ where: { id } });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[STORE_DELETE_ERROR]", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

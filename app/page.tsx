@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Footer } from "@/components/footer";
 
 const stackPillars = [
   {
@@ -8,11 +7,34 @@ const stackPillars = [
   },
   {
     title: "API and CDN Split",
-    detail: "Keep integration latency low with dedicated API and script delivery surfaces.",
+    detail: "Deliver a faster shopping experience so your storefront loads quickly and feels reliable for customers.",
   },
   {
     title: "Cart Engine",
-    detail: "Drop in cart.js with data attributes and get a working cart drawer in minutes.",
+    detail: "Set up a shopping cart quickly so customers can add products and check out with ease.",
+  },
+];
+
+const businessBenefits = [
+  {
+    title: "Built For Every Business Type",
+    detail:
+      "From independent makers and local stores to fast-scaling brands, Prado Commerce adapts to physical, digital, and service-based catalogs.",
+  },
+  {
+    title: "Global Product Reach",
+    detail:
+      "Publish products once and connect them to the world through embedded storefront experiences, faster APIs, and flexible domain setup.",
+  },
+  {
+    title: "Stronger Online Presence",
+    detail:
+      "Unify your brand across your site, checkout flows, and product pages so customers trust what they see and buy with confidence.",
+  },
+  {
+    title: "Revenue Growth Support",
+    detail:
+      "Use centralized store and product management to launch faster campaigns, reduce friction in buying flows, and turn more visits into orders.",
   },
 ];
 
@@ -35,16 +57,22 @@ export default function Home() {
 
             <div className="flex items-center gap-2">
               <Link
-                href="/signup"
+                href="/pricing"
                 className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
               >
-                Create account
+                Pricing
               </Link>
               <Link
-                href="/stores"
-                className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+                href="/dashboard"
+                className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
               >
                 Dashboard
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+              >
+                Create account
               </Link>
             </div>
           </div>
@@ -59,26 +87,26 @@ export default function Home() {
               Build storefront velocity without platform chaos.
             </h1>
             <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
-              Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster while keeping every merchant isolated.
+              Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/55 hover:bg-cyan-300/20"
+              >
+                View pricing
+              </Link>
               <Link
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
               >
                 Create account
               </Link>
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center rounded-full border border-white/25 bg-transparent px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/40 hover:bg-white/8"
-              >
-                Open products studio
-              </Link>
             </div>
           </div>
 
-          <aside className="prado-fade-up prado-delay-2 rounded-3xl border border-white/18 bg-slate-950/45 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.45)] backdrop-blur-md sm:p-6">
+          <aside className="prado-fade-up prado-delay-2 rounded-xl border border-white/18 bg-slate-950/45 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.45)] backdrop-blur-md sm:p-6">
             <div className="flex items-center justify-between border-b border-white/12 pb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Live Storefront</p>
               <span className="rounded-full border border-emerald-300/35 bg-emerald-300/15 px-2.5 py-1 text-xs font-medium text-emerald-100">
@@ -86,7 +114,7 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-2xl border border-white/18 bg-slate-900/55">
+            <div className="mt-4 overflow-hidden rounded-xl border border-white/18 bg-slate-900/55">
               <img
                 src="/prado-storefront.svg"
                 alt="Storefront dashboard running on Prado Commerce"
@@ -110,8 +138,16 @@ export default function Home() {
             {stackPillars.map((pillar) => (
               <article
                 key={pillar.title}
-                className="rounded-2xl border border-white/18 bg-white/8 p-4 backdrop-blur-sm"
+                className="rounded-xl border border-white/18 bg-white/8 p-4 backdrop-blur-sm"
               >
+                <div className="mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40">
+                  <img
+                    src="/prado-storefront.svg"
+                    alt={`${pillar.title} illustration`}
+                    className="h-28 w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
                 <h3 className="text-sm font-semibold text-cyan-100">{pillar.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-200/85">{pillar.detail}</p>
               </article>
@@ -119,7 +155,72 @@ export default function Home() {
           </div>
         </section>
 
-        <Footer />
+        <section className="prado-fade-up mx-auto mt-10 w-full max-w-6xl px-6 pb-8 sm:px-8 lg:px-10">
+          <div className="rounded-xl border border-cyan-200/25 bg-cyan-300/8 p-6 backdrop-blur-sm sm:p-8">
+            <p className="inline-flex rounded-full border border-cyan-100/35 bg-cyan-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
+              Why Prado Commerce
+            </p>
+            <h2 className="mt-4 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Helping all kinds of businesses connect products to the world, strengthen online presence, and grow revenue.
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/85 sm:text-base">
+              Prado Commerce gives teams the tools to launch faster, sell smarter, and scale without rebuilding their commerce stack each time they grow.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {businessBenefits.map((benefit) => (
+                <article
+                  key={benefit.title}
+                  className="rounded-xl border border-white/20 bg-white/8 p-4"
+                >
+                  <div className="mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40">
+                    <img
+                      src="/prado-storefront.svg"
+                      alt={`${benefit.title} illustration`}
+                      className="h-28 w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <h3 className="text-sm font-semibold text-cyan-100">{benefit.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-200/85">{benefit.detail}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="prado-fade-up mx-auto mt-2 w-full max-w-6xl px-6 pb-12 sm:px-8 lg:px-10">
+          <div className="rounded-xl border border-teal-200/30 bg-gradient-to-r from-cyan-300/15 via-teal-300/12 to-emerald-300/12 p-6 shadow-[0_18px_45px_rgba(8,47,73,0.35)] sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="inline-flex rounded-full border border-teal-100/35 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
+                  Start Today
+                </p>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                  Ready to grow with Prado Commerce?
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-100/90 sm:text-base">
+                  Launch your storefront, connect your products to global customers, and build a stronger online presence with Prado Commerce.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center rounded-full border border-cyan-200/40 bg-cyan-300/12 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  View pricing
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
+                >
+                  Create account
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );

@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = await getCurrentUserFromRequest(request);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const stores = await prisma.store.findMany({
+      where: { ownerUserId: user.id },
       orderBy: {
         createdAt: "desc",
       },
@@ -41,27 +50,83 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { name, slug, ownerId } = body as {
+    const { name, slug, customDomain, currency, timezone, allowedDomains } = body as {
       name?: string;
       slug?: string;
-      ownerId?: string;
+      customDomain?: string | null;
+      currency?: string;
+      timezone?: string;
+      allowedDomains?: string[];
     };
 
-    if (!name || !slug || !ownerId) {
+    if (!name || !slug) {
       return NextResponse.json(
-        { error: "Name, slug, and ownerId are required fields" },
+        { error: "Name and slug are required fields" },
+        { status: 400 },
+      );
+    }
+
+    if (allowedDomains !== undefined && !Array.isArray(allowedDomains)) {
+      return NextResponse.json(
+        { error: "allowedDomains must be an array of strings" },
         { status: 400 },
       );
     }
 
     const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const formattedCustomDomain = customDomain?.trim().toLowerCase() || null;
+    const formattedAllowedDomains = (allowedDomains ?? [])
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+
+    const merchant = await prisma.merchantUser.findUnique({
+      where: { id: user.id },
+      select: { plan: true },
+    });
+
+    if (!merchant) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const plan = getPlanOrDefault(merchant.plan);
+    const limits = getPlanLimits(plan);
+
+    if (formattedCustomDomain && !limits.allowCustomDomains) {
+      return NextResponse.json(
+        { error: "Custom domains require a Prado Commerce Pro or Enterprise subscription." },
+        { status: 403 },
+      );
+    }
+
+    const storeCount = await prisma.store.count({ where: { ownerUserId: user.id } });
+
+    if (storeCount >= limits.maxStores) {
+      return NextResponse.json(
+        {
+          error:
+            "Store limit reached for your current plan. Upgrade your Prado Commerce plan to add more stores.",
+        },
+        { status: 403 },
+      );
+    }
 
     const newStore = await prisma.store.create({
       data: {
-        name,
+        name: name.trim(),
         slug: formattedSlug,
-        ownerId,
+        customDomain: formattedCustomDomain,
+        ownerId: user.id,
+        ownerUserId: user.id,
+        currency: typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : undefined,
+        timezone: typeof timezone === "string" && timezone.trim() ? timezone.trim() : undefined,
+        allowedDomains: formattedAllowedDomains,
         apiKeys: {
           create: {
             name: "Default Storefront Key",

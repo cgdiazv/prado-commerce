@@ -11,6 +11,9 @@ model MerchantUser {
   email                    String   @unique
   name                     String?
   company                  String?
+  plan                     SubscriptionPlan @default(STARTER)
+  stripeCustomerId         String?  @unique
+  stripeSubId              String?  @unique
   passwordHash             String?
   passwordSetAt            DateTime?
   onboardingTokenId        String?  @unique
@@ -25,6 +28,12 @@ model MerchantUser {
   stores    Store[]
 
   @@index([createdAt])
+}
+
+enum SubscriptionPlan {
+  STARTER
+  PRO
+  ENTERPRISE
 }
 
 // ==========================================
@@ -109,6 +118,7 @@ model Product {
   description String?        @db.Text
   images      String[]
   status      ProductStatus  @default(DRAFT)
+  productType ProductType    @default(PHYSICAL)
 
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -127,6 +137,12 @@ enum ProductStatus {
   DRAFT
   ACTIVE
   ARCHIVED
+}
+
+enum ProductType {
+  PHYSICAL
+  DIGITAL
+  SERVICE
 }
 
 model ProductVariant {
@@ -205,6 +221,8 @@ model Customer {
   firstName String?
   lastName  String?
   phone     String?
+  shippingAddress Json?
+  billingAddress  Json?
 
   orders    Order[]
 

@@ -16,7 +16,7 @@ export default function TermsPage() {
         </p>
 
         <div className="mt-10 space-y-6 text-sm leading-7 text-slate-200/88">
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">Acceptable use</h2>
             <p className="mt-2">
               You agree to use Prado Commerce only for lawful business purposes and to protect account credentials,
@@ -24,7 +24,7 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">Accounts and data</h2>
             <p className="mt-2">
               You are responsible for the information you submit, the stores you create, and the content you publish through
@@ -32,7 +32,7 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">Service changes</h2>
             <p className="mt-2">
               Prado Commerce may change features, pricing, or availability as the product evolves.

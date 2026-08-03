@@ -97,6 +97,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       description,
       images,
       status,
+      productType,
       categoryId,
       variants,
     } = body as {
@@ -105,6 +106,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       description?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+      productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       variants?: unknown;
     };
@@ -136,6 +138,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     if (status) {
       updates.status = status;
+    }
+
+    if (productType) {
+      updates.productType = productType;
     }
 
     if (categoryId !== undefined) {

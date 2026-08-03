@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserFromRequest } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type ProductVariantInput = {
   sku?: string | null;
@@ -85,6 +87,7 @@ export async function GET(request: Request) {
         description: true,
         images: true,
         status: true,
+        productType: true,
         categoryId: true,
         createdAt: true,
         updatedAt: true,
@@ -118,6 +121,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUserFromRequest(request);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       storeId,
@@ -126,6 +135,7 @@ export async function POST(request: Request) {
       description,
       images,
       status,
+      productType,
       categoryId,
       variants,
     } = body as {
@@ -135,6 +145,7 @@ export async function POST(request: Request) {
       description?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+      productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       variants?: unknown;
     };
@@ -148,6 +159,42 @@ export async function POST(request: Request) {
 
     const parsedVariants = parseVariants(variants);
 
+    const ownedStore = await prisma.store.findFirst({
+      where: {
+        id: storeId,
+        ownerUserId: user.id,
+      },
+      select: {
+        id: true,
+        ownerUser: {
+          select: {
+            plan: true,
+          },
+        },
+      },
+    });
+
+    if (!ownedStore) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    const ownerPlan = getPlanOrDefault(ownedStore.ownerUser?.plan);
+    const limits = getPlanLimits(ownerPlan);
+
+    if (Number.isFinite(limits.maxProductsPerStore)) {
+      const productCount = await prisma.product.count({ where: { storeId } });
+
+      if (productCount >= limits.maxProductsPerStore) {
+        return NextResponse.json(
+          {
+            error:
+              "Product limit reached for your current plan. Upgrade your Prado Commerce plan to add more products.",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     const createdProduct = await prisma.product.create({
       data: {
         storeId,
@@ -156,6 +203,7 @@ export async function POST(request: Request) {
         description: description?.trim() || null,
         images: Array.isArray(images) ? images.filter((image) => typeof image === "string") : [],
         status: status ?? "DRAFT",
+        productType: productType ?? "PHYSICAL",
         categoryId: categoryId ?? null,
         variants: parsedVariants.length
           ? {
@@ -188,6 +236,27 @@ export async function POST(request: Request) {
         { error: "A product with this slug already exists for this store" },
         { status: 409 },
       );
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+      const message = String((error as { message?: string }).message ?? "");
+
+      if (message.includes("productType")) {
+        return NextResponse.json(
+          {
+            error:
+              "Product type is not available in the database yet. Run migrations and try again.",
+          },
+          { status: 500 },
+        );
+      }
+
+      if (message.includes("Invalid value for argument `status`")) {
+        return NextResponse.json(
+          { error: "Invalid product status value. Please choose Draft or Published." },
+          { status: 400 },
+        );
+      }
     }
 
     console.error("[PRODUCTS_POST_ERROR]", error);

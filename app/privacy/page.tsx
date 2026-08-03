@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         </p>
 
         <div className="mt-10 space-y-6 text-sm leading-7 text-slate-200/88">
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">Information we store</h2>
             <p className="mt-2">
               We may store account details, store configuration, product data, cart sessions, and request logs needed to
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">How we use data</h2>
             <p className="mt-2">
               Data is used to authenticate merchants, manage storefronts, support integrations, and keep platform features
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-white/12 bg-white/6 p-5">
+          <section className="rounded-xl border border-white/12 bg-white/6 p-5">
             <h2 className="text-lg font-semibold text-cyan-100">Contact</h2>
             <p className="mt-2">
               If you have privacy questions, contact the Prado Commerce team through the merchant dashboard or your project
