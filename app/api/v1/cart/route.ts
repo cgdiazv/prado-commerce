@@ -19,6 +19,15 @@ type CartSnapshot = {
   }>;
 };
 
+type CartSnapshotSourceItem = {
+  variantId: string;
+  quantity: number;
+  variant: {
+    title: string;
+    price: unknown;
+  };
+};
+
 async function buildCartSnapshotById(cartId: string): Promise<CartSnapshot | null> {
   const cart = await prisma.cart.findUnique({
     where: { id: cartId },
@@ -45,7 +54,7 @@ async function buildCartSnapshotById(cartId: string): Promise<CartSnapshot | nul
     return null;
   }
 
-  const items = cart.items.map((item) => {
+  const items = (cart.items as CartSnapshotSourceItem[]).map((item: CartSnapshotSourceItem) => {
     const price = Number(item.variant.price);
     const quantity = item.quantity;
 
