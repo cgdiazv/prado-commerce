@@ -2,16 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function GET(_req: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
+
     const store = await prisma.store.findUnique({
       where: {
-        id: params.id,
+        id,
       },
       select: {
         id: true,
@@ -55,6 +57,8 @@ export async function GET(_req: Request, { params }: RouteContext) {
 
 export async function PATCH(req: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
+
     const body = await req.json();
     const {
       name,
@@ -121,7 +125,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     const updatedStore = await prisma.store.update({
       where: {
-        id: params.id,
+        id,
       },
       data: updates,
       select: {

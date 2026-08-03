@@ -3,9 +3,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 type ProductVariantInput = {
@@ -15,7 +15,7 @@ type ProductVariantInput = {
   compareAtPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
-  options?: Record<string, unknown> | null;
+  options?: Prisma.JsonValue | null;
 };
 
 function isPrismaError(error: unknown, code: string) {
@@ -32,36 +32,40 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
     return [];
   }
 
-  return variants
-    .map((variant) => {
-      if (!variant || typeof variant !== "object") {
-        return null;
-      }
+  const parsed: ProductVariantInput[] = [];
 
-      const candidate = variant as Partial<ProductVariantInput>;
+  for (const variant of variants) {
+    if (!variant || typeof variant !== "object") {
+      continue;
+    }
 
-      if (!candidate.title || candidate.price === undefined) {
-        return null;
-      }
+    const candidate = variant as Partial<ProductVariantInput>;
 
-      return {
-        sku: candidate.sku ?? null,
-        title: candidate.title,
-        price: candidate.price,
-        compareAtPrice: candidate.compareAtPrice ?? null,
-        inventory: candidate.inventory ?? 0,
-        trackInventory: candidate.trackInventory ?? true,
-        options: candidate.options ?? null,
-      } satisfies ProductVariantInput;
-    })
-    .filter((variant): variant is ProductVariantInput => Boolean(variant));
+    if (!candidate.title || candidate.price === undefined) {
+      continue;
+    }
+
+    parsed.push({
+      sku: candidate.sku ?? null,
+      title: candidate.title,
+      price: candidate.price,
+      compareAtPrice: candidate.compareAtPrice ?? null,
+      inventory: candidate.inventory ?? 0,
+      trackInventory: candidate.trackInventory ?? true,
+      options: (candidate.options as Prisma.JsonValue | undefined) ?? null,
+    });
+  }
+
+  return parsed;
 }
 
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
+
     const product = await prisma.product.findUnique({
       where: {
-        id: params.id,
+        id,
       },
       include: {
         variants: true,
@@ -85,6 +89,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
+
     const body = await request.json();
     const {
       title,
@@ -104,26 +110,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       variants?: unknown;
     };
 
-    const updates: {
-      title?: string;
-      slug?: string;
-      description?: string | null;
-      images?: string[];
-      status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
-      categoryId?: string | null;
-      variants?: {
-        deleteMany: Record<string, never>;
-        create: Array<{
-          sku: string | null;
-          title: string;
-          price: Prisma.Decimal;
-          compareAtPrice: Prisma.Decimal | null;
-          inventory: number;
-          trackInventory: boolean;
-          options: Prisma.JsonValue | null;
-        }>;
-      };
-    } = {};
+    const updates: Prisma.ProductUpdateInput = {};
 
     if (typeof title === "string" && title.trim()) {
       updates.title = title.trim();
@@ -153,7 +140,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     if (categoryId !== undefined) {
-      updates.categoryId = categoryId;
+      updates.category = categoryId
+        ? {
+            connect: {
+              id: categoryId,
+            },
+          }
+        : {
+            disconnect: true,
+          };
     }
 
     const parsedVariants = parseVariants(variants);
@@ -171,7 +166,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
               : new Prisma.Decimal(variant.compareAtPrice),
           inventory: variant.inventory ?? 0,
           trackInventory: variant.trackInventory ?? true,
-          options: variant.options ?? null,
+          options:
+            variant.options === null
+              ? Prisma.JsonNull
+              : (variant.options as Prisma.InputJsonValue | undefined),
         })),
       };
     }
@@ -185,7 +183,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const updatedProduct = await prisma.product.update({
       where: {
-        id: params.id,
+        id,
       },
       data: updates,
       include: {
@@ -217,9 +215,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
+
     await prisma.product.delete({
       where: {
-        id: params.id,
+        id,
       },
     });
 

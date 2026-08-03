@@ -40,10 +40,21 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         })
       : [];
 
+    const serializedProducts = products.map((product) => ({
+      ...product,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        price: variant.price.toString(),
+        compareAtPrice: variant.compareAtPrice?.toString() ?? null,
+      })),
+    }));
+
     return (
       <ProductsDashboard
         initialStores={stores}
-        initialProducts={products}
+        initialProducts={serializedProducts}
         selectedStoreId={selectedStoreId}
       />
     );

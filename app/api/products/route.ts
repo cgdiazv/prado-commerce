@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type ProductVariantInput = {
@@ -9,7 +10,7 @@ type ProductVariantInput = {
   compareAtPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
-  options?: Record<string, unknown> | null;
+  options?: Prisma.JsonValue | null;
 };
 
 function isPrismaError(error: unknown, code: string) {
@@ -26,29 +27,31 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
     return [];
   }
 
-  return variants
-    .map((variant) => {
-      if (!variant || typeof variant !== "object") {
-        return null;
-      }
+  const parsed: ProductVariantInput[] = [];
 
-      const candidate = variant as Partial<ProductVariantInput>;
+  for (const variant of variants) {
+    if (!variant || typeof variant !== "object") {
+      continue;
+    }
 
-      if (!candidate.title || candidate.price === undefined) {
-        return null;
-      }
+    const candidate = variant as Partial<ProductVariantInput>;
 
-      return {
-        sku: candidate.sku ?? null,
-        title: candidate.title,
-        price: candidate.price,
-        compareAtPrice: candidate.compareAtPrice ?? null,
-        inventory: candidate.inventory ?? 0,
-        trackInventory: candidate.trackInventory ?? true,
-        options: candidate.options ?? null,
-      } satisfies ProductVariantInput;
-    })
-    .filter((variant): variant is ProductVariantInput => Boolean(variant));
+    if (!candidate.title || candidate.price === undefined) {
+      continue;
+    }
+
+    parsed.push({
+      sku: candidate.sku ?? null,
+      title: candidate.title,
+      price: candidate.price,
+      compareAtPrice: candidate.compareAtPrice ?? null,
+      inventory: candidate.inventory ?? 0,
+      trackInventory: candidate.trackInventory ?? true,
+      options: (candidate.options as Prisma.JsonValue | undefined) ?? null,
+    });
+  }
+
+  return parsed;
 }
 
 export async function GET(request: Request) {
@@ -69,7 +72,7 @@ export async function GET(request: Request) {
       where: {
         storeId,
         ...(categoryId ? { categoryId } : {}),
-        ...(status ? { status: status as Prisma.ProductStatus } : {}),
+        ...(status ? { status: status as ProductStatus } : {}),
       },
       orderBy: {
         createdAt: "desc",
@@ -165,7 +168,10 @@ export async function POST(request: Request) {
                     : new Prisma.Decimal(variant.compareAtPrice),
                 inventory: variant.inventory ?? 0,
                 trackInventory: variant.trackInventory ?? true,
-                options: variant.options ?? null,
+                options:
+                  variant.options === null
+                    ? Prisma.JsonNull
+                    : (variant.options as Prisma.InputJsonValue | undefined),
               })),
             }
           : undefined,
