@@ -16,6 +16,7 @@ export default async function AccountRequestsPage() {
         createdAt: true,
       },
     });
+    type AccountRequestItem = (typeof requests)[number];
 
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(237,242,247,0.94)_40%,_rgba(226,232,240,0.9))] px-6 py-10 text-slate-900 lg:px-10">
@@ -50,13 +51,13 @@ export default async function AccountRequestsPage() {
             <StatCard
               label="Last 7 days"
               value={requests
-                .filter((request) => Date.now() - new Date(request.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000)
+                .filter((request: AccountRequestItem) => Date.now() - new Date(request.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000)
                 .length.toString()}
               note="Recent interest"
             />
             <StatCard
               label="Unique companies"
-              value={new Set(requests.map((request) => request.company).filter(Boolean)).size.toString()}
+              value={new Set(requests.map((request: AccountRequestItem) => request.company).filter(Boolean)).size.toString()}
               note="Company names provided"
             />
           </div>
