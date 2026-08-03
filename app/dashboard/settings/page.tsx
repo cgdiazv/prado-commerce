@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/session";
+import Link from "next/link";
 import { ManagePlanPanel } from "./manage-plan-panel";
 
 export default async function SettingsPage() {
@@ -9,14 +10,17 @@ export default async function SettingsPage() {
     {
       title: "Store profile",
       detail: "Basic information about your business and storefront identity.",
+      href: "/dashboard/settings/store-profile",
     },
     {
       title: "Currencies",
       detail: "Choose which currencies customers can browse and pay with.",
+      href: "/dashboard/settings/currencies",
     },
     {
       title: "Payments",
       detail: "Manage payment methods available for supported currencies.",
+      href: "/dashboard/settings/payments",
     },
     {
       title: "Locations",
@@ -56,9 +60,9 @@ export default async function SettingsPage() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Account profile</h2>
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
               {accountProfileItems.map((item) => (
-                <button
+                <Link
+                  href={item.href ?? "#"}
                   key={item.title}
-                  type="button"
                   className="grid w-full grid-cols-[1.3fr_2fr_auto] items-center gap-4 border-b border-slate-200 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50"
                 >
                   <span className="text-sm font-semibold text-slate-900">{item.title}</span>
@@ -66,17 +70,8 @@ export default async function SettingsPage() {
                   <span className="text-lg text-slate-400" aria-hidden>
                     ›
                   </span>
-                </button>
+                </Link>
               ))}
-            </div>
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                disabled
-                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white opacity-60"
-              >
-                Save changes
-              </button>
             </div>
           </article>
 

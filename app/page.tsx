@@ -4,14 +4,17 @@ const stackPillars = [
   {
     title: "Merchant Control",
     detail: "Launch stores, issue keys, and manage pricing from one admin plane.",
+    image: "/feature1.webp",
   },
   {
     title: "API and CDN Split",
     detail: "Deliver a faster shopping experience so your storefront loads quickly and feels reliable for customers.",
+    image: "/feature2.webp",
   },
   {
     title: "Cart Engine",
     detail: "Set up a shopping cart quickly so customers can add products and check out with ease.",
+    image: "/feature3.webp",
   },
 ];
 
@@ -131,9 +134,9 @@ export default function Home() {
               >
                 <div className="mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40">
                   <img
-                    src="/prado-storefront.svg"
+                    src={pillar.image}
                     alt={`${pillar.title} illustration`}
-                    className="h-28 w-full object-cover"
+                    className="h-28 w-full object-cover object-top"
                     loading="lazy"
                   />
                 </div>
@@ -166,7 +169,7 @@ export default function Home() {
                     <img
                       src="/prado-storefront.svg"
                       alt={`${benefit.title} illustration`}
-                      className="h-28 w-full object-cover"
+                      className="h-28 w-full object-cover object-top"
                       loading="lazy"
                     />
                   </div>

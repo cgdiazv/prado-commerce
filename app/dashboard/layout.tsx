@@ -164,7 +164,7 @@ export default function DashboardLayout({
                 !pathname.startsWith("/dashboard/customers/new"))
                 ? ""
                 : pathname.startsWith("/dashboard/customers/new")
-                  ? "max-w-4xl"
+                  ? "mx-auto max-w-4xl"
                   : "mx-auto max-w-4xl"
             }`}
           >

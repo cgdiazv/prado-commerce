@@ -73,7 +73,7 @@ const tiers: Tier[] = [
     apiRateLimits: "Dedicated edge throughput",
     integrations: "Custom middleware and POS or AmberPOS sync",
     ctaHref: "/signup",
-    ctaLabel: "Talk to sales",
+    ctaLabel: "Choose Enterprise",
   },
 ];
 
