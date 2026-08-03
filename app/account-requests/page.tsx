@@ -91,7 +91,7 @@ export default async function AccountRequestsPage() {
                     </td>
                   </tr>
                 ) : (
-                  requests.map((request) => (
+                  requests.map((request: AccountRequestItem) => (
                     <tr key={request.id} className="hover:bg-slate-50/80">
                       <td className="px-4 py-3 text-sm text-slate-800">{request.name}</td>
                       <td className="px-4 py-3 text-sm text-slate-700">{request.email}</td>
