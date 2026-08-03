@@ -78,41 +78,43 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="mx-auto mt-8 grid w-full max-w-6xl gap-8 px-6 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:px-10">
-          <div className="prado-fade-up prado-delay-1">
-            <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-              One platform, many storefronts
-            </p>
-            <h1 className="mt-5 max-w-xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Build storefront velocity without platform chaos.
-            </h1>
-            <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
-              Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
-            </p>
+        <section className="mt-8 w-full px-6 sm:px-8 lg:px-10">
+          <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            <div className="prado-fade-up prado-delay-1">
+              <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
+                One platform, many storefronts
+              </p>
+              <h1 className="mt-5 max-w-xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
+                Build storefront velocity without platform chaos.
+              </h1>
+              <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
+                Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
+              </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/55 hover:bg-cyan-300/20"
-              >
-                View pricing
-              </Link>
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
-              >
-                Create account
-              </Link>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/55 hover:bg-cyan-300/20"
+                >
+                  View pricing
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
+                >
+                  Create account
+                </Link>
+              </div>
             </div>
-          </div>
 
-          <aside className="prado-fade-up prado-delay-2">
-            <img
-              src="/laptop.webp"
-              alt="Storefront dashboard running on Prado Commerce"
-              className="ml-auto h-auto w-[118%] max-w-none -translate-x-10 sm:w-[126%] sm:-translate-x-16 lg:w-[138%] lg:-translate-x-24"
-            />
-          </aside>
+            <aside className="prado-fade-up prado-delay-2">
+              <img
+                src="/laptop.webp"
+                alt="Storefront dashboard running on Prado Commerce"
+                className="ml-auto h-auto w-[118%] max-w-none -translate-x-14 sm:w-[126%] sm:-translate-x-20 lg:w-[138%] lg:-translate-x-32"
+              />
+            </aside>
+          </div>
         </section>
 
         <section className="prado-fade-up mx-auto mt-10 w-full max-w-6xl px-6 sm:px-8 lg:px-10">
