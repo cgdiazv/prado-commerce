@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prado Commerce Embed Example</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --brand: #0f172a;
+        --brand-hover: #1e293b;
+        --line: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top right, #e2e8f0, #f8fafc 45%);
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero {
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .primary {
+        background: var(--brand);
+        color: white;
+      }
+
+      .primary:hover {
+        background: var(--brand-hover);
+      }
+
+      .ghost {
+        background: white;
+        border: 1px solid var(--line);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .config {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        margin: 18px 0;
+      }
+
+      .config input {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .config label {
+        display: block;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+
+      .title {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+
+      .price {
+        margin: 0 0 14px;
+        color: var(--muted);
+      }
+
+      .meta {
+        margin-top: 20px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 14px;
+      }
+
+      code {
+        font-family: Consolas, Menlo, Monaco, monospace;
+        font-size: 12px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+
+      .error {
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>Prado Cart Embed Example</h1>
+        <p>
+          This page shows framework-agnostic usage with <code>data-prado-add</code>,
+          <code>data-prado-cart-toggle</code>, and <code>data-prado-cart-count</code>.
+        </p>
+
+        <div class="actions">
+          <button class="primary" type="button" data-prado-cart-toggle>
+            Open Cart (<span data-prado-cart-count>0</span>)
+          </button>
+          <button class="ghost" type="button" id="load-store-btn">
+            Load Store Products
+          </button>
+        </div>
+      </section>
+
+      <section class="config">
+        <div>
+          <label for="store-id">Store ID</label>
+          <input id="store-id" placeholder="Paste your store id" />
+        </div>
+        <div>
+          <label for="api-key">Publishable Key (optional)</label>
+          <input id="api-key" placeholder="pk_live_..." />
+        </div>
+        <div>
+          <label for="api-host">API Host</label>
+          <input id="api-host" value="http://localhost:3000" />
+        </div>
+        <div id="status" class="meta">Enter a store id, then click "Load Store Products".</div>
+      </section>
+
+      <section class="grid" id="product-grid">
+        <article class="card">
+          <h2 class="title">Products will appear here</h2>
+          <p class="price">Fetches live variants from your store.</p>
+        </article>
+      </section>
+
+      <p class="meta">Each Add to Cart button is wired with a real variant id from your API response.</p>
+    </main>
+
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const storeIdInput = document.getElementById("store-id");
+        const apiKeyInput = document.getElementById("api-key");
+        const apiHostInput = document.getElementById("api-host");
+        const loadStoreBtn = document.getElementById("load-store-btn");
+        const statusEl = document.getElementById("status");
+        const gridEl = document.getElementById("product-grid");
+
+        if (!storeIdInput || !apiKeyInput || !apiHostInput || !loadStoreBtn || !statusEl || !gridEl) {
+          return;
+        }
+
+        storeIdInput.value = params.get("storeId") || "";
+        apiKeyInput.value = params.get("apiKey") || "";
+        apiHostInput.value = params.get("apiHost") || apiHostInput.value;
+
+        let cartScriptLoaded = false;
+
+        function setStatus(message, isError) {
+          statusEl.textContent = message;
+          statusEl.className = isError ? "error" : "meta";
+        }
+
+        function formatPrice(value, currency) {
+          const amount = Number(value);
+          return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: currency || "USD",
+          }).format(Number.isFinite(amount) ? amount : 0);
+        }
+
+        function injectCartScript(storeId, apiKey, apiHost) {
+          if (cartScriptLoaded) {
+            return;
+          }
+
+          const script = document.createElement("script");
+          script.src = "/cart.js";
+          script.defer = true;
+          script.setAttribute("data-store-id", storeId);
+          script.setAttribute("data-api-host", apiHost);
+          if (apiKey) {
+            script.setAttribute("data-api-key", apiKey);
+          }
+
+          document.body.appendChild(script);
+          cartScriptLoaded = true;
+        }
+
+        async function loadProducts() {
+          const storeId = storeIdInput.value.trim();
+          const apiKey = apiKeyInput.value.trim();
+          const apiHost = apiHostInput.value.trim() || "http://localhost:3000";
+
+          if (!storeId) {
+            setStatus("Store ID is required.", true);
+            return;
+          }
+
+          try {
+            injectCartScript(storeId, apiKey, apiHost);
+
+            const response = await fetch(
+              apiHost.replace(/\/$/, "") + "/api/products?storeId=" + encodeURIComponent(storeId),
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to load products");
+            }
+
+            const currency = (data[0] && data[0].store && data[0].store.currency) || "USD";
+
+            const variants = data
+              .flatMap(function (product) {
+                return (product.variants || []).map(function (variant) {
+                  return {
+                    productTitle: product.title,
+                    variantId: variant.id,
+                    title: variant.title,
+                    price: variant.price,
+                    currency,
+                  };
+                });
+              })
+              .slice(0, 8);
+
+            if (variants.length === 0) {
+              gridEl.innerHTML =
+                '<article class="card"><h2 class="title">No variants found</h2><p class="price">Create a product variant first in Admin.</p></article>';
+              setStatus("No variants found for this store. Create at least one variant first.", true);
+              return;
+            }
+
+            gridEl.innerHTML = variants
+              .map(function (variant) {
+                return (
+                  '<article class="card">' +
+                  '<h2 class="title">' + variant.productTitle + " - " + variant.title + "</h2>" +
+                  '<p class="price">' + formatPrice(variant.price, variant.currency) + "</p>" +
+                  '<button class="primary" type="button" data-prado-add="' +
+                  variant.variantId +
+                  '" data-prado-qty="1">Add to Cart</button>' +
+                  "</article>"
+                );
+              })
+              .join("");
+
+            setStatus("Loaded " + variants.length + " variants. Add to cart should now work.", false);
+
+            const nextUrl =
+              window.location.pathname +
+              "?storeId=" +
+              encodeURIComponent(storeId) +
+              "&apiHost=" +
+              encodeURIComponent(apiHost) +
+              (apiKey ? "&apiKey=" + encodeURIComponent(apiKey) : "");
+            window.history.replaceState({}, "", nextUrl);
+          } catch (error) {
+            setStatus(
+              error instanceof Error ? error.message : "Failed to load products for this store.",
+              true,
+            );
+          }
+        }
+
+        loadStoreBtn.addEventListener("click", function () {
+          void loadProducts();
+        });
+
+        if (storeIdInput.value.trim()) {
+          void loadProducts();
+        }
+      })();
+    </script>
+  </body>
+</html>
