@@ -264,6 +264,10 @@ export async function POST(request: Request) {
       });
     }
 
+    if (!cart) {
+      return corsJson({ error: "Cart not found" }, { status: 404 });
+    }
+
     const hasValidKey = await maybeValidatePublishableKey(request, cart.storeId);
     if (!hasValidKey) {
       return corsJson({ error: "Invalid publishable key" }, { status: 401 });
