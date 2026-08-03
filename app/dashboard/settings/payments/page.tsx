@@ -75,7 +75,7 @@ export default function PaymentsPage() {
                     Connect Stripe to accept card payments and powered checkouts.
                   </p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${providerStatus.stripe ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${providerStatus.stripe ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                   {providerStatus.stripe ? "Connected" : "Not connected"}
                 </span>
               </div>
@@ -84,7 +84,7 @@ export default function PaymentsPage() {
                 <button
                   type="button"
                   onClick={() => toggleProvider("stripe")}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-full bg-[#635BFF] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5247f5]"
                 >
                   {providerStatus.stripe ? "Disconnect Stripe" : "Connect Stripe"}
                 </button>
@@ -105,7 +105,7 @@ export default function PaymentsPage() {
                     Connect Authorize.net for gateway-based payment processing.
                   </p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${providerStatus.authorizeNet ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${providerStatus.authorizeNet ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                   {providerStatus.authorizeNet ? "Connected" : "Not connected"}
                 </span>
               </div>
@@ -114,7 +114,7 @@ export default function PaymentsPage() {
                 <button
                   type="button"
                   onClick={() => toggleProvider("authorizeNet")}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-full bg-[#1F73B7] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1a629c]"
                 >
                   {providerStatus.authorizeNet ? "Disconnect Authorize.net" : "Connect Authorize.net"}
                 </button>

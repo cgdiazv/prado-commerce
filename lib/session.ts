@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const SESSION_COOKIE = "prado_session";
+const SESSION_SEPARATOR = "::";
 
 type SessionUser = {
   id: string;
@@ -10,6 +11,7 @@ type SessionUser = {
   name: string | null;
   company: string | null;
   plan: "STARTER" | "PRO" | "ENTERPRISE";
+  sessionVersion: number;
 };
 
 function isDatabaseConnectionError(error: unknown): boolean {
@@ -28,24 +30,69 @@ function isDatabaseConnectionError(error: unknown): boolean {
   return false;
 }
 
-function isUnknownPlanSelectFieldError(error: unknown): boolean {
-  return error instanceof Error && /Unknown field `plan` for select statement/.test(error.message);
+function isUnknownSessionSelectFieldError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /Unknown field `(plan|sessionVersion)` for select statement/.test(error.message)
+  );
 }
 
-async function findSessionUser(email: string): Promise<SessionUser | null> {
+type ParsedSessionCookie = {
+  email: string;
+  sessionVersion: number;
+};
+
+function parseSessionCookieValue(rawValue: string | undefined): ParsedSessionCookie | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  const decoded = decodeURIComponent(rawValue);
+  const separatorIndex = decoded.lastIndexOf(SESSION_SEPARATOR);
+
+  if (separatorIndex === -1) {
+    return {
+      email: decoded.trim().toLowerCase(),
+      sessionVersion: 0,
+    };
+  }
+
+  const email = decoded.slice(0, separatorIndex).trim().toLowerCase();
+  const versionRaw = decoded.slice(separatorIndex + SESSION_SEPARATOR.length);
+  const parsedVersion = Number.parseInt(versionRaw, 10);
+
+  if (!email) {
+    return null;
+  }
+
+  return {
+    email,
+    sessionVersion: Number.isNaN(parsedVersion) ? 0 : parsedVersion,
+  };
+}
+
+export function buildSessionCookieValue(email: string, sessionVersion: number) {
+  return `${email.toLowerCase()}${SESSION_SEPARATOR}${sessionVersion}`;
+}
+
+async function findSessionUser(email: string, sessionVersion: number): Promise<SessionUser | null> {
   try {
     const user = await prisma.merchantUser.findUnique({
       where: { email },
-      select: { id: true, email: true, name: true, company: true, plan: true },
+      select: { id: true, email: true, name: true, company: true, plan: true, sessionVersion: true },
     });
 
     if (!user) {
       return null;
     }
 
+    if (user.sessionVersion !== sessionVersion) {
+      return null;
+    }
+
     return user;
   } catch (error) {
-    if (!isUnknownPlanSelectFieldError(error)) {
+    if (!isUnknownSessionSelectFieldError(error)) {
       throw error;
     }
 
@@ -62,20 +109,21 @@ async function findSessionUser(email: string): Promise<SessionUser | null> {
     return {
       ...user,
       plan: "STARTER",
+      sessionVersion: 0,
     };
   }
 }
 
 export async function getCurrentUser() {
   const cookieStore = await cookies();
-  const email = cookieStore.get(SESSION_COOKIE)?.value;
+  const parsedCookie = parseSessionCookieValue(cookieStore.get(SESSION_COOKIE)?.value);
 
-  if (!email) {
+  if (!parsedCookie?.email) {
     return null;
   }
 
   try {
-    return await findSessionUser(email);
+    return await findSessionUser(parsedCookie.email, parsedCookie.sessionVersion);
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
       console.error("[SESSION_DB_UNREACHABLE]", error);
@@ -88,18 +136,20 @@ export async function getCurrentUser() {
 export function getUserEmailFromRequest(request: Request): string | null {
   const cookieHeader = request.headers.get("cookie") ?? "";
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return parseSessionCookieValue(match?.[1])?.email ?? null;
 }
 
 export async function getCurrentUserFromRequest(request: Request) {
-  const email = getUserEmailFromRequest(request);
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
+  const parsedCookie = parseSessionCookieValue(match?.[1]);
 
-  if (!email) {
+  if (!parsedCookie?.email) {
     return null;
   }
 
   try {
-    return await findSessionUser(email);
+    return await findSessionUser(parsedCookie.email, parsedCookie.sessionVersion);
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
       console.error("[SESSION_DB_UNREACHABLE]", error);

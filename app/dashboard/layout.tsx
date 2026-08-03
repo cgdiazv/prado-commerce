@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp } from "lucide-react";
 
 type NavChild = {
   href: string;
@@ -23,6 +23,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
+  const isHelpActive = pathname.startsWith("/dashboard/help");
 
   const navItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -78,8 +79,8 @@ export default function DashboardLayout({
       </header>
 
       <div className="flex min-h-[calc(100vh-3.5rem)]">
-        <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-48 shrink-0 overflow-hidden border-r border-slate-200 bg-white/50 px-4 py-6">
-          <nav className="space-y-1">
+        <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/50 px-4 py-6">
+          <nav className="space-y-1 flex-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -151,6 +152,23 @@ export default function DashboardLayout({
               );
             })}
           </nav>
+
+          <div className="mt-6 border-t border-slate-200 pt-3 text-left">
+            <a
+              href="/dashboard/help"
+              className={`mb-2 inline-flex items-center gap-2 rounded-md px-2 py-1 text-[11px] font-medium tracking-[0.02em] transition ${
+                isHelpActive
+                  ? "bg-cyan-50 text-cyan-700"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              }`}
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+              Help
+            </a>
+            <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
+            © {new Date().getFullYear()} Prado Commerce
+            </p>
+          </div>
         </aside>
 
         <main className="flex-1 px-6 py-10 lg:px-10">
@@ -158,11 +176,13 @@ export default function DashboardLayout({
             className={`flex w-full flex-col ${
               pathname === "/dashboard" ||
               pathname.startsWith("/dashboard/stores") ||
-              pathname.startsWith("/dashboard/products") ||
+              (pathname.startsWith("/dashboard/products") && !pathname.startsWith("/dashboard/products/new")) ||
               pathname.startsWith("/dashboard/orders") ||
               (pathname.startsWith("/dashboard/customers") &&
                 !pathname.startsWith("/dashboard/customers/new"))
                 ? ""
+                : pathname.startsWith("/dashboard/products/new")
+                  ? "mx-auto max-w-4xl"
                 : pathname.startsWith("/dashboard/customers/new")
                   ? "mx-auto max-w-4xl"
                   : "mx-auto max-w-4xl"

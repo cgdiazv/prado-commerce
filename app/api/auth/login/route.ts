@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifySecret } from "@/lib/credentials";
+import { buildSessionCookieValue } from "@/lib/session";
 
 const SESSION_COOKIE = "prado_session";
 const PLAN_COOKIE = "prado_plan";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 function isUnknownPlanSelectFieldError(error: unknown): boolean {
-  return error instanceof Error && /Unknown field `plan` for select statement/.test(error.message);
+  return (
+    error instanceof Error &&
+    /Unknown field `(plan|sessionVersion)` for select statement/.test(error.message)
+  );
 }
 
 export async function POST(request: Request) {
@@ -28,6 +32,7 @@ export async function POST(request: Request) {
       id: string;
       email: string;
       plan: "STARTER" | "PRO" | "ENTERPRISE";
+      sessionVersion?: number;
       passwordHash: string | null;
       passwordSetAt: Date | null;
     } | null = null;
@@ -39,6 +44,7 @@ export async function POST(request: Request) {
           id: true,
           email: true,
           plan: true,
+          sessionVersion: true,
           passwordHash: true,
           passwordSetAt: true,
         },
@@ -62,6 +68,7 @@ export async function POST(request: Request) {
         ? {
             ...fallbackUser,
             plan: "STARTER",
+            sessionVersion: 0,
           }
         : null;
     }
@@ -92,7 +99,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({ ok: true });
     response.cookies.set({
       name: SESSION_COOKIE,
-      value: email,
+      value: buildSessionCookieValue(email, merchantUser.sessionVersion ?? 0),
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

@@ -16,6 +16,7 @@ model MerchantUser {
   stripeSubId              String?  @unique
   passwordHash             String?
   passwordSetAt            DateTime?
+  sessionVersion           Int      @default(0)
   onboardingTokenId        String?  @unique
   onboardingTokenHash      String?
   onboardingTokenExpiresAt DateTime?

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashSecret, verifySecret } from "@/lib/credentials";
+import { buildSessionCookieValue } from "@/lib/session";
 
 const SESSION_COOKIE = "prado_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         email: true,
+        sessionVersion: true,
         passwordResetTokenHash: true,
         passwordResetTokenExpiresAt: true,
       },
@@ -68,7 +70,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({ ok: true });
     response.cookies.set({
       name: SESSION_COOKIE,
-      value: merchantUser.email,
+      value: buildSessionCookieValue(merchantUser.email, merchantUser.sessionVersion),
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
