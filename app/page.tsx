@@ -106,25 +106,12 @@ export default function Home() {
             </div>
           </div>
 
-          <aside className="prado-fade-up prado-delay-2 rounded-xl border border-white/18 bg-slate-950/45 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.45)] backdrop-blur-md sm:p-6">
-            <div className="flex items-center justify-between border-b border-white/12 pb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Live Storefront</p>
-              <span className="rounded-full border border-emerald-300/35 bg-emerald-300/15 px-2.5 py-1 text-xs font-medium text-emerald-100">
-                Powered by Prado Commerce
-              </span>
-            </div>
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-white/18 bg-slate-900/55">
-              <img
-                src="/prado-storefront.svg"
-                alt="Storefront dashboard running on Prado Commerce"
-                className="h-auto w-full"
-              />
-            </div>
-
-            <p className="mt-4 text-sm leading-6 text-slate-200/85">
-              A merchant storefront, catalog, and customer flow all running on one Prado Commerce platform.
-            </p>
+          <aside className="prado-fade-up prado-delay-2">
+            <img
+              src="/laptop.webp"
+              alt="Storefront dashboard running on Prado Commerce"
+              className="ml-auto h-auto w-[118%] max-w-none -translate-x-10 sm:w-[126%] sm:-translate-x-16 lg:w-[138%] lg:-translate-x-24"
+            />
           </aside>
         </section>
 
@@ -205,12 +192,6 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center justify-center rounded-full border border-cyan-200/40 bg-cyan-300/12 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                >
-                  View pricing
-                </Link>
                 <Link
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
