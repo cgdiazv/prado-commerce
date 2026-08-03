@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
-import { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type ProductVariantInput = {
@@ -10,7 +8,7 @@ type ProductVariantInput = {
   compareAtPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
-  options?: Prisma.JsonValue | null;
+  options?: unknown;
 };
 
 function isPrismaError(error: unknown, code: string) {
@@ -47,7 +45,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       compareAtPrice: candidate.compareAtPrice ?? null,
       inventory: candidate.inventory ?? 0,
       trackInventory: candidate.trackInventory ?? true,
-      options: (candidate.options as Prisma.JsonValue | undefined) ?? null,
+      options: candidate.options ?? null,
     });
   }
 
@@ -60,6 +58,9 @@ export async function GET(request: Request) {
     const storeId = searchParams.get("storeId");
     const categoryId = searchParams.get("categoryId");
     const status = searchParams.get("status");
+    const validStatus = status === "DRAFT" || status === "ACTIVE" || status === "ARCHIVED"
+      ? status
+      : null;
 
     if (!storeId) {
       return NextResponse.json(
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
       where: {
         storeId,
         ...(categoryId ? { categoryId } : {}),
-        ...(status ? { status: status as ProductStatus } : {}),
+        ...(validStatus ? { status: validStatus } : {}),
       },
       orderBy: {
         createdAt: "desc",
@@ -161,17 +162,16 @@ export async function POST(request: Request) {
               create: parsedVariants.map((variant) => ({
                 sku: variant.sku ?? null,
                 title: variant.title,
-                price: new Prisma.Decimal(variant.price),
+                price: variant.price,
                 compareAtPrice:
                   variant.compareAtPrice === null || variant.compareAtPrice === undefined
                     ? null
-                    : new Prisma.Decimal(variant.compareAtPrice),
+                    : variant.compareAtPrice,
                 inventory: variant.inventory ?? 0,
                 trackInventory: variant.trackInventory ?? true,
-                options:
-                  variant.options === null
-                    ? Prisma.JsonNull
-                    : (variant.options as Prisma.InputJsonValue | undefined),
+                ...(variant.options === null || variant.options === undefined
+                  ? {}
+                  : { options: variant.options }),
               })),
             }
           : undefined,

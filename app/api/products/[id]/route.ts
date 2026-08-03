@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -15,7 +14,7 @@ type ProductVariantInput = {
   compareAtPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
-  options?: Prisma.JsonValue | null;
+  options?: unknown;
 };
 
 function isPrismaError(error: unknown, code: string) {
@@ -52,7 +51,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       compareAtPrice: candidate.compareAtPrice ?? null,
       inventory: candidate.inventory ?? 0,
       trackInventory: candidate.trackInventory ?? true,
-      options: (candidate.options as Prisma.JsonValue | undefined) ?? null,
+      options: candidate.options ?? null,
     });
   }
 
@@ -110,7 +109,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       variants?: unknown;
     };
 
-    const updates: Prisma.ProductUpdateInput = {};
+    const updates = {} as Parameters<typeof prisma.product.update>[0]["data"];
 
     if (typeof title === "string" && title.trim()) {
       updates.title = title.trim();
@@ -159,17 +158,16 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         create: parsedVariants.map((variant) => ({
           sku: variant.sku ?? null,
           title: variant.title,
-          price: new Prisma.Decimal(variant.price),
+          price: variant.price,
           compareAtPrice:
             variant.compareAtPrice === null || variant.compareAtPrice === undefined
               ? null
-              : new Prisma.Decimal(variant.compareAtPrice),
+              : variant.compareAtPrice,
           inventory: variant.inventory ?? 0,
           trackInventory: variant.trackInventory ?? true,
-          options:
-            variant.options === null
-              ? Prisma.JsonNull
-              : (variant.options as Prisma.InputJsonValue | undefined),
+          ...(variant.options === null || variant.options === undefined
+            ? {}
+            : { options: variant.options }),
         })),
       };
     }
