@@ -182,7 +182,7 @@ export default function AccountSidebarLayout() {
       {/* Side Menu */}
       <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="border-b border-slate-100 pb-4 mb-3 px-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Buyer Portal</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Profile</p>
           <p className="mt-1 font-semibold text-slate-900 truncate">{displayName}</p>
           <p className="text-xs text-slate-500 truncate">{customer?.email}</p>
         </div>
@@ -242,7 +242,7 @@ export default function AccountSidebarLayout() {
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white shadow-sm">
               <span className="inline-block rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300">
-                Storefront Account
+                Account
               </span>
               <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
                 Welcome back, {customer?.firstName || "shopper"}!
