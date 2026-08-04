@@ -227,6 +227,7 @@ model Customer {
   firstName String?
   lastName  String?
   phone     String?
+  passwordHash    String?
   shippingAddress Json?
   billingAddress  Json?
   savedAddresses  Json?

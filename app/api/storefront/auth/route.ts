@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { hashSecret, verifySecret } from "@/lib/credentials";
 import {
   SHOPPER_SESSION_COOKIE,
   buildShopperSessionCookieValue,
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
     const email = normalizeEmail(body?.email);
     const firstName = normalizeName(body?.firstName);
     const lastName = normalizeName(body?.lastName);
+    const password = String(body?.password || "").trim();
 
     if (!storeId) {
       return NextResponse.json({ error: "storeId is required" }, { status: 400 });
@@ -87,6 +89,10 @@ export async function POST(request: Request) {
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Please provide a valid email address" }, { status: 400 });
+    }
+
+    if (!password || password.length < 6) {
+      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
     const storeExists = await prisma.store.findUnique({
@@ -102,72 +108,38 @@ export async function POST(request: Request) {
 
     if (action === "signup") {
       const existing = await prisma.customer.findUnique({
-        where: {
-          storeId_email: {
-            storeId,
-            email,
-          },
-        },
-        select: {
-          id: true,
-          storeId: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phone: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        where: { storeId_email: { storeId, email } },
+        select: { id: true, storeId: true, email: true, firstName: true, lastName: true, phone: true, createdAt: true, updatedAt: true },
       });
 
       if (existing) {
-        customer = existing;
-      } else {
-        customer = await prisma.customer.create({
-          data: {
-            storeId,
-            email,
-            firstName,
-            lastName,
-          },
-          select: {
-            id: true,
-            storeId: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
+        return NextResponse.json({ error: "An account with that email already exists. Please sign in." }, { status: 409 });
       }
+
+      customer = await prisma.customer.create({
+        data: { storeId, email, firstName, lastName, passwordHash: hashSecret(password) },
+        select: { id: true, storeId: true, email: true, firstName: true, lastName: true, phone: true, createdAt: true, updatedAt: true },
+      });
     } else {
-      customer = await prisma.customer.findUnique({
-        where: {
-          storeId_email: {
-            storeId,
-            email,
-          },
-        },
-        select: {
-          id: true,
-          storeId: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phone: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      const found = await prisma.customer.findUnique({
+        where: { storeId_email: { storeId, email } },
+        select: { id: true, storeId: true, email: true, firstName: true, lastName: true, phone: true, passwordHash: true, createdAt: true, updatedAt: true },
       });
 
-      if (!customer) {
-        return NextResponse.json(
-          { error: "No shopper account exists for that email yet. Create an account to continue." },
-          { status: 404 },
-        );
+      if (!found) {
+        return NextResponse.json({ error: "No account found for that email. Please create an account." }, { status: 404 });
       }
+
+      if (found.passwordHash && !verifySecret(password, found.passwordHash)) {
+        return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
+      }
+
+      // allow legacy passwordless accounts to set a password on first sign in
+      if (!found.passwordHash) {
+        await prisma.customer.update({ where: { id: found.id }, data: { passwordHash: hashSecret(password) } });
+      }
+
+      customer = found;
     }
 
     const response = NextResponse.json({ customer: toCustomerPayload(customer) });

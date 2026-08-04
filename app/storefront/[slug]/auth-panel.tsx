@@ -22,6 +22,7 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
   const [customer, setCustomer] = useState<StorefrontCustomer | null>(initialCustomer);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState(initialCustomer?.email ?? "");
+  const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState(initialCustomer?.firstName ?? "");
   const [lastName, setLastName] = useState(initialCustomer?.lastName ?? "");
   const [status, setStatus] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
           action: mode,
           storeId,
           email,
+          password,
           firstName,
           lastName,
         }),
@@ -142,6 +144,16 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
             placeholder="Email address"
             required
+          />
+
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+            placeholder={mode === "signup" ? "Create a password" : "Password"}
+            required
+            minLength={6}
           />
 
           <button

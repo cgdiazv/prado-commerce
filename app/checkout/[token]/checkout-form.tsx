@@ -23,6 +23,7 @@ type CheckoutFormProps = {
 export default function CheckoutForm({ cartId, currency, subtotal, storeId }: CheckoutFormProps) {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [authFirstName, setAuthFirstName] = useState("");
   const [authLastName, setAuthLastName] = useState("");
   const [authStatus, setAuthStatus] = useState<string | null>(null);
@@ -170,7 +171,7 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
       const r = await fetch("/api/storefront/auth", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: authMode, storeId, email: authEmail, firstName: authFirstName, lastName: authLastName }),
+        body: JSON.stringify({ action: authMode, storeId, email: authEmail, password: authPassword, firstName: authFirstName, lastName: authLastName }),
       });
       const p = await r.json();
       if (!r.ok) throw new Error(p.error || "Unable to sign in.");
@@ -210,6 +211,7 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
             </div>
           )}
           <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="Email address" className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
+          <input type="password" required minLength={6} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={authMode === "signup" ? "Create a password" : "Password"} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
           <button type="submit" disabled={isAuthing} className="w-full rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-70">
             {isAuthing ? "Working…" : authMode === "signin" ? "Sign in" : "Create account"}
           </button>
