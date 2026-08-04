@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStoreBrandingCssVars } from "@/lib/branding";
+import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
 
@@ -122,14 +123,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
                   </p>
                 </div>
                 {primaryVariant ? (
-                  <button
-                    type="button"
-                    data-prado-add={primaryVariant.id}
-                    data-prado-add-to-cart={primaryVariant.id}
-                    className="rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
-                  >
-                    Add to cart
-                  </button>
+                  <AddToCartWithQuantity variantId={primaryVariant.id} />
                 ) : null}
               </div>
             </div>
