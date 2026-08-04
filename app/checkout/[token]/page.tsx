@@ -56,38 +56,42 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-16 text-slate-100">
-      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_24px_60px_rgba(2,6,23,0.35)] backdrop-blur-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-200">Checkout</p>
-        <h1 className="mt-4 text-3xl font-semibold text-white">Review your order</h1>
-        <p className="mt-3 text-base leading-7 text-slate-300">
-          Complete your details below to submit a real order for this storefront cart.
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-16 text-slate-900">
+      <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Checkout</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">Review your order</h1>
+        <p className="mt-2 text-base leading-7 text-slate-600">
+          Complete your details below to submit an order.
         </p>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-            <div className="flex items-center justify-between">
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          {/* Form on the left */}
+          <CheckoutForm cartId={cart.id} currency={cart.currency || "USD"} subtotal={subtotal} storeId={cart.storeId} />
+
+          {/* Order details on the right */}
+          <div className="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-white">{cart.store.name}</p>
-                <p className="text-sm text-slate-400">Cart token: {cart.token}</p>
+                <p className="text-base font-semibold text-slate-900">{cart.store.name}</p>
+                <p className="text-sm text-slate-500">Cart token: {cart.token}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">Subtotal</p>
-                <p className="text-lg font-semibold text-white">{formatter.format(subtotal)}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Subtotal</p>
+                <p className="text-xl font-bold text-slate-900">{formatter.format(subtotal)}</p>
               </div>
             </div>
 
             <div className="mt-6 space-y-3">
               {cart.items.length === 0 ? (
-                <p className="text-sm text-slate-400">Your cart is empty.</p>
+                <p className="text-sm text-slate-500">Your cart is empty.</p>
               ) : (
                 cart.items.map((item, index) => (
-                  <div key={`${item.variant.title}-${index}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div key={`${item.variant.title}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
                     <div>
-                      <p className="font-medium text-white">{item.variant.title}</p>
-                      <p className="text-sm text-slate-400">Qty {item.quantity}</p>
+                      <p className="font-medium text-slate-900">{item.variant.title}</p>
+                      <p className="text-sm text-slate-500">Qty {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-semibold text-cyan-200">
+                    <p className="text-sm font-semibold text-slate-900">
                       {formatter.format(Number(item.variant.price) * item.quantity)}
                     </p>
                   </div>
@@ -95,8 +99,6 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
               )}
             </div>
           </div>
-
-          <CheckoutForm cartId={cart.id} currency={cart.currency || "USD"} subtotal={subtotal} storeId={cart.storeId} />
         </div>
       </div>
     </main>

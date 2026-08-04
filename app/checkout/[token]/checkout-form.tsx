@@ -187,18 +187,24 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
   }
 
   if (isLoggedIn === null) {
-    return <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-400">Loading…</div>;
+    return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading…</div>;
   }
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-        <p className="text-sm font-semibold text-white">Sign in to continue</p>
-        <p className="mt-1 text-sm text-slate-400">You need a storefront account to place an order.</p>
-        <div className="mt-4 flex gap-2 rounded-full border border-white/10 p-1">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-base font-semibold text-slate-900">Sign in to continue</p>
+        <p className="mt-1 text-sm text-slate-500">You need a storefront account to place an order.</p>
+        <div className="mt-4 flex gap-2 rounded-full border border-slate-200 p-1">
           {(["signin", "signup"] as const).map((m) => (
-            <button key={m} type="button" onClick={() => setAuthMode(m)}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${authMode === m ? "bg-slate-100 text-slate-900" : "text-slate-400"}`}>
+            <button
+              key={m}
+              type="button"
+              onClick={() => setAuthMode(m)}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
+                authMode === m ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
               {m === "signin" ? "Sign in" : "Create account"}
             </button>
           ))}
@@ -206,64 +212,145 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
         <form onSubmit={handleAuth} className="mt-4 space-y-3">
           {authMode === "signup" && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <input value={authFirstName} onChange={(e) => setAuthFirstName(e.target.value)} placeholder="First name" className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
-              <input value={authLastName} onChange={(e) => setAuthLastName(e.target.value)} placeholder="Last name" className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
+              <input
+                value={authFirstName}
+                onChange={(e) => setAuthFirstName(e.target.value)}
+                placeholder="First name"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+              />
+              <input
+                value={authLastName}
+                onChange={(e) => setAuthLastName(e.target.value)}
+                placeholder="Last name"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+              />
             </div>
           )}
-          <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="Email address" className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
-          <input type="password" required minLength={6} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={authMode === "signup" ? "Create a password" : "Password"} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
-          <button type="submit" disabled={isAuthing} className="w-full rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-70">
+          <input
+            type="email"
+            required
+            value={authEmail}
+            onChange={(e) => setAuthEmail(e.target.value)}
+            placeholder="Email address"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          />
+          <input
+            type="password"
+            required
+            minLength={6}
+            value={authPassword}
+            onChange={(e) => setAuthPassword(e.target.value)}
+            placeholder={authMode === "signup" ? "Create a password" : "Password"}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          />
+          <button
+            type="submit"
+            disabled={isAuthing}
+            className="w-full rounded-full bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:opacity-70"
+          >
             {isAuthing ? "Working…" : authMode === "signin" ? "Sign in" : "Create account"}
           </button>
-          {authStatus && <p className="text-sm text-slate-300">{authStatus}</p>}
+          {authStatus && <p className="text-sm text-rose-600">{authStatus}</p>}
         </form>
       </div>
     );
   }
+
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">Customer details</p>
-          <p className="text-sm text-slate-400">We’ll create an order from this cart once you submit.</p>
+          <p className="text-base font-semibold text-slate-900">Customer details</p>
+          <p className="text-sm text-slate-500">We’ll create an order from this cart once you submit.</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-slate-400">Estimated total</p>
-          <p className="text-lg font-semibold text-white">{currency} {subtotal.toFixed(2)}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Estimated total</p>
+          <p className="text-lg font-bold text-slate-900">{currency} {subtotal.toFixed(2)}</p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <input value={firstName} onChange={(event) => setFirstName(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="First name" />
-        <input value={lastName} onChange={(event) => setLastName(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Last name" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <input
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          placeholder="First name"
+        />
+        <input
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          placeholder="Last name"
+        />
       </div>
 
-      <div className="mt-3 space-y-3">
-        <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Email address" />
-        <input value={phone} onChange={(event) => setPhone(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Phone" />
+      <div className="space-y-3">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          placeholder="Email address"
+        />
+        <input
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          placeholder="Phone"
+        />
       </div>
 
-      <div className="mt-4 space-y-3">
-        <input value={line1} onChange={(event) => setLine1(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Street address" />
+      <div className="space-y-3">
+        <input
+          value={line1}
+          onChange={(event) => setLine1(event.target.value)}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+          placeholder="Street address"
+        />
         <div className="grid gap-3 sm:grid-cols-2">
-          <input value={city} onChange={(event) => setCity(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="City" />
-          <input value={state} onChange={(event) => setState(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="State" />
+          <input
+            value={city}
+            onChange={(event) => setCity(event.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+            placeholder="City"
+          />
+          <input
+            value={state}
+            onChange={(event) => setState(event.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+            placeholder="State"
+          />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <input value={postalCode} onChange={(event) => setPostalCode(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Postal code" />
-          <input value={country} onChange={(event) => setCountry(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" placeholder="Country" />
+          <input
+            value={postalCode}
+            onChange={(event) => setPostalCode(event.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+            placeholder="Postal code"
+          />
+          <input
+            value={country}
+            onChange={(event) => setCountry(event.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+            placeholder="Country"
+          />
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/60 p-3">
-        <p className="text-sm font-semibold text-white">Payment method</p>
-        <p className="mt-1 text-sm text-slate-400">Choose how you’d like to complete this order.</p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-semibold text-slate-900">Payment method</p>
+        <p className="mt-1 text-sm text-slate-500">Choose how you’d like to complete this order.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {availablePaymentMethods.includes("card") ? (
             <button
               type="button"
               onClick={() => setPaymentMethod("card")}
-              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${paymentMethod === "card" ? "bg-cyan-500 text-slate-950" : "border border-white/10 bg-slate-900/70 text-slate-300 hover:bg-slate-800"}`}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                paymentMethod === "card"
+                  ? "bg-slate-900 text-white"
+                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              }`}
             >
               Card payment
             </button>
@@ -272,7 +359,11 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
             <button
               type="button"
               onClick={() => setPaymentMethod("offline")}
-              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${paymentMethod === "offline" ? "bg-cyan-500 text-slate-950" : "border border-white/10 bg-slate-900/70 text-slate-300 hover:bg-slate-800"}`}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                paymentMethod === "offline"
+                  ? "bg-slate-900 text-white"
+                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              }`}
             >
               Offline payment
             </button>
@@ -280,18 +371,22 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/60 p-3">
-        <p className="text-sm font-semibold text-white">Saved addresses</p>
-        <p className="mt-1 text-sm text-slate-400">Pick one to fill the form faster.</p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-semibold text-slate-900">Saved addresses</p>
+        <p className="mt-1 text-sm text-slate-500">Pick one to fill the form faster.</p>
 
         {savedAddresses.length > 0 ? (
           <div className="mt-3 space-y-2">
             {savedAddresses.map((address, index) => {
               const label = [address.line1, address.city, address.state, address.country].filter(Boolean).join(", ");
               return (
-                <div key={`${label}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-900/70 p-2.5">
-                  <p className="text-sm text-slate-300">{label || "Saved address"}</p>
-                  <button type="button" onClick={() => applySavedAddress(address)} className="rounded-full border border-cyan-400/30 px-2.5 py-1 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-400/10">
+                <div key={`${label}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                  <p className="text-sm text-slate-700">{label || "Saved address"}</p>
+                  <button
+                    type="button"
+                    onClick={() => applySavedAddress(address)}
+                    className="rounded-full border border-cyan-600 px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-50"
+                  >
                     Use
                   </button>
                 </div>
@@ -299,15 +394,19 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
             })}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-slate-400">No saved addresses yet.</p>
+          <p className="mt-3 text-sm text-slate-500">No saved addresses yet.</p>
         )}
       </div>
 
-      <button type="submit" disabled={isSubmitting} className="mt-6 w-full rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70">
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full rounded-full bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
+      >
         {isSubmitting ? "Submitting order..." : "Place order"}
       </button>
 
-      {status ? <p className="mt-4 text-sm text-slate-300">{status}</p> : null}
+      {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}
     </form>
   );
 }
