@@ -18,7 +18,7 @@ export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuanti
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-3">
       <div className="inline-flex items-center rounded-full border border-slate-300 bg-white">
         <button
           type="button"
@@ -44,7 +44,7 @@ export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuanti
         data-prado-add={variantId}
         data-prado-add-to-cart={variantId}
         data-prado-qty={quantity}
-        className="rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
+        className="w-full rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
       >
         Add to cart
       </button>

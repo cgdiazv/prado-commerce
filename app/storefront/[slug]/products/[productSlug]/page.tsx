@@ -116,15 +116,15 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-center justify-between">
+                {primaryVariant ? (
+                  <AddToCartWithQuantity variantId={primaryVariant.id} />
+                ) : null}
                 <div>
                   <p className="text-sm font-medium text-slate-500">Starting at</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-900">
                     {store.currency} {Number(primaryVariant?.price ?? 0).toFixed(2)}
                   </p>
                 </div>
-                {primaryVariant ? (
-                  <AddToCartWithQuantity variantId={primaryVariant.id} />
-                ) : null}
               </div>
             </div>
           </div>
