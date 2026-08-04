@@ -2,8 +2,7 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AuthPanel from "../auth-panel";
-import AccountPanel from "../account-panel";
-import OrdersPanel from "../orders-panel";
+import AccountSidebarLayout from "../account-sidebar-layout";
 import StorefrontNavbar from "../../storefront-navbar";
 import StorefrontFooter from "../../storefront-footer";
 
@@ -45,11 +44,10 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <StorefrontNavbar storeName={store.name} basePath={base} isAccountActive />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-6 py-12">
-        <AccountPanel />
-        <OrdersPanel />
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+        <AccountSidebarLayout />
       </main>
       <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
       <StorefrontFooter storeName={store.name} />
