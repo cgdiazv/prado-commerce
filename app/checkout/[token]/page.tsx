@@ -57,8 +57,11 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
   }
 
   const hdrs = await headers();
-  const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
-  const base = isSubdomain ? "" : `/storefront/${cart.store.slug}`;
+  const host = (hdrs.get("host") || "").split(":")[0].toLowerCase();
+  const isSubdomain = hdrs.get("x-storefront-subdomain") === "1" || Boolean(hdrs.get("x-storefront-custom-domain"));
+  const isTenantDomain = isSubdomain || (host !== "" && host !== "localhost" && host !== "127.0.0.1" && host !== "pradocommerce.com" && host !== "www.pradocommerce.com");
+
+  const base = isTenantDomain ? "" : `/storefront/${cart.store.slug}`;
 
   const subtotal = cart.items.reduce((sum, item) => {
     const price = Number(item.variant.price);

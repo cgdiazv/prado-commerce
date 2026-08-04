@@ -122,25 +122,27 @@ export function middleware(request: NextRequest) {
   if (parts.length >= 3) {
     const slug = parts[0];
     if (slug && !reservedSubdomains.includes(slug)) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-storefront-subdomain", "1");
       if (pathname.startsWith("/api/") || pathname === "/cart.js" || pathname.startsWith("/checkout")) {
-        return NextResponse.next();
+        return NextResponse.next({ request: { headers: requestHeaders } });
       }
       const url = request.nextUrl.clone();
       url.pathname = `/storefront/${slug}${pathname === "/" ? "" : pathname}`;
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-storefront-subdomain", "1");
       return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
     }
   }
 
   // Custom domain (for example, from GoDaddy) -> tenant storefront by domain lookup.
   if (!isPlatformHostname(hostname)) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-storefront-custom-domain", hostname);
     if (pathname.startsWith("/api/") || pathname === "/cart.js" || pathname.startsWith("/checkout")) {
-      return NextResponse.next();
+      return NextResponse.next({ request: { headers: requestHeaders } });
     }
     const url = request.nextUrl.clone();
     url.pathname = `/storefront/domain/${hostname}${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   }
 
   // Keep product management URLs canonical under /dashboard for merchant portal.
