@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, CreditCard, Mail, Phone, MapPin, Package, CheckCircle, ShieldAlert } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, CheckCircle, ShieldAlert } from "lucide-react";
 
 type OrderItem = {
   id: string;
@@ -101,16 +101,13 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
-          <Link
-            href="/dashboard/orders"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to orders
-          </Link>
-          <div className="mt-3 flex items-center gap-3">
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+            Process Order
+          </p>
+          <div className="mt-2 flex items-center gap-3">
             <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
               Order #{order.orderNumber}
             </h1>
@@ -125,6 +122,13 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             Placed on {new Date(order.createdAt).toLocaleString()} at {order.store.name}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 self-start sm:self-center"
+        >
+          Back
+        </button>
       </div>
 
       {saveStatus && (

@@ -144,7 +144,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
   }
 
   return (
-    <section>
+    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
@@ -152,90 +152,100 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
       ) : null}
 
       <div className="space-y-6">
-        <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Orders
-          </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            Create manual order
-          </h1>
-          <p className="mt-3 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Enter customer details and line items to create an order manually.
-          </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Orders
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+              Create manual order
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Back
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Store</span>
-              <select
-                value={activeStoreId}
-                onChange={(event) => {
-                  const storeId = event.target.value;
-                  setActiveStoreId(storeId);
-                  const store = stores.find((candidate) => candidate.id === storeId);
-                  if (store) {
-                    setCurrency(store.currency);
-                  }
-                }}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} / {store.currency}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {/* Order Details Card */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Order configuration</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Store</span>
+                <select
+                  value={activeStoreId}
+                  onChange={(event) => {
+                    const storeId = event.target.value;
+                    setActiveStoreId(storeId);
+                    const store = stores.find((candidate) => candidate.id === storeId);
+                    if (store) {
+                      setCurrency(store.currency);
+                    }
+                  }}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name} / {store.currency}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Customer email</span>
-              <input
-                type="email"
-                value={customerEmail}
-                onChange={(event) => setCustomerEmail(event.target.value)}
-                placeholder="customer@example.com"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                required
-              />
-            </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Customer email</span>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(event) => setCustomerEmail(event.target.value)}
+                  placeholder="customer@example.com"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                  required
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Order status</span>
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as typeof status)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="PROCESSING">PROCESSING</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="CANCELLED">CANCELLED</option>
-              </select>
-            </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Order status</span>
+                <select
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value as typeof status)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="PROCESSING">PROCESSING</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Payment status</span>
-              <select
-                value={paymentStatus}
-                onChange={(event) => setPaymentStatus(event.target.value as typeof paymentStatus)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="UNPAID">UNPAID</option>
-                <option value="PAID">PAID</option>
-                <option value="REFUNDED">REFUNDED</option>
-                <option value="FAILED">FAILED</option>
-              </select>
-            </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Payment status</span>
+                <select
+                  value={paymentStatus}
+                  onChange={(event) => setPaymentStatus(event.target.value as typeof paymentStatus)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="UNPAID">UNPAID</option>
+                  <option value="PAID">PAID</option>
+                  <option value="REFUNDED">REFUNDED</option>
+                  <option value="FAILED">FAILED</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 bg-slate-50/50">
               <h2 className="text-sm font-semibold text-slate-900">Line items</h2>
               <button
                 type="button"
                 onClick={addItem}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 <Plus className="h-4 w-4" />
                 Add item
@@ -284,42 +294,46 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Tax</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={tax}
-                onChange={(event) => setTax(event.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
+          {/* Financial Adjustments Card */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Financial adjustments</h3>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Tax</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={tax}
+                  onChange={(event) => setTax(event.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Shipping</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={shipping}
-                onChange={(event) => setShipping(event.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Shipping</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shipping}
+                  onChange={(event) => setShipping(event.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Currency</span>
-              <input
-                value={currency}
-                onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none transition focus:border-slate-400"
-                minLength={3}
-                maxLength={3}
-                required
-              />
-            </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Currency</span>
+                <input
+                  value={currency}
+                  onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none transition focus:border-slate-400"
+                  minLength={3}
+                  maxLength={3}
+                  required
+                />
+              </label>
+            </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
