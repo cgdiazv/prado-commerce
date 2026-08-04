@@ -29,6 +29,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
         select: {
           name: true,
           slug: true,
+          offlinePaymentsEnabled: true,
           categories: {
             select: {
               id: true,
@@ -91,7 +92,13 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             {/* Form on the left */}
-            <CheckoutForm cartId={cart.id} currency={cart.currency || "USD"} subtotal={subtotal} storeId={cart.storeId} />
+            <CheckoutForm
+              cartId={cart.id}
+              currency={cart.currency || "USD"}
+              subtotal={subtotal}
+              storeId={cart.storeId}
+              offlinePaymentsEnabled={Boolean(cart.store.offlinePaymentsEnabled)}
+            />
 
             {/* Order details on the right */}
             <div className="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-6">

@@ -26,6 +26,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
         currency: true,
         timezone: true,
         allowedDomains: true,
+        offlinePaymentsEnabled: true,
         createdAt: true,
         updatedAt: true,
         apiKeys: {
@@ -182,6 +183,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         currency: true,
         timezone: true,
         allowedDomains: true,
+        offlinePaymentsEnabled: true,
         createdAt: true,
         updatedAt: true,
       },

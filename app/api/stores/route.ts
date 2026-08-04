@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         currency: true,
         timezone: true,
         allowedDomains: true,
+        offlinePaymentsEnabled: true,
         createdAt: true,
         updatedAt: true,
         apiKeys: {

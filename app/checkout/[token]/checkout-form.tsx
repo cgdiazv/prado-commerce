@@ -18,9 +18,10 @@ type CheckoutFormProps = {
   currency: string;
   subtotal: number;
   storeId: string;
+  offlinePaymentsEnabled?: boolean;
 };
 
-export default function CheckoutForm({ cartId, currency, subtotal, storeId }: CheckoutFormProps) {
+export default function CheckoutForm({ cartId, currency, subtotal, storeId, offlinePaymentsEnabled = false }: CheckoutFormProps) {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -40,7 +41,9 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
   const [country, setCountry] = useState("");
   const [savedAddresses, setSavedAddresses] = useState<AddressEntry[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("card");
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<string[]>(["card"]);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<string[]>(() =>
+    getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled))
+  );
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,16 +93,20 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
           if (!methods.includes(paymentMethod)) {
             setPaymentMethod(methods[0] || "card");
           }
+          return;
         }
       } catch {
-        // Ignore store config errors and keep the default card-only option.
+        // Ignore store config errors and keep prop default options.
       }
+
+      const methods = getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled));
+      setAvailablePaymentMethods(methods);
     }
 
     void checkAuth();
     void loadSavedAddresses();
     void loadStorePaymentOptions();
-  }, []);
+  }, [offlinePaymentsEnabled]);
 
   function applySavedAddress(address: AddressEntry) {
     setLine1(address.line1 ?? "");
@@ -341,32 +348,37 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId }: Ch
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-semibold text-slate-900">Payment method</p>
         <p className="mt-1 text-sm text-slate-500">Choose how you’d like to complete this order.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 space-y-3">
           {availablePaymentMethods.includes("card") ? (
             <button
               type="button"
               onClick={() => setPaymentMethod("card")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              className={`w-full text-left rounded-xl border px-4 py-3 text-sm font-medium transition ${
                 paymentMethod === "card"
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
               }`}
             >
               Card payment
             </button>
           ) : null}
           {availablePaymentMethods.includes("offline") ? (
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("offline")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                paymentMethod === "offline"
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-              }`}
-            >
-              Offline payment
-            </button>
+            <label className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium cursor-pointer transition ${
+              paymentMethod === "offline"
+                ? "border-cyan-600 bg-cyan-50/50 text-slate-900"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            }`}>
+              <input
+                type="checkbox"
+                checked={paymentMethod === "offline"}
+                onChange={(e) => setPaymentMethod(e.target.checked ? "offline" : "card")}
+                className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+              />
+              <div>
+                <span className="font-semibold text-slate-900">Payment on pickup</span>
+                <p className="text-xs text-slate-500">Pay with cash, bank transfer, or manual method upon order pickup.</p>
+              </div>
+            </label>
           ) : null}
         </div>
       </div>
