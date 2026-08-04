@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 
 type ShippingZone = {
@@ -42,7 +42,7 @@ const carrierButtonClasses: Record<string, string> = {
 
 export default function ShippingPage() {
   const router = useRouter();
-  const [zones, setZones] = useState<ShippingZone[]>(initialZones);
+  const [zones, setZones] = useState<ShippingZone[]>([]);
   const [carriers, setCarriers] = useState<CarrierConnection[]>(initialCarriers);
   const [originName, setOriginName] = useState("Store profile origin");
   const [originAddress, setOriginAddress] = useState("Use the origin address from Store profile");
@@ -52,10 +52,24 @@ export default function ShippingPage() {
   const [newZoneType, setNewZoneType] = useState<ShippingZone["rateType"]>("flat");
   const [newZoneValue, setNewZoneValue] = useState("");
 
+  useEffect(() => {
+    const saved = localStorage.getItem("prado_shipping_zones");
+    if (saved) {
+      try {
+        setZones(JSON.parse(saved));
+      } catch {
+        setZones(initialZones);
+      }
+    } else {
+      setZones(initialZones);
+    }
+  }, []);
+
   const carrierLabel = useMemo(() => (carrier: CarrierConnection) => (carrier.connected ? "Connected" : "Not connected"), []);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    localStorage.setItem("prado_shipping_zones", JSON.stringify(zones));
     router.push("/dashboard/settings");
   }
 

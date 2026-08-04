@@ -13,6 +13,19 @@ type AddressEntry = {
   country: string | null;
 };
 
+type ShippingZone = {
+  name: string;
+  regions: string;
+  rateType: "free" | "flat" | "pickup";
+  rateValue: string;
+};
+
+function parseRateValue(value: string, type: string): number {
+  if (type === "free") return 0;
+  const num = parseFloat(value.replace(/[^0-9.]/g, ""));
+  return isNaN(num) ? 0 : num;
+}
+
 type CheckoutFormProps = {
   cartId: string;
   currency: string;
@@ -40,6 +53,9 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("");
   const [savedAddresses, setSavedAddresses] = useState<AddressEntry[]>([]);
+  const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
+  const [selectedZoneIdx, setSelectedZoneIdx] = useState<number>(0);
+  const [shippingAmount, setShippingAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<string[]>(() =>
     getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled))
@@ -117,6 +133,22 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
     void loadCustomerProfile();
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("prado_shipping_zones");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as ShippingZone[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setShippingZones(parsed);
+          const initialAmount = parseRateValue(parsed[0].rateValue, parsed[0].rateType);
+          setShippingAmount(initialAmount);
+        }
+      } catch {
+        // Ignore
+      }
+    }
+  }, []);
+
   function applySavedAddress(address: AddressEntry) {
     setLine1(address.line1 ?? "");
     setCity(address.city ?? "");
@@ -155,7 +187,7 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
             postalCode,
             country,
           },
-          shippingAmount: 0,
+          shippingAmount,
           taxAmount: 0,
           paymentMethod,
         }),
@@ -281,7 +313,7 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
         </div>
         <div className="text-right">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Estimated total</p>
-          <p className="text-lg font-bold text-slate-900">{currency} {subtotal.toFixed(2)}</p>
+          <p className="text-lg font-bold text-slate-900">{currency} {(subtotal + shippingAmount).toFixed(2)}</p>
         </div>
       </div>
 
@@ -353,6 +385,49 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
           />
         </div>
       </div>
+
+      {shippingZones.length > 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-900">Shipping method</p>
+          <p className="mt-1 text-sm text-slate-500">Choose your preferred shipping option.</p>
+          <div className="mt-3 space-y-3">
+            {shippingZones.map((zone, idx) => {
+              const amount = parseRateValue(zone.rateValue, zone.rateType);
+              const isSelected = selectedZoneIdx === idx;
+              return (
+                <label
+                  key={`${zone.name}-${idx}`}
+                  className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium cursor-pointer transition ${
+                    isSelected
+                      ? "border-cyan-600 bg-cyan-50/50 text-slate-900"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="shippingMethod"
+                      checked={isSelected}
+                      onChange={() => {
+                        setSelectedZoneIdx(idx);
+                        setShippingAmount(amount);
+                      }}
+                      className="h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-900">{zone.name}</span>
+                      <p className="text-xs text-slate-500">{zone.regions}</p>
+                    </div>
+                  </div>
+                  <span className="font-semibold text-slate-900">
+                    {zone.rateType === "free" ? "Free" : zone.rateValue}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-semibold text-slate-900">Payment method</p>

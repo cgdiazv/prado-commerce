@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X, Bell } from "lucide-react";
 
 type NavChild = {
   href: string;
@@ -25,6 +25,136 @@ export default function DashboardLayout({
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHelpActive = pathname.startsWith("/dashboard/help");
+
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [notifications, setNotifications] = useState<{
+    id: string;
+    title: string;
+    message: string;
+    time: string;
+    read: boolean;
+    orderId: string;
+  }[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [toast, setToast] = useState<{ id: string; title: string; message: string } | null>(null);
+
+  function showToast(newToast: { id: string; title: string; message: string }) {
+    setToast(newToast);
+    setTimeout(() => {
+      setToast((current) => (current?.id === newToast.id ? null : current));
+    }, 6000);
+  }
+
+  function markAsRead(notificationId: string) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+  }
+
+  function markAllAsRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    async function fetchStores() {
+      try {
+        const response = await fetch("/api/stores", { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          setStores(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stores in layout", error);
+      }
+    }
+    void fetchStores();
+  }, []);
+
+  useEffect(() => {
+    if (stores.length === 0) return;
+
+    let active = true;
+
+    async function pollOrders() {
+      try {
+        const allOrdersPromises = stores.map(async (store) => {
+          const res = await fetch(`/api/orders?storeId=${store.id}`, { cache: "no-store" });
+          if (!res.ok) return [];
+          const orders = await res.json();
+          return orders.map((order: any) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            total: order.total,
+            currency: order.currency,
+            storeName: store.name,
+            createdAt: order.createdAt,
+          }));
+        });
+
+        const results = await Promise.all(allOrdersPromises);
+        const currentOrders = results.flat();
+
+        if (!active) return;
+
+        setKnownOrderIds((prevKnown) => {
+          const nextKnown = new Set(prevKnown);
+          const newOrders: any[] = [];
+
+          for (const order of currentOrders) {
+            if (!nextKnown.has(order.id)) {
+              nextKnown.add(order.id);
+              newOrders.push(order);
+            }
+          }
+
+          if (prevKnown.size === 0 && !isInitialized) {
+            setIsInitialized(true);
+            return nextKnown;
+          }
+
+          if (newOrders.length > 0) {
+            setNotifications((prev) => {
+              const added = newOrders.map((order) => ({
+                id: Math.random().toString(),
+                title: "New Order Received!",
+                message: `Order #${order.orderNumber} of ${order.currency} ${order.total} placed at ${order.storeName}`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                read: false,
+                orderId: order.id,
+              }));
+              return [...added, ...prev];
+            });
+
+            const latestOrder = newOrders[0];
+            showToast({
+              id: latestOrder.id,
+              title: "New Order!",
+              message: `Order #${latestOrder.orderNumber} (${latestOrder.currency} ${latestOrder.total}) received at ${latestOrder.storeName}.`,
+            });
+          }
+
+          return nextKnown;
+        });
+      } catch (error) {
+        console.error("Error polling orders:", error);
+      }
+    }
+
+    void pollOrders();
+
+    const interval = setInterval(() => {
+      void pollOrders();
+    }, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [stores, isInitialized]);
 
   const navItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -175,7 +305,80 @@ export default function DashboardLayout({
             </span>
           </a>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-4">
+            {/* Notification Bell with Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen((open) => !open)}
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                aria-label="View notifications"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-2 ring-white animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Glassmorphic Dropdown */}
+              {isDropdownOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-40 cursor-default bg-transparent"
+                    onClick={() => setIsDropdownOpen(false)}
+                    aria-label="Close notifications panel"
+                  />
+                  <div className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={markAllAsRead}
+                          className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-3 max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                      {notifications.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-slate-400">
+                          No notifications yet.
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              markAsRead(n.id);
+                              setIsDropdownOpen(false);
+                              window.location.href = "/dashboard/orders";
+                            }}
+                            className={`flex flex-col gap-1 rounded-xl p-3 cursor-pointer border text-left transition ${
+                              n.read
+                                ? "bg-slate-50/50 border-slate-100/50 text-slate-600"
+                                : "bg-cyan-50/20 border-cyan-100/40 hover:bg-cyan-50/40 text-slate-900"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-semibold text-xs text-slate-800">{n.title}</span>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
+                            </div>
+                            <p className="text-xs text-slate-600 leading-normal">{n.message}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <a
               href="/api/auth/logout"
               className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
@@ -250,6 +453,54 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+
+      {/* Styles for animation */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideIn {
+          from {
+            transform: translateX(120%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes swing {
+          0%, 100% { transform: rotate(0); }
+          20% { transform: rotate(15deg); }
+          40% { transform: rotate(-10deg); }
+          60% { transform: rotate(5deg); }
+          80% { transform: rotate(-5deg); }
+        }
+        .animate-slide-in {
+          animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-swing {
+          animation: swing 1s ease-in-out infinite;
+        }
+      `}} />
+
+      {/* Slide-in Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-50 flex max-w-sm w-full animate-slide-in items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl backdrop-blur-md">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-600 border border-cyan-100">
+            <Bell className="h-4.5 w-4.5 animate-swing" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-slate-900">{toast.title}</p>
+            <p className="mt-0.5 text-[11px] text-slate-500 leading-normal">{toast.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            aria-label="Dismiss notification"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
