@@ -1,3 +1,5 @@
+import Link from "next/link";
+import Script from "next/script";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AuthPanel from "./auth-panel";
@@ -93,16 +95,26 @@ export default async function StorefrontPage({ params }: PageProps) {
                     </div>
                   )}
                   <div className="p-4">
-                    <h2 className="font-semibold text-slate-900">{product.title}</h2>
-                    {product.description ? (
-                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
-                    ) : null}
+                    <Link
+                      href={`/storefront/${store.slug}/products/${product.slug}`}
+                      className="block"
+                    >
+                      <h2 className="font-semibold text-slate-900">{product.title}</h2>
+                      {product.description ? (
+                        <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
+                      ) : null}
+                      {price != null ? (
+                        <div className="mt-3 text-sm font-semibold">
+                          {store.currency} {Number(price).toFixed(2)}
+                        </div>
+                      ) : null}
+                    </Link>
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
-                        <span className="text-sm font-semibold">
+                        <span className="text-sm font-semibold text-slate-700">
                           {store.currency} {Number(price).toFixed(2)}
                         </span>
-                      ) : null}
+                      ) : <span className="text-sm text-slate-400">Select options</span>}
                       {variantId ? (
                         <button
                           type="button"
@@ -126,7 +138,7 @@ export default async function StorefrontPage({ params }: PageProps) {
         Powered by Prado Commerce
       </footer>
 
-      <script src="/cart.js" data-store-id={store.id} />
+      <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
     </div>
   );
 }

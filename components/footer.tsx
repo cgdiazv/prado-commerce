@@ -1,7 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
   const year = new Date().getFullYear();
+
+  if (pathname?.startsWith("/storefront")) {
+    return null;
+  }
 
   return (
     <footer className="border-t border-white/12 bg-slate-950/35 px-6 py-8 backdrop-blur-sm sm:px-8 lg:px-10">
