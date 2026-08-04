@@ -307,7 +307,10 @@ export default function DashboardLayout({
 
           <div className="ml-auto flex items-center gap-4">
             {/* Notification Bell with Dropdown */}
-            <div className="relative">
+            <div 
+              className="relative"
+              onMouseLeave={() => setIsDropdownOpen(false)}
+            >
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen((open) => !open)}
@@ -324,58 +327,50 @@ export default function DashboardLayout({
 
               {/* Glassmorphic Dropdown */}
               {isDropdownOpen && (
-                <>
-                  <button
-                    type="button"
-                    className="fixed inset-0 z-40 cursor-default bg-transparent"
-                    onClick={() => setIsDropdownOpen(false)}
-                    aria-label="Close notifications panel"
-                  />
-                  <div className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                      <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
-                      {unreadCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={markAllAsRead}
-                          className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition"
-                        >
-                          Mark all as read
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="mt-3 max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-                      {notifications.length === 0 ? (
-                        <div className="py-6 text-center text-sm text-slate-400">
-                          No notifications yet.
-                        </div>
-                      ) : (
-                        notifications.map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => {
-                              markAsRead(n.id);
-                              setIsDropdownOpen(false);
-                              window.location.href = "/dashboard/orders";
-                            }}
-                            className={`flex flex-col gap-1 rounded-xl p-3 cursor-pointer border text-left transition ${
-                              n.read
-                                ? "bg-slate-50/50 border-slate-100/50 text-slate-600"
-                                : "bg-cyan-50/20 border-cyan-100/40 hover:bg-cyan-50/40 text-slate-900"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="font-semibold text-xs text-slate-800">{n.title}</span>
-                              <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
-                            </div>
-                            <p className="text-xs text-slate-600 leading-normal">{n.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                <div className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllAsRead}
+                        className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
                   </div>
-                </>
+
+                  <div className="mt-3 max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                    {notifications.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-slate-400">
+                        No notifications yet.
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            markAsRead(n.id);
+                            setIsDropdownOpen(false);
+                            window.location.href = "/dashboard/orders";
+                          }}
+                          className={`flex flex-col gap-1 rounded-xl p-3 cursor-pointer border text-left transition ${
+                            n.read
+                              ? "bg-slate-50/50 border-slate-100/50 text-slate-600"
+                              : "bg-cyan-50/20 border-cyan-100/40 hover:bg-cyan-50/40 text-slate-900"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-semibold text-xs text-slate-800">{n.title}</span>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-normal">{n.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 

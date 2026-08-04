@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 type Store = {
@@ -38,6 +39,7 @@ export function OrdersDashboard({
   selectedStoreId,
   setupError = null,
 }: OrdersDashboardProps) {
+  const router = useRouter();
   const [stores] = useState(initialStores);
   const [orders, setOrders] = useState(initialOrders);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -151,7 +153,11 @@ export function OrdersDashboard({
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {visibleOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/70">
+                    <tr
+                      key={order.id}
+                      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                      className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                    >
                       <td className="px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
                       <td className="px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
                       <td className="px-4 py-3 align-top text-slate-700">{order.status}</td>
