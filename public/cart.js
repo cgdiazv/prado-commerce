@@ -13,7 +13,7 @@
 
   const STORE_ID = currentScript.getAttribute("data-store-id");
   const PUBLISHABLE_KEY = currentScript.getAttribute("data-api-key");
-  const API_HOST = currentScript.getAttribute("data-api-host") || "https://api.pradocommerce.com";
+  const API_HOST = currentScript.getAttribute("data-api-host") || (typeof window !== "undefined" ? window.location.origin : "https://api.pradocommerce.com");
 
   if (!STORE_ID) {
     console.error("[Prado Commerce] Missing data-store-id on script tag.");
@@ -124,10 +124,10 @@
         return;
       }
 
-      const addButton = target.closest("[data-prado-add]");
+      const addButton = target.closest("[data-prado-add], [data-prado-add-to-cart]");
       if (addButton) {
         event.preventDefault();
-        const variantId = addButton.getAttribute("data-prado-add");
+        const variantId = addButton.getAttribute("data-prado-add") || addButton.getAttribute("data-prado-add-to-cart");
         const quantity = Number.parseInt(addButton.getAttribute("data-prado-qty") || "1", 10);
         if (variantId) {
           void addItem(variantId, Number.isFinite(quantity) ? quantity : 1);

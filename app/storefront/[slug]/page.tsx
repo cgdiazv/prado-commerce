@@ -106,6 +106,7 @@ export default async function StorefrontPage({ params }: PageProps) {
                       {variantId ? (
                         <button
                           type="button"
+                          data-prado-add={variantId}
                           data-prado-add-to-cart={variantId}
                           className="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
                         >
@@ -124,6 +125,8 @@ export default async function StorefrontPage({ params }: PageProps) {
       <footer className="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-400">
         Powered by Prado Commerce
       </footer>
+
+      <script src="/cart.js" data-store-id={store.id} />
     </div>
   );
 }
