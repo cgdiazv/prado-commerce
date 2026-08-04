@@ -85,10 +85,12 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Shopper account</p>
-          <p className="text-sm text-slate-500">
-            {customer ? `Signed in as ${customer.email}` : "Create or access your storefront account"}
+          <p className="text-base font-semibold text-slate-900">
+            {customer ? "Account" : mode === "signin" ? "Sign in" : "Sign up"}
           </p>
+          {customer ? (
+            <p className="text-sm text-slate-500">Signed in as {customer.email}</p>
+          ) : null}
         </div>
         {customer ? (
           <button
