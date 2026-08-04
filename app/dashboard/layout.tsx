@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X } from "lucide-react";
 
 type NavChild = {
   href: string;
@@ -23,6 +23,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
   const navItems: NavItem[] = [
@@ -54,7 +55,111 @@ export default function DashboardLayout({
     if (pathname.startsWith("/dashboard/products")) {
       setIsProductsOpen(true);
     }
+    setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+    return (
+      <>
+        <nav className="flex-1 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+
+            return (
+              <div key={item.href} className="space-y-1">
+                {item.children ? (
+                  <div
+                    className={`flex items-center rounded-lg px-1 py-1 text-sm font-medium transition ${
+                      active
+                        ? "bg-cyan-50 text-cyan-700"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <a
+                      href={item.href}
+                      onClick={() => onNavigate?.()}
+                      className="flex flex-1 items-center gap-3 px-3 py-1.5"
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setIsProductsOpen((open) => !open)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/80 hover:text-slate-700"
+                      aria-label={isProductsOpen ? "Hide Products submenu" : "Show Products submenu"}
+                    >
+                      {isProductsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href={item.href}
+                    onClick={() => onNavigate?.()}
+                    className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                      active
+                        ? "bg-cyan-50 text-cyan-700"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </a>
+                )}
+
+                {item.children && isProductsOpen ? (
+                  <div className="ml-5 space-y-1 border-l border-slate-200 pl-2">
+                    {item.children.map((child) => {
+                      const childActive =
+                        child.href === "/dashboard/products/new"
+                          ? pathname === "/dashboard/products/new"
+                          : child.href === "/dashboard/products/categories"
+                            ? pathname === "/dashboard/products/categories"
+                            : pathname === "/dashboard/products";
+
+                      return (
+                        <a
+                          key={child.href}
+                          href={child.href}
+                          onClick={() => onNavigate?.()}
+                          className={`block rounded-md px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition ${
+                            childActive
+                              ? "bg-cyan-50 text-cyan-700"
+                              : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          }`}
+                        >
+                          {child.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="mt-6 border-t border-slate-200 pt-3 text-left">
+          <a
+            href="/dashboard/help"
+            onClick={() => onNavigate?.()}
+            className={`mb-2 inline-flex items-center gap-2 rounded-md px-2 py-1 text-[11px] font-medium tracking-[0.02em] transition ${
+              isHelpActive
+                ? "bg-cyan-50 text-cyan-700"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            }`}
+          >
+            <CircleHelp className="h-3.5 w-3.5" />
+            Help
+          </a>
+          <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
+            © {new Date().getFullYear()} Prado Commerce
+          </p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div
@@ -69,106 +174,59 @@ export default function DashboardLayout({
               Prado Commerce
             </span>
           </a>
-          <a
-            href="/api/auth/logout"
-            className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            Sign out
-          </a>
+
+          <div className="ml-auto flex items-center gap-2">
+            <a
+              href="/api/auth/logout"
+              className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Sign out
+            </a>
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
 
+      {isMobileMenuOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 bg-slate-950/45"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white/95 px-4 py-6 shadow-2xl backdrop-blur-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <a href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">
+                  Prado Commerce
+                </span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
+                aria-label="Close navigation menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <SidebarContent onNavigate={() => setIsMobileMenuOpen(false)} />
+          </aside>
+        </div>
+      ) : null}
+
       <div className="flex min-h-[calc(100vh-3.5rem)]">
-        <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/50 px-4 py-6">
-          <nav className="space-y-1 flex-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
-
-              return (
-                <div key={item.href} className="space-y-1">
-                  {item.children ? (
-                    <div
-                      className={`flex items-center rounded-lg px-1 py-1 text-sm font-medium transition ${
-                        active
-                          ? "bg-cyan-50 text-cyan-700"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      }`}
-                    >
-                      <a href={item.href} className="flex flex-1 items-center gap-3 px-3 py-1.5">
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span>{item.label}</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setIsProductsOpen((open) => !open)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/80 hover:text-slate-700"
-                        aria-label={isProductsOpen ? "Hide Products submenu" : "Show Products submenu"}
-                      >
-                        {isProductsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  ) : (
-                    <a
-                      href={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                        active
-                          ? "bg-cyan-50 text-cyan-700"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </a>
-                  )}
-
-                  {item.children && isProductsOpen ? (
-                    <div className="ml-5 space-y-1 border-l border-slate-200 pl-2">
-                      {item.children.map((child) => {
-                        const childActive =
-                          child.href === "/dashboard/products/new"
-                            ? pathname === "/dashboard/products/new"
-                            : child.href === "/dashboard/products/categories"
-                              ? pathname === "/dashboard/products/categories"
-                            : pathname === "/dashboard/products";
-
-                        return (
-                          <a
-                            key={child.href}
-                            href={child.href}
-                            className={`block rounded-md px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition ${
-                              childActive
-                                ? "bg-cyan-50 text-cyan-700"
-                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            }`}
-                          >
-                            {child.label}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </nav>
-
-          <div className="mt-6 border-t border-slate-200 pt-3 text-left">
-            <a
-              href="/dashboard/help"
-              className={`mb-2 inline-flex items-center gap-2 rounded-md px-2 py-1 text-[11px] font-medium tracking-[0.02em] transition ${
-                isHelpActive
-                  ? "bg-cyan-50 text-cyan-700"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              }`}
-            >
-              <CircleHelp className="h-3.5 w-3.5" />
-              Help
-            </a>
-            <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
-            © {new Date().getFullYear()} Prado Commerce
-            </p>
-          </div>
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/50 px-4 py-6 lg:flex">
+          <SidebarContent />
         </aside>
 
         <main className="flex-1 px-6 py-10 lg:px-10">

@@ -91,6 +91,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       currency,
       timezone,
       allowedDomains,
+      offlinePaymentsEnabled,
     } = body as {
       name?: string;
       slug?: string;
@@ -98,6 +99,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       currency?: string;
       timezone?: string;
       allowedDomains?: string[];
+      offlinePaymentsEnabled?: boolean;
     };
 
     const updates: {
@@ -107,6 +109,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       currency?: string;
       timezone?: string;
       allowedDomains?: string[];
+      offlinePaymentsEnabled?: boolean;
     } = {};
 
     if (typeof name === "string" && name.trim()) {
@@ -152,6 +155,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.allowedDomains = allowedDomains
         .map((domain) => domain.trim().toLowerCase())
         .filter(Boolean);
+    }
+
+    if (typeof offlinePaymentsEnabled === "boolean") {
+      updates.offlinePaymentsEnabled = offlinePaymentsEnabled;
     }
 
     if (Object.keys(updates).length === 0) {

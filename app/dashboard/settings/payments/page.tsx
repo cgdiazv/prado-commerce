@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ProviderStatus = {
   stripe: boolean;
@@ -16,14 +16,66 @@ export default function PaymentsPage() {
     authorizeNet: false,
   });
   const [defaultProvider, setDefaultProvider] = useState<"stripe" | "authorizeNet">("stripe");
+  const [offlinePaymentsEnabled, setOfflinePaymentsEnabled] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    async function loadStoreSettings() {
+      try {
+        const response = await fetch("/api/stores", { cache: "no-store" });
+        const stores = await response.json();
+        if (response.ok && Array.isArray(stores) && stores[0]) {
+          setOfflinePaymentsEnabled(Boolean(stores[0].offlinePaymentsEnabled));
+        }
+      } catch {
+        // Ignore loading errors and keep the default state.
+      }
+    }
+
+    void loadStoreSettings();
+  }, []);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push("/dashboard/settings");
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/stores", { cache: "no-store" });
+      const stores = await response.json();
+      const store = Array.isArray(stores) && stores[0] ? stores[0] : null;
+
+      if (!store?.id) {
+        throw new Error("Store not found");
+      }
+
+      const patchResponse = await fetch(`/api/stores/${store.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          offlinePaymentsEnabled,
+        }),
+      });
+
+      const payload = await patchResponse.json();
+      if (!patchResponse.ok) {
+        throw new Error(payload.error || "Unable to update payments settings.");
+      }
+
+      router.push("/dashboard/settings");
+    } catch (error) {
+      console.error("[PAYMENTS_SETTINGS_SAVE_ERROR]", error);
+      alert(error instanceof Error ? error.message : "Unable to save payments settings.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function toggleProvider(provider: keyof ProviderStatus) {
     setProviderStatus((current) => ({ ...current, [provider]: !current[provider] }));
+  }
+
+  function toggleOfflinePayments() {
+    setOfflinePaymentsEnabled((current) => !current);
   }
 
   return (
@@ -66,7 +118,7 @@ export default function PaymentsPage() {
             </select>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4">
             <article className={`rounded-xl border p-5 shadow-sm ${providerStatus.stripe ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"}`}>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -128,15 +180,31 @@ export default function PaymentsPage() {
             </article>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Payment notes</label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Add any internal reminders about payment setup, account IDs, or testing status.
-            </p>
-            <textarea
-              placeholder="Internal payment setup notes"
-              className="mt-3 min-h-28 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Offline payments</label>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Allow customers to place orders and pay later through cash, bank transfer, or another manual method.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleOfflinePayments}
+                className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${offlinePaymentsEnabled ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+              >
+                {offlinePaymentsEnabled ? "Enabled" : "Enable"}
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-sm font-semibold text-slate-900">How it works</p>
+              <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
+                <li>• Customers can choose offline payment at checkout.</li>
+                <li>• You can confirm payment manually from the order dashboard.</li>
+                <li>• Add notes for pickup, invoicing, or bank-transfer instructions.</li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -149,9 +217,10 @@ export default function PaymentsPage() {
           </Link>
           <button
             type="submit"
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            disabled={isSaving}
+            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save changes
+            {isSaving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </form>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 type Store = {
   id: string;
@@ -30,6 +30,7 @@ type Product = {
   images: string[];
   status: "DRAFT" | "PUBLISHED" | "ACTIVE" | "ARCHIVED";
   categoryId: string | null;
+  categoryName?: string | null;
   variants: ProductVariant[];
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -43,6 +44,9 @@ type ProductsDashboardProps = {
   setupError?: string | null;
 };
 
+type SortKey = "name" | "sku" | "price" | "category" | "updated";
+type SortDirection = "asc" | "desc";
+
 export function ProductsDashboard({
   initialStores,
   initialProducts,
@@ -54,6 +58,8 @@ export function ProductsDashboard({
   const [products, setProducts] = useState(initialProducts);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("updated");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [planNotice, setPlanNotice] = useState<string | null>(null);
   const isStarter = currentPlan === "STARTER";
   const hasReachedProductLimit = isStarter && products.length >= 50;
@@ -73,6 +79,65 @@ export function ProductsDashboard({
       );
     });
   }, [products, query]);
+
+  const sortedProducts = useMemo(() => {
+    const rows = [...filteredProducts];
+
+    rows.sort((left, right) => {
+      const leftCategory = left.categoryName ?? (left.categoryId ? "Assigned" : "Uncategorized");
+      const rightCategory = right.categoryName ?? (right.categoryId ? "Assigned" : "Uncategorized");
+      const leftSku = left.variants[0]?.sku ?? "";
+      const rightSku = right.variants[0]?.sku ?? "";
+      const leftPrice = Number(left.variants[0]?.price ?? 0);
+      const rightPrice = Number(right.variants[0]?.price ?? 0);
+      const leftUpdated = new Date(left.updatedAt).getTime();
+      const rightUpdated = new Date(right.updatedAt).getTime();
+
+      let comparison = 0;
+
+      switch (sortKey) {
+        case "name":
+          comparison = left.title.localeCompare(right.title);
+          break;
+        case "sku":
+          comparison = leftSku.localeCompare(rightSku);
+          break;
+        case "price":
+          comparison = leftPrice - rightPrice;
+          break;
+        case "category":
+          comparison = leftCategory.localeCompare(rightCategory);
+          break;
+        case "updated":
+        default:
+          comparison = leftUpdated - rightUpdated;
+          break;
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return rows;
+  }, [filteredProducts, sortDirection, sortKey]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDirection("asc");
+  }
+
+  function SortIndicator({ active, direction }: { active: boolean; direction: SortDirection }) {
+    return (
+      <span className="ml-1 flex flex-col leading-none text-[9px]">
+        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+      </span>
+    );
+  }
 
   async function refreshProducts(storeId: string) {
     const response = await fetch(`/api/products?storeId=${encodeURIComponent(storeId)}`, {
@@ -156,7 +221,7 @@ export function ProductsDashboard({
                     );
                   }
                 }}
-                className={`inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 ${
+                className={`inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto ${
                   hasReachedProductLimit ? "cursor-not-allowed opacity-60" : ""
                 }`}
                 aria-disabled={hasReachedProductLimit}
@@ -179,20 +244,6 @@ export function ProductsDashboard({
               {planNotice}
             </div>
           ) : null}
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <StatCard label="Stores" value={stores.length.toString()} note="Tenant records available" />
-            <StatCard
-              label="Products"
-              value={products.length.toString()}
-              note="Loaded for the selected store"
-            />
-            <StatCard
-              label="Variants"
-              value={products.reduce((total, product) => total + product.variants.length, 0).toString()}
-              note="Across all loaded products"
-            />
-          </div>
 
           <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <label className="flex w-full flex-col gap-2 lg:max-w-md">
@@ -221,90 +272,181 @@ export function ProductsDashboard({
           </div>
 
           <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {filteredProducts.length === 0 ? (
+            {sortedProducts.length === 0 ? (
               <div className="p-10 text-center text-slate-500">
                 No products yet for this store.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Product</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Variants</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Images</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
-                          <p className="font-semibold text-slate-900">{product.title}</p>
-                          <p className="text-xs text-slate-500">/{product.slug}</p>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            {product.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-slate-700">{product.variants.length}</td>
-                        <td className="px-4 py-3 align-top text-slate-700">{product.images.length}</td>
-                        <td className="px-4 py-3 align-top text-slate-600">
-                          {new Date(product.updatedAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                window.location.href = `/dashboard/products/${product.id}`;
-                              }}
-                              aria-label="Edit product"
-                              title="Edit"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
+              <>
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Thumbnail</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                          <button type="button" onClick={() => handleSort("name")} className="flex items-center gap-1 transition hover:text-slate-950">
+                            Name
+                            <SortIndicator active={sortKey === "name"} direction={sortDirection} />
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                          <button type="button" onClick={() => handleSort("sku")} className="flex items-center gap-1 transition hover:text-slate-950">
+                            SKU
+                            <SortIndicator active={sortKey === "sku"} direction={sortDirection} />
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Inventory</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                          <button type="button" onClick={() => handleSort("price")} className="flex items-center gap-1 transition hover:text-slate-950">
+                            Price
+                            <SortIndicator active={sortKey === "price"} direction={sortDirection} />
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                          <button type="button" onClick={() => handleSort("category")} className="flex items-center gap-1 transition hover:text-slate-950">
+                            Category
+                            <SortIndicator active={sortKey === "category"} direction={sortDirection} />
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                          <button type="button" onClick={() => handleSort("updated")} className="flex items-center gap-1 transition hover:text-slate-950">
+                            Updated
+                            <SortIndicator active={sortKey === "updated"} direction={sortDirection} />
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {sortedProducts.map((product) => {
+                        const firstVariant = product.variants[0];
+                        const thumbnailUrl = product.images[0];
+                        const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
+                        const firstSku = firstVariant?.sku ?? "—";
+                        const firstPrice = firstVariant ? `$${Number(firstVariant.price).toFixed(2)}` : "—";
+                        const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
+
+                        return (
+                          <tr key={product.id} className="hover:bg-slate-50/70">
+                            <td className="px-4 py-3 align-top">
+                              {thumbnailUrl ? (
+                                <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
+                              ) : (
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">
+                                  No image
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <Link
+                                href={`/dashboard/products/${product.id}`}
+                                className="block font-semibold text-slate-900 transition hover:text-cyan-700"
+                              >
+                                {product.title}
+                              </Link>
+                              <p className="text-xs text-slate-500">/{product.slug}</p>
+                            </td>
+                            <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
+                            <td className="px-4 py-3 align-top text-slate-700">{inventoryTotal}</td>
+                            <td className="px-4 py-3 align-top text-slate-700">{firstPrice}</td>
+                            <td className="px-4 py-3 align-top text-slate-700">{categoryLabel}</td>
+                            <td className="px-4 py-3 align-top text-slate-600">
+                              {new Date(product.updatedAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDelete(product.id)}
+                                  aria-label="Delete product"
+                                  title="Delete"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 p-3 md:hidden">
+                  {sortedProducts.map((product) => {
+                    const firstVariant = product.variants[0];
+                    const thumbnailUrl = product.images[0];
+                    const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
+                    const firstSku = firstVariant?.sku ?? "—";
+                    const firstPrice = firstVariant ? `$${Number(firstVariant.price).toFixed(2)}` : "—";
+                    const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
+
+                    return (
+                      <article key={product.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            {thumbnailUrl ? (
+                              <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs text-slate-400">
+                                No image
+                              </div>
+                            )}
+                            <div>
+                              <Link
+                                href={`/dashboard/products/${product.id}`}
+                                className="block font-semibold text-slate-900 transition hover:text-cyan-700"
+                              >
+                                {product.title}
+                              </Link>
+                              <p className="mt-1 text-xs text-slate-500">/{product.slug}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
+                            <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Inventory</p>
+                            <p className="mt-1 font-medium text-slate-700">{inventoryTotal}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Price</p>
+                            <p className="mt-1 font-medium text-slate-700">{firstPrice}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Category</p>
+                            <p className="mt-1 font-medium text-slate-700">{categoryLabel}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                          <p className="text-sm text-slate-500">
+                            Updated {new Date(product.updatedAt).toLocaleDateString()}
+                          </p>
+                          <div className="flex w-full justify-end sm:w-auto">
                             <button
                               type="button"
                               onClick={() => void handleDelete(product.id)}
                               aria-label="Delete product"
-                              title="Delete"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50"
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50 sm:h-8 sm:w-8"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </section>
     </>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
-      <p className="mt-1 text-sm text-slate-500">{note}</p>
-    </div>
   );
 }

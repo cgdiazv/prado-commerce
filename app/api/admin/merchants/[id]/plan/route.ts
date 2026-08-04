@@ -21,11 +21,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const isProduction = process.env.NODE_ENV === "production";
   const adminApiKey = process.env.ADMIN_API_KEY;
   const incomingKey = request.headers.get("x-admin-api-key");
+  const currentUser = await getCurrentUserFromRequest(request);
+  const isSelfServiceRequest = Boolean(currentUser && currentUser.id === id);
   let authorized = Boolean(adminApiKey && incomingKey === adminApiKey);
 
-  if (!authorized && !isProduction) {
-    const currentUser = await getCurrentUserFromRequest(request);
-    authorized = Boolean(currentUser && currentUser.id === id);
+  if (!authorized && isSelfServiceRequest) {
+    authorized = true;
   }
 
   if (!authorized) {

@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import AuthPanel from "./auth-panel";
+import AccountPanel from "./account-panel";
+import OrdersPanel from "./orders-panel";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -37,6 +40,8 @@ export default async function StorefrontPage({ params }: PageProps) {
     },
   });
 
+  const initialCustomer = null;
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
@@ -46,6 +51,23 @@ export default async function StorefrontPage({ params }: PageProps) {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mb-8 grid gap-6 lg:grid-cols-[1.5fr_0.8fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Fresh storefront</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+              Welcome to {store.name}
+            </h2>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+              Customers can create a storefront account here, keep their details on file, and return for a smoother shopping experience.
+            </p>
+          </section>
+          <div className="space-y-4">
+            <AuthPanel storeId={store.id} initialCustomer={initialCustomer} />
+            <AccountPanel />
+            <OrdersPanel />
+          </div>
+        </div>
+
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (

@@ -1,10 +1,10 @@
 import { getCurrentUser } from "@/lib/session";
 import Link from "next/link";
+import { DeleteAccountPanel } from "./delete-account-panel";
 import { ManagePlanPanel } from "./manage-plan-panel";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
-  const isDevMode = process.env.NODE_ENV !== "production";
 
   const accountProfileItems = [
     {
@@ -118,8 +118,11 @@ export default async function SettingsPage() {
           </article>
         </div>
 
-        {isDevMode && user ? (
-          <ManagePlanPanel merchantId={user.id} currentPlan={user.plan} />
+        {user ? (
+          <div className="space-y-5">
+            <ManagePlanPanel merchantId={user.id} currentPlan={user.plan} />
+            <DeleteAccountPanel />
+          </div>
         ) : null}
       </div>
     </section>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { buildCheckoutUrl } from "@/lib/checkout-url";
 
 export async function OPTIONS() {
   return withCorsHeaders(new Response(null, { status: 204 }));
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     const requestUrl = new URL(request.url);
-    const checkoutUrl = `${requestUrl.origin}/checkout/${cart.token}`;
+    const checkoutUrl = buildCheckoutUrl(requestUrl.origin, cart.token);
     const ownerPlan = getPlanOrDefault(cart.store.ownerUser?.plan);
     const limits = getPlanLimits(ownerPlan);
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
+import { getShopperSessionCookieValueFromRequest } from "@/lib/shopper-auth";
 
 export async function OPTIONS() {
   return withCorsHeaders(new Response(null, { status: 204 }));
@@ -112,6 +113,39 @@ async function resolveStoreId(request: Request, bodyStoreId?: string) {
   return bodyStoreId?.trim() || request.headers.get("x-store-id")?.trim() || null;
 }
 
+async function findOrCreateShopperCart(storeId: string, shopperCustomerId: string) {
+  const existingCart = await prisma.cart.findFirst({
+    where: {
+      storeId,
+      customerId: shopperCustomerId,
+    },
+    select: {
+      id: true,
+      storeId: true,
+      token: true,
+      currency: true,
+    },
+  });
+
+  if (existingCart) {
+    return existingCart;
+  }
+
+  return prisma.cart.create({
+    data: {
+      storeId,
+      customerId: shopperCustomerId,
+      currency: "USD",
+    },
+    select: {
+      id: true,
+      storeId: true,
+      token: true,
+      currency: true,
+    },
+  });
+}
+
 async function maybeValidatePublishableKey(request: Request, storeId: string) {
   const publishableKey = request.headers.get("x-publishable-key")?.trim();
   if (!publishableKey) {
@@ -222,6 +256,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const shopperSession = getShopperSessionCookieValueFromRequest(request);
+
     let cart = await findCart({
       cartId: cartId?.trim(),
       cartToken: cartToken?.trim(),
@@ -250,18 +286,22 @@ export async function POST(request: Request) {
         return corsJson({ error: "Invalid publishable key" }, { status: 401 });
       }
 
-      cart = await prisma.cart.create({
-        data: {
-          storeId: store.id,
-          currency: store.currency,
-        },
-        select: {
-          id: true,
-          storeId: true,
-          token: true,
-          currency: true,
-        },
-      });
+      if (shopperSession?.storeId === store.id && shopperSession.customerId) {
+        cart = await findOrCreateShopperCart(store.id, shopperSession.customerId);
+      } else {
+        cart = await prisma.cart.create({
+          data: {
+            storeId: store.id,
+            currency: store.currency,
+          },
+          select: {
+            id: true,
+            storeId: true,
+            token: true,
+            currency: true,
+          },
+        });
+      }
     }
 
     if (!cart) {

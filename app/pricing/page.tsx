@@ -178,7 +178,7 @@ export default function PricingPage() {
             Every tier includes core checkout and storefront capabilities.
           </p>
 
-          <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-cyan-200/35 bg-cyan-300/10 p-1">
+          <div className="mt-24 inline-flex items-center gap-1 rounded-full border border-cyan-200/35 bg-cyan-300/10 p-1">
             <button
               type="button"
               onClick={() => setBillingMode("monthly")}
@@ -205,7 +205,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="mt-24 grid gap-4 lg:grid-cols-3">
+        <section className="mt-8 mb-24 grid gap-4 lg:grid-cols-3">
           {tiers.map((tier) => (
             <article
               key={tier.name}

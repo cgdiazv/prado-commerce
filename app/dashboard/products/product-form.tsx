@@ -284,10 +284,10 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         productType: productForm.productType,
         categoryId: productForm.categoryId || null,
         variants: variants
-          .filter((variant) => variant.title.trim() && variant.price.trim())
+          .filter((variant) => variant.price.trim())
           .map((variant) => ({
             sku: variant.sku.trim() || null,
-            title: variant.title.trim(),
+            title: variant.title.trim() || productForm.title.trim() || "Default",
             price: variant.price,
             compareAtPrice: variant.compareAtPrice.trim() || null,
             inventory: isNonPhysicalProduct ? 0 : Number.parseInt(variant.inventory, 10) || 0,
@@ -533,10 +533,11 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             <button
               type="button"
               onClick={addVariantRow}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              aria-label="Add variant"
+              title="Add variant"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
             >
               <Plus className="h-4 w-4" />
-              Add variant
             </button>
           </div>
 

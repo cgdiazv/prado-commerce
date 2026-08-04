@@ -52,6 +52,7 @@ model Store {
   currency       String     @default("USD")
   timezone       String     @default("America/New_York")
   allowedDomains String[]
+  offlinePaymentsEnabled Boolean @default(false)
 
   apiKeys        ApiKey[]
   products       Product[]
@@ -176,20 +177,24 @@ model ProductVariant {
 // ==========================================
 
 model Cart {
-  id        String     @id @default(cuid())
-  storeId   String
-  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  id          String     @id @default(cuid())
+  storeId     String
+  store       Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  token     String     @unique @default(cuid())
+  customerId  String?
+  customer    Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
-  currency  String     @default("USD")
-  items     CartItem[]
+  token       String     @unique @default(cuid())
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  currency    String     @default("USD")
+  items       CartItem[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([storeId])
   @@index([token])
+  @@index([customerId])
 }
 
 model CartItem {
@@ -224,8 +229,10 @@ model Customer {
   phone     String?
   shippingAddress Json?
   billingAddress  Json?
+  savedAddresses  Json?
 
   orders    Order[]
+  carts     Cart[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -259,6 +266,7 @@ model Order {
 
   shippingAddress Json?
   billingAddress  Json?
+  paymentMethod   String?       @default("card")
 
   items           OrderItem[]
 

@@ -219,10 +219,10 @@ export function ProductsDashboard({
         status: productForm.status,
         categoryId: productForm.categoryId || null,
         variants: variants
-          .filter((variant) => variant.title.trim() && variant.price.trim())
+          .filter((variant) => variant.price.trim())
           .map((variant) => ({
             sku: variant.sku.trim() || null,
-            title: variant.title.trim(),
+            title: variant.title.trim() || productForm.title.trim() || "Default",
             price: variant.price,
             compareAtPrice: variant.compareAtPrice.trim() || null,
             inventory: Number.parseInt(variant.inventory, 10) || 0,

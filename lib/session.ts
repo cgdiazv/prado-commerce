@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-const SESSION_COOKIE = "prado_session";
-const SESSION_SEPARATOR = "::";
+export const SESSION_COOKIE = "prado_session";
+export const SESSION_SEPARATOR = "::";
 
 type SessionUser = {
   id: string;

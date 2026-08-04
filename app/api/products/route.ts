@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
@@ -22,6 +23,18 @@ function isPrismaError(error: unknown, code: string) {
   );
 }
 
+function toDecimal(input: string | number | null | undefined, fallback: string | number | null = null) {
+  if (input === null || input === undefined || input === "") {
+    if (fallback === null || fallback === undefined || fallback === "") {
+      return null;
+    }
+
+    return new Prisma.Decimal(String(fallback));
+  }
+
+  return new Prisma.Decimal(String(input));
+}
+
 function parseVariants(variants: unknown): ProductVariantInput[] {
   if (!Array.isArray(variants)) {
     return [];
@@ -36,13 +49,13 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
 
     const candidate = variant as Partial<ProductVariantInput>;
 
-    if (!candidate.title || candidate.price === undefined) {
+    if (candidate.price === undefined) {
       continue;
     }
 
     parsed.push({
       sku: candidate.sku ?? null,
-      title: candidate.title,
+      title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title : "Default",
       price: candidate.price,
       compareAtPrice: candidate.compareAtPrice ?? null,
       inventory: candidate.inventory ?? 0,
@@ -91,6 +104,12 @@ export async function GET(request: Request) {
         categoryId: true,
         createdAt: true,
         updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         variants: {
           select: {
             id: true,
@@ -108,7 +127,12 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json(products);
+    return NextResponse.json(
+      products.map((product) => ({
+        ...product,
+        categoryName: product.category?.name ?? null,
+      })),
+    );
   } catch (error) {
     console.error("[PRODUCTS_GET_ERROR]", error);
 
@@ -210,11 +234,8 @@ export async function POST(request: Request) {
               create: parsedVariants.map((variant) => ({
                 sku: variant.sku ?? null,
                 title: variant.title,
-                price: variant.price,
-                compareAtPrice:
-                  variant.compareAtPrice === null || variant.compareAtPrice === undefined
-                    ? null
-                    : variant.compareAtPrice,
+                price: toDecimal(variant.price, 0) ?? new Prisma.Decimal("0"),
+                compareAtPrice: toDecimal(variant.compareAtPrice, null),
                 inventory: variant.inventory ?? 0,
                 trackInventory: variant.trackInventory ?? true,
                 ...(variant.options === null || variant.options === undefined

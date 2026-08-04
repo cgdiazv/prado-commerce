@@ -50,6 +50,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             createdAt: "desc",
           },
           include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             variants: true,
           },
         })
@@ -64,6 +70,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         price: variant.price.toString(),
         compareAtPrice: variant.compareAtPrice?.toString() ?? null,
       })),
+      categoryName: product.category?.name ?? null,
     }));
 
     return (

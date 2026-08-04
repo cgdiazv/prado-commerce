@@ -211,32 +211,24 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
           </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={openCreateModal}
-                disabled={hasReachedStoreLimit}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Plus className="h-4 w-4" />
-                New store
-              </button>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+              <div className="group relative w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  disabled={hasReachedStoreLimit}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  New store
+                </button>
+                {isStarter ? (
+                  <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800 shadow-lg group-hover:block group-focus-within:block sm:w-80">
+                    Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-
-          {isStarter ? (
-            <div className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
-              Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.
-            </div>
-          ) : null}
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <StatCard label="Stores" value={stores.length.toString()} note="Your active storefronts" />
-            <StatCard
-              label="Domains"
-              value={stores.filter((store) => Boolean(store.customDomain)).length.toString()}
-              note="Stores with custom domains"
-            />
           </div>
 
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -259,80 +251,151 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                 No stores match your search.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Store</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Domain</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Currency</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Timezone</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Allowed domains</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {filteredStores.map((store) => {
-                      const domainLabel = store.customDomain || `${store.slug}.pradocommerce.com`;
+              <>
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Store</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Domain</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Currency</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Timezone</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Allowed domains</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
+                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {filteredStores.map((store) => {
+                        const domainLabel = store.customDomain || `${store.slug}.pradocommerce.com`;
 
-                      return (
-                        <tr key={store.id} className="hover:bg-slate-50/70">
-                          <td className="px-4 py-3 align-top">
-                            <p className="font-semibold text-slate-900">{store.name}</p>
-                            <p className="text-xs text-slate-500">/{store.slug}</p>
-                          </td>
-                          <td className="px-4 py-3 align-top">
+                        return (
+                          <tr key={store.id} className="hover:bg-slate-50/70">
+                            <td className="px-4 py-3 align-top">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(store)}
+                                className="text-left"
+                              >
+                                <p className="font-semibold text-slate-900 transition hover:text-cyan-700">{store.name}</p>
+                                <p className="text-xs text-slate-500">/{store.slug}</p>
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <a
+                                href={`https://${domainLabel}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-cyan-700 transition hover:text-cyan-800"
+                              >
+                                {domainLabel} ↗
+                              </a>
+                            </td>
+                            <td className="px-4 py-3 align-top text-slate-700">{store.currency}</td>
+                            <td className="px-4 py-3 align-top text-slate-700">{store.timezone}</td>
+                            <td className="px-4 py-3 align-top text-slate-600">
+                              {store.allowedDomains.length > 0 ? store.allowedDomains.join(", ") : "None"}
+                            </td>
+                            <td className="px-4 py-3 align-top text-slate-600">
+                              {new Date(store.updatedAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  disabled={deletingStoreId === store.id}
+                                  onClick={() => {
+                                    if (confirm(`Delete "${store.name}"? This cannot be undone.`)) {
+                                      void handleDelete(store.id);
+                                    }
+                                  }}
+                                  aria-label="Delete store"
+                                  title={deletingStoreId === store.id ? "Deleting" : "Delete"}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 p-3 md:hidden">
+                  {filteredStores.map((store) => {
+                    const domainLabel = store.customDomain || `${store.slug}.pradocommerce.com`;
+
+                    return (
+                      <article key={store.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(store)}
+                              className="text-left"
+                            >
+                              <p className="font-semibold text-slate-900 transition hover:text-cyan-700">{store.name}</p>
+                              <p className="mt-1 text-xs text-slate-500">/{store.slug}</p>
+                            </button>
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                            {store.currency}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex flex-col gap-3 text-sm text-slate-600">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Domain</p>
                             <a
                               href={`https://${domainLabel}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm font-medium text-cyan-700 transition hover:text-cyan-800"
+                              className="mt-1 block font-medium text-cyan-700"
                             >
-                              {domainLabel} ↗
+                              {domainLabel}
                             </a>
-                          </td>
-                          <td className="px-4 py-3 align-top text-slate-700">{store.currency}</td>
-                          <td className="px-4 py-3 align-top text-slate-700">{store.timezone}</td>
-                          <td className="px-4 py-3 align-top text-slate-600">
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Timezone</p>
+                            <p className="mt-1 font-medium text-slate-700">{store.timezone}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 border-t border-slate-200 pt-3">
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Allowed domains</p>
+                          <p className="mt-1 text-sm text-slate-600">
                             {store.allowedDomains.length > 0 ? store.allowedDomains.join(", ") : "None"}
-                          </td>
-                          <td className="px-4 py-3 align-top text-slate-600">
-                            {new Date(store.updatedAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 align-top">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(store)}
-                                 aria-label="Edit store"
-                                 title="Edit"
-                                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                              >
-                                 <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={deletingStoreId === store.id}
-                                onClick={() => {
-                                  if (confirm(`Delete "${store.name}"? This cannot be undone.`)) {
-                                    void handleDelete(store.id);
-                                  }
-                                }}
-                                 aria-label="Delete store"
-                                 title={deletingStoreId === store.id ? "Deleting" : "Delete"}
-                                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                 <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </p>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                          <p className="text-sm text-slate-500">
+                            Updated {new Date(store.updatedAt).toLocaleDateString()}
+                          </p>
+                          <div className="flex w-full justify-end gap-2 sm:w-auto">
+                            <button
+                              type="button"
+                              disabled={deletingStoreId === store.id}
+                              onClick={() => {
+                                if (confirm(`Delete "${store.name}"? This cannot be undone.`)) {
+                                  void handleDelete(store.id);
+                                }
+                              }}
+                              aria-label="Delete store"
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </section>
