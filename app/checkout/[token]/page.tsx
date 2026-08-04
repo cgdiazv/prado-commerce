@@ -10,8 +10,13 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
   const { token } = await params;
   const normalizedToken = decodeURIComponent(token).trim();
 
-  const cart = await prisma.cart.findUnique({
-    where: { token: normalizedToken },
+  const cart = await prisma.cart.findFirst({
+    where: {
+      OR: [
+        { token: normalizedToken },
+        { id: normalizedToken },
+      ],
+    },
     select: {
       id: true,
       token: true,

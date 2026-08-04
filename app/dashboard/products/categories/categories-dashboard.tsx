@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 
 type Store = {
   id: string;
@@ -221,6 +222,20 @@ export function CategoriesDashboard({
   return (
     <>
       <section>
+        <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <Link href="/dashboard" className="transition hover:text-slate-900">
+            Dashboard
+          </Link>
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <Link href="/dashboard/products" className="transition hover:text-slate-900">
+            Products
+          </Link>
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <span className="font-semibold text-slate-900" aria-current="page">
+            Categories
+          </span>
+        </nav>
+
         {setupError ? (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {setupError}

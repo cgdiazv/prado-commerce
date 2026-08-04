@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
@@ -126,6 +127,9 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     }),
   ]);
 
+  const activeCategoryObj = activeCategory ? categories.find((c) => c.slug === activeCategory) : null;
+  const activeCategoryName = activeCategoryObj ? activeCategoryObj.name : activeCategory ? activeCategory : null;
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <StorefrontNavbar
@@ -135,6 +139,30 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+        <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <Link href="/" className="transition hover:text-slate-900">
+            Home
+          </Link>
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <Link href="/" className="transition hover:text-slate-900">
+            Categories
+          </Link>
+          {activeCategoryName ? (
+            <>
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <span className="font-semibold text-slate-900" aria-current="page">
+                {activeCategoryName}
+              </span>
+            </>
+          ) : (
+            <>
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <span className="font-semibold text-slate-900" aria-current="page">
+                All Products
+              </span>
+            </>
+          )}
+        </nav>
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (

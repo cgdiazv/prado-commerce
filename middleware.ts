@@ -122,7 +122,7 @@ export function middleware(request: NextRequest) {
   if (parts.length >= 3) {
     const slug = parts[0];
     if (slug && !reservedSubdomains.includes(slug)) {
-      if (pathname.startsWith("/api/") || pathname === "/cart.js") {
+      if (pathname.startsWith("/api/") || pathname === "/cart.js" || pathname.startsWith("/checkout")) {
         return NextResponse.next();
       }
       const url = request.nextUrl.clone();
@@ -135,7 +135,7 @@ export function middleware(request: NextRequest) {
 
   // Custom domain (for example, from GoDaddy) -> tenant storefront by domain lookup.
   if (!isPlatformHostname(hostname)) {
-    if (pathname.startsWith("/api/") || pathname === "/cart.js") {
+    if (pathname.startsWith("/api/") || pathname === "/cart.js" || pathname.startsWith("/checkout")) {
       return NextResponse.next();
     }
     const url = request.nextUrl.clone();

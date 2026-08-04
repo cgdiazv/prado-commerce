@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
@@ -35,6 +37,13 @@ export default async function StorefrontProductPage({ params }: PageProps) {
       slug: true,
       description: true,
       images: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
       variants: {
         select: {
           id: true,
@@ -61,6 +70,27 @@ export default async function StorefrontProductPage({ params }: PageProps) {
       <StorefrontNavbar storeName={store.name} basePath={base} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+        <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <Link href={base ? `${base}/` : "/"} className="transition hover:text-slate-900">
+            Home
+          </Link>
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <Link href={base ? `${base}/` : "/"} className="transition hover:text-slate-900">
+            Categories
+          </Link>
+          {product.category ? (
+            <>
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <Link href={base ? `${base}/?category=${product.category.slug}` : `/?category=${product.category.slug}`} className="transition hover:text-slate-900">
+                {product.category.name}
+              </Link>
+            </>
+          ) : null}
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+          <span className="font-semibold text-slate-900" aria-current="page">
+            {product.title}
+          </span>
+        </nav>
         <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             {product.images[0] ? (
