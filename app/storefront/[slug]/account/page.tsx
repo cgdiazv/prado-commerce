@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Script from "next/script";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ShoppingCart, User } from "lucide-react";
@@ -73,8 +72,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
         </main>
-        <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
-        <Script src="/cart.js" strategy="afterInteractive" />
+        <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
         <StorefrontFooter storeName={store.name} />
       </div>
     );
@@ -87,8 +85,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
         <AccountPanel />
         <OrdersPanel />
       </main>
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
-      <Script src="/cart.js" strategy="afterInteractive" />
+      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
       <StorefrontFooter storeName={store.name} />
     </div>
   );

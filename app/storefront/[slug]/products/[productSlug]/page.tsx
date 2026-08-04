@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Script from "next/script";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ShoppingCart, User } from "lucide-react";
@@ -133,8 +132,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
         </div>
       </main>
 
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
-      <Script src="/cart.js" strategy="afterInteractive" />
+      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
       <StorefrontFooter storeName={store.name} />
     </div>
   );
