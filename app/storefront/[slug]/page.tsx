@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import StorefrontFooter from "../storefront-footer";
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string }> };
 
@@ -110,29 +111,6 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               </button>
             </div>
           </div>
-          {categories.length > 0 && (
-            <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
-              <Link
-                href={`${base}/`}
-                className={`text-sm font-medium transition-colors ${
-                  !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                All
-              </Link>
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`${base}/?category=${cat.slug}`}
-                  className={`text-sm font-medium transition-colors ${
-                    activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </nav>
-          )}
         </div>
       </header>
 
@@ -147,8 +125,14 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               return (
                 <div
                   key={product.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+                  className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
                 >
+                  {/* stretched link covers the whole card; button sits above it */}
+                  <Link
+                    href={`${base}/products/${product.id}`}
+                    className="absolute inset-0 z-0"
+                    aria-label={product.title}
+                  />
                   {product.images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -162,15 +146,10 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                     </div>
                   )}
                   <div className="p-4">
-                    <Link
-                      href={`${base}/products/${product.id}`}
-                      className="block"
-                    >
-                      <h2 className="font-semibold text-slate-900">{product.title}</h2>
-                      {product.description ? (
-                        <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
-                      ) : null}
-                    </Link>
+                    <h2 className="font-semibold text-slate-900">{product.title}</h2>
+                    {product.description ? (
+                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
+                    ) : null}
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
                         <span className="text-sm font-semibold text-slate-700">
@@ -182,7 +161,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                           type="button"
                           data-prado-add={variantId}
                           data-prado-add-to-cart={variantId}
-                          className="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+                          className="relative z-10 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
                         >
                           Add to cart
                         </button>
@@ -196,7 +175,9 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         )}
       </main>
 
-      <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
+      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
+      <Script src="/cart.js" strategy="afterInteractive" />
+      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

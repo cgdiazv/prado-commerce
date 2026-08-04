@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import StorefrontFooter from "../../../storefront-footer";
 
 type PageProps = {
   params: Promise<{ slug: string; productSlug: string }>;
@@ -132,7 +133,9 @@ export default async function StorefrontProductPage({ params }: PageProps) {
         </div>
       </main>
 
-      <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
+      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
+      <Script src="/cart.js" strategy="afterInteractive" />
+      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

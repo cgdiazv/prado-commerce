@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import AuthPanel from "../auth-panel";
 import AccountPanel from "../account-panel";
 import OrdersPanel from "../orders-panel";
+import StorefrontFooter from "../../storefront-footer";
 
 const SHOPPER_SESSION_COOKIE = "prado_shop_session";
 
@@ -72,7 +73,9 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
         </main>
-        <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
+        <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
+        <Script src="/cart.js" strategy="afterInteractive" />
+        <StorefrontFooter storeName={store.name} />
       </div>
     );
   }
@@ -84,7 +87,9 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
         <AccountPanel />
         <OrdersPanel />
       </main>
-      <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
+      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};` }} />
+      <Script src="/cart.js" strategy="afterInteractive" />
+      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

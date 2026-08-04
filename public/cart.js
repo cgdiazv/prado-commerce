@@ -6,17 +6,14 @@
   "use strict";
 
   const currentScript = document.currentScript || document.querySelector("script[data-store-id]");
-  if (!currentScript) {
-    console.error("[Prado Commerce] Script tag missing required attributes.");
-    return;
-  }
+  const _cfg = (typeof window !== "undefined" && window.PRADO_STORE_CONFIG) || {};
 
-  const STORE_ID = currentScript.getAttribute("data-store-id");
-  const PUBLISHABLE_KEY = currentScript.getAttribute("data-api-key");
-  const API_HOST = currentScript.getAttribute("data-api-host") || (typeof window !== "undefined" ? window.location.origin : "https://api.pradocommerce.com");
+  const STORE_ID = currentScript?.getAttribute("data-store-id") || _cfg.storeId || null;
+  const PUBLISHABLE_KEY = currentScript?.getAttribute("data-api-key") || _cfg.publishableKey || null;
+  const API_HOST = currentScript?.getAttribute("data-api-host") || _cfg.apiHost || (typeof window !== "undefined" ? window.location.origin : "https://api.pradocommerce.com");
 
   if (!STORE_ID) {
-    console.error("[Prado Commerce] Missing data-store-id on script tag.");
+    console.error("[Prado Commerce] Missing data-store-id on script tag or window.PRADO_STORE_CONFIG.");
     return;
   }
 
