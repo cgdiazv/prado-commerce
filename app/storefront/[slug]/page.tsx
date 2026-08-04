@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import StorefrontNavbar from "../storefront-navbar";
 import StorefrontFooter from "../storefront-footer";
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string }> };
@@ -61,57 +61,12 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between gap-6">
-            <h1 className="shrink-0 text-xl font-semibold tracking-tight">{store.name}</h1>
-            {categories.length > 0 && (
-              <nav className="flex flex-1 flex-wrap items-center gap-x-5 gap-y-1">
-                <Link
-                  href={`${base}/`}
-                  className={`text-sm font-medium transition-colors ${
-                    !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  All
-                </Link>
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`${base}/?category=${cat.slug}`}
-                    className={`text-sm font-medium transition-colors ${
-                      activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </nav>
-            )}
-            <div className="flex shrink-0 items-center gap-3">
-              <Link
-                href={`${base}/account`}
-                aria-label="Account"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-              >
-                <User size={20} />
-              </Link>
-              <button
-                type="button"
-                data-prado-cart-toggle
-                aria-label="Cart"
-                className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-              >
-                <ShoppingCart size={20} />
-                <span
-                  data-prado-cart-count
-                  className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <StorefrontNavbar
+        storeName={store.name}
+        basePath={base}
+        categories={categories}
+        activeCategory={activeCategory}
+      />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         {products.length === 0 ? (

@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import AuthPanel from "../auth-panel";
 import AccountPanel from "../account-panel";
 import OrdersPanel from "../orders-panel";
+import StorefrontNavbar from "../../storefront-navbar";
 import StorefrontFooter from "../../storefront-footer";
 
 const SHOPPER_SESSION_COOKIE = "prado_shop_session";
@@ -31,43 +30,10 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   const parts = decodeURIComponent(sessionRaw).split("::");
   const isLoggedIn = parts.length === 3 && parts[0] === store.id && Boolean(parts[1]);
 
-  const Header = (
-    <header className="border-b border-slate-200 bg-white px-6 py-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between gap-6">
-          <Link href={`${base}/`} className="shrink-0 text-xl font-semibold tracking-tight hover:opacity-75 transition-opacity">
-            {store.name}
-          </Link>
-          <div className="flex shrink-0 items-center gap-3">
-            <Link
-              href={`${base}/account`}
-              aria-label="Account"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-900 bg-slate-100"
-            >
-              <User size={20} />
-            </Link>
-            <button
-              type="button"
-              data-prado-cart-toggle
-              aria-label="Cart"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <ShoppingCart size={20} />
-              <span
-                data-prado-cart-count
-                className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-
   if (!isLoggedIn) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-        {Header}
+        <StorefrontNavbar storeName={store.name} basePath={base} isAccountActive />
         <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
@@ -80,7 +46,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {Header}
+      <StorefrontNavbar storeName={store.name} basePath={base} isAccountActive />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-6 py-12">
         <AccountPanel />
         <OrdersPanel />

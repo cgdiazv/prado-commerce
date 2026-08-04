@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
 
 type PageProps = {
@@ -59,24 +59,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
 
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-        <header className="border-b border-slate-200 bg-white px-6 py-4">
-          <div className="mx-auto max-w-6xl">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-75 transition-opacity">
-                {store.name}
-              </Link>
-              <div className="flex items-center gap-3">
-                <Link href="/account" aria-label="Account" className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
-                  <User size={20} />
-                </Link>
-                <button type="button" data-prado-cart-toggle aria-label="Cart" className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
-                  <ShoppingCart size={20} />
-                  <span data-prado-cart-count className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <StorefrontNavbar storeName={store.name} />
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
           <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
             <div>
@@ -145,57 +128,11 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between gap-6">
-            <h1 className="shrink-0 text-xl font-semibold tracking-tight">{store.name}</h1>
-            {categories.length > 0 && (
-              <nav className="flex flex-1 flex-wrap items-center gap-x-5 gap-y-1">
-                <Link
-                  href="/"
-                  className={`text-sm font-medium transition-colors ${
-                    !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  All
-                </Link>
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/?category=${cat.slug}`}
-                    className={`text-sm font-medium transition-colors ${
-                      activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </nav>
-            )}
-            <div className="flex shrink-0 items-center gap-3">
-              <Link
-                href="/account"
-                aria-label="Account"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-              >
-                <User size={20} />
-              </Link>
-              <button
-                type="button"
-                data-prado-cart-toggle
-                aria-label="Cart"
-                className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-              >
-                <ShoppingCart size={20} />
-                <span
-                  data-prado-cart-count
-                  className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <StorefrontNavbar
+        storeName={store.name}
+        categories={categories}
+        activeCategory={activeCategory}
+      />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         {products.length === 0 ? (
