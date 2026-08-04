@@ -23,21 +23,22 @@ const businessBenefits = [
     title: "Built For Every Business Type",
     detail:
       "From independent makers and local stores to fast-scaling brands, Prado Commerce adapts to physical, digital, and service-based catalogs.",
+    image: "/whyus1.webp",
+    layout: "vertical",
   },
   {
     title: "Global Product Reach",
     detail:
       "Publish products once and connect them to the world through embedded storefront experiences, faster APIs, and flexible domain setup.",
+    image: "/whyus2.webp",
+    layout: "horizontal",
   },
   {
     title: "Stronger Online Presence",
     detail:
       "Unify your brand across your site, checkout flows, and product pages so customers trust what they see and buy with confidence.",
-  },
-  {
-    title: "Revenue Growth Support",
-    detail:
-      "Use centralized store and product management to launch faster campaigns, reduce friction in buying flows, and turn more visits into orders.",
+    image: "/whyus3.webp",
+    layout: "horizontal",
   },
 ];
 
@@ -159,17 +160,27 @@ export default function Home() {
               Prado Commerce gives teams the tools to launch faster, sell smarter, and scale without rebuilding their commerce stack each time they grow.
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
               {businessBenefits.map((benefit) => (
                 <article
                   key={benefit.title}
-                  className="rounded-xl border border-white/20 bg-white/8 p-4"
+                  className={`rounded-xl border border-white/20 bg-white/8 p-4 ${
+                    benefit.layout === "vertical"
+                      ? "lg:row-span-2 lg:min-h-[420px]"
+                      : "lg:min-h-[200px]"
+                  }`}
                 >
-                  <div className="mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40">
+                  <div className={`mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40 ${
+                    benefit.layout === "vertical" ? "min-h-[160px]" : ""
+                  }`}>
                     <img
-                      src="/prado-storefront.svg"
+                      src={benefit.image}
                       alt={`${benefit.title} illustration`}
-                      className="h-28 w-full object-cover object-top"
+                      className={`h-full w-full object-cover object-center ${
+                        benefit.layout === "vertical"
+                          ? "min-h-[160px] sm:min-h-[180px] lg:min-h-[220px]"
+                          : "h-32 sm:h-36 lg:h-40"
+                      }`}
                       loading="lazy"
                     />
                   </div>
