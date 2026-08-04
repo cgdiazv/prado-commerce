@@ -46,6 +46,7 @@ model Store {
   name           String
   slug           String     @unique
   customDomain   String?    @unique
+  mainColor      String     @default("#0f172a")
   ownerId        String
   ownerUserId    String?
   ownerUser      MerchantUser? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)

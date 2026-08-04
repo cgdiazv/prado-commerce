@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { normalizeMainColor } from "@/lib/branding";
 
 export async function GET(request: Request) {
   try {
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
         name: true,
         slug: true,
         customDomain: true,
+        mainColor: true,
         currency: true,
         timezone: true,
         allowedDomains: true,
@@ -58,10 +60,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, slug, customDomain, currency, timezone, allowedDomains } = body as {
+    const { name, slug, customDomain, mainColor, currency, timezone, allowedDomains } = body as {
       name?: string;
       slug?: string;
       customDomain?: string | null;
+      mainColor?: string;
       currency?: string;
       timezone?: string;
       allowedDomains?: string[];
@@ -83,6 +86,7 @@ export async function POST(req: Request) {
 
     const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     const formattedCustomDomain = customDomain?.trim().toLowerCase() || null;
+    const formattedMainColor = normalizeMainColor(mainColor ?? "#0f172a");
     const formattedAllowedDomains = (allowedDomains ?? [])
       .map((domain) => domain.trim().toLowerCase())
       .filter(Boolean);
@@ -123,6 +127,7 @@ export async function POST(req: Request) {
         name: name.trim(),
         slug: formattedSlug,
         customDomain: formattedCustomDomain,
+        mainColor: formattedMainColor,
         ownerId: user.id,
         ownerUserId: user.id,
         currency: typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : undefined,

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getStoreBrandingCssVars } from "@/lib/branding";
 import StorefrontNavbar from "../storefront-navbar";
 import StorefrontFooter from "../storefront-footer";
 
@@ -18,6 +20,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       id: true,
       name: true,
       slug: true,
+      mainColor: true,
       currency: true,
     },
   });
@@ -62,12 +65,16 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const activeCategoryName = activeCategoryObj ? activeCategoryObj.name : activeCategory ? activeCategory : null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div
+      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
+      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+    >
       <StorefrontNavbar
         storeName={store.name}
         basePath={base}
         categories={categories}
         activeCategory={activeCategory}
+        mainColor={store.mainColor}
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -141,7 +148,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                           type="button"
                           data-prado-add={variantId}
                           data-prado-add-to-cart={variantId}
-                          className="relative z-10 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+                          className="relative z-10 rounded-full bg-[var(--store-main-color)] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
                         >
                           Add to cart
                         </button>

@@ -1,0 +1,2 @@
+ALTER TABLE "Store"
+ADD COLUMN "mainColor" TEXT NOT NULL DEFAULT '#0f172a';

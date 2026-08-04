@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { ShoppingCart, User } from "lucide-react";
+import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 
 export type StorefrontCategory = {
   id: string;
@@ -13,6 +15,7 @@ type StorefrontNavbarProps = {
   categories?: StorefrontCategory[];
   activeCategory?: string;
   isAccountActive?: boolean;
+  mainColor?: string;
 };
 
 export default function StorefrontNavbar({
@@ -21,12 +24,17 @@ export default function StorefrontNavbar({
   categories = [],
   activeCategory,
   isAccountActive = false,
+  mainColor = "#0f172a",
 }: StorefrontNavbarProps) {
   const homeHref = basePath ? `${basePath}/` : "/";
   const accountHref = basePath ? `${basePath}/account` : "/account";
+  const resolvedMainColor = normalizeMainColor(mainColor);
 
   return (
-    <header className="border-b border-slate-200 bg-white px-6 py-4">
+    <header
+      style={getStoreBrandingCssVars(resolvedMainColor) as CSSProperties}
+      className="border-b border-slate-200 bg-white px-6 py-4"
+    >
       <div className="mx-auto max-w-6xl">
         <div className="flex items-center justify-between gap-6">
           <Link
@@ -41,8 +49,9 @@ export default function StorefrontNavbar({
               <Link
                 href={homeHref}
                 className={`text-sm font-medium transition-colors ${
-                  !activeCategory ? "font-semibold text-slate-900" : "text-slate-500 hover:text-slate-900"
+                  !activeCategory ? "font-semibold" : "text-slate-500 hover:text-slate-900"
                 }`}
+                style={!activeCategory ? { color: resolvedMainColor } : undefined}
               >
                 All
               </Link>
@@ -51,8 +60,9 @@ export default function StorefrontNavbar({
                   key={cat.id}
                   href={basePath ? `${basePath}/?category=${cat.slug}` : `/?category=${cat.slug}`}
                   className={`text-sm font-medium transition-colors ${
-                    activeCategory === cat.slug ? "font-semibold text-slate-900" : "text-slate-500 hover:text-slate-900"
+                    activeCategory === cat.slug ? "font-semibold" : "text-slate-500 hover:text-slate-900"
                   }`}
+                  style={activeCategory === cat.slug ? { color: resolvedMainColor } : undefined}
                 >
                   {cat.name}
                 </Link>
@@ -81,7 +91,7 @@ export default function StorefrontNavbar({
               <ShoppingCart size={20} />
               <span
                 data-prado-cart-count
-                className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
+                className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-[var(--store-main-color)] px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
               />
             </button>
           </div>

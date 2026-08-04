@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
@@ -44,7 +45,7 @@ const defaultFormState: StoreFormState = {
 export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupError = null }: StoresDashboardProps) {
   const [stores, setStores] = useState(initialStores);
   const [query, setQuery] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [formState, setFormState] = useState<StoreFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,17 +71,6 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
     });
   }, [query, stores]);
 
-  function openCreateModal() {
-    if (hasReachedStoreLimit) {
-      setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add more stores.");
-      return;
-    }
-    setEditingStore(null);
-    setFormState(defaultFormState);
-    setError(null);
-    setIsCreateOpen(true);
-  }
-
   function openEditModal(store: Store) {
     setEditingStore(store);
     setFormState({
@@ -93,11 +83,11 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
       allowedDomains: store.allowedDomains.join(", "),
     });
     setError(null);
-    setIsCreateOpen(true);
+    setIsEditOpen(true);
   }
 
   function closeModal() {
-    setIsCreateOpen(false);
+    setIsEditOpen(false);
     setEditingStore(null);
     setError(null);
     setFormState(defaultFormState);
@@ -150,21 +140,17 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
           .filter(Boolean),
       };
 
-      const response = editingStore
-        ? await fetch(`/api/stores/${editingStore.id}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          })
-        : await fetch("/api/stores", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
+      if (!editingStore) {
+        throw new Error("Store not found for editing.");
+      }
+
+      const response = await fetch(`/api/stores/${editingStore.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const result = await response.json();
 
@@ -213,15 +199,26 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
               <div className="group relative w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  disabled={hasReachedStoreLimit}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  New store
-                </button>
+                {hasReachedStoreLimit ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add more stores.");
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white opacity-60 sm:w-auto"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New store
+                  </button>
+                ) : (
+                  <Link
+                    href="/dashboard/stores/new"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New store
+                  </Link>
+                )}
                 {isStarter ? (
                   <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800 shadow-lg group-hover:block group-focus-within:block sm:w-80">
                     Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.
@@ -400,16 +397,16 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
           </div>
         </section>
 
-      {isCreateOpen ? (
+      {isEditOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-sm">
           <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/60 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {editingStore ? "Edit store" : "New store"}
+                  Edit store
                 </p>
                 <h2 className="mt-1 text-2xl font-semibold text-slate-950">
-                  {editingStore ? "Update tenant settings" : "Create a new tenant"}
+                  Update tenant settings
                 </h2>
               </div>
               <button
@@ -492,7 +489,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                   disabled={isSaving}
                   className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSaving ? "Saving..." : editingStore ? "Save changes" : "Create store"}
+                  {isSaving ? "Saving..." : "Save changes"}
                 </button>
               </div>
             </form>
@@ -525,7 +522,7 @@ function StatCard({
   );
 }
 
-function Field({
+export function Field({
   label,
   labelHint,
   value,
@@ -569,7 +566,7 @@ function Field({
   );
 }
 
-const TIMEZONES = [
+export const TIMEZONES = [
   // North America
   { value: "America/New_York", label: "America/New_York (ET)" },
   { value: "America/Chicago", label: "America/Chicago (CT)" },
@@ -658,7 +655,7 @@ const TIMEZONES = [
   { value: "UTC", label: "UTC" },
 ];
 
-const CURRENCIES = [
+export const CURRENCIES = [
   { value: "USD", label: "USD — US Dollar" },
   { value: "EUR", label: "EUR — Euro" },
   { value: "GBP", label: "GBP — British Pound" },
@@ -692,7 +689,7 @@ const CURRENCIES = [
   { value: "MXN", label: "MXN — Mexican Peso" },
 ];
 
-function SelectField({
+export function SelectField({
   label,
   value,
   onChange,

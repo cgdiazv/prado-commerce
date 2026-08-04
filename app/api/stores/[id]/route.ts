@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { normalizeMainColor } from "@/lib/branding";
 
 type RouteContext = {
   params: Promise<{
@@ -22,6 +23,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         customDomain: true,
+        mainColor: true,
         ownerId: true,
         currency: true,
         timezone: true,
@@ -89,6 +91,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name,
       slug,
       customDomain,
+      mainColor,
       currency,
       timezone,
       allowedDomains,
@@ -97,6 +100,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       customDomain?: string | null;
+      mainColor?: string;
       currency?: string;
       timezone?: string;
       allowedDomains?: string[];
@@ -107,6 +111,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       customDomain?: string | null;
+      mainColor?: string;
       currency?: string;
       timezone?: string;
       allowedDomains?: string[];
@@ -123,6 +128,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     if (customDomain !== undefined) {
       updates.customDomain = customDomain?.trim().toLowerCase() || null;
+    }
+
+    if (mainColor !== undefined) {
+      updates.mainColor = normalizeMainColor(mainColor);
     }
 
     if (updates.customDomain) {
@@ -179,6 +188,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         customDomain: true,
+        mainColor: true,
         ownerId: true,
         currency: true,
         timezone: true,

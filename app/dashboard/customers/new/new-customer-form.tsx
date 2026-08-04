@@ -98,88 +98,96 @@ export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: 
   }
 
   return (
-    <section className="mx-auto w-full max-w-4xl">
+    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
         </div>
       ) : null}
 
-      <div className="space-y-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Customers
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            New customer
           </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            Create new customer
-          </h1>
-          <p className="mt-3 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+          <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            Create customer profile
+          </h2>
+          <p className="mt-2 max-w-xl text-sm text-slate-600">
             Add a customer manually to your store records.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+        >
+          Back
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Store</span>
-              <select
-                value={activeStoreId}
-                onChange={(event) => setActiveStoreId(event.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} / {store.currency}
-                  </option>
-                ))}
-              </select>
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Store</span>
+            <select
+              value={activeStoreId}
+              onChange={(event) => setActiveStoreId(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name} / {store.currency}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="customer@example.com"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                required
-              />
-            </label>
+          <label className="flex flex-col gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="customer@example.com"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              required
+            />
+          </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">First name</span>
-              <input
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                placeholder="Jane"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">First name</span>
+            <input
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              placeholder="Jane"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Last name</span>
-              <input
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                placeholder="Doe"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Last name</span>
+            <input
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              placeholder="Doe"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
 
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Phone</span>
-              <input
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="+1 555 123 4567"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
+          <label className="flex flex-col gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Phone</span>
+            <input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+1 555 123 4567"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
 
-            <div className="sm:col-span-2">
-              <p className="text-sm font-semibold text-slate-800">Shipping address</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <p className="text-sm font-semibold text-slate-800">Shipping address</p>
+            <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-2 sm:col-span-2">
                   <span className="text-sm font-medium text-slate-700">Address line 1</span>
                   <input
@@ -239,12 +247,12 @@ export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: 
                     className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                   />
                 </label>
-              </div>
             </div>
+          </div>
 
-            <div className="sm:col-span-2">
-              <p className="text-sm font-semibold text-slate-800">Billing address</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <p className="text-sm font-semibold text-slate-800">Billing address</p>
+            <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-2 sm:col-span-2">
                   <span className="text-sm font-medium text-slate-700">Address line 1</span>
                   <input
@@ -304,38 +312,37 @@ export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: 
                     className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                   />
                 </label>
-              </div>
             </div>
           </div>
+        </div>
 
-          {error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  `/dashboard/customers${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`,
-                )
-              }
-              className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving || !activeStoreId}
-              className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? "Saving..." : "Create customer"}
-            </button>
+        {error ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
           </div>
-        </form>
-      </div>
+        ) : null}
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/dashboard/customers${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`,
+              )
+            }
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving || !activeStoreId}
+            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Saving..." : "Create customer"}
+          </button>
+        </div>
+      </form>
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getStoreBrandingCssVars } from "@/lib/branding";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
 
@@ -29,6 +31,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       id: true,
       name: true,
       slug: true,
+      mainColor: true,
       currency: true,
     },
   });
@@ -59,8 +62,11 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     const primaryVariant = product.variants[0];
 
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-        <StorefrontNavbar storeName={store.name} />
+      <div
+        style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
+        className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+      >
+        <StorefrontNavbar storeName={store.name} mainColor={store.mainColor} />
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
           <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
             <div>
@@ -72,7 +78,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
               )}
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Product details</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">Product details</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h2>
               <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
               <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -84,7 +90,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                     </p>
                   </div>
                   {primaryVariant ? (
-                    <button type="button" data-prado-add={primaryVariant.id} data-prado-add-to-cart={primaryVariant.id} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+                    <button type="button" data-prado-add={primaryVariant.id} data-prado-add-to-cart={primaryVariant.id} className="rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]">
                       Add to cart
                     </button>
                   ) : null}
@@ -131,11 +137,15 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
   const activeCategoryName = activeCategoryObj ? activeCategoryObj.name : activeCategory ? activeCategory : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div
+      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
+      className="min-h-screen bg-slate-50 text-slate-900"
+    >
       <StorefrontNavbar
         storeName={store.name}
         categories={categories}
         activeCategory={activeCategory}
+        mainColor={store.mainColor}
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -209,7 +219,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                           type="button"
                           data-prado-add={variantId}
                           data-prado-add-to-cart={variantId}
-                          className="relative z-10 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+                          className="relative z-10 rounded-full bg-[var(--store-main-color)] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
                         >
                           Add to cart
                         </button>

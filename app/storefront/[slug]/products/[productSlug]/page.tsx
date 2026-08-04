@@ -1,8 +1,10 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getStoreBrandingCssVars } from "@/lib/branding";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
 
@@ -15,7 +17,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, currency: true },
+    select: { id: true, name: true, slug: true, mainColor: true, currency: true },
   });
 
   if (!store) {
@@ -66,8 +68,11 @@ export default async function StorefrontProductPage({ params }: PageProps) {
   const primaryVariant = product.variants[0];
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <StorefrontNavbar storeName={store.name} basePath={base} />
+    <div
+      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
+      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+    >
+      <StorefrontNavbar storeName={store.name} basePath={base} mainColor={store.mainColor} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
@@ -104,7 +109,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Product details</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">Product details</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h2>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
 
@@ -121,7 +126,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
                     type="button"
                     data-prado-add={primaryVariant.id}
                     data-prado-add-to-cart={primaryVariant.id}
-                    className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+                    className="rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
                   >
                     Add to cart
                   </button>
