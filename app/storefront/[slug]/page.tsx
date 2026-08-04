@@ -1,15 +1,17 @@
 import Link from "next/link";
 import Script from "next/script";
 import { notFound } from "next/navigation";
+import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import AuthPanel from "./auth-panel";
 import AccountPanel from "./account-panel";
 import OrdersPanel from "./orders-panel";
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string }> };
 
-export default async function StorefrontPage({ params }: PageProps) {
+export default async function StorefrontPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { category: activeCategory } = await searchParams;
 
   const store = await prisma.store.findUnique({
     where: { slug },
@@ -25,22 +27,33 @@ export default async function StorefrontPage({ params }: PageProps) {
     notFound();
   }
 
-  const products = await prisma.product.findMany({
-    where: { storeId: store.id, status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      description: true,
-      images: true,
-      variants: {
-        select: { id: true, title: true, price: true },
-        take: 1,
-        orderBy: { price: "asc" },
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        storeId: store.id,
+        status: "ACTIVE",
+        ...(activeCategory ? { categories: { some: { slug: activeCategory } } } : {}),
       },
-    },
-  });
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        images: true,
+        variants: {
+          select: { id: true, title: true, price: true },
+          take: 1,
+          orderBy: { price: "asc" },
+        },
+      },
+    }),
+    prisma.category.findMany({
+      where: { storeId: store.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, slug: true },
+    }),
+  ]);
 
   const initialCustomer = null;
 
@@ -48,7 +61,53 @@ export default async function StorefrontPage({ params }: PageProps) {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/storefront/${store.slug}#account`}
+                aria-label="Account"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <User size={20} />
+              </Link>
+              <button
+                type="button"
+                data-prado-cart-toggle
+                aria-label="Cart"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ShoppingCart size={20} />
+                <span
+                  data-prado-cart-count
+                  className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
+                />
+              </button>
+            </div>
+          </div>
+          {categories.length > 0 && (
+            <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+              <Link
+                href={`/storefront/${store.slug}`}
+                className={`text-sm font-medium transition-colors ${
+                  !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                All
+              </Link>
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/storefront/${store.slug}?category=${cat.slug}`}
+                  className={`text-sm font-medium transition-colors ${
+                    activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
       </header>
 
@@ -103,11 +162,6 @@ export default async function StorefrontPage({ params }: PageProps) {
                       {product.description ? (
                         <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
                       ) : null}
-                      {price != null ? (
-                        <div className="mt-3 text-sm font-semibold">
-                          {store.currency} {Number(price).toFixed(2)}
-                        </div>
-                      ) : null}
                     </Link>
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
@@ -133,10 +187,6 @@ export default async function StorefrontPage({ params }: PageProps) {
           </div>
         )}
       </main>
-
-      <footer className="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-400">
-        Powered by Prado Commerce
-      </footer>
 
       <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
     </div>
