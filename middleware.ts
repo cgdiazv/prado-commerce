@@ -117,7 +117,27 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Keep product management URLs canonical under /dashboard.
+  // {slug}.pradocommerce.com -> tenant storefront
+  const parts = hostname.split(".");
+  if (parts.length >= 3) {
+    const slug = parts[0];
+    if (slug && !reservedSubdomains.includes(slug)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/storefront/${slug}${pathname === "/" ? "" : pathname}`;
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-storefront-subdomain", "1");
+      return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+    }
+  }
+
+  // Custom domain (for example, from GoDaddy) -> tenant storefront by domain lookup.
+  if (!isPlatformHostname(hostname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/storefront/domain/${hostname}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // Keep product management URLs canonical under /dashboard for merchant portal.
   if (pathname === "/products" || pathname.startsWith("/products/")) {
     const url = request.nextUrl.clone();
     const suffix = pathname.slice("/products".length);
@@ -173,26 +193,6 @@ export function middleware(request: NextRequest) {
     }
 
     return NextResponse.next();
-  }
-
-  // {slug}.pradocommerce.com -> tenant storefront
-  const parts = hostname.split(".");
-  if (parts.length >= 3) {
-    const slug = parts[0];
-    if (slug && !reservedSubdomains.includes(slug)) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/storefront/${slug}${pathname === "/" ? "" : pathname}`;
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-storefront-subdomain", "1");
-      return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
-    }
-  }
-
-  // Custom domain (for example, from GoDaddy) -> tenant storefront by domain lookup.
-  if (!isPlatformHostname(hostname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/storefront/domain/${hostname}${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
   }
 
   // Default: pradocommerce.com (marketing/landing)
