@@ -42,10 +42,15 @@ export default async function DashboardPage() {
 
       totalProducts = products.length;
 
-      // TODO: Add order and revenue tracking when cart/checkout is implemented
-      // For now, these are placeholder values
-        totalOrders = 0;
-        totalRevenue = 0;
+      const orders = await prisma.order.findMany({
+        where: { storeId: { in: storeIds } },
+        select: { total: true, status: true },
+      });
+
+      totalOrders = orders.length;
+      totalRevenue = orders
+        .filter((order) => order.status !== "CANCELLED")
+        .reduce((sum, order) => sum + Number(order.total), 0);
       }
     } catch (error) {
       console.error("[DASHBOARD_PAGE_DB_ERROR]", error);

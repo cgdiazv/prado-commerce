@@ -307,10 +307,7 @@ export default function DashboardLayout({
 
           <div className="ml-auto flex items-center gap-4">
             {/* Notification Bell with Dropdown */}
-            <div 
-              className="relative"
-              onMouseLeave={() => setIsDropdownOpen(false)}
-            >
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen((open) => !open)}
@@ -327,7 +324,10 @@ export default function DashboardLayout({
 
               {/* Glassmorphic Dropdown */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96">
+                <div 
+                  className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96"
+                  onMouseLeave={() => setIsDropdownOpen(false)}
+                >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                     <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
                     {unreadCount > 0 && (
