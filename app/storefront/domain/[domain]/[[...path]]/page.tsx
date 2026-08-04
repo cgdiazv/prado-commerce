@@ -103,7 +103,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       where: {
         storeId: store.id,
         status: "ACTIVE",
-        ...(activeCategory ? { categories: { some: { slug: activeCategory } } } : {}),
+        ...(activeCategory ? { category: { slug: activeCategory } } : {}),
       },
       orderBy: { createdAt: "desc" },
       select: {

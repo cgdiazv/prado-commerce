@@ -34,7 +34,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       where: {
         storeId: store.id,
         status: "ACTIVE",
-        ...(activeCategory ? { categories: { some: { slug: activeCategory } } } : {}),
+        ...(activeCategory ? { category: { slug: activeCategory } } : {}),
       },
       orderBy: { createdAt: "desc" },
       select: {
