@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 const stackPillars = [
   {
@@ -43,6 +46,21 @@ const businessBenefits = [
 ];
 
 export default function Home() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeBenefit = businessBenefits[activeIndex];
+
+  const goToPrevious = () => {
+    setActiveIndex((current) =>
+      current === 0 ? businessBenefits.length - 1 : current - 1,
+    );
+  };
+
+  const goToNext = () => {
+    setActiveIndex((current) =>
+      current === businessBenefits.length - 1 ? 0 : current + 1,
+    );
+  };
+
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#0c1624] text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(14,165,233,0.33),transparent_36%),radial-gradient(circle_at_84%_0%,rgba(45,212,191,0.27),transparent_32%),linear-gradient(160deg,#0c1624_0%,#111827_48%,#1f2937_100%)]" />
@@ -160,34 +178,62 @@ export default function Home() {
               Prado Commerce gives teams the tools to launch faster, sell smarter, and scale without rebuilding their commerce stack each time they grow.
             </p>
 
-            <div className="mt-6 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-              {businessBenefits.map((benefit) => (
-                <article
-                  key={benefit.title}
-                  className={`rounded-xl border border-white/20 bg-white/8 p-4 ${
-                    benefit.layout === "vertical"
-                      ? "lg:row-span-2 lg:min-h-[420px]"
-                      : "lg:min-h-[200px]"
-                  }`}
-                >
-                  <div className={`mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40 ${
-                    benefit.layout === "vertical" ? "min-h-[160px]" : ""
-                  }`}>
+            <div className="mt-6">
+              <div className="overflow-hidden rounded-xl border border-white/18 bg-white/8 p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-100">
+                    Why customers choose us
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={goToPrevious}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                      aria-label="View previous story"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNext}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                      aria-label="View next story"
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                  <div className="overflow-hidden rounded-xl bg-slate-900/40">
                     <img
-                      src={benefit.image}
-                      alt={`${benefit.title} illustration`}
-                      className={`h-full w-full object-cover object-center ${
-                        benefit.layout === "vertical"
-                          ? "min-h-[160px] sm:min-h-[180px] lg:min-h-[220px]"
-                          : "h-32 sm:h-36 lg:h-40"
-                      }`}
+                      src={activeBenefit.image}
+                      alt={`${activeBenefit.title} illustration`}
+                      className="h-56 w-full object-cover object-center sm:h-72 lg:h-[320px]"
                       loading="lazy"
                     />
                   </div>
-                  <h3 className="text-sm font-semibold text-cyan-100">{benefit.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-200/85">{benefit.detail}</p>
-                </article>
-              ))}
+
+                  <div className="flex flex-col justify-start">
+                    <h3 className="text-lg font-semibold text-cyan-100">{activeBenefit.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-200/85">{activeBenefit.detail}</p>
+
+                    <div className="mt-6 flex items-center gap-2">
+                      {businessBenefits.map((benefit, index) => (
+                        <button
+                          key={benefit.title}
+                          type="button"
+                          onClick={() => setActiveIndex(index)}
+                          className={`h-2.5 rounded-full transition ${
+                            index === activeIndex ? "w-8 bg-cyan-300" : "w-2.5 bg-white/35"
+                          }`}
+                          aria-label={`View ${benefit.title}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
