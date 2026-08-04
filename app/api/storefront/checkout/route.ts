@@ -38,7 +38,11 @@ export async function POST(request: Request) {
       where: {
         id: cartId,
         storeId: shopperSession.storeId,
-        customerId: shopperSession.customerId,
+        // accept both shopper-owned carts and anonymous carts created by the embeddable cart
+        OR: [
+          { customerId: shopperSession.customerId },
+          { customerId: null },
+        ],
       },
       select: {
         id: true,

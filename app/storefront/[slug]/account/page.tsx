@@ -66,9 +66,9 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
         {Header}
-        <main className="mx-auto max-w-md px-6 py-16">
+        <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
         </main>
@@ -81,7 +81,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {Header}
-      <main className="mx-auto max-w-2xl space-y-6 px-6 py-12">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-6 py-12">
         <AccountPanel />
         <OrdersPanel />
       </main>

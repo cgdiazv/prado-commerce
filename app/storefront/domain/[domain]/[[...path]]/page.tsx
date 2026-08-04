@@ -58,7 +58,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     const primaryVariant = product.variants[0];
 
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
         <header className="border-b border-slate-200 bg-white px-6 py-4">
           <div className="mx-auto max-w-6xl">
             <div className="flex items-center justify-between">
@@ -77,7 +77,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-6 py-12">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
           <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               {product.images[0] ? (
@@ -197,7 +197,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (

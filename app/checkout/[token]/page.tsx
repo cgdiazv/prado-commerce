@@ -16,6 +16,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
       id: true,
       token: true,
       currency: true,
+      storeId: true,
       store: {
         select: {
           name: true,
@@ -90,7 +91,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
             </div>
           </div>
 
-          <CheckoutForm cartId={cart.id} currency={cart.currency || "USD"} subtotal={subtotal} />
+          <CheckoutForm cartId={cart.id} currency={cart.currency || "USD"} subtotal={subtotal} storeId={cart.storeId} />
         </div>
       </div>
     </main>

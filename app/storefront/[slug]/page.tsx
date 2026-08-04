@@ -60,7 +60,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const initialCustomer = null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-6">
@@ -113,7 +113,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (

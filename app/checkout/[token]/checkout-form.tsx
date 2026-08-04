@@ -17,9 +17,17 @@ type CheckoutFormProps = {
   cartId: string;
   currency: string;
   subtotal: number;
+  storeId: string;
 };
 
-export default function CheckoutForm({ cartId, currency, subtotal }: CheckoutFormProps) {
+export default function CheckoutForm({ cartId, currency, subtotal, storeId }: CheckoutFormProps) {
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authFirstName, setAuthFirstName] = useState("");
+  const [authLastName, setAuthLastName] = useState("");
+  const [authStatus, setAuthStatus] = useState<string | null>(null);
+  const [isAuthing, setIsAuthing] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -36,6 +44,16 @@ export default function CheckoutForm({ cartId, currency, subtotal }: CheckoutFor
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const r = await fetch("/api/storefront/auth", { cache: "no-store" });
+        const p = await r.json();
+        setIsLoggedIn(Boolean(p.customer));
+      } catch {
+        setIsLoggedIn(false);
+      }
+    }
+
     async function loadSavedAddresses() {
       try {
         const response = await fetch("/api/storefront/account", { cache: "no-store" });
@@ -77,6 +95,7 @@ export default function CheckoutForm({ cartId, currency, subtotal }: CheckoutFor
       }
     }
 
+    void checkAuth();
     void loadSavedAddresses();
     void loadStorePaymentOptions();
   }, []);
@@ -143,7 +162,62 @@ export default function CheckoutForm({ cartId, currency, subtotal }: CheckoutFor
       setIsSubmitting(false);
     }
   }
+  async function handleAuth(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsAuthing(true);
+    setAuthStatus(null);
+    try {
+      const r = await fetch("/api/storefront/auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: authMode, storeId, email: authEmail, firstName: authFirstName, lastName: authLastName }),
+      });
+      const p = await r.json();
+      if (!r.ok) throw new Error(p.error || "Unable to sign in.");
+      setEmail(p.customer?.email ?? authEmail);
+      setFirstName(p.customer?.firstName ?? "");
+      setLastName(p.customer?.lastName ?? "");
+      setIsLoggedIn(true);
+    } catch (err) {
+      setAuthStatus(err instanceof Error ? err.message : "Unable to sign in.");
+    } finally {
+      setIsAuthing(false);
+    }
+  }
 
+  if (isLoggedIn === null) {
+    return <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-400">Loading…</div>;
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
+        <p className="text-sm font-semibold text-white">Sign in to continue</p>
+        <p className="mt-1 text-sm text-slate-400">You need a storefront account to place an order.</p>
+        <div className="mt-4 flex gap-2 rounded-full border border-white/10 p-1">
+          {(["signin", "signup"] as const).map((m) => (
+            <button key={m} type="button" onClick={() => setAuthMode(m)}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${authMode === m ? "bg-slate-100 text-slate-900" : "text-slate-400"}`}>
+              {m === "signin" ? "Sign in" : "Create account"}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={handleAuth} className="mt-4 space-y-3">
+          {authMode === "signup" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input value={authFirstName} onChange={(e) => setAuthFirstName(e.target.value)} placeholder="First name" className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
+              <input value={authLastName} onChange={(e) => setAuthLastName(e.target.value)} placeholder="Last name" className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
+            </div>
+          )}
+          <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="Email address" className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none" />
+          <button type="submit" disabled={isAuthing} className="w-full rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-70">
+            {isAuthing ? "Working…" : authMode === "signin" ? "Sign in" : "Create account"}
+          </button>
+          {authStatus && <p className="text-sm text-slate-300">{authStatus}</p>}
+        </form>
+      </div>
+    );
+  }
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
       <div className="flex items-center justify-between">
