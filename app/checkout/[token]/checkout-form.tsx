@@ -58,31 +58,6 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
       }
     }
 
-    async function loadSavedAddresses() {
-      try {
-        const response = await fetch("/api/storefront/account", { cache: "no-store" });
-        const payload = await response.json();
-
-        if (response.ok && payload.customer) {
-          const nextSavedAddresses = Array.isArray(payload.customer.savedAddresses)
-            ? (payload.customer.savedAddresses as AddressEntry[])
-            : [];
-          setSavedAddresses(nextSavedAddresses);
-
-          const preferredAddress = getDefaultAddress(payload.customer.shippingAddress, nextSavedAddresses);
-          if (preferredAddress) {
-            setLine1(preferredAddress.line1 ?? "");
-            setCity(preferredAddress.city ?? "");
-            setState(preferredAddress.state ?? "");
-            setPostalCode(preferredAddress.postalCode ?? "");
-            setCountry(preferredAddress.country ?? "");
-          }
-        }
-      } catch {
-        // Ignore missing account data on checkout.
-      }
-    }
-
     async function loadStorePaymentOptions() {
       try {
         const response = await fetch("/api/stores", { cache: "no-store" });
@@ -104,9 +79,43 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
     }
 
     void checkAuth();
-    void loadSavedAddresses();
     void loadStorePaymentOptions();
   }, [offlinePaymentsEnabled]);
+
+  useEffect(() => {
+    async function loadCustomerProfile() {
+      if (isLoggedIn !== true) return;
+      try {
+        const response = await fetch("/api/storefront/account", { cache: "no-store" });
+        const payload = await response.json();
+
+        if (response.ok && payload.customer) {
+          if (payload.customer.email) setEmail(payload.customer.email);
+          if (payload.customer.firstName) setFirstName(payload.customer.firstName);
+          if (payload.customer.lastName) setLastName(payload.customer.lastName);
+          if (payload.customer.phone) setPhone(payload.customer.phone);
+
+          const nextSavedAddresses = Array.isArray(payload.customer.savedAddresses)
+            ? (payload.customer.savedAddresses as AddressEntry[])
+            : [];
+          setSavedAddresses(nextSavedAddresses);
+
+          const preferredAddress = getDefaultAddress(payload.customer.shippingAddress, nextSavedAddresses);
+          if (preferredAddress) {
+            setLine1(preferredAddress.line1 ?? "");
+            setCity(preferredAddress.city ?? "");
+            setState(preferredAddress.state ?? "");
+            setPostalCode(preferredAddress.postalCode ?? "");
+            setCountry(preferredAddress.country ?? "");
+          }
+        }
+      } catch {
+        // Ignore missing account data on checkout.
+      }
+    }
+
+    void loadCustomerProfile();
+  }, [isLoggedIn]);
 
   function applySavedAddress(address: AddressEntry) {
     setLine1(address.line1 ?? "");
