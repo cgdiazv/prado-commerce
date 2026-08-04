@@ -331,13 +331,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   }
 
   return (
-    <section
-      className={
-        editingProduct
-          ? "overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur"
-          : ""
-      }
-    >
+    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -347,15 +341,13 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             {editingProduct ? "Update product details" : "Create a new product"}
           </h2>
         </div>
-        {editingProduct ? (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            Back
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+        >
+          Back
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

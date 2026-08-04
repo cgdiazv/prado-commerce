@@ -41,11 +41,50 @@ export function CustomersDashboard({
   const [customers, setCustomers] = useState(initialCustomers);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<"name" | "email" | "phone" | "createdAt">("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const activeCustomers = useMemo(
-    () => customers.filter((customer) => customer.storeId === activeStoreId),
-    [customers, activeStoreId],
-  );
+  const activeCustomers = useMemo(() => {
+    const filtered = customers.filter((customer) => customer.storeId === activeStoreId);
+    
+    return [...filtered].sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      if (sortField === "name") {
+        valA = `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim().toLowerCase();
+        valB = `${b.firstName ?? ""} ${b.lastName ?? ""}`.trim().toLowerCase();
+      } else if (sortField === "createdAt") {
+        valA = new Date(a.createdAt).getTime();
+        valB = new Date(b.createdAt).getTime();
+      } else {
+        valA = (a[sortField] ?? "").toLowerCase();
+        valB = (b[sortField] ?? "").toLowerCase();
+      }
+
+      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [customers, activeStoreId, sortField, sortDirection]);
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
+    return (
+      <span className="ml-1 flex flex-col leading-none text-[9px]">
+        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+      </span>
+    );
+  }
 
   async function refreshCustomers(storeId: string) {
     const response = await fetch(`/api/customers?storeId=${encodeURIComponent(storeId)}`, {
@@ -140,10 +179,46 @@ export function CustomersDashboard({
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Name</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Email</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Phone</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Created</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("name")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Name
+                        <SortIndicator active={sortField === "name"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("email")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Email
+                        <SortIndicator active={sortField === "email"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("phone")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Phone
+                        <SortIndicator active={sortField === "phone"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("createdAt")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Created
+                        <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
