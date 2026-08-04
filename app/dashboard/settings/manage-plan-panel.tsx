@@ -98,7 +98,12 @@ export function ManagePlanPanel({ merchantId, currentPlan }: ManagePlanPanelProp
 
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cyan-800">
           <span className="font-medium">{planDescriptions[selectedPlan]}</span>
-          <Link href="/pricing" className="font-semibold text-cyan-700 underline-offset-2 hover:underline">
+          <Link
+            href="/pricing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-cyan-700 underline-offset-2 hover:underline"
+          >
             View pricing
           </Link>
         </div>

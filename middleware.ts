@@ -122,6 +122,9 @@ export function middleware(request: NextRequest) {
   if (parts.length >= 3) {
     const slug = parts[0];
     if (slug && !reservedSubdomains.includes(slug)) {
+      if (pathname.startsWith("/api/") || pathname === "/cart.js") {
+        return NextResponse.next();
+      }
       const url = request.nextUrl.clone();
       url.pathname = `/storefront/${slug}${pathname === "/" ? "" : pathname}`;
       const requestHeaders = new Headers(request.headers);
@@ -132,6 +135,9 @@ export function middleware(request: NextRequest) {
 
   // Custom domain (for example, from GoDaddy) -> tenant storefront by domain lookup.
   if (!isPlatformHostname(hostname)) {
+    if (pathname.startsWith("/api/") || pathname === "/cart.js") {
+      return NextResponse.next();
+    }
     const url = request.nextUrl.clone();
     url.pathname = `/storefront/domain/${hostname}${pathname === "/" ? "" : pathname}`;
     return NextResponse.rewrite(url);
