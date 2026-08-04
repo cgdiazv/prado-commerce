@@ -32,9 +32,17 @@ type CheckoutFormProps = {
   subtotal: number;
   storeId: string;
   offlinePaymentsEnabled?: boolean;
+  isCartEmpty?: boolean;
 };
 
-export default function CheckoutForm({ cartId, currency, subtotal, storeId, offlinePaymentsEnabled = false }: CheckoutFormProps) {
+export default function CheckoutForm({
+  cartId,
+  currency,
+  subtotal,
+  storeId,
+  offlinePaymentsEnabled = false,
+  isCartEmpty = false,
+}: CheckoutFormProps) {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -306,12 +314,12 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-base font-semibold text-slate-900">Customer details</p>
           <p className="text-sm text-slate-500">We’ll create an order from this cart once you submit.</p>
         </div>
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Estimated total</p>
           <p className="text-lg font-bold text-slate-900">{currency} {(subtotal + shippingAmount).toFixed(2)}</p>
         </div>
@@ -496,10 +504,10 @@ export default function CheckoutForm({ cartId, currency, subtotal, storeId, offl
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isCartEmpty}
         className="w-full rounded-full bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isSubmitting ? "Submitting order..." : "Place order"}
+        {isCartEmpty ? "Cart is empty" : isSubmitting ? "Submitting order..." : "Place order"}
       </button>
 
       {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}

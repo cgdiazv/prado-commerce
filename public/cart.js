@@ -78,15 +78,6 @@
     .prado-checkout-btn:hover { background: #1e293b; }
     .prado-checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .prado-toast {
-      position: fixed; right: 20px; bottom: 20px; z-index: 1000000;
-      background: #0f172a; color: #ffffff; padding: 12px 16px;
-      border-radius: 999px; font-size: 14px; font-weight: 600;
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-      pointer-events: none; opacity: 0; transform: translateY(8px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-    .prado-toast.prado-visible { opacity: 1; transform: translateY(0); }
   `;
 
   function joinUrl(baseUrl, path) {
@@ -218,7 +209,6 @@
       }
 
       updateState(data);
-      showToast("Added to cart");
     } catch (error) {
       alert("Could not add item to cart: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
@@ -400,24 +390,6 @@
       return;
     }
     checkoutBtn.style.opacity = isLoading ? "0.7" : "1";
-  }
-
-  function showToast(message) {
-    let toast = document.getElementById("prado-toast");
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "prado-toast";
-      toast.className = "prado-toast";
-      document.body.appendChild(toast);
-    }
-
-    toast.textContent = message;
-    toast.classList.add("prado-visible");
-
-    window.clearTimeout(showToast.timeoutId);
-    showToast.timeoutId = window.setTimeout(function () {
-      toast.classList.remove("prado-visible");
-    }, 1800);
   }
 
   function escapeHTML(str) {

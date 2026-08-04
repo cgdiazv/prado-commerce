@@ -134,9 +134,6 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   )}
                   <div className="p-4">
                     <h2 className="font-semibold text-slate-900">{product.title}</h2>
-                    {product.description ? (
-                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{product.description}</p>
-                    ) : null}
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
                         <span className="text-sm font-semibold text-slate-700">

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import CheckoutForm from "./checkout-form";
+import CheckoutExperience from "./checkout-experience";
 import StorefrontNavbar from "../../storefront/storefront-navbar";
 import StorefrontFooter from "../../storefront/storefront-footer";
 
@@ -41,6 +41,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
       },
       items: {
         select: {
+          variantId: true,
           quantity: true,
           variant: {
             select: {
@@ -64,15 +65,12 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
 
   const base = isTenantDomain ? "" : `/storefront/${cart.store.slug}`;
 
-  const subtotal = cart.items.reduce((sum, item) => {
-    const price = Number(item.variant.price);
-    return sum + price * item.quantity;
-  }, 0);
-
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: cart.currency || "USD",
-  });
+  const initialItems = cart.items.map((item) => ({
+    variantId: item.variantId,
+    title: item.variant.title,
+    price: Number(item.variant.price),
+    quantity: item.quantity,
+  }));
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -90,47 +88,15 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
             Complete your details below to submit an order.
           </p>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            {/* Form on the left */}
-            <CheckoutForm
-              cartId={cart.id}
-              currency={cart.currency || "USD"}
-              subtotal={subtotal}
-              storeId={cart.storeId}
-              offlinePaymentsEnabled={Boolean(cart.store.offlinePaymentsEnabled)}
-            />
-
-            {/* Order details on the right */}
-            <div className="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-base font-semibold text-slate-900">{cart.store.name}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Subtotal</p>
-                  <p className="text-xl font-bold text-slate-900">{formatter.format(subtotal)}</p>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                {cart.items.length === 0 ? (
-                  <p className="text-sm text-slate-500">Your cart is empty.</p>
-                ) : (
-                  cart.items.map((item, index) => (
-                    <div key={`${item.variant.title}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
-                      <div>
-                        <p className="font-medium text-slate-900">{item.variant.title}</p>
-                        <p className="text-sm text-slate-500">Qty {item.quantity}</p>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatter.format(Number(item.variant.price) * item.quantity)}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          <CheckoutExperience
+            cartId={cart.id}
+            currency={cart.currency || "USD"}
+            storeId={cart.storeId}
+            storeName={cart.store.name}
+            basePath={base}
+            offlinePaymentsEnabled={Boolean(cart.store.offlinePaymentsEnabled)}
+            initialItems={initialItems}
+          />
         </div>
       </main>
 

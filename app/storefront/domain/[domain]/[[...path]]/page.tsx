@@ -205,9 +205,6 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                   )}
                   <div className="p-4">
                     <h2 className="font-semibold text-slate-900">{product.title}</h2>
-                    {product.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{product.description}</p>
-                    ) : null}
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
                         <span className="text-sm font-semibold text-slate-700">
