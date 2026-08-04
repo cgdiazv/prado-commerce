@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import Link from "next/link";
 
 type Tier = {
@@ -23,6 +23,17 @@ type Tier = {
 };
 
 type BillingMode = "monthly" | "annual";
+
+const STRIPE_PRICE_MAP = {
+  PRO: {
+    month: "price_1U0XARCXrIvkbezejpM4WVVJ",
+    year: "price_1U0XBhCXrIvkbezewGe2bIyL",
+  },
+  ENTERPRISE: {
+    month: "price_1U0XDnCXrIvkbezesLCOvRau",
+    year: "price_1U0XETCXrIvkbeze6GNZYBDt",
+  },
+};
 
 const tiers: Tier[] = [
   {
@@ -71,7 +82,7 @@ const tiers: Tier[] = [
     customDomains: "Multiple custom domains",
     checkoutExperience: "White-labeled and headless checkout workflows",
     apiRateLimits: "Dedicated edge throughput",
-    integrations: "Custom middleware and POS or AmberPOS sync",
+    integrations: "Payment, POS and Carriers",
     ctaHref: "/signup",
     ctaLabel: "Choose Enterprise",
   },
@@ -95,6 +106,36 @@ const comparisonRows: Array<{ label: string; values: [string, string, string] }>
 
 export default function PricingPage() {
   const [billingMode, setBillingMode] = useState<BillingMode>("monthly");
+
+  const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement>, tier: Tier) => {
+    if (tier.name === "Starter") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const plan = tier.name.toUpperCase() as keyof typeof STRIPE_PRICE_MAP;
+    const interval = billingMode === "annual" ? "year" : "month";
+
+    const response = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan, interval }),
+    });
+
+    const data = await response.json();
+
+    if (data?.url) {
+      window.location.assign(data.url);
+    } else {
+      const query = new URLSearchParams({
+        plan: tier.name,
+        interval,
+        status: data?.error ? "unavailable" : "pending",
+      });
+      window.location.assign(`/checkout?${query.toString()}`);
+    }
+  };
 
   return (
     <main data-route-kind="pricing" className="relative isolate min-h-screen overflow-hidden bg-[#0c1624] text-slate-100">
@@ -125,14 +166,14 @@ export default function PricingPage() {
           </div>
         </header>
 
-        <section className="prado-fade-up prado-delay-1 mt-10">
+        <section className="prado-fade-up prado-delay-1 mt-10 max-w-5xl">
           <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
             Pricing
           </p>
-          <h1 className="mt-5 max-w-3xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">
+          <h1 className="mt-5 max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">
             Plans that scale with every Prado Commerce storefront.
           </h1>
-          <p className="mt-5 max-w-3xl text-base leading-8 text-slate-200/90 sm:text-lg">
+          <p className="mt-5 max-w-4xl text-base leading-8 text-slate-200/90 sm:text-lg">
             Start for free with Starter, unlock growth with Pro, and run advanced operations with Enterprise.
             Every tier includes core checkout and storefront capabilities.
           </p>
@@ -164,11 +205,11 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 lg:grid-cols-3">
+        <section className="mt-24 grid gap-4 lg:grid-cols-3">
           {tiers.map((tier) => (
             <article
               key={tier.name}
-              className={`rounded-xl border p-5 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur-sm ${
+              className={`flex h-full flex-col rounded-xl border p-5 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur-sm ${
                 tier.highlighted
                   ? "border-cyan-200/50 bg-cyan-300/10"
                   : "border-white/20 bg-white/8"
@@ -221,7 +262,10 @@ export default function PricingPage() {
 
               <Link
                 href={tier.ctaHref}
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                onClick={(event) => {
+                  void handleUpgrade(event, tier);
+                }}
+                className={`mt-auto inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                   tier.highlighted
                     ? "bg-cyan-300 text-slate-900 hover:bg-cyan-200"
                     : "border border-white/25 text-slate-100 hover:border-white/40 hover:bg-white/8"

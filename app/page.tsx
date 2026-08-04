@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const stackPillars = [
   {
@@ -48,6 +48,14 @@ const businessBenefits = [
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeBenefit = businessBenefits[activeIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current === businessBenefits.length - 1 ? 0 : current + 1));
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const goToPrevious = () => {
     setActiveIndex((current) =>
@@ -100,7 +108,7 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="mt-8 w-full px-6 sm:px-8 lg:px-10">
+        <section className="mt-14 w-full px-6 sm:px-8 lg:px-10">
           <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div className="prado-fade-up prado-delay-1">
               <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
@@ -139,9 +147,8 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="prado-fade-up mx-auto mt-10 w-full max-w-6xl px-6 sm:px-8 lg:px-10">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold tracking-tight text-cyan-100 sm:text-xl">Features</h2>
+        <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 sm:px-8 lg:px-10">
+          <div className="mb-4 flex items-center justify-end gap-3">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-300">Built for speed</p>
           </div>
 
@@ -166,7 +173,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="prado-fade-up mx-auto mt-10 w-full max-w-6xl px-6 pb-8 sm:px-8 lg:px-10">
+        <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 pb-8 sm:px-8 lg:px-10">
           <div className="rounded-xl border border-cyan-200/25 bg-cyan-300/8 p-6 backdrop-blur-sm sm:p-8">
             <p className="inline-flex rounded-full border border-cyan-100/35 bg-cyan-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
               Why Prado Commerce
@@ -206,15 +213,18 @@ export default function Home() {
 
                 <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                   <div className="overflow-hidden rounded-xl bg-slate-900/40">
-                    <img
-                      src={activeBenefit.image}
-                      alt={`${activeBenefit.title} illustration`}
-                      className="h-56 w-full object-cover object-center sm:h-72 lg:h-[320px]"
-                      loading="lazy"
-                    />
+                    <div className="h-56 w-full animate-[fadeIn_0.45s_ease-out] sm:h-72 lg:h-[320px]">
+                      <img
+                        key={activeBenefit.title}
+                        src={activeBenefit.image}
+                        alt={`${activeBenefit.title} illustration`}
+                        className="h-full w-full object-cover object-center"
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex flex-col justify-start">
+                  <div className="flex flex-col justify-start animate-[fadeIn_0.45s_ease-out]">
                     <h3 className="text-lg font-semibold text-cyan-100">{activeBenefit.title}</h3>
                     <p className="mt-3 text-sm leading-7 text-slate-200/85">{activeBenefit.detail}</p>
 
@@ -238,7 +248,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="prado-fade-up mx-auto mt-2 w-full max-w-6xl px-6 pb-12 sm:px-8 lg:px-10">
+        <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 pb-12 sm:px-8 lg:px-10">
           <div className="rounded-xl border border-teal-200/30 bg-gradient-to-r from-cyan-300/15 via-teal-300/12 to-emerald-300/12 p-6 shadow-[0_18px_45px_rgba(8,47,73,0.35)] sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-3xl">
