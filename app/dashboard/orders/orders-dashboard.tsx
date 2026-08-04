@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Plus } from "lucide-react";
 
 type Store = {
   id: string;
@@ -80,15 +80,14 @@ export function OrdersDashboard({
     }
   };
 
-  const renderSortArrow = (field: typeof sortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="ml-1.5 h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />;
-    }
-    if (sortDirection === "asc") {
-      return <ArrowUp className="ml-1.5 h-3.5 w-3.5 text-cyan-600" />;
-    }
-    return <ArrowDown className="ml-1.5 h-3.5 w-3.5 text-cyan-600" />;
-  };
+  function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
+    return (
+      <span className="ml-1 flex flex-col leading-none text-[9px]">
+        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+      </span>
+    );
+  }
 
   async function refreshOrders(storeId: string) {
     const response = await fetch(`/api/orders?storeId=${encodeURIComponent(storeId)}`, {
@@ -183,53 +182,65 @@ export function OrdersDashboard({
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th 
-                      onClick={() => handleSort("orderNumber")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Order {renderSortArrow("orderNumber")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("orderNumber")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Order
+                        <SortIndicator active={sortField === "orderNumber"} direction={sortDirection} />
+                      </button>
                     </th>
-                    <th 
-                      onClick={() => handleSort("customerEmail")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Customer {renderSortArrow("customerEmail")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("customerEmail")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Customer
+                        <SortIndicator active={sortField === "customerEmail"} direction={sortDirection} />
+                      </button>
                     </th>
-                    <th 
-                      onClick={() => handleSort("status")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Status {renderSortArrow("status")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("status")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Status
+                        <SortIndicator active={sortField === "status"} direction={sortDirection} />
+                      </button>
                     </th>
-                    <th 
-                      onClick={() => handleSort("paymentStatus")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Payment {renderSortArrow("paymentStatus")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("paymentStatus")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Payment
+                        <SortIndicator active={sortField === "paymentStatus"} direction={sortDirection} />
+                      </button>
                     </th>
-                    <th 
-                      onClick={() => handleSort("total")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Total {renderSortArrow("total")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("total")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Total
+                        <SortIndicator active={sortField === "total"} direction={sortDirection} />
+                      </button>
                     </th>
-                    <th 
-                      onClick={() => handleSort("createdAt")}
-                      className="group px-4 py-3 text-left font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Created {renderSortArrow("createdAt")}
-                      </div>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("createdAt")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        Created
+                        <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
+                      </button>
                     </th>
                   </tr>
                 </thead>

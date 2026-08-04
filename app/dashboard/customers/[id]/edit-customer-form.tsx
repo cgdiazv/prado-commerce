@@ -120,236 +120,243 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-4xl">
-      <div className="space-y-6">
+    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Customers
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Edit customer
           </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            Edit customer profile
-          </h1>
-          <p className="mt-3 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Modify the customer details and addresses for your records.
-          </p>
+          <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            Update customer profile
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+        >
+          Back
+        </button>
+      </div>
+
+      {success && (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {success}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Store Selection Card (Readonly) */}
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Store</span>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 font-medium">
+              {activeStore ? `${activeStore.name} / ${activeStore.currency}` : "Unknown Store"}
+            </div>
+          </div>
+
+          <label className="flex flex-col gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="customer@example.com"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              required
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">First name</span>
+            <input
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              placeholder="Jane"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Last name</span>
+            <input
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              placeholder="Doe"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Phone</span>
+            <input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+1 555 123 4567"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
+
+          {/* Shipping Address Card */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <p className="text-sm font-semibold text-slate-800">Shipping address</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Address line 1</span>
+                <input
+                  value={shippingAddress.line1}
+                  onChange={(event) => updateShippingAddress("line1", event.target.value)}
+                  placeholder="123 Main St"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Address line 2</span>
+                <input
+                  value={shippingAddress.line2}
+                  onChange={(event) => updateShippingAddress("line2", event.target.value)}
+                  placeholder="Apartment, suite, etc."
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">City</span>
+                <input
+                  value={shippingAddress.city}
+                  onChange={(event) => updateShippingAddress("city", event.target.value)}
+                  placeholder="New York"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">State / Region</span>
+                <input
+                  value={shippingAddress.state}
+                  onChange={(event) => updateShippingAddress("state", event.target.value)}
+                  placeholder="NY"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Postal code</span>
+                <input
+                  value={shippingAddress.postalCode}
+                  onChange={(event) => updateShippingAddress("postalCode", event.target.value)}
+                  placeholder="10001"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Country</span>
+                <input
+                  value={shippingAddress.country}
+                  onChange={(event) => updateShippingAddress("country", event.target.value)}
+                  placeholder="United States"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Billing Address Card */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+            <p className="text-sm font-semibold text-slate-800">Billing address</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Address line 1</span>
+                <input
+                  value={billingAddress.line1}
+                  onChange={(event) => updateBillingAddress("line1", event.target.value)}
+                  placeholder="123 Main St"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Address line 2</span>
+                <input
+                  value={billingAddress.line2}
+                  onChange={(event) => updateBillingAddress("line2", event.target.value)}
+                  placeholder="Apartment, suite, etc."
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">City</span>
+                <input
+                  value={billingAddress.city}
+                  onChange={(event) => updateBillingAddress("city", event.target.value)}
+                  placeholder="New York"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">State / Region</span>
+                <input
+                  value={billingAddress.state}
+                  onChange={(event) => updateBillingAddress("state", event.target.value)}
+                  placeholder="NY"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Postal code</span>
+                <input
+                  value={billingAddress.postalCode}
+                  onChange={(event) => updateBillingAddress("postalCode", event.target.value)}
+                  placeholder="10001"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Country</span>
+                <input
+                  value={billingAddress.country}
+                  onChange={(event) => updateBillingAddress("country", event.target.value)}
+                  placeholder="United States"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </label>
+            </div>
+          </div>
         </div>
 
-        {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {success}
+        {error && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Store</span>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 font-medium">
-                {activeStore ? `${activeStore.name} / ${activeStore.currency}` : "Unknown Store"}
-              </div>
-            </div>
-
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="customer@example.com"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                required
-              />
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">First name</span>
-              <input
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                placeholder="Jane"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-700">Last name</span>
-              <input
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                placeholder="Doe"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
-
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Phone</span>
-              <input
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="+1 555 123 4567"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </label>
-
-            <div className="sm:col-span-2">
-              <p className="text-sm font-semibold text-slate-800">Shipping address</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 sm:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Address line 1</span>
-                  <input
-                    value={shippingAddress.line1}
-                    onChange={(event) => updateShippingAddress("line1", event.target.value)}
-                    placeholder="123 Main St"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2 sm:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Address line 2</span>
-                  <input
-                    value={shippingAddress.line2}
-                    onChange={(event) => updateShippingAddress("line2", event.target.value)}
-                    placeholder="Apartment, suite, etc."
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">City</span>
-                  <input
-                    value={shippingAddress.city}
-                    onChange={(event) => updateShippingAddress("city", event.target.value)}
-                    placeholder="New York"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">State / Region</span>
-                  <input
-                    value={shippingAddress.state}
-                    onChange={(event) => updateShippingAddress("state", event.target.value)}
-                    placeholder="NY"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">Postal code</span>
-                  <input
-                    value={shippingAddress.postalCode}
-                    onChange={(event) => updateShippingAddress("postalCode", event.target.value)}
-                    placeholder="10001"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">Country</span>
-                  <input
-                    value={shippingAddress.country}
-                    onChange={(event) => updateShippingAddress("country", event.target.value)}
-                    placeholder="United States"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <p className="text-sm font-semibold text-slate-800">Billing address</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 sm:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Address line 1</span>
-                  <input
-                    value={billingAddress.line1}
-                    onChange={(event) => updateBillingAddress("line1", event.target.value)}
-                    placeholder="123 Main St"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2 sm:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Address line 2</span>
-                  <input
-                    value={billingAddress.line2}
-                    onChange={(event) => updateBillingAddress("line2", event.target.value)}
-                    placeholder="Apartment, suite, etc."
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">City</span>
-                  <input
-                    value={billingAddress.city}
-                    onChange={(event) => updateBillingAddress("city", event.target.value)}
-                    placeholder="New York"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">State / Region</span>
-                  <input
-                    value={billingAddress.state}
-                    onChange={(event) => updateBillingAddress("state", event.target.value)}
-                    placeholder="NY"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">Postal code</span>
-                  <input
-                    value={billingAddress.postalCode}
-                    onChange={(event) => updateBillingAddress("postalCode", event.target.value)}
-                    placeholder="10001"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">Country</span>
-                  <input
-                    value={billingAddress.country}
-                    onChange={(event) => updateBillingAddress("country", event.target.value)}
-                    placeholder="United States"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
-            </div>
-          )}
-
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  `/dashboard/customers${customer.storeId ? `?storeId=${encodeURIComponent(customer.storeId)}` : ""}`,
-                )
-              }
-              className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? "Saving..." : "Save changes"}
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/dashboard/customers${customer.storeId ? `?storeId=${encodeURIComponent(customer.storeId)}` : ""}`,
+              )
+            }
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </form>
     </section>
   );
 }
