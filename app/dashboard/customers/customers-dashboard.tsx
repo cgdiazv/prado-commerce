@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 type Store = {
@@ -35,6 +36,7 @@ export function CustomersDashboard({
   selectedStoreId,
   setupError = null,
 }: CustomersDashboardProps) {
+  const router = useRouter();
   const [stores] = useState(initialStores);
   const [customers, setCustomers] = useState(initialCustomers);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -149,7 +151,11 @@ export function CustomersDashboard({
                     const fullName = `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim();
 
                     return (
-                      <tr key={customer.id} className="hover:bg-slate-50/70">
+                      <tr
+                        key={customer.id}
+                        onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
+                        className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                      >
                         <td className="px-4 py-3 align-top text-slate-900">
                           {fullName || "-"}
                         </td>
