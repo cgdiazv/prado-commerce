@@ -489,7 +489,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         </div>
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <label className="text-sm font-medium text-slate-700">Store</label>
               <p className="text-xs text-slate-500">Select which store this product belongs to</p>
@@ -500,7 +500,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                 setActiveStoreId(event.target.value);
                 setProductForm((current) => ({ ...current, categoryId: "" }));
               }}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:w-auto sm:min-w-[260px]"
             >
               {stores.map((store) => (
                 <option key={store.id} value={store.id}>
@@ -631,13 +631,15 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                       <option value="false">No</option>
                     </select>
                   </label>
-                  <Field
-                    label="Options JSON"
-                    value={variant.options}
-                    onChange={(value) => updateVariant(index, { options: value })}
-                    placeholder='{"size":"L","color":"Blue"}'
-                    className="sm:col-span-2"
-                  />
+                  {editingProduct ? (
+                    <Field
+                      label="Options JSON"
+                      value={variant.options}
+                      onChange={(value) => updateVariant(index, { options: value })}
+                      placeholder='{"size":"L","color":"Blue"}'
+                      className="sm:col-span-2"
+                    />
+                  ) : null}
                 </div>
               </div>
             ))}

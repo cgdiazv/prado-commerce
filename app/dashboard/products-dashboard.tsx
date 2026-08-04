@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 type Store = {
   id: string;
@@ -54,6 +55,7 @@ export function ProductsDashboard({
   currentPlan = "STARTER",
   setupError = null,
 }: ProductsDashboardProps) {
+  const router = useRouter();
   const [stores] = useState(initialStores);
   const [products, setProducts] = useState(initialProducts);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -166,22 +168,6 @@ export function ProductsDashboard({
 
     const data = (await response.json()) as Product[];
     setProducts(data);
-  }
-
-  async function handleDelete(productId: string) {
-    if (!confirm("Delete this product and its variants?")) {
-      return;
-    }
-
-    const response = await fetch(`/api/products/${productId}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      return;
-    }
-
-    await refreshProducts(activeStoreId);
   }
 
   return (
@@ -314,7 +300,6 @@ export function ProductsDashboard({
                             <SortIndicator active={sortKey === "updated"} direction={sortDirection} />
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -327,7 +312,19 @@ export function ProductsDashboard({
                         const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
 
                         return (
-                          <tr key={product.id} className="hover:bg-slate-50/70">
+                          <tr
+                            key={product.id}
+                            onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                router.push(`/dashboard/products/${product.id}`);
+                              }
+                            }}
+                            role="link"
+                            tabIndex={0}
+                            className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                          >
                             <td className="px-4 py-3 align-top">
                               {thumbnailUrl ? (
                                 <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
@@ -338,12 +335,7 @@ export function ProductsDashboard({
                               )}
                             </td>
                             <td className="px-4 py-3 align-top">
-                              <Link
-                                href={`/dashboard/products/${product.id}`}
-                                className="block font-semibold text-slate-900 transition hover:text-cyan-700"
-                              >
-                                {product.title}
-                              </Link>
+                              <p className="block font-semibold text-slate-900">{product.title}</p>
                               <p className="text-xs text-slate-500">/{product.slug}</p>
                             </td>
                             <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
@@ -352,19 +344,6 @@ export function ProductsDashboard({
                             <td className="px-4 py-3 align-top text-slate-700">{categoryLabel}</td>
                             <td className="px-4 py-3 align-top text-slate-600">
                               {new Date(product.updatedAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              <div className="flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDelete(product.id)}
-                                  aria-label="Delete product"
-                                  title="Delete"
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         );
@@ -383,7 +362,19 @@ export function ProductsDashboard({
                     const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
 
                     return (
-                      <article key={product.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <article
+                        key={product.id}
+                        onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(`/dashboard/products/${product.id}`);
+                          }
+                        }}
+                        role="link"
+                        tabIndex={0}
+                        className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3">
                             {thumbnailUrl ? (
@@ -394,12 +385,7 @@ export function ProductsDashboard({
                               </div>
                             )}
                             <div>
-                              <Link
-                                href={`/dashboard/products/${product.id}`}
-                                className="block font-semibold text-slate-900 transition hover:text-cyan-700"
-                              >
-                                {product.title}
-                              </Link>
+                              <p className="block font-semibold text-slate-900">{product.title}</p>
                               <p className="mt-1 text-xs text-slate-500">/{product.slug}</p>
                             </div>
                           </div>
@@ -424,20 +410,10 @@ export function ProductsDashboard({
                           </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                        <div className="mt-3 border-t border-slate-200 pt-3">
                           <p className="text-sm text-slate-500">
                             Updated {new Date(product.updatedAt).toLocaleDateString()}
                           </p>
-                          <div className="flex w-full justify-end sm:w-auto">
-                            <button
-                              type="button"
-                              onClick={() => void handleDelete(product.id)}
-                              aria-label="Delete product"
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50 sm:h-8 sm:w-8"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
                         </div>
                       </article>
                     );

@@ -102,6 +102,9 @@ model Category {
   name        String
   slug        String
   description String?
+  parentCategoryId String?
+  parentCategory   Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: SetNull)
+  childCategories  Category[] @relation("CategoryHierarchy")
   products    Product[]
 
   createdAt   DateTime  @default(now())
@@ -109,6 +112,7 @@ model Category {
 
   @@unique([storeId, slug])
   @@index([storeId])
+  @@index([parentCategoryId])
 }
 
 model Product {

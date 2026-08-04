@@ -17,6 +17,7 @@ type Category = {
   name: string;
   slug: string;
   description: string | null;
+  parentCategoryId: string | null;
   updatedAt?: string | Date;
 };
 
@@ -39,6 +40,7 @@ export function CategoriesDashboard({
   const [categoryName, setCategoryName] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryParentCategoryId, setCategoryParentCategoryId] = useState("");
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
@@ -51,11 +53,26 @@ export function CategoriesDashboard({
     () => categories.filter((category) => category.storeId === activeStoreId),
     [categories, activeStoreId],
   );
+  const activeStoreCategoryNameById = useMemo(
+    () =>
+      new Map(
+        activeStoreCategories.map((category) => [category.id, category.name]),
+      ),
+    [activeStoreCategories],
+  );
+  const activeStoreCategorySlugById = useMemo(
+    () =>
+      new Map(
+        activeStoreCategories.map((category) => [category.id, category.slug]),
+      ),
+    [activeStoreCategories],
+  );
 
   function resetCategoryForm() {
     setCategoryName("");
     setCategorySlug("");
     setCategoryDescription("");
+    setCategoryParentCategoryId("");
   }
 
   async function refreshCategories(storeId: string) {
@@ -131,6 +148,7 @@ export function CategoriesDashboard({
           name: categoryName,
           slug: categorySlug || undefined,
           description: categoryDescription || undefined,
+          parentCategoryId: categoryParentCategoryId || null,
         }),
       });
 
@@ -298,11 +316,13 @@ export function CategoriesDashboard({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <table className="min-w-full table-fixed divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Name</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Slug</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Name</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Slug</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Parent</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Parent slug</th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
                     <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
                   </tr>
@@ -328,6 +348,16 @@ export function CategoriesDashboard({
                             disabled={!isEditing}
                             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none disabled:bg-slate-100"
                           />
+                        </td>
+                        <td className="px-4 py-3 align-top text-slate-600">
+                          {category.parentCategoryId
+                            ? (activeStoreCategoryNameById.get(category.parentCategoryId) ?? "-")
+                            : "-"}
+                        </td>
+                        <td className="px-4 py-3 align-top text-slate-600">
+                          {category.parentCategoryId
+                            ? (activeStoreCategorySlugById.get(category.parentCategoryId) ?? "-")
+                            : "-"}
                         </td>
                         <td className="px-4 py-3 align-top text-slate-600">
                           {category.updatedAt ? new Date(category.updatedAt).toLocaleDateString() : "-"}
@@ -428,6 +458,21 @@ export function CategoriesDashboard({
                 placeholder="Description (optional)"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
+              <label className="flex w-full flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">Parent category (optional)</span>
+                <select
+                  value={categoryParentCategoryId}
+                  onChange={(event) => setCategoryParentCategoryId(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="">No parent category</option>
+                  {activeStoreCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"

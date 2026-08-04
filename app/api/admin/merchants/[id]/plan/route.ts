@@ -16,6 +16,18 @@ function isSubscriptionPlan(value: string): value is SubscriptionPlan {
   return value === "STARTER" || value === "PRO" || value === "ENTERPRISE";
 }
 
+function getPlanRank(plan: SubscriptionPlan | null | undefined) {
+  if (plan === "ENTERPRISE") {
+    return 2;
+  }
+
+  if (plan === "PRO") {
+    return 1;
+  }
+
+  return 0;
+}
+
 export async function PATCH(request: Request, { params }: RouteContext) {
   const { id } = await params;
   const isProduction = process.env.NODE_ENV === "production";
@@ -51,6 +63,26 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   try {
+    const merchant = await prisma.merchantUser.findUnique({
+      where: { id },
+      select: { id: true, plan: true },
+    });
+
+    if (!merchant) {
+      return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
+    }
+
+    const isAdminRequest = Boolean(adminApiKey && incomingKey === adminApiKey);
+    const isUpgrade = getPlanRank(plan) > getPlanRank(merchant.plan);
+
+    // Self-service plan upgrades must go through paid billing checkout.
+    if (isSelfServiceRequest && !isAdminRequest && isUpgrade) {
+      return NextResponse.json(
+        { error: "Plan upgrades require a completed billing checkout." },
+        { status: 402 },
+      );
+    }
+
     const updatedMerchant = await prisma.merchantUser.update({
       where: { id },
       data: { plan },

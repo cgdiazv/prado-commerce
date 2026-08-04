@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X, Bell } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X, Bell, LogOut } from "lucide-react";
 
 type NavChild = {
   href: string;
@@ -305,7 +305,7 @@ export default function DashboardLayout({
             </span>
           </a>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {/* Notification Bell with Dropdown */}
             <div className="relative">
               <button
@@ -376,9 +376,11 @@ export default function DashboardLayout({
 
             <a
               href="/api/auth/logout"
-              className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              aria-label="Sign out"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-1.5"
             >
-              Sign out
+              <LogOut className="h-4 w-4" />
+              <span className="hidden text-xs font-semibold sm:inline">Sign out</span>
             </a>
             <button
               type="button"
@@ -427,9 +429,9 @@ export default function DashboardLayout({
           <SidebarContent />
         </aside>
 
-        <main className="flex-1 px-6 py-10 lg:px-10">
+        <main className="min-w-0 flex-1 px-6 py-10 lg:px-10">
           <div
-            className={`flex w-full flex-col ${
+            className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||
               pathname.startsWith("/dashboard/stores") ||
               (pathname.startsWith("/dashboard/products") && !pathname.startsWith("/dashboard/products/new")) ||

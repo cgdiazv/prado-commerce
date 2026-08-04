@@ -48,6 +48,7 @@ export async function GET(request: Request) {
         name: true,
         slug: true,
         description: true,
+        parentCategoryId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -73,6 +74,8 @@ export async function POST(request: Request) {
     const name = String(body?.name || "").trim();
     const slugInput = String(body?.slug || "").trim();
     const description = String(body?.description || "").trim() || null;
+    const parentCategoryId =
+      typeof body?.parentCategoryId === "string" ? body.parentCategoryId.trim() || null : null;
 
     if (!storeId || !name) {
       return NextResponse.json({ error: "storeId and name are required" }, { status: 400 });
@@ -93,12 +96,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A valid category name is required" }, { status: 400 });
     }
 
+    if (parentCategoryId) {
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: parentCategoryId,
+          storeId,
+        },
+        select: { id: true },
+      });
+
+      if (!parentCategory) {
+        return NextResponse.json(
+          { error: "Parent category must belong to this store" },
+          { status: 400 },
+        );
+      }
+    }
+
     const createdCategory = await prisma.category.create({
       data: {
         storeId,
         name,
         slug,
         description,
+        parentCategoryId,
       },
       select: {
         id: true,
@@ -106,6 +127,7 @@ export async function POST(request: Request) {
         name: true,
         slug: true,
         description: true,
+        parentCategoryId: true,
         createdAt: true,
         updatedAt: true,
       },

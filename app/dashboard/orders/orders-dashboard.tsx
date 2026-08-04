@@ -121,14 +121,14 @@ export function OrdersDashboard({
     : "/dashboard/orders/new";
 
   return (
-    <section>
+    <section className="min-w-0">
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
         </div>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -172,17 +172,17 @@ export function OrdersDashboard({
           </div>
         ) : null}
 
-        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-8 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {visibleOrders.length === 0 ? (
             <div className="p-10 text-center text-slate-500">
               No orders yet for this store.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <div className="w-full max-w-full overflow-x-auto overscroll-x-contain">
+              <table className="min-w-[760px] divide-y divide-slate-200 text-sm md:min-w-full">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("orderNumber")}
@@ -192,7 +192,7 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "orderNumber"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("customerEmail")}
@@ -202,7 +202,7 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "customerEmail"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("status")}
@@ -212,7 +212,7 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "status"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("paymentStatus")}
@@ -222,7 +222,7 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "paymentStatus"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("total")}
@@ -232,7 +232,7 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "total"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("createdAt")}
@@ -251,12 +251,12 @@ export function OrdersDashboard({
                       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
                       className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
-                      <td className="px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
-                      <td className="px-4 py-3 align-top text-slate-700">{order.status}</td>
-                      <td className="px-4 py-3 align-top text-slate-700">{order.paymentStatus}</td>
-                      <td className="px-4 py-3 align-top text-slate-700">{order.currency} {order.total}</td>
-                      <td className="px-4 py-3 align-top text-slate-600">
+                      <td className="whitespace-nowrap px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.status}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.paymentStatus}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.currency} {order.total}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-600">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                     </tr>

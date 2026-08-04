@@ -214,15 +214,16 @@ export default function AccountSidebarLayout() {
             );
           })}
 
-          <div className="pt-3 mt-3 border-t border-slate-100">
+          <div className="pt-3 mt-3 border-t border-slate-100 flex justify-end sm:block">
             <button
               type="button"
               onClick={handleSignOut}
               disabled={isSigningOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+              aria-label={isSigningOut ? "Signing out" : "Sign out"}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-rose-600 transition hover:bg-rose-50 disabled:opacity-50 sm:h-auto sm:w-full sm:justify-start sm:gap-3 sm:rounded-xl sm:px-3.5 sm:py-3"
             >
               <LogOut className="h-4 w-4 text-rose-500" />
-              <span>{isSigningOut ? "Signing out…" : "Signout"}</span>
+              <span className="hidden sm:inline">{isSigningOut ? "Signing out…" : "Signout"}</span>
             </button>
           </div>
         </nav>

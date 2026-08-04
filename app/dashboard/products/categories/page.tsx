@@ -13,6 +13,7 @@ type CategoryRecord = {
   name: string;
   slug: string;
   description: string | null;
+  parentCategoryId: string | null;
   storeId: string;
   updatedAt: Date;
 };
@@ -57,6 +58,7 @@ export default async function ProductCategoriesPage({ searchParams }: Categories
             name: true,
             slug: true,
             description: true,
+            parentCategoryId: true,
             storeId: true,
             updatedAt: true,
           },

@@ -101,6 +101,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         description: true,
+        parentCategoryId: true,
         createdAt: true,
         updatedAt: true,
       },
