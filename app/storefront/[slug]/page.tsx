@@ -96,7 +96,7 @@ export default async function StorefrontPage({ params }: PageProps) {
                   )}
                   <div className="p-4">
                     <Link
-                      href={`/storefront/${store.slug}/products/${product.slug}`}
+                      href={`/storefront/${store.slug}/products/${product.id}`}
                       className="block"
                     >
                       <h2 className="font-semibold text-slate-900">{product.title}</h2>
