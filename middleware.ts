@@ -182,7 +182,9 @@ export function middleware(request: NextRequest) {
     if (slug && !reservedSubdomains.includes(slug)) {
       const url = request.nextUrl.clone();
       url.pathname = `/storefront/${slug}${pathname === "/" ? "" : pathname}`;
-      return NextResponse.rewrite(url);
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-storefront-subdomain", "1");
+      return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
     }
   }
 

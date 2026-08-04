@@ -1,4 +1,8 @@
+import Link from "next/link";
+import Script from "next/script";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -47,13 +51,42 @@ export default async function StorefrontProductPage({ params }: PageProps) {
     notFound();
   }
 
+  const hdrs = await headers();
+  const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
+  const base = isSubdomain ? "" : `/storefront/${store.slug}`;
+
   const primaryVariant = product.variants[0];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
+          <div className="flex items-center justify-between">
+            <Link href={`${base}/`} className="text-xl font-semibold tracking-tight hover:opacity-75 transition-opacity">
+              {store.name}
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`${base}/account`}
+                aria-label="Account"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <User size={20} />
+              </Link>
+              <button
+                type="button"
+                data-prado-cart-toggle
+                aria-label="Cart"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ShoppingCart size={20} />
+                <span
+                  data-prado-cart-count
+                  className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-slate-900 px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
+                />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -98,6 +131,8 @@ export default async function StorefrontProductPage({ params }: PageProps) {
           </div>
         </div>
       </main>
+
+      <Script src="/cart.js" strategy="afterInteractive" data-store-id={store.id} />
     </div>
   );
 }

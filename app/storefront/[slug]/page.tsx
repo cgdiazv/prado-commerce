@@ -1,11 +1,9 @@
 import Link from "next/link";
 import Script from "next/script";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ShoppingCart, User } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import AuthPanel from "./auth-panel";
-import AccountPanel from "./account-panel";
-import OrdersPanel from "./orders-panel";
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string }> };
 
@@ -27,8 +25,12 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
     notFound();
   }
 
-  const [products, categories] = await Promise.all([
-    prisma.product.findMany({
+  // root-relative when on a subdomain, prefixed when on the main domain
+  const hdrs = await headers();
+  const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
+  const base = isSubdomain ? "" : `/storefront/${store.slug}`;
+
+  const [products, categories] = await Promise.all([    prisma.product.findMany({
       where: {
         storeId: store.id,
         status: "ACTIVE",
@@ -61,11 +63,34 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-6">
+            <h1 className="shrink-0 text-xl font-semibold tracking-tight">{store.name}</h1>
+            {categories.length > 0 && (
+              <nav className="flex flex-1 flex-wrap items-center gap-x-5 gap-y-1">
+                <Link
+                  href={`${base}/`}
+                  className={`text-sm font-medium transition-colors ${
+                    !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  All
+                </Link>
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`${base}/?category=${cat.slug}`}
+                    className={`text-sm font-medium transition-colors ${
+                      activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            <div className="flex shrink-0 items-center gap-3">
               <Link
-                href={`/storefront/${store.slug}#account`}
+                href={`${base}/account`}
                 aria-label="Account"
                 className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
               >
@@ -88,7 +113,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
           {categories.length > 0 && (
             <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
               <Link
-                href={`/storefront/${store.slug}`}
+                href={`${base}/`}
                 className={`text-sm font-medium transition-colors ${
                   !activeCategory ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
                 }`}
@@ -98,7 +123,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/storefront/${store.slug}?category=${cat.slug}`}
+                  href={`${base}/?category=${cat.slug}`}
                   className={`text-sm font-medium transition-colors ${
                     activeCategory === cat.slug ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
                   }`}
@@ -112,23 +137,6 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 grid gap-6 lg:grid-cols-[1.5fr_0.8fr]">
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Fresh storefront</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
-              Welcome to {store.name}
-            </h2>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-              Customers can create a storefront account here, keep their details on file, and return for a smoother shopping experience.
-            </p>
-          </section>
-          <div className="space-y-4">
-            <AuthPanel storeId={store.id} initialCustomer={initialCustomer} />
-            <AccountPanel />
-            <OrdersPanel />
-          </div>
-        </div>
-
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (
@@ -155,7 +163,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   )}
                   <div className="p-4">
                     <Link
-                      href={`/storefront/${store.slug}/products/${product.id}`}
+                      href={`${base}/products/${product.id}`}
                       className="block"
                     >
                       <h2 className="font-semibold text-slate-900">{product.title}</h2>
