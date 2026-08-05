@@ -14,43 +14,112 @@ export async function GET(_req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
 
-    const store = await prisma.store.findUnique({
-      where: {
-        id,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logoUrl: true,
-        heroImageUrl: true,
-        heroEyebrow: true,
-        heroTitle: true,
-        heroSubtitle: true,
-        heroButtonText: true,
-        activeTheme: true,
-        customDomain: true,
-        mainColor: true,
-        ownerId: true,
-        currency: true,
-        timezone: true,
-        allowedDomains: true,
-        offlinePaymentsEnabled: true,
-        createdAt: true,
-        updatedAt: true,
-        apiKeys: {
+    let store;
+
+    try {
+      store = await prisma.store.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          heroImageUrl: true,
+          heroEyebrow: true,
+          heroTitle: true,
+          heroSubtitle: true,
+          heroButtonText: true,
+          activeTheme: true,
+          customDomain: true,
+          mainColor: true,
+          ownerId: true,
+          currency: true,
+          timezone: true,
+          allowedDomains: true,
+          offlinePaymentsEnabled: true,
+          welcomeEmailEnabled: true,
+          orderConfirmationEmailEnabled: true,
+          invoiceEmailEnabled: true,
+          senderName: true,
+          senderEmail: true,
+          replyToEmail: true,
+          createdAt: true,
+          updatedAt: true,
+          apiKeys: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              key: true,
+              lastUsedAt: true,
+              expiresAt: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2022"
+      ) {
+        const legacyStore = await prisma.store.findUnique({
+          where: {
+            id,
+          },
           select: {
             id: true,
             name: true,
-            type: true,
-            key: true,
-            lastUsedAt: true,
-            expiresAt: true,
+            slug: true,
+            logoUrl: true,
+            heroImageUrl: true,
+            heroEyebrow: true,
+            heroTitle: true,
+            heroSubtitle: true,
+            heroButtonText: true,
+            activeTheme: true,
+            customDomain: true,
+            mainColor: true,
+            ownerId: true,
+            currency: true,
+            timezone: true,
+            allowedDomains: true,
+            offlinePaymentsEnabled: true,
             createdAt: true,
+            updatedAt: true,
+            apiKeys: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                key: true,
+                lastUsedAt: true,
+                expiresAt: true,
+                createdAt: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
+
+        store = legacyStore
+          ? {
+              ...legacyStore,
+              welcomeEmailEnabled: false,
+              orderConfirmationEmailEnabled: false,
+              invoiceEmailEnabled: false,
+              senderName: null,
+              senderEmail: null,
+              replyToEmail: null,
+            }
+          : null;
+      } else {
+        throw error;
+      }
+    }
 
     if (!store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
@@ -110,6 +179,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone,
       allowedDomains,
       offlinePaymentsEnabled,
+      welcomeEmailEnabled,
+      orderConfirmationEmailEnabled,
+      invoiceEmailEnabled,
+      senderName,
+      senderEmail,
+      replyToEmail,
     } = body as {
       name?: string;
       slug?: string;
@@ -126,6 +201,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      welcomeEmailEnabled?: boolean;
+      orderConfirmationEmailEnabled?: boolean;
+      invoiceEmailEnabled?: boolean;
+      senderName?: string | null;
+      senderEmail?: string | null;
+      replyToEmail?: string | null;
     };
 
     const updates: {
@@ -144,6 +225,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      welcomeEmailEnabled?: boolean;
+      orderConfirmationEmailEnabled?: boolean;
+      invoiceEmailEnabled?: boolean;
+      senderName?: string | null;
+      senderEmail?: string | null;
+      replyToEmail?: string | null;
     } = {};
 
     if (typeof name === "string" && name.trim()) {
@@ -227,6 +314,30 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.offlinePaymentsEnabled = offlinePaymentsEnabled;
     }
 
+    if (typeof welcomeEmailEnabled === "boolean") {
+      updates.welcomeEmailEnabled = welcomeEmailEnabled;
+    }
+
+    if (typeof orderConfirmationEmailEnabled === "boolean") {
+      updates.orderConfirmationEmailEnabled = orderConfirmationEmailEnabled;
+    }
+
+    if (typeof invoiceEmailEnabled === "boolean") {
+      updates.invoiceEmailEnabled = invoiceEmailEnabled;
+    }
+
+    if (senderName !== undefined) {
+      updates.senderName = typeof senderName === "string" && senderName.trim() ? senderName.trim() : null;
+    }
+
+    if (senderEmail !== undefined) {
+      updates.senderEmail = typeof senderEmail === "string" && senderEmail.trim() ? senderEmail.trim().toLowerCase() : null;
+    }
+
+    if (replyToEmail !== undefined) {
+      updates.replyToEmail = typeof replyToEmail === "string" && replyToEmail.trim() ? replyToEmail.trim().toLowerCase() : null;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "At least one field must be provided for update" },
@@ -257,6 +368,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         timezone: true,
         allowedDomains: true,
         offlinePaymentsEnabled: true,
+        welcomeEmailEnabled: true,
+        orderConfirmationEmailEnabled: true,
+        invoiceEmailEnabled: true,
+        senderName: true,
+        senderEmail: true,
+        replyToEmail: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -282,6 +399,18 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       return NextResponse.json(
         { error: "A store with this slug or domain already exists" },
         { status: 409 },
+      );
+    }
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2022"
+    ) {
+      return NextResponse.json(
+        { error: "Email settings columns are not available yet. Run the latest database migrations and try again." },
+        { status: 400 },
       );
     }
 

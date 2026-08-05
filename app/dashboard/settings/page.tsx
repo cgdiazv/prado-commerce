@@ -23,6 +23,11 @@ export default async function SettingsPage() {
       href: "/dashboard/settings/payments",
     },
     {
+      title: "Emails",
+      detail: "Configure buyer welcome, order confirmation, and invoice emails.",
+      href: "/dashboard/settings/emails",
+    },
+    {
       title: "Shipping",
       detail: "Set origin address, shipping zones, and delivery services.",
       href: "/dashboard/settings/shipping",

@@ -12,36 +12,86 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const stores = await prisma.store.findMany({
-      where: { ownerUserId: user.id },
-      orderBy: {
-        createdAt: "desc",
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logoUrl: true,
-        heroImageUrl: true,
-        activeTheme: true,
-        customDomain: true,
-        mainColor: true,
-        currency: true,
-        timezone: true,
-        allowedDomains: true,
-        offlinePaymentsEnabled: true,
-        createdAt: true,
-        updatedAt: true,
-        apiKeys: {
+    let stores;
+
+    try {
+      stores = await prisma.store.findMany({
+        where: { ownerUserId: user.id },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          heroImageUrl: true,
+          activeTheme: true,
+          customDomain: true,
+          mainColor: true,
+          currency: true,
+          timezone: true,
+          allowedDomains: true,
+          offlinePaymentsEnabled: true,
+          welcomeEmailEnabled: true,
+          orderConfirmationEmailEnabled: true,
+          invoiceEmailEnabled: true,
+          senderName: true,
+          senderEmail: true,
+          replyToEmail: true,
+          createdAt: true,
+          updatedAt: true,
+          apiKeys: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              key: true,
+            },
+          },
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2022"
+      ) {
+        stores = await prisma.store.findMany({
+          where: { ownerUserId: user.id },
+          orderBy: {
+            createdAt: "desc",
+          },
           select: {
             id: true,
             name: true,
-            type: true,
-            key: true,
+            slug: true,
+            logoUrl: true,
+            heroImageUrl: true,
+            activeTheme: true,
+            customDomain: true,
+            mainColor: true,
+            currency: true,
+            timezone: true,
+            allowedDomains: true,
+            offlinePaymentsEnabled: true,
+            createdAt: true,
+            updatedAt: true,
+            apiKeys: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                key: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
+      } else {
+        throw error;
+      }
+    }
 
     return NextResponse.json(stores);
   } catch (error) {
