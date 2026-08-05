@@ -44,6 +44,28 @@ const SENDER_FROM_EMAIL = "notifications@pradocommerce.com";
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
+function resolveAppBaseUrl() {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
+
+  if (configuredUrl) {
+    const withProtocol = /^https?:\/\//i.test(configuredUrl)
+      ? configuredUrl
+      : `https://${configuredUrl}`;
+
+    return withProtocol.replace(/\/+$/, "");
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return "https://pradocommerce.com";
+  }
+
+  return "http://localhost:3000";
+}
+
 function formatMoney(currency: string, amount: number) {
   return `${currency.toUpperCase()} ${Number(amount).toFixed(2)}`;
 }
@@ -67,7 +89,7 @@ function getReplyTo(store: StoreEmailConfig) {
 
 function baseHtmlShell(store: StoreEmailConfig, heading: string, bodyHtml: string, ctaLabel: string) {
   const theme = buildEmailBrandingStyles(store.mainColor);
-  const appBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+  const appBaseUrl = resolveAppBaseUrl();
   const storefrontUrl = `${appBaseUrl}/storefront/${store.slug}`;
 
   return `
