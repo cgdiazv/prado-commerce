@@ -237,7 +237,6 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                   : "bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
               }`}
             >
-              Start shopping
               {heroContent.buttonText}
             </a>
           </div>
@@ -254,10 +253,10 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                 <p className="mt-4 max-w-2xl text-sm text-slate-200 sm:text-base">{heroContent.subtitle}</p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <a href="#featured-products" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-                    Shop featured
+                    {heroContent.buttonText}
                   </a>
                   <a href="#all-products" className="rounded-full border border-slate-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    Browse catalog
+                    {heroContent.buttonText}
                   </a>
                 </div>
               </div>
@@ -295,7 +294,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
                   <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Featured selection</p>
                   <p className="mt-3 text-sm text-slate-700">Discover the hand-picked products our team chose this week.</p>
                   <a href="#featured-products" className="mt-5 inline-block text-sm font-semibold text-[var(--store-main-color)] hover:underline">
-                    View featured products
+                    {heroContent.buttonText}
                   </a>
                 </div>
               )}
@@ -313,7 +312,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
             <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{heroContent.title}</h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base">{heroContent.subtitle}</p>
             <a href="#all-products" className="mt-6 inline-block rounded-full bg-[var(--store-main-color)] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]">
-              Start shopping
+              {heroContent.buttonText}
             </a>
           </section>
         )}

@@ -158,7 +158,6 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   : "bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
               }`}
             >
-              Start shopping
               {heroContent.buttonText}
             </a>
           </div>
@@ -175,11 +174,9 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                 <p className="mt-4 max-w-2xl text-sm text-slate-200 sm:text-base">{heroContent.subtitle}</p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <a href="#featured-products" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-                    Shop featured
                     {heroContent.buttonText}
                   </a>
                   <a href="#all-products" className="rounded-full border border-slate-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    {heroContent.buttonText}
                     {heroContent.buttonText}
                   </a>
                 </div>
@@ -218,7 +215,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Featured selection</p>
                   <p className="mt-3 text-sm text-slate-700">Discover the hand-picked products our team chose this week.</p>
                   <a href="#featured-products" className="mt-5 inline-block text-sm font-semibold text-[var(--store-main-color)] hover:underline">
-                    View featured products
+                    {heroContent.buttonText}
                   </a>
                 </div>
               )}
