@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
-import { Menu, ShoppingCart, User, X } from "lucide-react";
+import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 
 export type StorefrontCategory = {
@@ -16,6 +16,7 @@ type StorefrontNavbarProps = {
   basePath?: string;
   categories?: StorefrontCategory[];
   activeCategory?: string;
+  searchQuery?: string;
   isAccountActive?: boolean;
   mainColor?: string;
 };
@@ -25,6 +26,7 @@ export default function StorefrontNavbar({
   basePath = "",
   categories = [],
   activeCategory,
+  searchQuery = "",
   isAccountActive = false,
   mainColor = "#0f172a",
 }: StorefrontNavbarProps) {
@@ -43,7 +45,7 @@ export default function StorefrontNavbar({
       className="border-b border-slate-200 bg-white px-6 py-4"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-2">
             {categories.length > 0 ? (
               <button
@@ -67,32 +69,48 @@ export default function StorefrontNavbar({
             </Link>
           </div>
 
-          {categories.length > 0 && (
-            <nav className="hidden flex-1 flex-wrap items-center gap-x-5 gap-y-1 md:flex">
-              <Link
-                href={homeHref}
-                className={`text-sm font-medium transition-colors ${
-                  !activeCategory ? "font-semibold" : "text-slate-500 hover:text-slate-900"
-                }`}
-                style={!activeCategory ? { color: resolvedMainColor } : undefined}
-              >
-                All
-              </Link>
-              {categories.map((cat) => (
+          <div className="hidden min-w-0 flex-1 flex-col gap-3 md:flex">
+            <form action={homeHref} method="get" className="w-full">
+              {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={searchQuery}
+                  placeholder="Search products"
+                  className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
+                />
+              </div>
+            </form>
+
+            {categories.length > 0 ? (
+              <nav className="flex flex-wrap items-center gap-x-5 gap-y-1">
                 <Link
-                  key={cat.id}
-                  href={basePath ? `${basePath}/?category=${cat.slug}` : `/?category=${cat.slug}`}
+                  href={homeHref}
                   className={`text-sm font-medium transition-colors ${
-                    activeCategory === cat.slug ? "font-semibold" : "text-slate-500 hover:text-slate-900"
+                    !activeCategory ? "font-semibold" : "text-slate-500 hover:text-slate-900"
                   }`}
-                  style={activeCategory === cat.slug ? { color: resolvedMainColor } : undefined}
-                  onClick={closeMobileMenu}
+                  style={!activeCategory ? { color: resolvedMainColor } : undefined}
                 >
-                  {cat.name}
+                  All
                 </Link>
-              ))}
-            </nav>
-          )}
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={basePath ? `${basePath}/?category=${cat.slug}` : `/?category=${cat.slug}`}
+                    className={`text-sm font-medium transition-colors ${
+                      activeCategory === cat.slug ? "font-semibold" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                    style={activeCategory === cat.slug ? { color: resolvedMainColor } : undefined}
+                    onClick={closeMobileMenu}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
 
           <div className="flex shrink-0 items-center gap-3">
             <Link
@@ -121,6 +139,20 @@ export default function StorefrontNavbar({
             </button>
           </div>
         </div>
+
+        <form action={homeHref} method="get" className="mt-4 md:hidden">
+          {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Search products"
+              className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
+            />
+          </div>
+        </form>
       </div>
 
       {categories.length > 0 ? (
@@ -154,6 +186,20 @@ export default function StorefrontNavbar({
             </div>
 
             <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
+              <form action={homeHref} method="get" className="mb-2 px-1">
+                {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={searchQuery}
+                    placeholder="Search products"
+                    className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
+                  />
+                </div>
+              </form>
+
               <Link
                 href={homeHref}
                 onClick={closeMobileMenu}

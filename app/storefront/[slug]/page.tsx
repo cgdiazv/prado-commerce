@@ -8,11 +8,12 @@ import { getStoreBrandingCssVars } from "@/lib/branding";
 import StorefrontNavbar from "../storefront-navbar";
 import StorefrontFooter from "../storefront-footer";
 
-type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string }> };
+type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string; q?: string }> };
 
 export default async function StorefrontPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { category: activeCategory } = await searchParams;
+  const { category: activeCategory, q } = await searchParams;
+  const searchQuery = q?.trim() ?? "";
 
   const store = await prisma.store.findUnique({
     where: { slug },
@@ -39,6 +40,15 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         storeId: store.id,
         status: "ACTIVE",
         ...(activeCategory ? { category: { slug: activeCategory } } : {}),
+        ...(searchQuery
+          ? {
+              OR: [
+                { title: { contains: searchQuery, mode: "insensitive" as const } },
+                { slug: { contains: searchQuery, mode: "insensitive" as const } },
+                { description: { contains: searchQuery, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: "desc" },
       select: {
@@ -74,6 +84,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         basePath={base}
         categories={categories}
         activeCategory={activeCategory}
+        searchQuery={searchQuery}
         mainColor={store.mainColor}
       />
 

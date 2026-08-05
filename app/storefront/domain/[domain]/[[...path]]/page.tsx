@@ -10,12 +10,13 @@ import StorefrontFooter from "../../../storefront-footer";
 
 type PageProps = {
   params: Promise<{ domain: string; path?: string[] }>;
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; q?: string }>;
 };
 
 export default async function CustomDomainStorefrontPage({ params, searchParams }: PageProps) {
   const { domain, path: pathSegments } = await params;
-  const { category: activeCategory } = await searchParams;
+  const { category: activeCategory, q } = await searchParams;
+  const searchQuery = q?.trim() ?? "";
   const normalizedDomain = decodeURIComponent(domain).toLowerCase();
 
   const candidateDomains = normalizedDomain.startsWith("www.")
@@ -110,6 +111,15 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         storeId: store.id,
         status: "ACTIVE",
         ...(activeCategory ? { category: { slug: activeCategory } } : {}),
+        ...(searchQuery
+          ? {
+              OR: [
+                { title: { contains: searchQuery, mode: "insensitive" as const } },
+                { slug: { contains: searchQuery, mode: "insensitive" as const } },
+                { description: { contains: searchQuery, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: "desc" },
       select: {
@@ -144,6 +154,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         storeName={store.name}
         categories={categories}
         activeCategory={activeCategory}
+        searchQuery={searchQuery}
         mainColor={store.mainColor}
       />
 
