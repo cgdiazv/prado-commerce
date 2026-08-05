@@ -3,6 +3,10 @@
 import { usePathname } from "next/navigation";
 import { Footer } from "@/components/footer";
 
+type PublicFooterProps = {
+  forceHidden?: boolean;
+};
+
 const PUBLIC_FOOTER_PREFIXES = [
   "/pricing",
   "/login",
@@ -22,7 +26,11 @@ function shouldRenderPublicFooter(pathname: string): boolean {
   return PUBLIC_FOOTER_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-export function PublicFooter() {
+export function PublicFooter({ forceHidden = false }: PublicFooterProps) {
+  if (forceHidden) {
+    return null;
+  }
+
   const pathname = usePathname();
 
   if (!shouldRenderPublicFooter(pathname)) {
