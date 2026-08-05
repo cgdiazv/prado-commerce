@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashSecret, verifySecret } from "@/lib/credentials";
+import { getStoreEmailConfig, sendWelcomeEmail } from "@/lib/email-notifications";
 import {
   SHOPPER_SESSION_COOKIE,
   buildShopperSessionCookieValue,
@@ -95,12 +96,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    const storeExists = await prisma.store.findUnique({
-      where: { id: storeId },
-      select: { id: true },
-    });
+    const storeConfig = await getStoreEmailConfig(storeId);
 
-    if (!storeExists) {
+    if (!storeConfig) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
@@ -120,6 +118,18 @@ export async function POST(request: Request) {
         data: { storeId, email, firstName, lastName, passwordHash: hashSecret(password) },
         select: { id: true, storeId: true, email: true, firstName: true, lastName: true, phone: true, createdAt: true, updatedAt: true },
       });
+
+      if (storeConfig.welcomeEmailEnabled) {
+        try {
+          await sendWelcomeEmail({
+            store: storeConfig,
+            to: email,
+            firstName,
+          });
+        } catch (emailError) {
+          console.error("[SHOPPER_WELCOME_EMAIL_ERROR]", emailError);
+        }
+      }
     } else {
       const found = await prisma.customer.findUnique({
         where: { storeId_email: { storeId, email } },

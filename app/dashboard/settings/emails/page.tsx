@@ -154,8 +154,8 @@ export default function EmailSettingsPage() {
             </div>
           ) : null}
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Delivery status: Outbound buyer email sending is not wired yet in the checkout/order flows. These settings are ready and persisted for activation.
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Delivery status: Emails are live through Resend. Configure RESEND_API_KEY in your environment and emails will be sent from notifications@indevasa.com using your store branding color.
           </div>
 
           <div>

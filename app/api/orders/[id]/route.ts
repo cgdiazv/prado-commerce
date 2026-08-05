@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import { getStoreEmailConfig, sendInvoiceEmail } from "@/lib/email-notifications";
 
 type RouteContext = {
   params: Promise<{
@@ -68,6 +69,27 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       where: { id },
       data: updates,
     });
+
+    const becamePaid = updates.paymentStatus === "PAID" && order.paymentStatus !== "PAID";
+    const becameCompleted = updates.status === "COMPLETED" && order.status !== "COMPLETED";
+
+    if (becamePaid || becameCompleted) {
+      const storeConfig = await getStoreEmailConfig(order.storeId);
+
+      if (storeConfig?.invoiceEmailEnabled) {
+        try {
+          await sendInvoiceEmail({
+            store: storeConfig,
+            to: order.customerEmail,
+            orderNumber: updatedOrder.orderNumber,
+            total: Number(updatedOrder.total),
+            currency: updatedOrder.currency,
+          });
+        } catch (emailError) {
+          console.error("[INVOICE_EMAIL_ERROR]", emailError);
+        }
+      }
+    }
 
     return NextResponse.json({
       ok: true,
