@@ -61,6 +61,12 @@ model Store {
   timezone       String     @default("America/New_York")
   allowedDomains String[]
   offlinePaymentsEnabled Boolean @default(false)
+  welcomeEmailEnabled Boolean @default(false)
+  orderConfirmationEmailEnabled Boolean @default(false)
+  invoiceEmailEnabled Boolean @default(false)
+  senderName     String?
+  senderEmail    String?
+  replyToEmail   String?
 
   apiKeys        ApiKey[]
   products       Product[]

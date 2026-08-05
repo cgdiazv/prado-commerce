@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getShopperSessionCookieValueFromRequest } from "@/lib/shopper-auth";
+import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
 
 function toDecimal(value: number) {
   return Number(value.toFixed(2));
@@ -151,6 +152,22 @@ export async function POST(request: Request) {
 
       return createdOrder;
     });
+
+    const storeConfig = await getStoreEmailConfig(shopperSession.storeId);
+    if (storeConfig?.orderConfirmationEmailEnabled) {
+      try {
+        await sendOrderConfirmationEmail({
+          store: storeConfig,
+          to: email,
+          firstName,
+          orderNumber: order.orderNumber,
+          total: Number(order.total),
+          currency: order.currency,
+        });
+      } catch (emailError) {
+        console.error("[ORDER_CONFIRMATION_EMAIL_ERROR]", emailError);
+      }
+    }
 
     return NextResponse.json({
       ok: true,

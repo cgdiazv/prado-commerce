@@ -132,14 +132,14 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-[var(--store-main-color)] text-white" : "text-slate-600"}`}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-[var(--store-main-color)] text-white" : "text-slate-600"}`}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
             >
               Create account
             </button>
