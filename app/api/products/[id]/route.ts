@@ -110,6 +110,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       description,
       images,
       status,
+      featured,
       productType,
       categoryId,
       variants,
@@ -119,6 +120,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       description?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+      featured?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       variants?: unknown;
@@ -151,6 +153,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     if (status) {
       updates.status = status;
+    }
+
+    if (typeof featured === "boolean") {
+      updates.featured = featured;
     }
 
     if (productType) {

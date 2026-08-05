@@ -99,6 +99,7 @@ export async function GET(request: Request) {
         slug: true,
         description: true,
         images: true,
+        featured: true,
         status: true,
         productType: true,
         categoryId: true,
@@ -159,6 +160,7 @@ export async function POST(request: Request) {
       description,
       images,
       status,
+      featured,
       productType,
       categoryId,
       variants,
@@ -169,6 +171,7 @@ export async function POST(request: Request) {
       description?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+      featured?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       variants?: unknown;
@@ -227,6 +230,7 @@ export async function POST(request: Request) {
         description: description?.trim() || null,
         images: Array.isArray(images) ? images.filter((image) => typeof image === "string") : [],
         status: status ?? "DRAFT",
+        featured: typeof featured === "boolean" ? featured : false,
         productType: productType ?? "PHYSICAL",
         categoryId: categoryId ?? null,
         variants: parsedVariants.length

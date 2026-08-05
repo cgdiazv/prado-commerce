@@ -124,6 +124,7 @@ model Product {
   slug        String
   description String?        @db.Text
   images      String[]
+  featured    Boolean        @default(false)
   status      ProductStatus  @default(DRAFT)
   productType ProductType    @default(PHYSICAL)
 

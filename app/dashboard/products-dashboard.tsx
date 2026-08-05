@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 
 type Store = {
   id: string;
@@ -29,6 +29,7 @@ type Product = {
   slug: string;
   description: string | null;
   images: string[];
+  featured: boolean;
   status: "DRAFT" | "PUBLISHED" | "ACTIVE" | "ARCHIVED";
   categoryId: string | null;
   categoryName?: string | null;
@@ -63,6 +64,7 @@ export function ProductsDashboard({
   const [sortKey, setSortKey] = useState<SortKey>("updated");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [planNotice, setPlanNotice] = useState<string | null>(null);
+  const [updatingFeaturedIds, setUpdatingFeaturedIds] = useState<string[]>([]);
   const isStarter = currentPlan === "STARTER";
   const hasReachedProductLimit = isStarter && products.length >= 50;
 
@@ -170,6 +172,38 @@ export function ProductsDashboard({
     setProducts(data);
   }
 
+  async function handleToggleFeatured(productId: string, featured: boolean) {
+    if (updatingFeaturedIds.includes(productId)) {
+      return;
+    }
+
+    setUpdatingFeaturedIds((current) => [...current, productId]);
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ featured: !featured }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update featured status");
+      }
+
+      setProducts((current) =>
+        current.map((product) =>
+          product.id === productId ? { ...product, featured: !featured } : product,
+        ),
+      );
+    } catch {
+      setPlanNotice("Could not update featured status. Please try again.");
+    } finally {
+      setUpdatingFeaturedIds((current) => current.filter((id) => id !== productId));
+    }
+  }
+
   return (
     <>
       <section>
@@ -275,6 +309,7 @@ export function ProductsDashboard({
                             <SortIndicator active={sortKey === "name"} direction={sortDirection} />
                           </button>
                         </th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Featured</th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">
                           <button type="button" onClick={() => handleSort("sku")} className="flex items-center gap-1 transition hover:text-slate-950">
                             SKU
@@ -338,6 +373,27 @@ export function ProductsDashboard({
                               <p className="block font-semibold text-slate-900">{product.title}</p>
                               <p className="text-xs text-slate-500">/{product.slug}</p>
                             </td>
+                            <td className="px-4 py-3 align-top">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void handleToggleFeatured(product.id, product.featured);
+                                }}
+                                onKeyDown={(event) => {
+                                  event.stopPropagation();
+                                }}
+                                disabled={updatingFeaturedIds.includes(product.id)}
+                                aria-label={product.featured ? "Unfeature product" : "Feature product"}
+                                className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
+                                  product.featured
+                                    ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
+                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                } ${updatingFeaturedIds.includes(product.id) ? "cursor-not-allowed opacity-60" : ""}`}
+                              >
+                                <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
+                              </button>
+                            </td>
                             <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
                             <td className="px-4 py-3 align-top text-slate-700">{inventoryTotal}</td>
                             <td className="px-4 py-3 align-top text-slate-700">{firstPrice}</td>
@@ -392,6 +448,25 @@ export function ProductsDashboard({
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Featured</p>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleToggleFeatured(product.id, product.featured);
+                              }}
+                              disabled={updatingFeaturedIds.includes(product.id)}
+                              aria-label={product.featured ? "Unfeature product" : "Feature product"}
+                              className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
+                                product.featured
+                                  ? "bg-amber-50 text-amber-500"
+                                  : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                              } ${updatingFeaturedIds.includes(product.id) ? "cursor-not-allowed opacity-60" : ""}`}
+                            >
+                              <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
+                            </button>
+                          </div>
                           <div>
                             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
                             <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
