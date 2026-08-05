@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 
 const stackPillars = [
   {
@@ -47,6 +48,7 @@ const businessBenefits = [
 
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const activeBenefit = businessBenefits[activeIndex];
 
   useEffect(() => {
@@ -69,6 +71,10 @@ export default function Home() {
     );
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#0c1624] text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(14,165,233,0.33),transparent_36%),radial-gradient(circle_at_84%_0%,rgba(45,212,191,0.27),transparent_32%),linear-gradient(160deg,#0c1624_0%,#111827_48%,#1f2937_100%)]" />
@@ -76,8 +82,8 @@ export default function Home() {
       <div className="pointer-events-none absolute -right-24 bottom-10 h-80 w-80 rounded-full bg-teal-300/20 blur-3xl" />
 
       <div className="relative w-full pb-0">
-        <header className="prado-fade-up w-full border-b border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md sm:px-8 lg:px-10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <header className="prado-fade-up relative w-full border-b border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(103,232,249,0.8)]" />
             <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">
@@ -85,28 +91,95 @@ export default function Home() {
             </span>
           </div>
 
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
+              aria-label="Open menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="public-mobile-menu"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="hidden items-center gap-2 sm:flex">
               <Link
                 href="/pricing"
                 className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                onClick={closeMobileMenu}
               >
                 Pricing
               </Link>
               <Link
                 href="/dashboard"
                 className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                onClick={closeMobileMenu}
               >
                 Dashboard
               </Link>
               <Link
                 href="/signup"
                 className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+                onClick={closeMobileMenu}
               >
                 Create account
               </Link>
             </div>
           </div>
         </header>
+
+        <button
+          type="button"
+          onClick={closeMobileMenu}
+          aria-label="Close mobile menu overlay"
+          className={`fixed inset-0 z-40 bg-slate-950/45 transition-opacity sm:hidden ${
+            isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        />
+
+        <aside
+          id="public-mobile-menu"
+          aria-hidden={!isMobileMenuOpen}
+          className={`fixed right-0 top-0 z-50 flex h-full w-[84vw] max-w-xs flex-col border-l border-cyan-100/20 bg-[#020617] p-5 opacity-100 shadow-[0_28px_80px_rgba(2,6,23,0.55)] transition-transform duration-300 sm:hidden ${
+            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">Menu</span>
+            <button
+              type="button"
+              onClick={closeMobileMenu}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <nav className="mt-6 flex flex-1 flex-col gap-2">
+            <Link
+              href="/pricing"
+              className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              onClick={closeMobileMenu}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/dashboard"
+              className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              onClick={closeMobileMenu}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
+              onClick={closeMobileMenu}
+            >
+              Create account
+            </Link>
+          </nav>
+        </aside>
 
         <section className="mt-14 w-full px-6 sm:px-8 lg:px-10">
           <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">

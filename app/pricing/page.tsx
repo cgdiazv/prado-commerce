@@ -2,6 +2,7 @@
 
 import { useState, type MouseEvent } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 
 type Tier = {
   name: "Starter" | "Pro" | "Enterprise";
@@ -106,6 +107,11 @@ const comparisonRows: Array<{ label: string; values: [string, string, string] }>
 
 export default function PricingPage() {
   const [billingMode, setBillingMode] = useState<BillingMode>("monthly");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement>, tier: Tier) => {
     if (tier.name === "Starter") {
@@ -144,27 +150,86 @@ export default function PricingPage() {
       <div className="pointer-events-none absolute -right-24 bottom-10 h-80 w-80 rounded-full bg-teal-300/20 blur-3xl" />
 
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-12 pt-8 sm:px-8 lg:px-10">
-        <header className="prado-fade-up flex flex-wrap items-center justify-between gap-3">
+        <header className="prado-fade-up relative flex items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(103,232,249,0.8)]" />
             <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">Prado Commerce</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
+            aria-label="Open menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="pricing-mobile-menu"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu size={18} />
+          </button>
+
+          <div className="hidden items-center gap-2 sm:flex">
             <Link
               href="/"
               className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              onClick={closeMobileMenu}
             >
               Home
             </Link>
             <Link
               href="/signup"
               className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+              onClick={closeMobileMenu}
             >
               Create account
             </Link>
           </div>
         </header>
+
+        <button
+          type="button"
+          onClick={closeMobileMenu}
+          aria-label="Close mobile menu overlay"
+          className={`fixed inset-0 z-40 bg-slate-950/45 transition-opacity sm:hidden ${
+            isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        />
+
+        <aside
+          id="pricing-mobile-menu"
+          aria-hidden={!isMobileMenuOpen}
+          className={`fixed right-0 top-0 z-50 flex h-full w-[84vw] max-w-xs flex-col border-l border-cyan-100/20 bg-[#020617] p-5 opacity-100 shadow-[0_28px_80px_rgba(2,6,23,0.55)] transition-transform duration-300 sm:hidden ${
+            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">Menu</span>
+            <button
+              type="button"
+              onClick={closeMobileMenu}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <nav className="mt-6 flex flex-1 flex-col gap-2">
+            <Link
+              href="/"
+              className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              onClick={closeMobileMenu}
+            >
+              Home
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
+              onClick={closeMobileMenu}
+            >
+              Create account
+            </Link>
+          </nav>
+        </aside>
 
         <section className="prado-fade-up prado-delay-1 mt-10 max-w-5xl">
           <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">

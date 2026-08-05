@@ -57,3 +57,12 @@ body {
     animation: none;
   }
 }
+
+@media (max-width: 768px) {
+  /* Prevent mobile browsers from zooming text fields on focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
