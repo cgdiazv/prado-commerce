@@ -26,7 +26,7 @@ export default function StoreProfilePage() {
       try {
         const response = await fetch("/api/stores", { cache: "no-store" });
         const payload = (await response.json()) as
-          | Array<{ id: string; mainColor?: string; phone?: string | null }>
+          | Array<{ id: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>
           | { error?: string };
 
         if (!response.ok) {
@@ -42,7 +42,7 @@ export default function StoreProfilePage() {
           throw new Error(apiError || "Unable to load store profile settings.");
         }
 
-        const stores = payload as Array<{ id: string; mainColor?: string; phone?: string | null }>;
+        const stores = payload as Array<{ id: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>;
         const activeStore = Array.isArray(stores) ? stores[0] : null;
 
         if (!activeStore?.id) {
@@ -51,6 +51,7 @@ export default function StoreProfilePage() {
 
         setStoreId(activeStore.id);
         setStoreMainColor(normalizeMainColor(activeStore.mainColor ?? "#0f172a"));
+        setLogoUrl(activeStore.logoUrl ?? null);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Unable to load store profile settings.");
       }
@@ -129,6 +130,7 @@ export default function StoreProfilePage() {
         },
         body: JSON.stringify({
           mainColor: normalizeMainColor(storeMainColor),
+          logoUrl,
         }),
       });
 
@@ -191,10 +193,24 @@ export default function StoreProfilePage() {
             </p>
 
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 {logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoUrl} alt="Store logo preview" className="h-full w-full object-cover" />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={logoUrl} alt="Store logo preview" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLogoUrl(null);
+                        setSuccess(null);
+                        setError(null);
+                      }}
+                      disabled={isUploadingLogo || isSaving}
+                      className="absolute inset-0 flex items-center justify-center bg-slate-950/55 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Remove
+                    </button>
+                  </>
                 ) : (
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Logo</span>
                 )}

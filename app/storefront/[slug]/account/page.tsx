@@ -1,8 +1,6 @@
 import { cookies, headers } from "next/headers";
-import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getStoreBrandingCssVars } from "@/lib/branding";
 import AuthPanel from "../auth-panel";
 import AccountSidebarLayout from "../account-sidebar-layout";
 import StorefrontNavbar from "../../storefront-navbar";
@@ -17,7 +15,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, mainColor: true, currency: true },
+    select: { id: true, name: true, slug: true, logoUrl: true, mainColor: true, currency: true },
   });
 
   if (!store) notFound();
@@ -33,11 +31,8 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   if (!isLoggedIn) {
     return (
-      <div
-        style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-        className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
-      >
-        <StorefrontNavbar storeName={store.name} basePath={base} isAccountActive mainColor={store.mainColor} />
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+        <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} isAccountActive mainColor={store.mainColor} />
         <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
@@ -49,11 +44,8 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   }
 
   return (
-    <div
-      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
-    >
-      <StorefrontNavbar storeName={store.name} basePath={base} isAccountActive mainColor={store.mainColor} />
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} isAccountActive mainColor={store.mainColor} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <AccountSidebarLayout />
       </main>

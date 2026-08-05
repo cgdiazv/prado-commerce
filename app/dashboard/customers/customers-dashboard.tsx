@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -43,6 +43,8 @@ export function CustomersDashboard({
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<"name" | "email" | "phone" | "createdAt">("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const activeCustomers = useMemo(() => {
     const filtered = customers.filter((customer) => customer.storeId === activeStoreId);
@@ -68,6 +70,20 @@ export function CustomersDashboard({
     });
   }, [customers, activeStoreId, sortField, sortDirection]);
 
+  const totalCustomers = activeCustomers.length;
+  const totalPages = Math.max(1, Math.ceil(totalCustomers / pageSize));
+  const pageStart = totalCustomers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, totalCustomers);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return activeCustomers.slice(start, start + pageSize);
+  }, [activeCustomers, currentPage, pageSize]);
+
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -75,6 +91,8 @@ export function CustomersDashboard({
       setSortField(field);
       setSortDirection("asc");
     }
+
+    setCurrentPage(1);
   };
 
   function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
@@ -105,6 +123,7 @@ export function CustomersDashboard({
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
     setError(null);
+    setCurrentPage(1);
 
     try {
       await refreshCustomers(storeId);
@@ -170,13 +189,37 @@ export function CustomersDashboard({
         ) : null}
 
         <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          {activeCustomers.length === 0 ? (
+          {totalCustomers === 0 ? (
             <div className="p-10 text-center text-slate-500">
               No customers yet for this store.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <>
+              <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-medium text-slate-600">
+                  Showing {pageStart}-{pageEnd} of {totalCustomers} customers
+                </p>
+                <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                  Rows per page
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                  >
+                    {[25, 50, 100, 500].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
@@ -222,7 +265,7 @@ export function CustomersDashboard({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {activeCustomers.map((customer) => {
+                  {paginatedCustomers.map((customer) => {
                     const fullName = `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim();
 
                     return (
@@ -243,8 +286,31 @@ export function CustomersDashboard({
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <p className="text-xs font-medium text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>

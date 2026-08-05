@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Star } from "lucide-react";
@@ -63,6 +63,8 @@ export function ProductsDashboard({
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("updated");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
   const [planNotice, setPlanNotice] = useState<string | null>(null);
   const [updatingFeaturedIds, setUpdatingFeaturedIds] = useState<string[]>([]);
   const isStarter = currentPlan === "STARTER";
@@ -124,14 +126,30 @@ export function ProductsDashboard({
     return rows;
   }, [filteredProducts, sortDirection, sortKey]);
 
+  const totalProducts = sortedProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+  const pageStart = totalProducts === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, totalProducts);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedProducts.slice(start, start + pageSize);
+  }, [sortedProducts, currentPage, pageSize]);
+
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      setCurrentPage(1);
       return;
     }
 
     setSortKey(key);
     setSortDirection("asc");
+    setCurrentPage(1);
   }
 
   function SortIndicator({ active, direction }: { active: boolean; direction: SortDirection }) {
@@ -159,6 +177,7 @@ export function ProductsDashboard({
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
     setQuery("");
+    setCurrentPage(1);
 
     const response = await fetch(`/api/products?storeId=${encodeURIComponent(storeId)}`, {
       cache: "no-store",
@@ -284,7 +303,10 @@ export function ProductsDashboard({
               <span className="text-sm font-medium text-slate-700">Search products</span>
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Search by title, slug, or status"
                 className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
@@ -292,12 +314,35 @@ export function ProductsDashboard({
           </div>
 
           <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {sortedProducts.length === 0 ? (
+            {totalProducts === 0 ? (
               <div className="p-10 text-center text-slate-500">
                 No products yet for this store.
               </div>
             ) : (
               <>
+                <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs font-medium text-slate-600">
+                    Showing {pageStart}-{pageEnd} of {totalProducts} products
+                  </p>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    Rows per page
+                    <select
+                      value={pageSize}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                    >
+                      {[25, 50, 100, 500].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
                 <div className="hidden overflow-x-auto md:block">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50">
@@ -338,7 +383,7 @@ export function ProductsDashboard({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {sortedProducts.map((product) => {
+                      {paginatedProducts.map((product) => {
                         const firstVariant = product.variants[0];
                         const thumbnailUrl = product.images[0];
                         const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
@@ -409,7 +454,7 @@ export function ProductsDashboard({
                 </div>
 
                 <div className="flex flex-col gap-3 p-3 md:hidden">
-                  {sortedProducts.map((product) => {
+                  {paginatedProducts.map((product) => {
                     const firstVariant = product.variants[0];
                     const thumbnailUrl = product.images[0];
                     const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
@@ -493,6 +538,28 @@ export function ProductsDashboard({
                       </article>
                     );
                   })}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage <= 1}
+                    className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <p className="text-xs font-medium text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                  </button>
                 </div>
               </>
             )}

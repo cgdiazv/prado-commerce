@@ -13,6 +13,7 @@ export type StorefrontCategory = {
 
 type StorefrontNavbarProps = {
   storeName: string;
+  logoUrl?: string | null;
   basePath?: string;
   categories?: StorefrontCategory[];
   activeCategory?: string;
@@ -23,6 +24,7 @@ type StorefrontNavbarProps = {
 
 export default function StorefrontNavbar({
   storeName,
+  logoUrl = null,
   basePath = "",
   categories = [],
   activeCategory,
@@ -62,10 +64,15 @@ export default function StorefrontNavbar({
 
             <Link
               href={homeHref}
-              className="shrink-0 text-xl font-semibold tracking-tight transition-opacity hover:opacity-75"
+              className="shrink-0 transition-opacity hover:opacity-75"
               onClick={closeMobileMenu}
             >
-              {storeName}
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[180px] object-contain" />
+              ) : (
+                <span className="text-xl font-semibold tracking-tight">{storeName}</span>
+              )}
             </Link>
           </div>
 

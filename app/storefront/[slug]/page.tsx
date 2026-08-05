@@ -21,6 +21,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       id: true,
       name: true,
       slug: true,
+      logoUrl: true,
       mainColor: true,
       currency: true,
     },
@@ -81,6 +82,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
     >
       <StorefrontNavbar
         storeName={store.name}
+        logoUrl={store.logoUrl}
         basePath={base}
         categories={categories}
         activeCategory={activeCategory}

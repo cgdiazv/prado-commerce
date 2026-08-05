@@ -434,16 +434,11 @@ export default function DashboardLayout({
             className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||
               pathname.startsWith("/dashboard/stores") ||
-              (pathname.startsWith("/dashboard/products") && !pathname.startsWith("/dashboard/products/new")) ||
+              pathname.startsWith("/dashboard/products") ||
               pathname.startsWith("/dashboard/orders") ||
-              (pathname.startsWith("/dashboard/customers") &&
-                !pathname.startsWith("/dashboard/customers/new"))
+              pathname.startsWith("/dashboard/customers")
                 ? ""
-                : pathname.startsWith("/dashboard/products/new")
-                  ? "mx-auto max-w-4xl"
-                : pathname.startsWith("/dashboard/customers/new")
-                  ? "mx-auto max-w-4xl"
-                  : "mx-auto max-w-4xl"
+                : "mx-auto max-w-4xl"
             }`}
           >
             {children}

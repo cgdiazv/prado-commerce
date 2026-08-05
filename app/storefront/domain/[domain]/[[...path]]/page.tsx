@@ -33,6 +33,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       id: true,
       name: true,
       slug: true,
+      logoUrl: true,
       mainColor: true,
       currency: true,
     },
@@ -68,7 +69,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
         className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
       >
-        <StorefrontNavbar storeName={store.name} mainColor={store.mainColor} />
+        <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} mainColor={store.mainColor} />
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
           <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
             <div>
@@ -152,6 +153,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     >
       <StorefrontNavbar
         storeName={store.name}
+        logoUrl={store.logoUrl}
         categories={categories}
         activeCategory={activeCategory}
         searchQuery={searchQuery}

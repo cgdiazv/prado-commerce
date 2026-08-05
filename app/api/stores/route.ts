@@ -21,6 +21,7 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         slug: true,
+        logoUrl: true,
         customDomain: true,
         mainColor: true,
         currency: true,
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
     const { name, slug, customDomain, mainColor, currency, timezone, allowedDomains } = body as {
       name?: string;
       slug?: string;
+      logoUrl?: string | null;
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;

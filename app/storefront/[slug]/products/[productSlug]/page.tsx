@@ -18,7 +18,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, mainColor: true, currency: true },
+    select: { id: true, name: true, slug: true, logoUrl: true, mainColor: true, currency: true },
   });
 
   if (!store) {
@@ -73,7 +73,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
       style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
       className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
     >
-      <StorefrontNavbar storeName={store.name} basePath={base} mainColor={store.mainColor} />
+      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} mainColor={store.mainColor} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">

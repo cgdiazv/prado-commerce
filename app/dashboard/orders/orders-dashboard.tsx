@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -46,6 +46,8 @@ export function OrdersDashboard({
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof Order | "customerEmail" | "paymentStatus">("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const visibleOrders = useMemo(() => {
     const filtered = orders.filter((order) => order.storeId === activeStoreId);
@@ -71,6 +73,20 @@ export function OrdersDashboard({
     });
   }, [orders, activeStoreId, sortField, sortDirection]);
 
+  const totalOrders = visibleOrders.length;
+  const totalPages = Math.max(1, Math.ceil(totalOrders / pageSize));
+  const pageStart = totalOrders === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, totalOrders);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return visibleOrders.slice(start, start + pageSize);
+  }, [visibleOrders, currentPage, pageSize]);
+
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -78,6 +94,8 @@ export function OrdersDashboard({
       setSortField(field);
       setSortDirection("asc");
     }
+
+    setCurrentPage(1);
   };
 
   function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
@@ -108,6 +126,7 @@ export function OrdersDashboard({
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
     setError(null);
+    setCurrentPage(1);
 
     try {
       await refreshOrders(storeId);
@@ -173,13 +192,37 @@ export function OrdersDashboard({
         ) : null}
 
         <div className="mt-8 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          {visibleOrders.length === 0 ? (
+          {totalOrders === 0 ? (
             <div className="p-10 text-center text-slate-500">
               No orders yet for this store.
             </div>
           ) : (
-            <div className="w-full max-w-full overflow-x-auto overscroll-x-contain">
-              <table className="min-w-[760px] divide-y divide-slate-200 text-sm md:min-w-full">
+            <>
+              <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-medium text-slate-600">
+                  Showing {pageStart}-{pageEnd} of {totalOrders} orders
+                </p>
+                <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                  Rows per page
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                  >
+                    {[25, 50, 100, 500].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="w-full max-w-full overflow-x-auto overscroll-x-contain">
+                <table className="min-w-[760px] divide-y divide-slate-200 text-sm md:min-w-full">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
@@ -245,7 +288,7 @@ export function OrdersDashboard({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {visibleOrders.map((order) => (
+                  {paginatedOrders.map((order) => (
                     <tr
                       key={order.id}
                       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
@@ -262,8 +305,31 @@ export function OrdersDashboard({
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <p className="text-xs font-medium text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>

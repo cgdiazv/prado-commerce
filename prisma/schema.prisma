@@ -45,6 +45,7 @@ model Store {
   id             String     @id @default(cuid())
   name           String
   slug           String     @unique
+  logoUrl        String?
   customDomain   String?    @unique
   mainColor      String     @default("#0f172a")
   ownerId        String

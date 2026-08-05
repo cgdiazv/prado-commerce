@@ -107,6 +107,9 @@ type ProductFormProps = {
 export function ProductForm({ stores, categories = [], initialProduct = null, selectedStoreId = null }: ProductFormProps) {
   const router = useRouter();
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? stores[0]?.id ?? "");
+  const [availableCategories, setAvailableCategories] = useState<Category[]>(categories);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [editingProduct] = useState(initialProduct);
   const [productForm, setProductForm] = useState<ProductFormState>(
     initialProduct
@@ -147,6 +150,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const activeStore = stores.find((store) => store.id === activeStoreId) ?? null;
+  const activeStoreCategories = availableCategories
+    .filter((category) => category.storeId === activeStoreId)
+    .sort((left, right) => left.name.localeCompare(right.name));
   const isNonPhysicalProduct = productForm.productType !== "PHYSICAL";
 
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -156,8 +162,8 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
     const files = Array.from(event.target.files ?? []);
     if (files.length === 0) return;
 
-    if (uploadedImages.length >= 1) {
-      setError("Only one featured image is allowed. Remove the current one first.");
+    if (files.length > 1) {
+      setError("Only one featured image can be uploaded at a time.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -190,7 +196,8 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         if (!data.url) throw new Error("Upload failed");
         urls.push(data.url);
       }
-      setUploadedImages((current) => [...current, ...urls]);
+      // Featured image is single-value, so selecting a new one replaces the current image.
+      setUploadedImages(urls.slice(0, 1));
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed");
     } finally {
@@ -266,6 +273,67 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
 
   function removeVariant(index: number) {
     setVariants((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  async function handleCreateCategory() {
+    const trimmedName = newCategoryName.trim();
+
+    if (!activeStoreId) {
+      setError("Select a store before creating a category.");
+      return;
+    }
+
+    if (!trimmedName) {
+      setError("Enter a category name.");
+      return;
+    }
+
+    if (isCreatingCategory) {
+      return;
+    }
+
+    setIsCreatingCategory(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storeId: activeStoreId,
+          name: trimmedName,
+        }),
+      });
+
+      const result = (await response.json()) as { id?: string; name?: string; storeId?: string; error?: string };
+
+      if (!response.ok || !result.id || !result.name || !result.storeId) {
+        throw new Error(result.error ?? "Failed to create category");
+      }
+
+      const createdCategory: Category = {
+        id: result.id,
+        name: result.name,
+        storeId: result.storeId,
+      };
+
+      setAvailableCategories((current) => {
+        if (current.some((category) => category.id === createdCategory.id)) {
+          return current;
+        }
+
+        return [...current, createdCategory];
+      });
+
+      setProductForm((current) => ({ ...current, categoryId: createdCategory.id }));
+      setNewCategoryName("");
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "Failed to create category");
+    } finally {
+      setIsCreatingCategory(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -395,12 +463,32 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="">No category</option>
-              {categories
-                .filter((c) => c.storeId === activeStoreId)
-                .map((c) => (
+              {activeStoreCategories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+              ))}
             </select>
+            <div className="flex gap-2">
+              <input
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleCreateCategory();
+                  }
+                }}
+                placeholder="Create new category"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+              <button
+                type="button"
+                onClick={() => void handleCreateCategory()}
+                disabled={isCreatingCategory}
+                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCreatingCategory ? "Adding..." : "Add"}
+              </button>
+            </div>
           </label>
           <label className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">Description</span>
@@ -499,6 +587,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               onChange={(event) => {
                 setActiveStoreId(event.target.value);
                 setProductForm((current) => ({ ...current, categoryId: "" }));
+                setNewCategoryName("");
               }}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:w-auto sm:min-w-[260px]"
             >
@@ -631,15 +720,6 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                       <option value="false">No</option>
                     </select>
                   </label>
-                  {editingProduct ? (
-                    <Field
-                      label="Options JSON"
-                      value={variant.options}
-                      onChange={(value) => updateVariant(index, { options: value })}
-                      placeholder='{"size":"L","color":"Blue"}'
-                      className="sm:col-span-2"
-                    />
-                  ) : null}
                 </div>
               </div>
             ))}
