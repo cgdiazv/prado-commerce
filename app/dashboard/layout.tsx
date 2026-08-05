@@ -371,7 +371,7 @@ export default function DashboardLayout({
               {/* Glassmorphic Dropdown */}
               {isDropdownOpen && (
                 <div 
-                  className="absolute right-0 mt-2 z-50 w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:w-96"
+                  className="fixed left-1/2 top-16 z-50 w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 sm:max-w-none sm:translate-x-0"
                   onMouseLeave={() => setIsDropdownOpen(false)}
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -521,7 +521,7 @@ export default function DashboardLayout({
 
       {/* Slide-in Toast Notification */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 flex max-w-sm w-full animate-slide-in items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl backdrop-blur-md">
+        <div className="fixed bottom-5 left-1/2 z-50 flex w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 animate-slide-in items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl backdrop-blur-md sm:left-auto sm:right-5 sm:w-full sm:translate-x-0">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-600 border border-cyan-100">
             <Bell className="h-4.5 w-4.5 animate-swing" />
           </div>

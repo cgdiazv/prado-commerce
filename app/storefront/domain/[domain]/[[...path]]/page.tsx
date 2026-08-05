@@ -62,6 +62,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     buttonText: store.heroButtonText,
   });
 
+  // Handle /products/[id] path for custom domain storefronts
   if (pathSegments?.[0] === "reset" && pathSegments[1]) {
     return <PasswordResetForm token={pathSegments[1]} successPath="/account" storeName={store.name} />;
   }
