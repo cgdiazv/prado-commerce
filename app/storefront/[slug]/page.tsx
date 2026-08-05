@@ -118,7 +118,44 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         mainColor={store.mainColor}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+      {theme === "minimal" ? (
+        <section
+          className={`w-full border-b px-6 py-14 text-center ${themeClasses.hero}`}
+          style={
+            hasHeroImage
+              ? {
+                  backgroundImage: `linear-gradient(rgba(15,23,42,0.55), rgba(15,23,42,0.55)), url(${store.heroImageUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
+        >
+          <div className="mx-auto w-full max-w-6xl">
+            <p className={`text-xs font-semibold uppercase tracking-[0.22em] ${hasHeroImage ? "text-white/90" : "opacity-80"}`}>
+              {heroContent.eyebrow}
+            </p>
+            <h1 className={`mt-3 text-3xl font-semibold tracking-tight sm:text-4xl ${hasHeroImage ? "text-white" : ""}`}>
+              {heroContent.title}
+            </h1>
+            <p className={`mx-auto mt-3 max-w-2xl text-sm sm:text-base ${hasHeroImage ? "text-white/90" : ""}`}>
+              {heroContent.subtitle}
+            </p>
+            <a
+              href="#all-products"
+              className={`mt-6 inline-block rounded-full px-5 py-2 text-sm font-semibold transition ${
+                hasHeroImage
+                  ? "bg-white text-slate-900 hover:bg-slate-100"
+                  : "bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
+              }`}
+            >
+              Start shopping
+            </a>
+          </div>
+        </section>
+      ) : null}
+
+      <main className={`mx-auto w-full max-w-6xl flex-1 px-6 pb-12 ${theme === "minimal" ? "pt-8" : "py-12"}`}>
         {theme === "bold" ? (
           <section className={`mb-10 rounded-3xl border px-8 py-10 ${themeClasses.hero}`}>
             <div className="grid items-center gap-8 lg:grid-cols-[1.5fr_0.8fr]">
@@ -175,7 +212,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               )}
             </div>
           </section>
-        ) : (
+        ) : theme === "minimal" ? null : (
           <section className={`mb-10 rounded-3xl border px-8 py-10 text-center ${themeClasses.hero}`}>
             {hasHeroImage ? (
               <div className="mx-auto mb-6 max-w-4xl overflow-hidden rounded-2xl border border-slate-200">
