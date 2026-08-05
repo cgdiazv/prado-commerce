@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStoreBrandingCssVars } from "@/lib/branding";
-import { getStorefrontThemeClasses, getStorefrontThemeHeroContent, normalizeStorefrontTheme } from "@/lib/storefront-theme";
+import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
+import PasswordResetForm from "../../../password-reset-form";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ domain: string; path?: string[] }>;
@@ -36,6 +39,10 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       slug: true,
       logoUrl: true,
       heroImageUrl: true,
+      heroEyebrow: true,
+      heroTitle: true,
+      heroSubtitle: true,
+      heroButtonText: true,
       activeTheme: true,
       mainColor: true,
       currency: true,
@@ -48,7 +55,17 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
 
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
-  const heroContent = getStorefrontThemeHeroContent(theme, store.name);
+  const heroContent = getStorefrontThemeHeroContentWithOverrides(theme, store.name, {
+    eyebrow: store.heroEyebrow,
+    title: store.heroTitle,
+    subtitle: store.heroSubtitle,
+    buttonText: store.heroButtonText,
+  });
+
+  // Handle /products/[id] path for custom domain storefronts
+  if (pathSegments?.[0] === "reset" && pathSegments[1]) {
+    return <PasswordResetForm token={pathSegments[1]} successPath="/account" storeName={store.name} />;
+  }
 
   // Handle /products/[id] path for custom domain storefronts
   if (pathSegments?.[0] === "products" && pathSegments[1]) {
@@ -221,6 +238,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
               }`}
             >
               Start shopping
+              {heroContent.buttonText}
             </a>
           </div>
         </section>

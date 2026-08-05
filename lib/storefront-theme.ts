@@ -60,25 +60,45 @@ export function getStorefrontThemeClasses(theme: StorefrontThemeId) {
 }
 
 export function getStorefrontThemeHeroContent(theme: StorefrontThemeId, storeName: string) {
-  if (theme === "bold") {
-    return {
-      eyebrow: "Limited drops",
-      title: `${storeName} storefront, built to stand out`,
-      subtitle: "High-contrast layout, punchy product focus, and quick cart actions for fast buying.",
-    };
-  }
+  return getStorefrontThemeHeroContentWithOverrides(theme, storeName, {});
+}
 
-  if (theme === "classic") {
-    return {
-      eyebrow: "Curated collection",
-      title: `Welcome to ${storeName}`,
-      subtitle: "A timeless catalog layout that highlights quality picks and featured products first.",
-    };
-  }
+export function getStorefrontThemeHeroContentWithOverrides(
+  theme: StorefrontThemeId,
+  storeName: string,
+  overrides: {
+    eyebrow?: string | null;
+    title?: string | null;
+    subtitle?: string | null;
+    buttonText?: string | null;
+  },
+) {
+  const defaults =
+    theme === "bold"
+      ? {
+          eyebrow: "Limited drops",
+          title: `${storeName} storefront, built to stand out`,
+          subtitle: "High-contrast layout, punchy product focus, and quick cart actions for fast buying.",
+          buttonText: "Shop featured",
+        }
+      : theme === "classic"
+        ? {
+            eyebrow: "Curated collection",
+            title: `Welcome to ${storeName}`,
+            subtitle: "A timeless catalog layout that highlights quality picks and featured products first.",
+            buttonText: "View featured products",
+          }
+        : {
+            eyebrow: "Shop online",
+            title: `Explore ${storeName}`,
+            subtitle: "A clean browsing experience with search, categories, and quick add-to-cart actions.",
+            buttonText: "Start shopping",
+          };
 
   return {
-    eyebrow: "Shop online",
-    title: `Explore ${storeName}`,
-    subtitle: "A clean browsing experience with search, categories, and quick add-to-cart actions.",
+    eyebrow: overrides.eyebrow?.trim() || defaults.eyebrow,
+    title: overrides.title?.trim() || defaults.title,
+    subtitle: overrides.subtitle?.trim() || defaults.subtitle,
+    buttonText: overrides.buttonText?.trim() || defaults.buttonText,
   };
 }

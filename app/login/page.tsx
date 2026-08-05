@@ -60,7 +60,7 @@ function LoginPageContent() {
         </Link>
         <h1 className="mt-3 text-3xl font-semibold text-white">Sign in to Dashboard</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Use the password you created from your Prado Commerce onboarding link.
+          Use the password you created for your Prado Commerce account. If you forgot it, use password reset.
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

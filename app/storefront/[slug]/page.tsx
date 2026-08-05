@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStoreBrandingCssVars } from "@/lib/branding";
-import { getStorefrontThemeClasses, getStorefrontThemeHeroContent, normalizeStorefrontTheme } from "@/lib/storefront-theme";
+import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import StorefrontNavbar from "../storefront-navbar";
 import StorefrontFooter from "../storefront-footer";
 
@@ -24,6 +24,10 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       slug: true,
       logoUrl: true,
       heroImageUrl: true,
+      heroEyebrow: true,
+      heroTitle: true,
+      heroSubtitle: true,
+      heroButtonText: true,
       activeTheme: true,
       mainColor: true,
       currency: true,
@@ -40,7 +44,12 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const base = isSubdomain ? "" : `/storefront/${store.slug}`;
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
-  const heroContent = getStorefrontThemeHeroContent(theme, store.name);
+  const heroContent = getStorefrontThemeHeroContentWithOverrides(theme, store.name, {
+    eyebrow: store.heroEyebrow,
+    title: store.heroTitle,
+    subtitle: store.heroSubtitle,
+    buttonText: store.heroButtonText,
+  });
 
   const [products, featuredProducts, categories] = await Promise.all([    prisma.product.findMany({
       where: {
@@ -150,6 +159,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               }`}
             >
               Start shopping
+              {heroContent.buttonText}
             </a>
           </div>
         </section>
@@ -166,9 +176,11 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                 <div className="mt-6 flex flex-wrap gap-3">
                   <a href="#featured-products" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
                     Shop featured
+                    {heroContent.buttonText}
                   </a>
                   <a href="#all-products" className="rounded-full border border-slate-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
                     Browse catalog
+                    {heroContent.buttonText}
                   </a>
                 </div>
               </div>
@@ -224,7 +236,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
             <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{heroContent.title}</h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base">{heroContent.subtitle}</p>
             <a href="#all-products" className="mt-6 inline-block rounded-full bg-[var(--store-main-color)] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]">
-              Start shopping
+              {heroContent.buttonText}
             </a>
           </section>
         )}

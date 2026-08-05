@@ -24,6 +24,10 @@ export async function GET(_req: Request, { params }: RouteContext) {
         slug: true,
         logoUrl: true,
         heroImageUrl: true,
+        heroEyebrow: true,
+        heroTitle: true,
+        heroSubtitle: true,
+        heroButtonText: true,
         activeTheme: true,
         customDomain: true,
         mainColor: true,
@@ -95,6 +99,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       slug,
       logoUrl,
       heroImageUrl,
+      heroEyebrow,
+      heroTitle,
+      heroSubtitle,
+      heroButtonText,
       activeTheme,
       customDomain,
       mainColor,
@@ -107,6 +115,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       slug?: string;
       logoUrl?: string | null;
       heroImageUrl?: string | null;
+      heroEyebrow?: string | null;
+      heroTitle?: string | null;
+      heroSubtitle?: string | null;
+      heroButtonText?: string | null;
       activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
@@ -121,6 +133,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       slug?: string;
       logoUrl?: string | null;
       heroImageUrl?: string | null;
+      heroEyebrow?: string | null;
+      heroTitle?: string | null;
+      heroSubtitle?: string | null;
+      heroButtonText?: string | null;
       activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
@@ -148,6 +164,22 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     if (heroImageUrl !== undefined) {
       updates.heroImageUrl = typeof heroImageUrl === "string" && heroImageUrl.trim() ? heroImageUrl.trim() : null;
+    }
+
+    if (heroEyebrow !== undefined) {
+      updates.heroEyebrow = typeof heroEyebrow === "string" && heroEyebrow.trim() ? heroEyebrow.trim() : null;
+    }
+
+    if (heroTitle !== undefined) {
+      updates.heroTitle = typeof heroTitle === "string" && heroTitle.trim() ? heroTitle.trim() : null;
+    }
+
+    if (heroSubtitle !== undefined) {
+      updates.heroSubtitle = typeof heroSubtitle === "string" && heroSubtitle.trim() ? heroSubtitle.trim() : null;
+    }
+
+    if (heroButtonText !== undefined) {
+      updates.heroButtonText = typeof heroButtonText === "string" && heroButtonText.trim() ? heroButtonText.trim() : null;
     }
 
     if (customDomain !== undefined) {
@@ -213,6 +245,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         slug: true,
         logoUrl: true,
         heroImageUrl: true,
+        heroEyebrow: true,
+        heroTitle: true,
+        heroSubtitle: true,
+        heroButtonText: true,
         activeTheme: true,
         customDomain: true,
         mainColor: true,

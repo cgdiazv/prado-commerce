@@ -47,6 +47,10 @@ model Store {
   slug           String     @unique
   logoUrl        String?
   heroImageUrl   String?
+  heroEyebrow    String?
+  heroTitle      String?
+  heroSubtitle   String?
+  heroButtonText String?
   activeTheme    StorefrontTheme @default(MINIMAL)
   customDomain   String?    @unique
   mainColor      String     @default("#0f172a")
@@ -243,6 +247,9 @@ model Customer {
   lastName  String?
   phone     String?
   passwordHash    String?
+  passwordResetTokenId     String? @unique
+  passwordResetTokenHash    String?
+  passwordResetTokenExpiresAt DateTime?
   shippingAddress Json?
   billingAddress  Json?
   savedAddresses  Json?

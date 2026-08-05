@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
+import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 
 export type StorefrontCustomer = {
   id: string;
@@ -16,17 +18,20 @@ export type StorefrontCustomer = {
 type AuthPanelProps = {
   storeId: string;
   initialCustomer: StorefrontCustomer | null;
+  mainColor: string;
 };
 
-export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) {
+export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthPanelProps) {
   const [customer, setCustomer] = useState<StorefrontCustomer | null>(initialCustomer);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState(initialCustomer?.email ?? "");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState(initialCustomer?.firstName ?? "");
   const [lastName, setLastName] = useState(initialCustomer?.lastName ?? "");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const resolvedMainColor = normalizeMainColor(mainColor);
+  const colorVars = getStoreBrandingCssVars(resolvedMainColor) as CSSProperties;
 
   useEffect(() => {
     async function loadCustomer() {
@@ -48,6 +53,24 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
     setStatus(null);
 
     try {
+      if (mode === "reset") {
+        const response = await fetch("/api/storefront/password-reset/request", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ storeId, email }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Unable to create a reset link.");
+        }
+
+        const resetUrl = new URL(payload.resetPath, window.location.origin).toString();
+        setStatus(`Reset link created: ${resetUrl}`);
+        return;
+      }
+
       const response = await fetch("/api/storefront/auth", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -82,11 +105,11 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div style={colorVars} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-base font-semibold text-slate-900">
-            {customer ? "Account" : mode === "signin" ? "Sign in" : "Sign up"}
+            {customer ? "Account" : mode === "signin" ? "Sign in" : mode === "signup" ? "Sign up" : "Reset password"}
           </p>
           {customer ? (
             <p className="text-sm text-slate-500">Signed in as {customer.email}</p>
@@ -109,14 +132,14 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-slate-900 text-white" : "text-slate-600"}`}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-[var(--store-main-color)] text-white" : "text-slate-600"}`}
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-slate-900 text-white" : "text-slate-600"}`}
+              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-[var(--store-main-color)] text-white" : "text-slate-600"}`}
             >
               Create account
             </button>
@@ -148,22 +171,44 @@ export default function AuthPanel({ storeId, initialCustomer }: AuthPanelProps) 
             required
           />
 
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-            placeholder={mode === "signup" ? "Create a password" : "Password"}
-            required
-            minLength={6}
-          />
+          {mode !== "reset" ? (
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+              placeholder={mode === "signup" ? "Create a password" : "Password"}
+              required
+              minLength={6}
+            />
+          ) : null}
+
+          {mode === "signin" ? (
+            <button
+              type="button"
+              onClick={() => setMode("reset")}
+              className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
+            >
+              Forgot password?
+            </button>
+          ) : null}
+
+          {mode === "reset" ? (
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
+            >
+              Back to sign in
+            </button>
+          ) : null}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-full bg-[var(--store-main-color)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
+            {isSubmitting ? "Working..." : mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
           </button>
         </form>
       ) : null}

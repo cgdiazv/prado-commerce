@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import { activateStoreTheme } from "./actions";
 import HeroImageManager from "./hero-image-manager";
+import HeroTextForm from "./hero-text-form";
 
 type ThemeId = "minimal" | "bold" | "classic";
 
@@ -65,6 +66,10 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
       slug: true,
       activeTheme: true,
       heroImageUrl: true,
+      heroEyebrow: true,
+      heroTitle: true,
+      heroSubtitle: true,
+      heroButtonText: true,
     },
   });
 
@@ -147,6 +152,22 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
       </div>
 
       <HeroImageManager storeId={store.id} initialHeroImageUrl={store.heroImageUrl} />
+
+      <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-900">Hero text</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Customize the text shown in the storefront hero section for {store.name}.
+        </p>
+
+        <HeroTextForm
+          storeId={store.id}
+          storeName={store.name}
+          heroEyebrow={store.heroEyebrow}
+          heroTitle={store.heroTitle}
+          heroSubtitle={store.heroSubtitle}
+          heroButtonText={store.heroButtonText}
+        />
+      </article>
     </section>
   );
 }
