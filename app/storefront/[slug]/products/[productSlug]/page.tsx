@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStoreBrandingCssVars } from "@/lib/branding";
+import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
 import StorefrontNavbar from "../../../storefront-navbar";
 import StorefrontFooter from "../../../storefront-footer";
@@ -18,7 +19,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, logoUrl: true, mainColor: true, currency: true },
+    select: { id: true, name: true, slug: true, logoUrl: true, activeTheme: true, mainColor: true, currency: true },
   });
 
   if (!store) {
@@ -65,15 +66,17 @@ export default async function StorefrontProductPage({ params }: PageProps) {
   const hdrs = await headers();
   const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
   const base = isSubdomain ? "" : `/storefront/${store.slug}`;
+  const theme = normalizeStorefrontTheme(store.activeTheme);
+  const themeClasses = getStorefrontThemeClasses(theme);
 
   const primaryVariant = product.variants[0];
 
   return (
     <div
       style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+      className={`flex min-h-screen flex-col ${themeClasses.shell}`}
     >
-      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} mainColor={store.mainColor} />
+      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} mainColor={store.mainColor} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
@@ -97,7 +100,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
             {product.title}
           </span>
         </nav>
-        <div className="grid gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-[1.1fr_0.9fr]">
+        <div className={`grid gap-10 rounded-3xl border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
           <div>
             {product.images[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -114,7 +117,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h2>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
 
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className={`mt-8 rounded-2xl border p-5 ${themeClasses.mutedPanel}`}>
               <div className="flex items-center justify-between">
                 {primaryVariant ? (
                   <AddToCartWithQuantity variantId={primaryVariant.id} />

@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         logoUrl: true,
+        activeTheme: true,
         customDomain: true,
         mainColor: true,
         ownerId: true,
@@ -92,6 +93,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name,
       slug,
       logoUrl,
+      activeTheme,
       customDomain,
       mainColor,
       currency,
@@ -102,6 +104,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
+      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;
@@ -114,6 +117,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
+      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;
@@ -132,6 +136,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     if (logoUrl !== undefined) {
       updates.logoUrl = typeof logoUrl === "string" && logoUrl.trim() ? logoUrl.trim() : null;
+    }
+
+    if (activeTheme !== undefined) {
+      updates.activeTheme = activeTheme;
     }
 
     if (customDomain !== undefined) {
@@ -196,6 +204,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         logoUrl: true,
+        activeTheme: true,
         customDomain: true,
         mainColor: true,
         ownerId: true,

@@ -22,6 +22,7 @@ export async function GET(request: Request) {
         name: true,
         slug: true,
         logoUrl: true,
+        activeTheme: true,
         customDomain: true,
         mainColor: true,
         currency: true,
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
+      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;

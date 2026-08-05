@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStoreBrandingCssVars } from "@/lib/branding";
+import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import StorefrontNavbar from "../storefront-navbar";
 import StorefrontFooter from "../storefront-footer";
 
@@ -22,6 +23,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       name: true,
       slug: true,
       logoUrl: true,
+      activeTheme: true,
       mainColor: true,
       currency: true,
     },
@@ -35,6 +37,8 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const hdrs = await headers();
   const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
   const base = isSubdomain ? "" : `/storefront/${store.slug}`;
+  const theme = normalizeStorefrontTheme(store.activeTheme);
+  const themeClasses = getStorefrontThemeClasses(theme);
 
   const [products, categories] = await Promise.all([    prisma.product.findMany({
       where: {
@@ -78,11 +82,12 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   return (
     <div
       style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+      className={`flex min-h-screen flex-col ${themeClasses.shell}`}
     >
       <StorefrontNavbar
         storeName={store.name}
         logoUrl={store.logoUrl}
+        theme={theme}
         basePath={base}
         categories={categories}
         activeCategory={activeCategory}
@@ -125,7 +130,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
               return (
                 <div
                   key={product.id}
-                  className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+                  className={`relative overflow-hidden rounded-2xl border transition ${themeClasses.productCard}`}
                 >
                   {/* stretched link covers the whole card; button sits above it */}
                   <Link

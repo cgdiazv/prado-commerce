@@ -23,6 +23,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
+  const [isStoresOpen, setIsStoresOpen] = useState(pathname.startsWith("/dashboard/stores"));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
@@ -170,7 +171,18 @@ export default function DashboardLayout({
       ],
     },
     { href: "/dashboard/customers", label: "Customers", icon: Users },
-    { href: "/dashboard/stores", label: "Stores", icon: Store },
+    {
+      href: "/dashboard/stores",
+      label: "Stores",
+      icon: Store,
+      children: [
+        { href: "/dashboard/stores", label: "All Stores" },
+        {
+          href: stores[0] ? `/dashboard/stores/${stores[0].id}/themes` : "/dashboard/stores",
+          label: "Themes",
+        },
+      ],
+    },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
@@ -185,8 +197,36 @@ export default function DashboardLayout({
     if (pathname.startsWith("/dashboard/products")) {
       setIsProductsOpen(true);
     }
+
+    if (pathname.startsWith("/dashboard/stores")) {
+      setIsStoresOpen(true);
+    }
+
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  function isSectionOpen(href: string) {
+    if (href === "/dashboard/products") {
+      return isProductsOpen;
+    }
+
+    if (href === "/dashboard/stores") {
+      return isStoresOpen;
+    }
+
+    return false;
+  }
+
+  function toggleSection(href: string) {
+    if (href === "/dashboard/products") {
+      setIsProductsOpen((open) => !open);
+      return;
+    }
+
+    if (href === "/dashboard/stores") {
+      setIsStoresOpen((open) => !open);
+    }
+  }
 
   function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     return (
@@ -216,11 +256,11 @@ export default function DashboardLayout({
                     </a>
                     <button
                       type="button"
-                      onClick={() => setIsProductsOpen((open) => !open)}
+                      onClick={() => toggleSection(item.href)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/80 hover:text-slate-700"
-                      aria-label={isProductsOpen ? "Hide Products submenu" : "Show Products submenu"}
+                      aria-label={isSectionOpen(item.href) ? "Hide submenu" : "Show submenu"}
                     >
-                      {isProductsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      {isSectionOpen(item.href) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </button>
                   </div>
                 ) : (
@@ -238,19 +278,25 @@ export default function DashboardLayout({
                   </a>
                 )}
 
-                {item.children && isProductsOpen ? (
+                {item.children && isSectionOpen(item.href) ? (
                   <div className="ml-5 space-y-1 border-l border-slate-200 pl-2">
                     {item.children.map((child) => {
                       const childActive =
-                        child.href === "/dashboard/products/new"
-                          ? pathname === "/dashboard/products/new"
-                          : child.href === "/dashboard/products/categories"
-                            ? pathname === "/dashboard/products/categories"
-                            : pathname === "/dashboard/products";
+                        item.href === "/dashboard/products"
+                          ? child.href === "/dashboard/products/new"
+                            ? pathname === "/dashboard/products/new"
+                            : child.href === "/dashboard/products/categories"
+                              ? pathname === "/dashboard/products/categories"
+                              : pathname === "/dashboard/products"
+                          : item.href === "/dashboard/stores"
+                            ? child.label === "Themes"
+                              ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")
+                              : pathname === "/dashboard/stores"
+                            : pathname === child.href;
 
                       return (
                         <a
-                          key={child.href}
+                          key={`${child.href}:${child.label}`}
                           href={child.href}
                           onClick={() => onNavigate?.()}
                           className={`block rounded-md px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition ${

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
+import type { StorefrontThemeId } from "@/lib/storefront-theme";
 
 export type StorefrontCategory = {
   id: string;
@@ -19,6 +20,7 @@ type StorefrontNavbarProps = {
   activeCategory?: string;
   searchQuery?: string;
   isAccountActive?: boolean;
+  theme?: StorefrontThemeId;
   mainColor?: string;
 };
 
@@ -30,12 +32,19 @@ export default function StorefrontNavbar({
   activeCategory,
   searchQuery = "",
   isAccountActive = false,
+  theme = "minimal",
   mainColor = "#0f172a",
 }: StorefrontNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const homeHref = basePath ? `${basePath}/` : "/";
   const accountHref = basePath ? `${basePath}/account` : "/account";
   const resolvedMainColor = normalizeMainColor(mainColor);
+  const headerClass =
+    theme === "classic"
+      ? "border-b border-amber-200 bg-[#fffdf8] px-6 py-4"
+      : theme === "bold"
+        ? "border-b border-slate-300 bg-white/95 px-6 py-4 backdrop-blur"
+        : "border-b border-slate-200 bg-white px-6 py-4";
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
@@ -44,7 +53,7 @@ export default function StorefrontNavbar({
   return (
     <header
       style={getStoreBrandingCssVars(resolvedMainColor) as CSSProperties}
-      className="border-b border-slate-200 bg-white px-6 py-4"
+      className={headerClass}
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex items-start justify-between gap-6">

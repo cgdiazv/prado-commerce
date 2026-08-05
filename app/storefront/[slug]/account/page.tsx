@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AuthPanel from "../auth-panel";
 import AccountSidebarLayout from "../account-sidebar-layout";
 import StorefrontNavbar from "../../storefront-navbar";
@@ -15,7 +16,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   const store = await prisma.store.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, logoUrl: true, mainColor: true, currency: true },
+    select: { id: true, name: true, slug: true, logoUrl: true, activeTheme: true, mainColor: true, currency: true },
   });
 
   if (!store) notFound();
@@ -23,6 +24,8 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   const hdrs = await headers();
   const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
   const base = isSubdomain ? "" : `/storefront/${store.slug}`;
+  const theme = normalizeStorefrontTheme(store.activeTheme);
+  const themeClasses = getStorefrontThemeClasses(theme);
 
   const cookieStore = await cookies();
   const sessionRaw = cookieStore.get(SHOPPER_SESSION_COOKIE)?.value ?? "";
@@ -31,8 +34,8 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-        <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} isAccountActive mainColor={store.mainColor} />
+      <div className={`flex min-h-screen flex-col ${themeClasses.shell}`}>
+        <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} isAccountActive mainColor={store.mainColor} />
         <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} initialCustomer={null} />
@@ -44,8 +47,8 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} basePath={base} isAccountActive mainColor={store.mainColor} />
+    <div className={`flex min-h-screen flex-col ${themeClasses.shell}`}>
+      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} isAccountActive mainColor={store.mainColor} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <AccountSidebarLayout />
       </main>

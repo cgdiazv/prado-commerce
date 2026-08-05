@@ -46,6 +46,7 @@ model Store {
   name           String
   slug           String     @unique
   logoUrl        String?
+  activeTheme    StorefrontTheme @default(MINIMAL)
   customDomain   String?    @unique
   mainColor      String     @default("#0f172a")
   ownerId        String
@@ -68,6 +69,12 @@ model Store {
 
   @@index([ownerId])
   @@index([ownerUserId])
+}
+
+enum StorefrontTheme {
+  MINIMAL
+  BOLD
+  CLASSIC
 }
 
 model ApiKey {
