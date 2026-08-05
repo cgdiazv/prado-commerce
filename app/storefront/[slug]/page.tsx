@@ -179,7 +179,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                     {heroContent.buttonText}
                   </a>
                   <a href="#all-products" className="rounded-full border border-slate-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    Browse catalog
+                    {heroContent.buttonText}
                     {heroContent.buttonText}
                   </a>
                 </div>
