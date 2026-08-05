@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         logoUrl: true,
+        heroImageUrl: true,
         activeTheme: true,
         customDomain: true,
         mainColor: true,
@@ -93,6 +94,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name,
       slug,
       logoUrl,
+      heroImageUrl,
       activeTheme,
       customDomain,
       mainColor,
@@ -104,6 +106,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
+      heroImageUrl?: string | null;
       activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
@@ -117,6 +120,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
+      heroImageUrl?: string | null;
       activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
@@ -140,6 +144,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     if (activeTheme !== undefined) {
       updates.activeTheme = activeTheme;
+    }
+
+    if (heroImageUrl !== undefined) {
+      updates.heroImageUrl = typeof heroImageUrl === "string" && heroImageUrl.trim() ? heroImageUrl.trim() : null;
     }
 
     if (customDomain !== undefined) {
@@ -204,6 +212,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         name: true,
         slug: true,
         logoUrl: true,
+        heroImageUrl: true,
         activeTheme: true,
         customDomain: true,
         mainColor: true,

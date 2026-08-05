@@ -22,6 +22,7 @@ export async function GET(request: Request) {
         name: true,
         slug: true,
         logoUrl: true,
+        heroImageUrl: true,
         activeTheme: true,
         customDomain: true,
         mainColor: true,

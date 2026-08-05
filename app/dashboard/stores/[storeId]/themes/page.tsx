@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import { activateStoreTheme } from "./actions";
+import HeroImageManager from "./hero-image-manager";
 
 type ThemeId = "minimal" | "bold" | "classic";
 
@@ -63,6 +64,7 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
       name: true,
       slug: true,
       activeTheme: true,
+      heroImageUrl: true,
     },
   });
 
@@ -143,6 +145,8 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
           );
         })}
       </div>
+
+      <HeroImageManager storeId={store.id} initialHeroImageUrl={store.heroImageUrl} />
     </section>
   );
 }
