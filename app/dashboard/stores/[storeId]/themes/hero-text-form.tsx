@@ -31,13 +31,23 @@ export default function HeroTextForm({
     <form action={formAction} className="mt-5 space-y-4">
       <input type="hidden" name="storeId" value={storeId} />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-slate-700">Eyebrow text</span>
           <input
             name="heroEyebrow"
             defaultValue={heroEyebrow ?? ""}
             placeholder="Shop online"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-slate-700">Hero title</span>
+          <input
+            name="heroTitle"
+            defaultValue={heroTitle ?? ""}
+            placeholder={`Explore ${storeName}`}
             className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </label>
@@ -52,16 +62,6 @@ export default function HeroTextForm({
           />
         </label>
       </div>
-
-      <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-slate-700">Hero title</span>
-        <input
-          name="heroTitle"
-          defaultValue={heroTitle ?? ""}
-          placeholder={`Explore ${storeName}`}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-        />
-      </label>
 
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-slate-700">Hero text</span>

@@ -318,7 +318,10 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         )}
 
         {featuredProducts.length > 0 ? (
-          <section id="featured-products" className={`mb-10 rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`}>
+          <section
+            id="featured-products"
+            className={`mb-10 ${theme === "minimal" ? "" : `rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`}`}
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Featured products</h2>
               <a href="#all-products" className="text-sm font-semibold text-[var(--store-main-color)] hover:underline">
