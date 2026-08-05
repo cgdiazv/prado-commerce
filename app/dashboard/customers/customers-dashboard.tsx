@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -45,6 +45,10 @@ export function CustomersDashboard({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<"" | "clear" | "delete">("");
+  const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const activeCustomers = useMemo(() => {
     const filtered = customers.filter((customer) => customer.storeId === activeStoreId);
@@ -83,6 +87,19 @@ export function CustomersDashboard({
     const start = (currentPage - 1) * pageSize;
     return activeCustomers.slice(start, start + pageSize);
   }, [activeCustomers, currentPage, pageSize]);
+
+  const paginatedCustomerIds = useMemo(
+    () => paginatedCustomers.map((customer) => customer.id),
+    [paginatedCustomers],
+  );
+
+  const selectedOnPageCount = useMemo(
+    () => paginatedCustomerIds.filter((id) => selectedCustomerIds.includes(id)).length,
+    [paginatedCustomerIds, selectedCustomerIds],
+  );
+
+  const allOnPageSelected = paginatedCustomerIds.length > 0 && selectedOnPageCount === paginatedCustomerIds.length;
+  const someOnPageSelected = selectedOnPageCount > 0 && !allOnPageSelected;
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -124,11 +141,87 @@ export function CustomersDashboard({
     setActiveStoreId(storeId);
     setError(null);
     setCurrentPage(1);
+    setSelectedCustomerIds([]);
+    setBulkAction("");
 
     try {
       await refreshCustomers(storeId);
     } catch {
       setError("Failed to load customers for this store.");
+    }
+  }
+
+  useEffect(() => {
+    const activeCustomerIdSet = new Set(activeCustomers.map((customer) => customer.id));
+    setSelectedCustomerIds((current) => current.filter((id) => activeCustomerIdSet.has(id)));
+  }, [activeCustomers]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) {
+      return;
+    }
+
+    selectAllRef.current.indeterminate = someOnPageSelected;
+  }, [someOnPageSelected]);
+
+  function toggleCustomerSelection(customerId: string) {
+    setSelectedCustomerIds((current) => {
+      if (current.includes(customerId)) {
+        return current.filter((id) => id !== customerId);
+      }
+
+      return [...current, customerId];
+    });
+  }
+
+  function toggleSelectAllOnPage(checked: boolean) {
+    if (!checked) {
+      setSelectedCustomerIds((current) => current.filter((id) => !paginatedCustomerIds.includes(id)));
+      return;
+    }
+
+    setSelectedCustomerIds((current) => Array.from(new Set([...current, ...paginatedCustomerIds])));
+  }
+
+  async function handleApplyBulkAction() {
+    if (!bulkAction) {
+      return;
+    }
+
+    if (bulkAction === "clear") {
+      setSelectedCustomerIds([]);
+      setBulkAction("");
+      return;
+    }
+
+    if (selectedCustomerIds.length === 0) {
+      return;
+    }
+
+    setError(null);
+    setIsApplyingBulkAction(true);
+
+    try {
+      const responses = await Promise.all(
+        selectedCustomerIds.map((customerId) =>
+          fetch(`/api/customers/${customerId}`, {
+            method: "DELETE",
+          }),
+        ),
+      );
+
+      if (responses.some((response) => !response.ok)) {
+        throw new Error("Failed to delete selected customers");
+      }
+
+      const selectedIdSet = new Set(selectedCustomerIds);
+      setCustomers((current) => current.filter((customer) => !selectedIdSet.has(customer.id)));
+      setSelectedCustomerIds([]);
+      setBulkAction("");
+    } catch {
+      setError("Failed to apply action to selected customers.");
+    } finally {
+      setIsApplyingBulkAction(false);
     }
   }
 
@@ -167,19 +260,50 @@ export function CustomersDashboard({
           </Link>
         </div>
 
-        <div className="mt-6 flex w-full max-w-md flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Store</span>
-          <select
-            value={activeStoreId}
-            onChange={(event) => void handleStoreChange(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-          >
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name} / {store.currency}
-              </option>
-            ))}
-          </select>
+        <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="w-full max-w-md flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Store</span>
+            <select
+              value={activeStoreId}
+              onChange={(event) => void handleStoreChange(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name} / {store.currency}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
+            <div className="flex justify-end">
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
+            </div>
+            <div className="mt-2 flex items-center gap-3 lg:justify-end">
+              <button
+                type="button"
+                onClick={() => void handleApplyBulkAction()}
+                disabled={
+                  isApplyingBulkAction ||
+                  !bulkAction ||
+                  (bulkAction === "delete" && selectedCustomerIds.length === 0)
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Apply
+              </button>
+              <select
+                value={bulkAction}
+                onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+                className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">Select action</option>
+                <option value="delete">Delete selected</option>
+                <option value="clear">Clear selection</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {error ? (
@@ -199,29 +323,42 @@ export function CustomersDashboard({
                 <p className="text-xs font-medium text-slate-600">
                   Showing {pageStart}-{pageEnd} of {totalCustomers} customers
                 </p>
-                <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                  Rows per page
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
-                  >
-                    {[25, 50, 100, 500].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="flex items-center gap-4">
+                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedCustomerIds.length} selected</p>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    Rows per page
+                    <select
+                      value={pageSize}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                    >
+                      {[25, 50, 100, 500].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
+                    <th className="w-12 px-4 py-3 text-left font-semibold text-slate-600">
+                      <input
+                        ref={selectAllRef}
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                        aria-label="Select all customers on this page"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
@@ -272,8 +409,18 @@ export function CustomersDashboard({
                       <tr
                         key={customer.id}
                         onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
-                        className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                        className={`cursor-pointer transition-colors ${selectedCustomerIds.includes(customer.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
                       >
+                        <td className="px-4 py-3 align-top">
+                          <input
+                            type="checkbox"
+                            checked={selectedCustomerIds.includes(customer.id)}
+                            onChange={() => toggleCustomerSelection(customer.id)}
+                            onClick={(event) => event.stopPropagation()}
+                            aria-label={`Select ${fullName || customer.email}`}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                          />
+                        </td>
                         <td className="px-4 py-3 align-top text-slate-900">
                           {fullName || "-"}
                         </td>

@@ -39,6 +39,15 @@ function normalizeAddress(address: AddressInput | null | undefined) {
   };
 }
 
+function isPrismaError(error: unknown, code: string) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === code
+  );
+}
+
 export async function PATCH(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
@@ -98,5 +107,40 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   } catch (error) {
     console.error("[CUSTOMER_PATCH_ERROR]", error);
     return NextResponse.json({ error: "Failed to update customer" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: RouteContext) {
+  try {
+    const { id } = await params;
+    const user = await getCurrentUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      include: {
+        store: {
+          select: { ownerUserId: true },
+        },
+      },
+    });
+
+    if (!customer || customer.store.ownerUserId !== user.id) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    await prisma.customer.delete({ where: { id } });
+
+    return NextResponse.json({ ok: true });
+  } catch (error: unknown) {
+    if (isPrismaError(error, "P2025")) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    console.error("[CUSTOMER_DELETE_ERROR]", error);
+    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
   }
 }
