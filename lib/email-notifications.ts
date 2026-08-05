@@ -40,7 +40,7 @@ type InvoiceEmailInput = {
 };
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const SENDER_FROM_EMAIL = "notifications@indevasa.com";
+const SENDER_FROM_EMAIL = "notifications@pradocommerce.com";
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 

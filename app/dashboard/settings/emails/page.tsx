@@ -155,7 +155,7 @@ export default function EmailSettingsPage() {
           ) : null}
 
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Delivery status: Emails are live through Resend. Configure RESEND_API_KEY in your environment and emails will be sent from notifications@indevasa.com using your store branding color.
+            Delivery status: Emails are live through Resend. Configure RESEND_API_KEY in your environment and emails will be sent from notifications@pradocommerce.com using your store branding color.
           </div>
 
           <div>
