@@ -207,16 +207,24 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                     {store.variantRefs.length === 0 ? (
                       <p className="mt-2 text-sm text-slate-600">No product variants found.</p>
                     ) : (
-                      <div className="mt-2 space-y-2">
-                        {store.variantRefs.slice(0, 20).map((variant) => (
-                          <div key={variant.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                            <p className="text-xs font-medium text-slate-700">{variant.productTitle} · {variant.title}</p>
-                            <p className="mt-1 break-all font-mono text-xs text-slate-600">{variant.id}</p>
+                      <div className="mt-2 space-y-3">
+                        <p className="text-sm text-slate-600">
+                          {store.variantRefs.length} variant ID{store.variantRefs.length === 1 ? "" : "s"} available for custom add-to-cart embeds.
+                        </p>
+                        <details className="group rounded-lg border border-slate-200 bg-slate-50">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-slate-700">
+                            <span>View variant IDs</span>
+                            <span className="text-xs text-slate-500 transition group-open:rotate-180">▾</span>
+                          </summary>
+                          <div className="space-y-2 border-t border-slate-200 px-3 py-3">
+                            {store.variantRefs.map((variant) => (
+                              <div key={variant.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                <p className="text-xs font-medium text-slate-700">{variant.productTitle} · {variant.title}</p>
+                                <p className="mt-1 break-all font-mono text-xs text-slate-600">{variant.id}</p>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                        {store.variantRefs.length > 20 ? (
-                          <p className="text-xs text-slate-500">Showing first 20 of {store.variantRefs.length} variants.</p>
-                        ) : null}
+                        </details>
                       </div>
                     )}
                   </div>

@@ -386,21 +386,29 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.authNetEnv = normalizedAuthNetEnv;
     }
 
-    const nextAuthNetLoginId = updates.authNetLoginId !== undefined ? updates.authNetLoginId : owned.authNetLoginId;
-    const nextAuthNetClientKey = updates.authNetClientKey !== undefined ? updates.authNetClientKey : owned.authNetClientKey;
-    const nextAuthNetTransKeyEncrypted = updates.authNetTransKeyEncrypted !== undefined
-      ? updates.authNetTransKeyEncrypted
-      : owned.authNetTransKeyEncrypted;
+    const hasAuthNetPartialConfig = [
+      updates.authNetLoginId !== undefined ? updates.authNetLoginId : owned.authNetLoginId,
+      updates.authNetClientKey !== undefined ? updates.authNetClientKey : owned.authNetClientKey,
+      updates.authNetTransKeyEncrypted !== undefined ? updates.authNetTransKeyEncrypted : owned.authNetTransKeyEncrypted,
+    ].some((value) => value !== null && value !== undefined && value !== "");
 
-    const authNetFieldCount = [nextAuthNetLoginId, nextAuthNetClientKey, nextAuthNetTransKeyEncrypted]
-      .filter(Boolean)
-      .length;
+    if (hasAuthNetPartialConfig) {
+      const nextAuthNetLoginId = updates.authNetLoginId !== undefined ? updates.authNetLoginId : owned.authNetLoginId;
+      const nextAuthNetClientKey = updates.authNetClientKey !== undefined ? updates.authNetClientKey : owned.authNetClientKey;
+      const nextAuthNetTransKeyEncrypted = updates.authNetTransKeyEncrypted !== undefined
+        ? updates.authNetTransKeyEncrypted
+        : owned.authNetTransKeyEncrypted;
 
-    if (authNetFieldCount > 0 && authNetFieldCount < 3) {
-      return NextResponse.json(
-        { error: "Authorize.net setup requires API Login ID, Public Client Key, and Transaction Key." },
-        { status: 400 },
-      );
+      const authNetFieldCount = [nextAuthNetLoginId, nextAuthNetClientKey, nextAuthNetTransKeyEncrypted]
+        .filter(Boolean)
+        .length;
+
+      if (authNetFieldCount > 0 && authNetFieldCount < 3) {
+        return NextResponse.json(
+          { error: "Authorize.net setup requires API Login ID, Public Client Key, and Transaction Key." },
+          { status: 400 },
+        );
+      }
     }
 
     if (typeof welcomeEmailEnabled === "boolean") {
