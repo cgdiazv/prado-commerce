@@ -84,11 +84,8 @@ export default function Home() {
       <div className="relative w-full pb-0">
         <header className="prado-fade-up relative w-full border-b border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md sm:px-8 lg:px-10">
           <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(103,232,249,0.8)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">
-              Prado Commerce
-            </span>
+          <div className="flex items-center">
+            <img src="/logo.webp" alt="Prado Commerce" className="h-5 w-auto" />
           </div>
 
             <button

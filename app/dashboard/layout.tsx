@@ -346,10 +346,7 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
           <a href="/dashboard" className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">
-              Prado Commerce
-            </span>
+            <img src="/logo_dash.webp" alt="Prado Commerce" className="h-4 w-auto" />
           </a>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -452,10 +449,7 @@ export default function DashboardLayout({
           <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between">
               <a href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">
-                  Prado Commerce
-                </span>
+                <img src="/logo_dash.webp" alt="Prado Commerce" className="h-4 w-auto" />
               </a>
               <button
                 type="button"

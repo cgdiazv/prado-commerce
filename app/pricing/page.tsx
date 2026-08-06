@@ -152,8 +152,7 @@ export default function PricingPage() {
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-12 pt-8 sm:px-8 lg:px-10">
         <header className="prado-fade-up relative flex items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(103,232,249,0.8)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">Prado Commerce</span>
+            <img src="/logo.webp" alt="Prado Commerce" className="h-5 w-auto" />
           </Link>
 
           <button
