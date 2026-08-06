@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Star } from "lucide-react";
@@ -65,8 +65,13 @@ export function ProductsDashboard({
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<"" | "clear" | "delete">("");
+  const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
   const [planNotice, setPlanNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [updatingFeaturedIds, setUpdatingFeaturedIds] = useState<string[]>([]);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
   const isStarter = currentPlan === "STARTER";
   const hasReachedProductLimit = isStarter && products.length >= 50;
 
@@ -140,6 +145,19 @@ export function ProductsDashboard({
     return sortedProducts.slice(start, start + pageSize);
   }, [sortedProducts, currentPage, pageSize]);
 
+  const paginatedProductIds = useMemo(
+    () => paginatedProducts.map((product) => product.id),
+    [paginatedProducts],
+  );
+
+  const selectedOnPageCount = useMemo(
+    () => paginatedProductIds.filter((id) => selectedProductIds.includes(id)).length,
+    [paginatedProductIds, selectedProductIds],
+  );
+
+  const allOnPageSelected = paginatedProductIds.length > 0 && selectedOnPageCount === paginatedProductIds.length;
+  const someOnPageSelected = selectedOnPageCount > 0 && !allOnPageSelected;
+
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
@@ -178,17 +196,15 @@ export function ProductsDashboard({
     setActiveStoreId(storeId);
     setQuery("");
     setCurrentPage(1);
+    setSelectedProductIds([]);
+    setBulkAction("");
+    setError(null);
 
-    const response = await fetch(`/api/products?storeId=${encodeURIComponent(storeId)}`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return;
+    try {
+      await refreshProducts(storeId);
+    } catch {
+      setError("Failed to load products for this store.");
     }
-
-    const data = (await response.json()) as Product[];
-    setProducts(data);
   }
 
   async function handleToggleFeatured(productId: string, featured: boolean) {
@@ -220,6 +236,80 @@ export function ProductsDashboard({
       setPlanNotice("Could not update featured status. Please try again.");
     } finally {
       setUpdatingFeaturedIds((current) => current.filter((id) => id !== productId));
+    }
+  }
+
+  useEffect(() => {
+    const activeProductIdSet = new Set(sortedProducts.map((product) => product.id));
+    setSelectedProductIds((current) => current.filter((id) => activeProductIdSet.has(id)));
+  }, [sortedProducts]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) {
+      return;
+    }
+
+    selectAllRef.current.indeterminate = someOnPageSelected;
+  }, [someOnPageSelected]);
+
+  function toggleProductSelection(productId: string) {
+    setSelectedProductIds((current) => {
+      if (current.includes(productId)) {
+        return current.filter((id) => id !== productId);
+      }
+
+      return [...current, productId];
+    });
+  }
+
+  function toggleSelectAllOnPage(checked: boolean) {
+    if (!checked) {
+      setSelectedProductIds((current) => current.filter((id) => !paginatedProductIds.includes(id)));
+      return;
+    }
+
+    setSelectedProductIds((current) => Array.from(new Set([...current, ...paginatedProductIds])));
+  }
+
+  async function handleApplyBulkAction() {
+    if (!bulkAction) {
+      return;
+    }
+
+    if (bulkAction === "clear") {
+      setSelectedProductIds([]);
+      setBulkAction("");
+      return;
+    }
+
+    if (selectedProductIds.length === 0) {
+      return;
+    }
+
+    setError(null);
+    setIsApplyingBulkAction(true);
+
+    try {
+      const responses = await Promise.all(
+        selectedProductIds.map((productId) =>
+          fetch(`/api/products/${productId}`, {
+            method: "DELETE",
+          }),
+        ),
+      );
+
+      if (responses.some((response) => !response.ok)) {
+        throw new Error("Failed to delete selected products");
+      }
+
+      const selectedIdSet = new Set(selectedProductIds);
+      setProducts((current) => current.filter((product) => !selectedIdSet.has(product.id)));
+      setSelectedProductIds([]);
+      setBulkAction("");
+    } catch {
+      setError("Failed to apply action to selected products.");
+    } finally {
+      setIsApplyingBulkAction(false);
     }
   }
 
@@ -284,7 +374,7 @@ export function ProductsDashboard({
             </div>
           ) : null}
 
-          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
             <label className="flex w-full flex-col gap-2 lg:max-w-md">
               <span className="text-sm font-medium text-slate-700">Store</span>
               <select
@@ -311,7 +401,42 @@ export function ProductsDashboard({
                 className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </label>
+
+            <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
+              <div className="flex justify-end">
+                <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
+              </div>
+              <div className="mt-2 flex items-center gap-3 lg:justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleApplyBulkAction()}
+                  disabled={
+                    isApplyingBulkAction ||
+                    !bulkAction ||
+                    (bulkAction === "delete" && selectedProductIds.length === 0)
+                  }
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Apply
+                </button>
+                <select
+                  value={bulkAction}
+                  onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+                  className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="">Select action</option>
+                  <option value="delete">Delete selected</option>
+                  <option value="clear">Clear selection</option>
+                </select>
+              </div>
+            </div>
           </div>
+
+          {error ? (
+            <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          ) : null}
 
           <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {totalProducts === 0 ? (
@@ -324,29 +449,42 @@ export function ProductsDashboard({
                   <p className="text-xs font-medium text-slate-600">
                     Showing {pageStart}-{pageEnd} of {totalProducts} products
                   </p>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    Rows per page
-                    <select
-                      value={pageSize}
-                      onChange={(event) => {
-                        setPageSize(Number(event.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
-                    >
-                      {[25, 50, 100, 500].map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="flex items-center gap-4">
+                    <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedProductIds.length} selected</p>
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                      Rows per page
+                      <select
+                        value={pageSize}
+                        onChange={(event) => {
+                          setPageSize(Number(event.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                      >
+                        {[25, 50, 100, 500].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="hidden overflow-x-auto md:block">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50">
                       <tr>
+                        <th className="w-12 px-4 py-3 text-left font-semibold text-slate-600">
+                          <input
+                            ref={selectAllRef}
+                            type="checkbox"
+                            checked={allOnPageSelected}
+                            onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                            aria-label="Select all products on this page"
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                          />
+                        </th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">Thumbnail</th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">
                           <button type="button" onClick={() => handleSort("name")} className="flex items-center gap-1 transition hover:text-slate-950">
@@ -403,8 +541,18 @@ export function ProductsDashboard({
                             }}
                             role="link"
                             tabIndex={0}
-                            className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                            className={`cursor-pointer transition-colors ${selectedProductIds.includes(product.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
                           >
+                            <td className="px-4 py-3 align-top">
+                              <input
+                                type="checkbox"
+                                checked={selectedProductIds.includes(product.id)}
+                                onChange={() => toggleProductSelection(product.id)}
+                                onClick={(event) => event.stopPropagation()}
+                                aria-label={`Select ${product.title}`}
+                                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                              />
+                            </td>
                             <td className="px-4 py-3 align-top">
                               {thumbnailUrl ? (
                                 <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />

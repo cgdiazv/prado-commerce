@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid password reset token" }, { status: 400 });
     }
 
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customer.findFirst({
       where: { passwordResetTokenId: tokenId },
       select: {
         id: true,

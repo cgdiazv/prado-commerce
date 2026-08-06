@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -48,6 +48,18 @@ export function OrdersDashboard({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<
+    ""
+    | "clear"
+    | "status_processing"
+    | "status_completed"
+    | "status_cancelled"
+    | "payment_paid"
+    | "payment_refunded"
+  >("");
+  const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const visibleOrders = useMemo(() => {
     const filtered = orders.filter((order) => order.storeId === activeStoreId);
@@ -86,6 +98,19 @@ export function OrdersDashboard({
     const start = (currentPage - 1) * pageSize;
     return visibleOrders.slice(start, start + pageSize);
   }, [visibleOrders, currentPage, pageSize]);
+
+  const paginatedOrderIds = useMemo(
+    () => paginatedOrders.map((order) => order.id),
+    [paginatedOrders],
+  );
+
+  const selectedOnPageCount = useMemo(
+    () => paginatedOrderIds.filter((id) => selectedOrderIds.includes(id)).length,
+    [paginatedOrderIds, selectedOrderIds],
+  );
+
+  const allOnPageSelected = paginatedOrderIds.length > 0 && selectedOnPageCount === paginatedOrderIds.length;
+  const someOnPageSelected = selectedOnPageCount > 0 && !allOnPageSelected;
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -127,11 +152,134 @@ export function OrdersDashboard({
     setActiveStoreId(storeId);
     setError(null);
     setCurrentPage(1);
+    setSelectedOrderIds([]);
+    setBulkAction("");
 
     try {
       await refreshOrders(storeId);
     } catch {
       setError("Failed to load orders for this store.");
+    }
+  }
+
+  useEffect(() => {
+    const activeOrderIdSet = new Set(visibleOrders.map((order) => order.id));
+    setSelectedOrderIds((current) => current.filter((id) => activeOrderIdSet.has(id)));
+  }, [visibleOrders]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) {
+      return;
+    }
+
+    selectAllRef.current.indeterminate = someOnPageSelected;
+  }, [someOnPageSelected]);
+
+  function toggleOrderSelection(orderId: string) {
+    setSelectedOrderIds((current) => {
+      if (current.includes(orderId)) {
+        return current.filter((id) => id !== orderId);
+      }
+
+      return [...current, orderId];
+    });
+  }
+
+  function toggleSelectAllOnPage(checked: boolean) {
+    if (!checked) {
+      setSelectedOrderIds((current) => current.filter((id) => !paginatedOrderIds.includes(id)));
+      return;
+    }
+
+    setSelectedOrderIds((current) => Array.from(new Set([...current, ...paginatedOrderIds])));
+  }
+
+  async function handleApplyBulkAction() {
+    if (!bulkAction) {
+      return;
+    }
+
+    if (bulkAction === "clear") {
+      setSelectedOrderIds([]);
+      setBulkAction("");
+      return;
+    }
+
+    if (selectedOrderIds.length === 0) {
+      return;
+    }
+
+    let patchPayload: { status?: Order["status"]; paymentStatus?: Order["paymentStatus"] } = {};
+
+    if (bulkAction === "status_processing") {
+      patchPayload = { status: "PROCESSING" };
+    } else if (bulkAction === "status_completed") {
+      const confirmed = window.confirm(
+        "Mark selected orders as completed? This may trigger invoice emails for those orders.",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      patchPayload = { status: "COMPLETED" };
+    } else if (bulkAction === "status_cancelled") {
+      patchPayload = { status: "CANCELLED" };
+    } else if (bulkAction === "payment_paid") {
+      const confirmed = window.confirm(
+        "Mark selected orders as paid? This may trigger invoice emails for those orders.",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      patchPayload = { paymentStatus: "PAID" };
+    } else if (bulkAction === "payment_refunded") {
+      patchPayload = { paymentStatus: "REFUNDED" };
+    }
+
+    if (!patchPayload.status && !patchPayload.paymentStatus) {
+      return;
+    }
+
+    setError(null);
+    setIsApplyingBulkAction(true);
+
+    try {
+      const responses = await Promise.all(
+        selectedOrderIds.map((orderId) =>
+          fetch(`/api/orders/${orderId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(patchPayload),
+          }),
+        ),
+      );
+
+      if (responses.some((response) => !response.ok)) {
+        throw new Error("Failed to apply bulk order updates");
+      }
+
+      setOrders((current) =>
+        current.map((order) =>
+          selectedOrderIds.includes(order.id)
+            ? {
+                ...order,
+                ...(patchPayload.status ? { status: patchPayload.status } : {}),
+                ...(patchPayload.paymentStatus ? { paymentStatus: patchPayload.paymentStatus } : {}),
+              }
+            : order,
+        ),
+      );
+      setSelectedOrderIds([]);
+      setBulkAction("");
+    } catch {
+      setError("Failed to apply action to selected orders.");
+    } finally {
+      setIsApplyingBulkAction(false);
     }
   }
 
@@ -170,19 +318,54 @@ export function OrdersDashboard({
           </Link>
         </div>
 
-        <div className="mt-6 flex w-full max-w-md flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Store</span>
-          <select
-            value={activeStoreId}
-            onChange={(event) => void handleStoreChange(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-          >
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name} / {store.currency}
-              </option>
-            ))}
-          </select>
+        <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="w-full max-w-md flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Store</span>
+            <select
+              value={activeStoreId}
+              onChange={(event) => void handleStoreChange(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name} / {store.currency}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
+            <div className="flex justify-end">
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
+            </div>
+            <div className="mt-2 flex items-center gap-3 lg:justify-end">
+              <button
+                type="button"
+                onClick={() => void handleApplyBulkAction()}
+                disabled={
+                  isApplyingBulkAction ||
+                  !bulkAction ||
+                  (bulkAction !== "clear" && selectedOrderIds.length === 0)
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Apply
+              </button>
+              <select
+                value={bulkAction}
+                onChange={(event) => setBulkAction(event.target.value as typeof bulkAction)}
+                className="w-52 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">Select action</option>
+                <option value="status_processing">Mark as processing</option>
+                <option value="status_completed">Mark as completed</option>
+                <option value="status_cancelled">Mark as cancelled</option>
+                <option value="payment_paid">Mark as paid</option>
+                <option value="payment_refunded">Mark as refunded</option>
+                <option value="clear">Clear selection</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {error ? (
@@ -202,29 +385,42 @@ export function OrdersDashboard({
                 <p className="text-xs font-medium text-slate-600">
                   Showing {pageStart}-{pageEnd} of {totalOrders} orders
                 </p>
-                <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                  Rows per page
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
-                  >
-                    {[25, 50, 100, 500].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="flex items-center gap-4">
+                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedOrderIds.length} selected</p>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    Rows per page
+                    <select
+                      value={pageSize}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                    >
+                      {[25, 50, 100, 500].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
 
               <div className="w-full max-w-full overflow-x-auto overscroll-x-contain">
                 <table className="min-w-[760px] divide-y divide-slate-200 text-sm md:min-w-full">
                 <thead className="bg-slate-50">
                   <tr>
+                    <th className="w-12 whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
+                      <input
+                        ref={selectAllRef}
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                        aria-label="Select all orders on this page"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                      />
+                    </th>
                     <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
@@ -292,8 +488,18 @@ export function OrdersDashboard({
                     <tr
                       key={order.id}
                       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-                      className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                      className={`cursor-pointer transition-colors ${selectedOrderIds.includes(order.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
                     >
+                      <td className="whitespace-nowrap px-4 py-3 align-top">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleOrderSelection(order.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          aria-label={`Select order #${order.orderNumber}`}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                        />
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.status}</td>
