@@ -70,6 +70,14 @@ npm run db:migrate
 
 Detailed guide: `docs/supabase-setup.md`.
 
+## Payment Safety
+
+Prado Commerce does not accept or store raw credit card numbers, CVC values, or expiry data on its own servers.
+
+1. Card payments must go through Stripe-hosted Checkout or Stripe tokenized client flows.
+2. Server-side checkout endpoints reject raw card-number-like fields to reduce accidental PCI scope expansion.
+3. Persist only gateway references such as Stripe session IDs, payment intent IDs, and payment status metadata.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

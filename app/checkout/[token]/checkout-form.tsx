@@ -1,8 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Script from "next/script";
+import { useEffect, useMemo, useState } from "react";
 import { getDefaultAddress } from "@/lib/address-utils";
 import { getAvailablePaymentMethods } from "@/lib/payment-options";
+
+declare global {
+  interface Window {
+    Accept?: {
+      dispatchData: (
+        request: {
+          authData: { clientKey: string; apiLoginID: string };
+          cardData: { cardNumber: string; month: string; year: string; cardCode: string };
+        },
+        callback: (response: {
+          messages?: { resultCode?: string; message?: Array<{ text?: string }> };
+          opaqueData?: { dataDescriptor?: string; dataValue?: string };
+        }) => void,
+      ) => void;
+    };
+  }
+}
 
 type AddressEntry = {
   line1: string | null;
@@ -26,12 +44,37 @@ function parseRateValue(value: string, type: string): number {
   return isNaN(num) ? 0 : num;
 }
 
+function loadSavedShippingZones(): ShippingZone[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const saved = localStorage.getItem("prado_shipping_zones");
+  if (!saved) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(saved) as ShippingZone[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 type CheckoutFormProps = {
   cartId: string;
   currency: string;
   subtotal: number;
   storeId: string;
   offlinePaymentsEnabled?: boolean;
+  stripeOnlinePaymentsEnabled?: boolean;
+  onlinePaymentProvider?: "stripe" | "authorize_net" | null;
+  authorizeNetConfig?: {
+    loginId: string;
+    clientKey: string;
+    environment: "sandbox" | "production";
+  } | null;
   isCartEmpty?: boolean;
 };
 
@@ -41,6 +84,9 @@ export default function CheckoutForm({
   subtotal,
   storeId,
   offlinePaymentsEnabled = false,
+  stripeOnlinePaymentsEnabled = true,
+  onlinePaymentProvider = null,
+  authorizeNetConfig = null,
   isCartEmpty = false,
 }: CheckoutFormProps) {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -61,15 +107,42 @@ export default function CheckoutForm({
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("");
   const [savedAddresses, setSavedAddresses] = useState<AddressEntry[]>([]);
-  const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
+  const [shippingZones] = useState<ShippingZone[]>(() => loadSavedShippingZones());
   const [selectedZoneIdx, setSelectedZoneIdx] = useState<number>(0);
-  const [shippingAmount, setShippingAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<string[]>(() =>
-    getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled))
+  const [shippingAmount, setShippingAmount] = useState<number>(() => {
+    const zones = loadSavedShippingZones();
+    if (zones.length === 0) {
+      return 0;
+    }
+    return parseRateValue(zones[0].rateValue, zones[0].rateType);
+  });
+  const [paymentMethod, setPaymentMethod] = useState(
+    onlinePaymentProvider ? "card" : offlinePaymentsEnabled ? "offline" : "card"
   );
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiryMonth, setCardExpiryMonth] = useState("");
+  const [cardExpiryYear, setCardExpiryYear] = useState("");
+  const [cardCode, setCardCode] = useState("");
+  const [isAcceptJsReady, setIsAcceptJsReady] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const onlineCardPaymentsEnabled = onlinePaymentProvider !== null || stripeOnlinePaymentsEnabled;
+  const authorizeNetScriptSrc = authorizeNetConfig?.environment === "production"
+    ? "https://js.authorize.net/v1/Accept.js"
+    : "https://jstest.authorize.net/v1/Accept.js";
+
+  const availablePaymentMethods = useMemo(
+    () => getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled), Boolean(onlineCardPaymentsEnabled)),
+    [offlinePaymentsEnabled, onlineCardPaymentsEnabled],
+  );
+
+  const activePaymentMethod = availablePaymentMethods.includes(paymentMethod)
+    ? paymentMethod
+    : (availablePaymentMethods[0] || "card");
+  const activePaymentProvider = activePaymentMethod === "card"
+    ? (onlinePaymentProvider ?? (stripeOnlinePaymentsEnabled ? "stripe" : null))
+    : "manual";
 
   useEffect(() => {
     async function checkAuth() {
@@ -82,29 +155,9 @@ export default function CheckoutForm({
       }
     }
 
-    async function loadStorePaymentOptions() {
-      try {
-        const response = await fetch("/api/stores", { cache: "no-store" });
-        const stores = await response.json();
-        if (response.ok && Array.isArray(stores) && stores[0]) {
-          const methods = getAvailablePaymentMethods(Boolean(stores[0].offlinePaymentsEnabled));
-          setAvailablePaymentMethods(methods);
-          if (!methods.includes(paymentMethod)) {
-            setPaymentMethod(methods[0] || "card");
-          }
-          return;
-        }
-      } catch {
-        // Ignore store config errors and keep prop default options.
-      }
-
-      const methods = getAvailablePaymentMethods(Boolean(offlinePaymentsEnabled));
-      setAvailablePaymentMethods(methods);
-    }
-
     void checkAuth();
-    void loadStorePaymentOptions();
-  }, [offlinePaymentsEnabled]);
+
+  }, []);
 
   useEffect(() => {
     async function loadCustomerProfile() {
@@ -141,22 +194,6 @@ export default function CheckoutForm({
     void loadCustomerProfile();
   }, [isLoggedIn]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("prado_shipping_zones");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as ShippingZone[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setShippingZones(parsed);
-          const initialAmount = parseRateValue(parsed[0].rateValue, parsed[0].rateType);
-          setShippingAmount(initialAmount);
-        }
-      } catch {
-        // Ignore
-      }
-    }
-  }, []);
-
   function applySavedAddress(address: AddressEntry) {
     setLine1(address.line1 ?? "");
     setCity(address.city ?? "");
@@ -166,12 +203,58 @@ export default function CheckoutForm({
     setStatus("Address loaded from your saved addresses.");
   }
 
+  function tokenizeAuthorizeNetCard() {
+    return new Promise<{ dataDescriptor: string; dataValue: string }>((resolve, reject) => {
+      if (!authorizeNetConfig?.loginId || !authorizeNetConfig.clientKey) {
+        reject(new Error("Authorize.net is not configured for this storefront."));
+        return;
+      }
+
+      if (!window.Accept?.dispatchData) {
+        reject(new Error("Authorize.net secure card form is not ready yet. Please try again."));
+        return;
+      }
+
+      window.Accept.dispatchData(
+        {
+          authData: {
+            clientKey: authorizeNetConfig.clientKey,
+            apiLoginID: authorizeNetConfig.loginId,
+          },
+          cardData: {
+            cardNumber,
+            month: cardExpiryMonth,
+            year: cardExpiryYear,
+            cardCode,
+          },
+        },
+        (response) => {
+          const resultCode = response?.messages?.resultCode;
+          if (resultCode !== "Ok" || !response?.opaqueData?.dataValue || !response?.opaqueData?.dataDescriptor) {
+            const firstMessage = response?.messages?.message?.[0]?.text;
+            reject(new Error(firstMessage || "Unable to tokenize your card. Please check the details and try again."));
+            return;
+          }
+
+          resolve({
+            dataDescriptor: response.opaqueData.dataDescriptor,
+            dataValue: response.opaqueData.dataValue,
+          });
+        },
+      );
+    });
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setStatus(null);
 
     try {
+      const authorizeNetOpaqueData = activePaymentProvider === "authorize_net"
+        ? await tokenizeAuthorizeNetCard()
+        : undefined;
+
       const response = await fetch("/api/storefront/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -197,13 +280,20 @@ export default function CheckoutForm({
           },
           shippingAmount,
           taxAmount: 0,
-          paymentMethod,
+          paymentMethod: activePaymentMethod,
+          paymentProvider: activePaymentProvider,
+          authorizeNetOpaqueData,
         }),
       });
 
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload.error || "Unable to place your order.");
+      }
+
+      if (typeof payload.checkoutUrl === "string" && payload.checkoutUrl) {
+        window.location.href = payload.checkoutUrl;
+        return;
       }
 
       const params = new URLSearchParams({
@@ -314,6 +404,14 @@ export default function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+      {activePaymentProvider === "authorize_net" ? (
+        <Script
+          src={authorizeNetScriptSrc}
+          strategy="afterInteractive"
+          onLoad={() => setIsAcceptJsReady(true)}
+        />
+      ) : null}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-base font-semibold text-slate-900">Customer details</p>
@@ -446,23 +544,23 @@ export default function CheckoutForm({
               type="button"
               onClick={() => setPaymentMethod("card")}
               className={`w-full text-left rounded-xl border px-4 py-3 text-sm font-medium transition ${
-                paymentMethod === "card"
+                activePaymentMethod === "card"
                   ? "border-slate-900 bg-slate-900 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Card payment
+              {activePaymentProvider === "authorize_net" ? "Card payment via Authorize.net" : "Card payment"}
             </button>
           ) : null}
           {availablePaymentMethods.includes("offline") ? (
             <label className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium cursor-pointer transition ${
-              paymentMethod === "offline"
+              activePaymentMethod === "offline"
                 ? "border-cyan-600 bg-cyan-50/50 text-slate-900"
                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             }`}>
               <input
                 type="checkbox"
-                checked={paymentMethod === "offline"}
+                checked={activePaymentMethod === "offline"}
                 onChange={(e) => setPaymentMethod(e.target.checked ? "offline" : "card")}
                 className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
               />
@@ -472,8 +570,64 @@ export default function CheckoutForm({
               </div>
             </label>
           ) : null}
+          {availablePaymentMethods.length === 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              This store has no active payment methods yet. Ask the merchant to connect Stripe or enable offline payments.
+            </div>
+          ) : null}
         </div>
       </div>
+
+      {activePaymentProvider === "authorize_net" && activePaymentMethod === "card" ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-900">Card details</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Your card is tokenized securely by Authorize.net in the browser before Prado Commerce receives the payment token.
+          </p>
+
+          <div className="mt-3 grid gap-3">
+            <input
+              value={cardNumber}
+              onChange={(event) => setCardNumber(event.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+              placeholder="Card number"
+              autoComplete="cc-number"
+              inputMode="numeric"
+            />
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <input
+                value={cardExpiryMonth}
+                onChange={(event) => setCardExpiryMonth(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+                placeholder="MM"
+                autoComplete="cc-exp-month"
+                inputMode="numeric"
+              />
+              <input
+                value={cardExpiryYear}
+                onChange={(event) => setCardExpiryYear(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+                placeholder="YYYY"
+                autoComplete="cc-exp-year"
+                inputMode="numeric"
+              />
+              <input
+                value={cardCode}
+                onChange={(event) => setCardCode(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+                placeholder="CVV"
+                autoComplete="cc-csc"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+
+          {!isAcceptJsReady ? (
+            <p className="mt-3 text-xs text-slate-500">Loading secure Authorize.net card form…</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-semibold text-slate-900">Saved addresses</p>
@@ -504,7 +658,12 @@ export default function CheckoutForm({
 
       <button
         type="submit"
-        disabled={isSubmitting || isCartEmpty}
+        disabled={
+          isSubmitting ||
+          isCartEmpty ||
+          availablePaymentMethods.length === 0 ||
+          (activePaymentProvider === "authorize_net" && !isAcceptJsReady)
+        }
         className="w-full rounded-full bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isCartEmpty ? "Cart is empty" : isSubmitting ? "Submitting order..." : "Place order"}

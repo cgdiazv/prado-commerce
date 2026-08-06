@@ -53,6 +53,14 @@ model Store {
   heroButtonText String?
   activeTheme    StorefrontTheme @default(MINIMAL)
   customDomain   String?    @unique
+  stripeConnectAccountId String? @unique
+  stripeChargesEnabled Boolean @default(false)
+  stripePayoutsEnabled Boolean @default(false)
+  stripeDetailsSubmitted Boolean @default(false)
+  authNetLoginId String?
+  authNetClientKey String?
+  authNetTransKeyEncrypted String?
+  authNetEnv     String     @default("sandbox")
   mainColor      String     @default("#0f172a")
   ownerId        String
   ownerUserId    String?
@@ -289,6 +297,8 @@ model Order {
   tax             Decimal       @default(0.00) @db.Decimal(10, 2)
   shipping        Decimal       @default(0.00) @db.Decimal(10, 2)
   currency        String        @default("USD")
+  paymentProvider String?       @default("manual")
+  gatewayTransactionId String?
 
   stripeSessionId String?       @unique
   stripePaymentId String?       @unique

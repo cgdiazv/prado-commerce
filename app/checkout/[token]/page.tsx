@@ -30,6 +30,12 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
           name: true,
           slug: true,
           offlinePaymentsEnabled: true,
+          stripeChargesEnabled: true,
+          stripePayoutsEnabled: true,
+          authNetLoginId: true,
+          authNetClientKey: true,
+          authNetTransKeyEncrypted: true,
+          authNetEnv: true,
           categories: {
             select: {
               id: true,
@@ -72,6 +78,16 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
     quantity: item.quantity,
   }));
 
+  const stripeOnlinePaymentsEnabled = Boolean(cart.store.stripeChargesEnabled && cart.store.stripePayoutsEnabled);
+  const authorizeNetReady = Boolean(
+    cart.store.authNetLoginId && cart.store.authNetClientKey && cart.store.authNetTransKeyEncrypted,
+  );
+  const onlinePaymentProvider = stripeOnlinePaymentsEnabled
+    ? "stripe"
+    : authorizeNetReady
+      ? "authorize_net"
+      : null;
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <StorefrontNavbar
@@ -95,6 +111,13 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
             storeName={cart.store.name}
             basePath={base}
             offlinePaymentsEnabled={Boolean(cart.store.offlinePaymentsEnabled)}
+            stripeOnlinePaymentsEnabled={stripeOnlinePaymentsEnabled}
+            onlinePaymentProvider={onlinePaymentProvider}
+            authorizeNetConfig={authorizeNetReady ? {
+              loginId: cart.store.authNetLoginId ?? "",
+              clientKey: cart.store.authNetClientKey ?? "",
+              environment: cart.store.authNetEnv === "production" ? "production" : "sandbox",
+            } : null}
             initialItems={initialItems}
           />
         </div>

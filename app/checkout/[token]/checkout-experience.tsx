@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import CheckoutForm from "./checkout-form";
 
@@ -27,6 +28,13 @@ type CheckoutExperienceProps = {
   storeName: string;
   basePath: string;
   offlinePaymentsEnabled: boolean;
+  stripeOnlinePaymentsEnabled: boolean;
+  onlinePaymentProvider: "stripe" | "authorize_net" | null;
+  authorizeNetConfig: {
+    loginId: string;
+    clientKey: string;
+    environment: "sandbox" | "production";
+  } | null;
   initialItems: CheckoutItem[];
 };
 
@@ -41,8 +49,12 @@ export default function CheckoutExperience({
   storeName,
   basePath,
   offlinePaymentsEnabled,
+  stripeOnlinePaymentsEnabled,
+  onlinePaymentProvider,
+  authorizeNetConfig,
   initialItems,
 }: CheckoutExperienceProps) {
+  const router = useRouter();
   const [items, setItems] = useState<CheckoutItem[]>(initialItems);
   const [subtotal, setSubtotal] = useState<number>(() => calculateSubtotal(initialItems));
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
@@ -69,7 +81,7 @@ export default function CheckoutExperience({
     setSubtotal(Number(snapshot.subtotal || 0));
 
     if (nextItems.length === 0) {
-      window.location.href = basePath || "/";
+      router.push(basePath || "/");
     }
   }
 
@@ -134,6 +146,9 @@ export default function CheckoutExperience({
         subtotal={subtotal}
         storeId={storeId}
         offlinePaymentsEnabled={offlinePaymentsEnabled}
+        stripeOnlinePaymentsEnabled={stripeOnlinePaymentsEnabled}
+        onlinePaymentProvider={onlinePaymentProvider}
+        authorizeNetConfig={authorizeNetConfig}
         isCartEmpty={items.length === 0}
       />
 

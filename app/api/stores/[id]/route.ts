@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { normalizeMainColor } from "@/lib/branding";
+import { encryptStoredSecret } from "@/lib/credentials";
 import { addVercelDomain, getVercelDomainStatus, removeVercelDomain } from "@/lib/vercel-domains";
 
 type RouteContext = {
@@ -34,6 +35,14 @@ export async function GET(_req: Request, { params }: RouteContext) {
           heroButtonText: true,
           activeTheme: true,
           customDomain: true,
+          stripeConnectAccountId: true,
+          stripeChargesEnabled: true,
+          stripePayoutsEnabled: true,
+          stripeDetailsSubmitted: true,
+          authNetLoginId: true,
+          authNetClientKey: true,
+          authNetTransKeyEncrypted: true,
+          authNetEnv: true,
           mainColor: true,
           ownerId: true,
           currency: true,
@@ -90,6 +99,9 @@ export async function GET(_req: Request, { params }: RouteContext) {
             timezone: true,
             allowedDomains: true,
             offlinePaymentsEnabled: true,
+            authNetLoginId: true,
+            authNetClientKey: true,
+            authNetEnv: true,
             createdAt: true,
             updatedAt: true,
             apiKeys: {
@@ -109,6 +121,14 @@ export async function GET(_req: Request, { params }: RouteContext) {
         store = legacyStore
           ? {
               ...legacyStore,
+              stripeConnectAccountId: null,
+              stripeChargesEnabled: false,
+              stripePayoutsEnabled: false,
+              stripeDetailsSubmitted: false,
+              authNetLoginId: null,
+              authNetClientKey: null,
+              authNetTransKeyEncrypted: null,
+              authNetEnv: "sandbox",
               welcomeEmailEnabled: false,
               orderConfirmationEmailEnabled: false,
               invoiceEmailEnabled: false,
@@ -126,7 +146,12 @@ export async function GET(_req: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    return NextResponse.json(store);
+    const { authNetTransKeyEncrypted, ...safeStore } = store;
+
+    return NextResponse.json({
+      ...safeStore,
+      authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
+    });
   } catch (error) {
     console.error("[STORE_GET_ERROR]", error);
 
@@ -152,6 +177,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       select: {
         id: true,
         customDomain: true,
+        authNetLoginId: true,
+        authNetClientKey: true,
+        authNetTransKeyEncrypted: true,
+        authNetEnv: true,
         ownerUser: {
           select: {
             plan: true,
@@ -181,6 +210,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone,
       allowedDomains,
       offlinePaymentsEnabled,
+      authNetLoginId,
+      authNetClientKey,
+      authNetTransKey,
+      authNetEnv,
       welcomeEmailEnabled,
       orderConfirmationEmailEnabled,
       invoiceEmailEnabled,
@@ -203,6 +236,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      authNetLoginId?: string | null;
+      authNetClientKey?: string | null;
+      authNetTransKey?: string | null;
+      authNetEnv?: "sandbox" | "production" | string;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -227,6 +264,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      authNetLoginId?: string | null;
+      authNetClientKey?: string | null;
+      authNetTransKeyEncrypted?: string | null;
+      authNetEnv?: string;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -316,6 +357,52 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.offlinePaymentsEnabled = offlinePaymentsEnabled;
     }
 
+    if (authNetLoginId !== undefined) {
+      updates.authNetLoginId = typeof authNetLoginId === "string" && authNetLoginId.trim()
+        ? authNetLoginId.trim()
+        : null;
+    }
+
+    if (authNetClientKey !== undefined) {
+      updates.authNetClientKey = typeof authNetClientKey === "string" && authNetClientKey.trim()
+        ? authNetClientKey.trim()
+        : null;
+    }
+
+    if (authNetTransKey !== undefined) {
+      updates.authNetTransKeyEncrypted = typeof authNetTransKey === "string" && authNetTransKey.trim()
+        ? encryptStoredSecret(authNetTransKey.trim())
+        : null;
+    }
+
+    if (authNetEnv !== undefined) {
+      const normalizedAuthNetEnv = String(authNetEnv).trim().toLowerCase();
+      if (normalizedAuthNetEnv !== "sandbox" && normalizedAuthNetEnv !== "production") {
+        return NextResponse.json(
+          { error: "Authorize.net environment must be sandbox or production." },
+          { status: 400 },
+        );
+      }
+      updates.authNetEnv = normalizedAuthNetEnv;
+    }
+
+    const nextAuthNetLoginId = updates.authNetLoginId !== undefined ? updates.authNetLoginId : owned.authNetLoginId;
+    const nextAuthNetClientKey = updates.authNetClientKey !== undefined ? updates.authNetClientKey : owned.authNetClientKey;
+    const nextAuthNetTransKeyEncrypted = updates.authNetTransKeyEncrypted !== undefined
+      ? updates.authNetTransKeyEncrypted
+      : owned.authNetTransKeyEncrypted;
+
+    const authNetFieldCount = [nextAuthNetLoginId, nextAuthNetClientKey, nextAuthNetTransKeyEncrypted]
+      .filter(Boolean)
+      .length;
+
+    if (authNetFieldCount > 0 && authNetFieldCount < 3) {
+      return NextResponse.json(
+        { error: "Authorize.net setup requires API Login ID, Public Client Key, and Transaction Key." },
+        { status: 400 },
+      );
+    }
+
     if (typeof welcomeEmailEnabled === "boolean") {
       updates.welcomeEmailEnabled = welcomeEmailEnabled;
     }
@@ -367,6 +454,14 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         heroButtonText: true,
         activeTheme: true,
         customDomain: true,
+        stripeConnectAccountId: true,
+        stripeChargesEnabled: true,
+        stripePayoutsEnabled: true,
+        stripeDetailsSubmitted: true,
+        authNetLoginId: true,
+        authNetClientKey: true,
+        authNetTransKeyEncrypted: true,
+        authNetEnv: true,
         mainColor: true,
         ownerId: true,
         currency: true,
@@ -399,8 +494,13 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       ? await getVercelDomainStatus(updatedStore.customDomain)
       : null;
 
+    const { authNetTransKeyEncrypted, ...safeUpdatedStore } = updatedStore;
+
     return NextResponse.json({
-      ...updatedStore,
+      ...safeUpdatedStore,
+      authNetConfigured: Boolean(
+        updatedStore.authNetLoginId && updatedStore.authNetClientKey && authNetTransKeyEncrypted,
+      ),
       domainStatus,
     });
   } catch (error: unknown) {
@@ -432,7 +532,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       error.code === "P2022"
     ) {
       return NextResponse.json(
-        { error: "Email settings columns are not available yet. Run the latest database migrations and try again." },
+        { error: "Some store settings columns are not available yet. Run the latest database migrations and try again." },
         { status: 400 },
       );
     }

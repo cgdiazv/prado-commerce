@@ -1,0 +1,9 @@
+ALTER TABLE "Store"
+ADD COLUMN IF NOT EXISTS "authNetLoginId" TEXT,
+ADD COLUMN IF NOT EXISTS "authNetClientKey" TEXT,
+ADD COLUMN IF NOT EXISTS "authNetTransKeyEncrypted" TEXT,
+ADD COLUMN IF NOT EXISTS "authNetEnv" TEXT NOT NULL DEFAULT 'sandbox';
+
+ALTER TABLE "Order"
+ADD COLUMN IF NOT EXISTS "paymentProvider" TEXT DEFAULT 'manual',
+ADD COLUMN IF NOT EXISTS "gatewayTransactionId" TEXT;

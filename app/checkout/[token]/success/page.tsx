@@ -11,9 +11,30 @@ type SuccessPageProps = {
 export default async function CheckoutSuccessPage({ params, searchParams }: SuccessPageProps) {
   const { token } = await params;
   const resolvedSearchParams = await searchParams;
-  const orderNumber = resolvedSearchParams.orderNumber;
-  const total = resolvedSearchParams.total;
-  const currency = resolvedSearchParams.currency;
+  const sessionIdRaw = resolvedSearchParams.session_id;
+  const sessionId = typeof sessionIdRaw === "string" ? sessionIdRaw.trim() : "";
+
+  const orderFromSession = sessionId
+    ? await prisma.order.findUnique({
+        where: { stripeSessionId: sessionId },
+        select: {
+          orderNumber: true,
+          total: true,
+          currency: true,
+        },
+      })
+    : null;
+
+  const orderNumberRaw = resolvedSearchParams.orderNumber;
+  const totalRaw = resolvedSearchParams.total;
+  const currencyRaw = resolvedSearchParams.currency;
+
+  const orderNumber = orderFromSession?.orderNumber ??
+    (typeof orderNumberRaw === "string" ? orderNumberRaw : undefined);
+  const total = orderFromSession ? Number(orderFromSession.total).toFixed(2) :
+    (typeof totalRaw === "string" ? totalRaw : undefined);
+  const currency = orderFromSession?.currency ??
+    (typeof currencyRaw === "string" ? currencyRaw : undefined);
 
   const normalizedToken = decodeURIComponent(token).trim();
   const cart = await prisma.cart.findFirst({
@@ -44,7 +65,9 @@ export default async function CheckoutSuccessPage({ params, searchParams }: Succ
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Order confirmed</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">Thank you for your purchase</h1>
           <p className="mt-2 text-base leading-7 text-slate-600">
-            Your order has been placed successfully. We’ll keep you updated by email as it moves through fulfillment.
+            {sessionId && !orderFromSession
+              ? "Your payment was received and we are finalizing your order. Refresh in a moment to view the order number."
+              : "Your order has been placed successfully. We’ll keep you updated by email as it moves through fulfillment."}
           </p>
 
           <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">

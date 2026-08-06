@@ -36,6 +36,7 @@ function getRateLimitForPlan(plan: string | undefined) {
 function shouldRateLimit(pathname: string) {
   return pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth/") &&
+    pathname !== "/api/stripe/webhook" &&
     pathname !== "/api/health";
 }
 

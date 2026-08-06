@@ -28,6 +28,14 @@ export async function GET(request: Request) {
           heroImageUrl: true,
           activeTheme: true,
           customDomain: true,
+          stripeConnectAccountId: true,
+          stripeChargesEnabled: true,
+          stripePayoutsEnabled: true,
+          stripeDetailsSubmitted: true,
+          authNetLoginId: true,
+          authNetClientKey: true,
+          authNetTransKeyEncrypted: true,
+          authNetEnv: true,
           mainColor: true,
           currency: true,
           timezone: true,
@@ -71,6 +79,9 @@ export async function GET(request: Request) {
             heroImageUrl: true,
             activeTheme: true,
             customDomain: true,
+            authNetLoginId: true,
+            authNetClientKey: true,
+            authNetEnv: true,
             mainColor: true,
             currency: true,
             timezone: true,
@@ -88,12 +99,38 @@ export async function GET(request: Request) {
             },
           },
         });
+
+        stores = stores.map((store) => ({
+          ...store,
+          stripeConnectAccountId: null,
+          stripeChargesEnabled: false,
+          stripePayoutsEnabled: false,
+          stripeDetailsSubmitted: false,
+          authNetLoginId: null,
+          authNetClientKey: null,
+          authNetEnv: "sandbox",
+          welcomeEmailEnabled: false,
+          orderConfirmationEmailEnabled: false,
+          invoiceEmailEnabled: false,
+          senderName: null,
+          senderEmail: null,
+          replyToEmail: null,
+        }));
       } else {
         throw error;
       }
     }
 
-    return NextResponse.json(stores);
+    return NextResponse.json(
+      stores.map((store) => {
+        const { authNetTransKeyEncrypted, ...safeStore } = store;
+
+        return {
+          ...safeStore,
+          authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
+        };
+      }),
+    );
   } catch (error) {
     console.error("[STORES_GET_ERROR]", error);
 
