@@ -16,7 +16,7 @@ type SessionUser = {
 
 function isDatabaseConnectionError(error: unknown): boolean {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return error.code === "P1001";
+    return error.code === "P1000" || error.code === "P1001";
   }
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
@@ -24,7 +24,7 @@ function isDatabaseConnectionError(error: unknown): boolean {
   }
 
   if (error instanceof Error) {
-    return /can't reach database server|database server at/i.test(error.message);
+    return /can't reach database server|database server at|authentication failed against the database server/i.test(error.message);
   }
 
   return false;

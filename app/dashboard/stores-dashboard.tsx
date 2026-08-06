@@ -32,6 +32,12 @@ type StoreFormState = {
   allowedDomains: string;
 };
 
+type DomainSetupNotice = {
+  storeName: string;
+  domain: string;
+  status: "valid" | "pending" | "invalid" | "unknown" | null;
+};
+
 const defaultFormState: StoreFormState = {
   name: "",
   slug: "",
@@ -50,6 +56,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
   const [formState, setFormState] = useState<StoreFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [domainSetupNotice, setDomainSetupNotice] = useState<DomainSetupNotice | null>(null);
   const [deletingStoreId, setDeletingStoreId] = useState<string | null>(null);
   const isStarter = currentPlan === "STARTER";
   const hasReachedStoreLimit = isStarter && stores.length >= 1;
@@ -152,10 +159,23 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      const result = await response.json() as Store & {
+        error?: string;
+        domainStatus?: "valid" | "pending" | "invalid" | "unknown" | null;
+      };
 
       if (!response.ok) {
         throw new Error(result.error ?? "Something went wrong");
+      }
+
+      if (result.customDomain) {
+        setDomainSetupNotice({
+          storeName: result.name,
+          domain: result.customDomain,
+          status: result.domainStatus ?? "unknown",
+        });
+      } else {
+        setDomainSetupNotice(null);
       }
 
       await refreshStores();
@@ -177,6 +197,33 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
+        </div>
+      ) : null}
+
+      {domainSetupNotice ? (
+        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold">Custom domain saved for {domainSetupNotice.storeName}</p>
+              <p className="mt-1 break-all text-blue-800">{domainSetupNotice.domain}</p>
+              <p className="mt-1 text-blue-900">
+                Status: {domainSetupNotice.status === "valid" ? "Verified" : domainSetupNotice.status === "pending" ? "Pending verification" : domainSetupNotice.status === "invalid" ? "Needs DNS fix" : "Checking"}
+              </p>
+              <div className="mt-3 space-y-2 text-blue-800">
+                <p>DNS setup:</p>
+                <p>1. Subdomain (recommended): add CNAME for {domainSetupNotice.domain} pointing to cname.vercel-dns.com.</p>
+                <p>2. Apex domain: add A record @ pointing to 76.76.21.21, and add CNAME for www to cname.vercel-dns.com.</p>
+                <p>3. Wait for propagation, then open https://{domainSetupNotice.domain} to verify storefront routing.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDomainSetupNotice(null)}
+              className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       ) : null}
       <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">

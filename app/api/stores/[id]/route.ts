@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { normalizeMainColor } from "@/lib/branding";
+import { addVercelDomain, getVercelDomainStatus, removeVercelDomain } from "@/lib/vercel-domains";
 
 type RouteContext = {
   params: Promise<{
@@ -150,6 +151,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       where: { id, ownerUserId: user.id },
       select: {
         id: true,
+        customDomain: true,
         ownerUser: {
           select: {
             plan: true,
@@ -345,6 +347,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       );
     }
 
+    const previousDomain = owned.customDomain ?? null;
+    const nextDomain = updates.customDomain !== undefined ? (updates.customDomain ?? null) : previousDomain;
+
     const updatedStore = await prisma.store.update({
       where: {
         id,
@@ -379,7 +384,25 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       },
     });
 
-    return NextResponse.json(updatedStore);
+    // Sync domain registration with Vercel after the DB update succeeds
+    if (nextDomain !== previousDomain) {
+      try {
+        if (previousDomain) await removeVercelDomain(previousDomain);
+        if (nextDomain) await addVercelDomain(nextDomain);
+      } catch (domainError) {
+        console.error("[VERCEL_DOMAIN_SYNC_ERROR]", domainError);
+        // Domain sync failure is non-fatal — the store is saved; merchant should retry
+      }
+    }
+
+    const domainStatus = updatedStore.customDomain
+      ? await getVercelDomainStatus(updatedStore.customDomain)
+      : null;
+
+    return NextResponse.json({
+      ...updatedStore,
+      domainStatus,
+    });
   } catch (error: unknown) {
     if (
       typeof error === "object" &&
