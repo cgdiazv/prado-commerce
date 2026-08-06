@@ -33,6 +33,7 @@ type StoreFormState = {
 };
 
 type DomainSetupNotice = {
+  storeId: string;
   storeName: string;
   domain: string;
   status: "valid" | "pending" | "invalid" | "unknown" | null;
@@ -57,6 +58,8 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [domainSetupNotice, setDomainSetupNotice] = useState<DomainSetupNotice | null>(null);
+  const [domainStatusError, setDomainStatusError] = useState<string | null>(null);
+  const [isCheckingDomainStatus, setIsCheckingDomainStatus] = useState(false);
   const [deletingStoreId, setDeletingStoreId] = useState<string | null>(null);
   const isStarter = currentPlan === "STARTER";
   const hasReachedStoreLimit = isStarter && stores.length >= 1;
@@ -170,12 +173,15 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
 
       if (result.customDomain) {
         setDomainSetupNotice({
+          storeId: result.id,
           storeName: result.name,
           domain: result.customDomain,
           status: result.domainStatus ?? "unknown",
         });
+        setDomainStatusError(null);
       } else {
         setDomainSetupNotice(null);
+        setDomainStatusError(null);
       }
 
       await refreshStores();
@@ -188,6 +194,54 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
       );
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleCheckDomainStatus() {
+    if (!domainSetupNotice) {
+      return;
+    }
+
+    setIsCheckingDomainStatus(true);
+    setDomainStatusError(null);
+
+    try {
+      const response = await fetch(`/api/stores/${domainSetupNotice.storeId}/domain-status`, {
+        cache: "no-store",
+      });
+
+      const result = await response.json() as {
+        error?: string;
+        storeId?: string;
+        storeName?: string;
+        domain?: string;
+        status?: "valid" | "pending" | "invalid" | "unknown";
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Failed to check domain status");
+      }
+
+      setDomainSetupNotice((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          storeId: result.storeId ?? current.storeId,
+          storeName: result.storeName ?? current.storeName,
+          domain: result.domain ?? current.domain,
+          status: result.status ?? "unknown",
+        };
+      });
+    } catch (statusError) {
+      setDomainStatusError(
+        statusError instanceof Error
+          ? statusError.message
+          : "Failed to check domain status",
+      );
+    } finally {
+      setIsCheckingDomainStatus(false);
     }
   }
 
@@ -215,14 +269,32 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                 <p>2. Apex domain: add A record @ pointing to 76.76.21.21, and add CNAME for www to cname.vercel-dns.com.</p>
                 <p>3. Wait for propagation, then open https://{domainSetupNotice.domain} to verify storefront routing.</p>
               </div>
+              {domainStatusError ? (
+                <p className="mt-3 rounded-lg border border-amber-300 bg-amber-100/80 px-3 py-2 text-xs text-amber-800">
+                  {domainStatusError}
+                </p>
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={() => setDomainSetupNotice(null)}
-              className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
-            >
-              Dismiss
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleCheckDomainStatus()}
+                disabled={isCheckingDomainStatus}
+                className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCheckingDomainStatus ? "Checking..." : "Check status"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDomainSetupNotice(null);
+                  setDomainStatusError(null);
+                }}
+                className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -240,7 +312,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
             Your stores, products, and settings in one place.
           </h1>
           <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Create and manage your storefronts, configure domains and currencies, and keep your embed keys ready to go.
+            Create and manage your storefronts, and configure domains and currencies.
           </p>
             </div>
 
