@@ -340,9 +340,10 @@ export default function DashboardLayout({
   return (
     <div
       data-route-kind="dashboard"
-      className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(237,242,247,0.94)_40%,_rgba(226,232,240,0.9))] text-slate-900"
+      className="min-h-screen bg-[#f8fafc] text-slate-900"
+      style={{ colorScheme: "light" }}
     >
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
           <a href="/dashboard" className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
@@ -448,7 +449,7 @@ export default function DashboardLayout({
             className="absolute inset-0 bg-slate-950/45"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white/95 px-4 py-6 shadow-2xl backdrop-blur-xl">
+          <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between">
               <a href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
                 <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
@@ -470,12 +471,12 @@ export default function DashboardLayout({
         </div>
       ) : null}
 
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/50 px-4 py-6 lg:flex">
+      <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc]">
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex">
           <SidebarContent />
         </aside>
 
-        <main className="min-w-0 flex-1 px-6 py-10 lg:px-10">
+        <main className="min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10">
           <div
             className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||
