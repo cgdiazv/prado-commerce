@@ -25,6 +25,33 @@ function toDecimal(value: number) {
   return Number(value.toFixed(2));
 }
 
+type FinalizeOrderInput = {
+  cartId: string;
+  storeId: string;
+  customerEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  shippingAddress: unknown;
+  billingAddress: unknown;
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
+  currency: string;
+  paymentMethod: string;
+  paymentProvider: string;
+  gatewayTransactionId: string | null;
+  items: Array<{
+    quantity: number;
+    variant: {
+      id: string;
+      title: string;
+      price: unknown;
+    };
+  }>;
+};
+
 async function finalizeOrder({
   cartId,
   storeId,
@@ -43,7 +70,7 @@ async function finalizeOrder({
   paymentProvider,
   gatewayTransactionId,
   items,
-}) {
+}: FinalizeOrderInput) {
   const customer = await prisma.customer.upsert({
     where: {
       storeId_email: {
@@ -335,6 +362,14 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Card payments are not configured yet." }, { status: 500 });
         }
 
+        const stripeDestinationAccountId = cart.store?.stripeConnectAccountId;
+        if (!stripeDestinationAccountId) {
+          return NextResponse.json(
+            { error: "This store is not ready to accept online card payments yet." },
+            { status: 400 },
+          );
+        }
+
         const currencyCode = (cart.currency || "USD").toLowerCase();
         const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = cart.items.map((item) => ({
           quantity: item.quantity,
@@ -395,7 +430,7 @@ export async function POST(request: Request) {
           },
           payment_intent_data: {
             transfer_data: {
-              destination: cart.store.stripeConnectAccountId,
+              destination: stripeDestinationAccountId,
             },
           },
         });

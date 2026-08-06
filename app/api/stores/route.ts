@@ -123,7 +123,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       stores.map((store) => {
-        const { authNetTransKeyEncrypted, ...safeStore } = store;
+        const authNetTransKeyEncrypted = "authNetTransKeyEncrypted" in store
+          ? store.authNetTransKeyEncrypted
+          : null;
+        const safeStore = {
+          ...store,
+        } as typeof store & { authNetTransKeyEncrypted?: string | null };
+
+        delete safeStore.authNetTransKeyEncrypted;
 
         return {
           ...safeStore,
