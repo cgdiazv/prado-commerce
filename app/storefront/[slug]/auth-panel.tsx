@@ -1,55 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 
-export type StorefrontCustomer = {
-  id: string;
-  storeId: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  phone: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 type AuthPanelProps = {
   storeId: string;
-  initialCustomer: StorefrontCustomer | null;
   mainColor: string;
 };
 
-export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthPanelProps) {
-  const [customer, setCustomer] = useState<StorefrontCustomer | null>(initialCustomer);
+type PasswordResetRequestResponse = {
+  error?: string;
+  resetPath?: string;
+};
+
+type StorefrontAuthResponse = {
+  error?: string;
+};
+
+export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
-  const [email, setEmail] = useState(initialCustomer?.email ?? "");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState(initialCustomer?.firstName ?? "");
-  const [lastName, setLastName] = useState(initialCustomer?.lastName ?? "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const resolvedMainColor = normalizeMainColor(mainColor);
   const colorVars = getStoreBrandingCssVars(resolvedMainColor) as CSSProperties;
-
-  useEffect(() => {
-    async function loadCustomer() {
-      try {
-        const response = await fetch("/api/storefront/auth", { cache: "no-store" });
-        const payload = await response.json();
-        setCustomer(payload.customer ?? null);
-      } catch {
-        setCustomer(null);
-      }
-    }
-
-    loadCustomer();
-  }, []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,10 +46,14 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
           body: JSON.stringify({ storeId, email }),
         });
 
-        const payload = await response.json();
+        const payload = (await response.json()) as PasswordResetRequestResponse;
 
         if (!response.ok) {
           throw new Error(payload.error || "Unable to create a reset link.");
+        }
+
+        if (!payload.resetPath) {
+          throw new Error("Reset link is unavailable right now. Please try again.");
         }
 
         const resetUrl = new URL(payload.resetPath, window.location.origin).toString();
@@ -93,7 +79,7 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
         }),
       });
 
-      const payload = await response.json();
+      const payload = (await response.json()) as StorefrontAuthResponse;
       if (!response.ok) {
         throw new Error(payload.error || "Unable to sign in to this storefront.");
       }
@@ -102,14 +88,14 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
         // Do not keep shoppers signed in immediately after account creation.
         // This keeps the flow on sign-in as requested.
         await fetch("/api/storefront/auth", { method: "DELETE" });
-        setCustomer(null);
         setMode("signin");
         setPassword("");
         setConfirmPassword("");
         setStatus("Account created. Please sign in.");
       } else {
-        setCustomer(payload.customer ?? null);
-        setStatus("Signed in successfully.");
+        // Reload so the server-rendered account page can switch to the full sidebar layout.
+        window.location.reload();
+        return;
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to complete this request.");
@@ -118,35 +104,17 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
     }
   }
 
-  async function signOut() {
-    await fetch("/api/storefront/auth", { method: "DELETE" });
-    setCustomer(null);
-    setStatus("Signed out.");
-  }
-
   return (
     <div style={colorVars} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-base font-semibold text-slate-900">
-            {customer ? "Account" : mode === "signin" ? "Sign in" : mode === "signup" ? "Sign up" : "Reset password"}
+              {mode === "signin" ? "Sign in" : mode === "signup" ? "Sign up" : "Reset password"}
           </p>
-          {customer ? (
-            <p className="text-sm text-slate-500">Signed in as {customer.email}</p>
-          ) : null}
+            <p className="text-sm text-slate-500">Sign in to access your account dashboard.</p>
         </div>
-        {customer ? (
-          <button
-            type="button"
-            onClick={signOut}
-            className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            Sign out
-          </button>
-        ) : null}
       </div>
 
-      {!customer ? (
         <form onSubmit={submit} className="mt-5 space-y-3">
           <div className="flex gap-2 rounded-full border border-slate-200 p-1">
             <button
@@ -272,8 +240,7 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
           >
             {isSubmitting ? "Working..." : mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
           </button>
-        </form>
-      ) : null}
+      </form>
 
       {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
     </div>

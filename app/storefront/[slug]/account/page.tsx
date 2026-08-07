@@ -38,7 +38,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
         <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} isAccountActive mainColor={store.mainColor} />
         <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
           <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
-          <AuthPanel storeId={store.id} initialCustomer={null} mainColor={store.mainColor} />
+          <AuthPanel storeId={store.id} mainColor={store.mainColor} />
         </main>
         <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
         <StorefrontFooter storeName={store.name} />
