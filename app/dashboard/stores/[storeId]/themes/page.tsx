@@ -129,14 +129,14 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
                   <p className="text-sm leading-6 text-slate-600">{theme.description}</p>
                 </div>
 
-                <form action={activateStoreTheme} className="mt-5">
+                <form action={activateStoreTheme} className="mt-5 flex justify-end">
                   <input type="hidden" name="storeId" value={store.id} />
                   <input type="hidden" name="themeId" value={theme.id} />
                   <button
                     type="submit"
                     disabled={isActive}
                     aria-disabled={isActive}
-                    className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                    className={`inline-flex items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                       isActive
                         ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-500"
                         : "bg-slate-900 text-white hover:bg-slate-800"
