@@ -239,7 +239,7 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-              placeholder={mode === "signup" ? "Create a password" : "Password"}
+              placeholder="Password"
               required
               minLength={6}
             />
