@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User, UserCog, ShoppingBag, MapPin, LogOut, ChevronRight, CheckCircle2 } from "lucide-react";
+import { darkenHexColor, normalizeMainColor } from "@/lib/branding";
 import OrdersPanel from "./orders-panel";
 
 type AddressEntry = {
@@ -28,7 +29,11 @@ type AccountCustomer = {
 
 type TabType = "account" | "profile" | "orders" | "addresses";
 
-export default function AccountSidebarLayout() {
+type AccountSidebarLayoutProps = {
+  mainColor: string;
+};
+
+export default function AccountSidebarLayout({ mainColor }: AccountSidebarLayoutProps) {
   const [activeTab, setActiveTab] = useState<TabType>("account");
   const [customer, setCustomer] = useState<AccountCustomer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,8 @@ export default function AccountSidebarLayout() {
   const [status, setStatus] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const resolvedMainColor = normalizeMainColor(mainColor);
+  const bannerPillColor = darkenHexColor(resolvedMainColor, 0.18);
 
   useEffect(() => {
     async function loadAccount() {
@@ -241,8 +248,14 @@ export default function AccountSidebarLayout() {
         {/* Tab 1: Account Overview */}
         {activeTab === "account" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-slate-400 p-6 text-white shadow-sm">
-              <span className="inline-block rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300">
+            <div
+              style={{ backgroundColor: resolvedMainColor }}
+              className="rounded-2xl border border-slate-200 p-6 text-white shadow-sm"
+            >
+              <span
+                style={{ backgroundColor: bannerPillColor }}
+                className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white"
+              >
                 Account
               </span>
               <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
