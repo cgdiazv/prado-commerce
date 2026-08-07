@@ -6,7 +6,7 @@ import { PublicFooter } from "@/components/public-footer";
 export const metadata: Metadata = {
   title: {
     template: "%s | Prado Commerce",
-    default: "Prado Commerce",
+    default: "Prado Commerce | Streamlined E-commerce & Omnichannel Management",
   },
   description:
     "Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.",
