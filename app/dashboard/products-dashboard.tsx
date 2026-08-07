@@ -327,9 +327,6 @@ export function ProductsDashboard({
               <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Product Studio
               </p>
-              <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
-                {currentPlan}
-              </span>
             </div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               Create products, variants, and storefront pricing.

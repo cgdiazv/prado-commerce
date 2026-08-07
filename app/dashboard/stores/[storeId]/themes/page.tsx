@@ -81,7 +81,7 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             Store Theme
@@ -96,9 +96,9 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
 
         <Link
           href="/dashboard/stores"
-          className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
         >
-          Back to stores
+          Back
         </Link>
       </div>
 

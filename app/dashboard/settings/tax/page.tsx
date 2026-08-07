@@ -88,23 +88,25 @@ export default function TaxPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             Settings
           </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">Tax</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">Tax</h1>
+
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              ← Back to settings
+            </Link>
+          </div>
+          <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
             Configure tax registrations, regions, rates, exemptions, filing, and tax service integrations.
           </p>
         </div>
-
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          ← Back to settings
-        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -210,51 +212,7 @@ export default function TaxPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Filing preferences</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Filing frequency</span>
-                <select value={filingFrequency} onChange={(e) => setFilingFrequency(e.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400">
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annually">Annually</option>
-                </select>
-              </label>
 
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Tax report export format</span>
-                <select className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400">
-                  <option>CSV</option>
-                  <option>Excel (.xlsx)</option>
-                  <option>PDF summary</option>
-                </select>
-              </label>
-            </div>
-          </article>
-
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Tax service integrations</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Connect services to automate tax rate lookups and compliance workflows.
-            </p>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              {[
-                { name: "Avalara AvaTax", detail: "Automated tax calculation and filing support." },
-                { name: "TaxJar", detail: "Sales tax reporting and economic nexus tracking." },
-                { name: "Manual tax tables", detail: "Custom tax rates configured in your dashboard." },
-              ].map((integration) => (
-                <div key={integration.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900">{integration.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{integration.detail}</p>
-                  <button type="button" className="mt-4 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white">
-                    Connect
-                  </button>
-                </div>
-              ))}
-            </div>
-          </article>
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

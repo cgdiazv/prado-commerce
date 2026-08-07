@@ -56,23 +56,25 @@ export default function ChangePasswordPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             Settings
           </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">Change password</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">Change password</h1>
+
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              ← Back to settings
+            </Link>
+          </div>
+          <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
             Update your password. This will sign out all other active devices.
           </p>
         </div>
-
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          ← Back to settings
-        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, CircleHelp, Menu, X, Bell, LogOut } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut } from "lucide-react";
 
 type NavChild = {
   href: string;
@@ -24,6 +24,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
   const [isStoresOpen, setIsStoresOpen] = useState(pathname.startsWith("/dashboard/stores"));
+  const [isToolsOpen, setIsToolsOpen] = useState(pathname.startsWith("/dashboard/tools"));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
@@ -183,6 +184,15 @@ export default function DashboardLayout({
         },
       ],
     },
+    {
+      href: "/dashboard/tools",
+      label: "Tools",
+      icon: Wrench,
+      children: [
+        { href: "/dashboard/tools/import-tables", label: "Import Tables" },
+        { href: "/dashboard/tools/export-tables", label: "Export Tables" },
+      ],
+    },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
@@ -202,6 +212,10 @@ export default function DashboardLayout({
       setIsStoresOpen(true);
     }
 
+    if (pathname.startsWith("/dashboard/tools")) {
+      setIsToolsOpen(true);
+    }
+
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
@@ -212,6 +226,10 @@ export default function DashboardLayout({
 
     if (href === "/dashboard/stores") {
       return isStoresOpen;
+    }
+
+    if (href === "/dashboard/tools") {
+      return isToolsOpen;
     }
 
     return false;
@@ -225,6 +243,11 @@ export default function DashboardLayout({
 
     if (href === "/dashboard/stores") {
       setIsStoresOpen((open) => !open);
+      return;
+    }
+
+    if (href === "/dashboard/tools") {
+      setIsToolsOpen((open) => !open);
     }
   }
 
@@ -292,6 +315,8 @@ export default function DashboardLayout({
                             ? child.label === "Themes"
                               ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")
                               : pathname === "/dashboard/stores"
+                            : item.href === "/dashboard/tools"
+                              ? pathname === child.href
                             : pathname === child.href;
 
                       return (
@@ -330,7 +355,7 @@ export default function DashboardLayout({
             Help
           </a>
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
-            © {new Date().getFullYear()} Prado Commerce
+            Prado Systems. All rights reserved.
           </p>
         </div>
       </>
