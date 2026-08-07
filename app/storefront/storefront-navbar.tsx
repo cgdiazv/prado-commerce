@@ -38,6 +38,9 @@ export default function StorefrontNavbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const homeHref = basePath ? `${basePath}/` : "/";
   const accountHref = basePath ? `${basePath}/account` : "/account";
+  const activeCategoryHref = activeCategory
+    ? (basePath ? `${basePath}/category/${activeCategory}` : `/category/${activeCategory}`)
+    : homeHref;
   const resolvedMainColor = normalizeMainColor(mainColor);
   const headerClass =
     theme === "classic"
@@ -86,8 +89,7 @@ export default function StorefrontNavbar({
           </div>
 
           <div className="hidden min-w-0 flex-1 flex-col gap-3 md:flex">
-            <form action={homeHref} method="get" className="w-full">
-              {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+            <form action={activeCategoryHref} method="get" className="w-full">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -114,7 +116,7 @@ export default function StorefrontNavbar({
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
-                    href={basePath ? `${basePath}/?category=${cat.slug}` : `/?category=${cat.slug}`}
+                    href={basePath ? `${basePath}/category/${cat.slug}` : `/category/${cat.slug}`}
                     className={`text-sm font-medium transition-colors ${
                       activeCategory === cat.slug ? "font-semibold" : "text-slate-500 hover:text-slate-900"
                     }`}
@@ -156,8 +158,7 @@ export default function StorefrontNavbar({
           </div>
         </div>
 
-        <form action={homeHref} method="get" className="mt-4 md:hidden">
-          {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+        <form action={activeCategoryHref} method="get" className="mt-4 md:hidden">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -202,8 +203,7 @@ export default function StorefrontNavbar({
             </div>
 
             <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
-              <form action={homeHref} method="get" className="mb-2 px-1">
-                {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+              <form action={activeCategoryHref} method="get" className="mb-2 px-1">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
@@ -230,7 +230,7 @@ export default function StorefrontNavbar({
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={basePath ? `${basePath}/?category=${cat.slug}` : `/?category=${cat.slug}`}
+                  href={basePath ? `${basePath}/category/${cat.slug}` : `/category/${cat.slug}`}
                   onClick={closeMobileMenu}
                   className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                     activeCategory === cat.slug

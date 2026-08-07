@@ -19,7 +19,11 @@ type PageProps = {
 
 export default async function CustomDomainStorefrontPage({ params, searchParams }: PageProps) {
   const { domain, path: pathSegments } = await params;
-  const { category: activeCategory, q } = await searchParams;
+  const { category: activeCategoryFromQuery, q } = await searchParams;
+  const activeCategoryFromPath = pathSegments?.[0] === "category" && pathSegments[1]
+    ? decodeURIComponent(pathSegments[1])
+    : undefined;
+  const activeCategory = activeCategoryFromPath ?? activeCategoryFromQuery;
   const searchQuery = q?.trim() ?? "";
   const normalizedDomain = decodeURIComponent(domain).toLowerCase();
 
