@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
@@ -323,7 +324,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderName?: string | null;
       senderEmail?: string | null;
       replyToEmail?: string | null;
-      shippingZones?: unknown;
+      shippingZones?: Prisma.InputJsonValue;
     } = {};
 
     if (typeof name === "string" && name.trim()) {
