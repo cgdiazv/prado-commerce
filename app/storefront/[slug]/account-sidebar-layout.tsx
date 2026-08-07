@@ -241,14 +241,14 @@ export default function AccountSidebarLayout() {
         {/* Tab 1: Account Overview */}
         {activeTab === "account" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-700 to-slate-600 p-6 text-white shadow-sm">
               <span className="inline-block rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300">
                 Account
               </span>
               <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
                 Welcome back, {customer?.firstName || "shopper"}!
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300 max-w-xl">
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-100">
                 Welcome to your account dashboard. Here you can manage your profile information, track your past orders, update shipping addresses, and control your storefront access.
               </p>
             </div>
