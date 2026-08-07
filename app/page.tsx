@@ -105,14 +105,14 @@ export default function Home() {
             <div className="hidden items-center gap-2 sm:flex">
               <Link
                 href="/pricing"
-                className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
                 onClick={closeMobileMenu}
               >
                 Pricing
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
                 onClick={closeMobileMenu}
               >
                 Dashboard
@@ -159,14 +159,14 @@ export default function Home() {
           <nav className="mt-6 flex flex-1 flex-col gap-2">
             <Link
               href="/pricing"
-              className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              className="px-1 py-2 text-sm font-semibold text-cyan-100/90 transition hover:text-cyan-50"
               onClick={closeMobileMenu}
             >
               Pricing
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+              className="px-1 py-2 text-sm font-semibold text-cyan-100/90 transition hover:text-cyan-50"
               onClick={closeMobileMenu}
             >
               Dashboard
