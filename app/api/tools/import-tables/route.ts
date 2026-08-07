@@ -270,15 +270,15 @@ async function importCustomers(storeId: string, rows: ImportRow[]): Promise<Impo
           firstName,
           lastName,
           phone,
-          shippingAddress,
-          billingAddress,
+          ...(shippingAddress ? { shippingAddress } : {}),
+          ...(billingAddress ? { billingAddress } : {}),
         },
         update: {
           firstName,
           lastName,
           phone,
-          shippingAddress,
-          billingAddress,
+          ...(shippingAddress ? { shippingAddress } : {}),
+          ...(billingAddress ? { billingAddress } : {}),
         },
       });
 
