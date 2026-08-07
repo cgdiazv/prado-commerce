@@ -4,21 +4,24 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
-const stackPillars = [
+const frictionStories = [
   {
-    title: "Merchant Control",
-    detail: "Launch stores, issue keys, and manage pricing from one admin plane.",
-    image: "/feature1.webp",
+    title: "Sales stop after a campaign goes live",
+    detail:
+      "A maker launches a flash promo, traffic spikes, and checkout starts dropping buyers at the worst possible moment.",
+    image: "/conflict1.webp",
   },
   {
-    title: "API and CDN Split",
-    detail: "Deliver a faster shopping experience so your storefront loads quickly and feels reliable for customers.",
-    image: "/feature2.webp",
+    title: "Inventory says one thing, customer expectations say another",
+    detail:
+      "Store teams update products in multiple tools and still end up with mismatched stock, pricing, and fulfillment details.",
+    image: "/conflict2.webp",
   },
   {
-    title: "Cart Engine",
-    detail: "Set up a shopping cart quickly so customers can add products and check out with ease.",
-    image: "/feature3.webp",
+    title: "Growth exposes an operations bottleneck",
+    detail:
+      "As new channels get added, teams spend more time patching systems than improving the buying experience.",
+    image: "/conflict3.webp",
   },
 ];
 
@@ -218,26 +221,36 @@ export default function Home() {
         </section>
 
         <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 sm:px-8 lg:px-10">
-          <div className="mb-4 flex items-center justify-end gap-3">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-300">Built for speed</p>
+          <div className="max-w-3xl">
+            <p className="inline-flex rounded-full border border-teal-100/40 bg-teal-200/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-teal-100">
+              The friction most teams hit
+            </p>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Growth should increase confidence, not operational chaos.
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-200/85 sm:text-base">
+              Most commerce teams are not blocked by ideas. They are blocked by fragile systems, disconnected data, and checkout friction that quietly kills conversions.
+            </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {stackPillars.map((pillar) => (
+          <div className="mt-7 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {frictionStories.map((story) => (
               <article
-                key={pillar.title}
-                className="rounded-xl border border-white/18 bg-white/8 p-4 backdrop-blur-sm"
+                key={story.title}
+                className="overflow-hidden rounded-xl border border-white/12 bg-white/8 backdrop-blur-sm"
               >
-                <div className="mb-3 overflow-hidden rounded-xl border border-white/20 bg-slate-900/40">
+                <div className="overflow-hidden border border-white/20 bg-slate-900/40">
                   <img
-                    src={pillar.image}
-                    alt={`${pillar.title} illustration`}
-                    className="h-28 w-full object-cover object-top"
+                    src={story.image}
+                    alt={story.title}
+                    className="h-44 w-full object-cover object-center"
                     loading="lazy"
                   />
                 </div>
-                <h3 className="text-sm font-semibold text-cyan-100">{pillar.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-200/85">{pillar.detail}</p>
+                <div className="p-4">
+                  <h3 className="text-base font-semibold text-teal-100">{story.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-200/85">{story.detail}</p>
+                </div>
               </article>
             ))}
           </div>
@@ -256,61 +269,59 @@ export default function Home() {
             </p>
 
             <div className="mt-6">
-              <div className="overflow-hidden rounded-xl border border-white/18 bg-white/8 p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-100">
-                    Why customers choose us
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={goToPrevious}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                      aria-label="View previous story"
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goToNext}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                      aria-label="View next story"
-                    >
-                      →
-                    </button>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-100">
+                  Why customers choose us
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={goToPrevious}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                    aria-label="View previous story"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNext}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                    aria-label="View next story"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <div className="overflow-hidden rounded-xl bg-slate-900/40">
+                  <div className="h-56 w-full animate-[fadeIn_0.45s_ease-out] sm:h-72 lg:h-[320px]">
+                    <img
+                      key={activeBenefit.title}
+                      src={activeBenefit.image}
+                      alt={`${activeBenefit.title} illustration`}
+                      className="h-full w-full object-cover object-center"
+                      loading="lazy"
+                    />
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                  <div className="overflow-hidden rounded-xl bg-slate-900/40">
-                    <div className="h-56 w-full animate-[fadeIn_0.45s_ease-out] sm:h-72 lg:h-[320px]">
-                      <img
-                        key={activeBenefit.title}
-                        src={activeBenefit.image}
-                        alt={`${activeBenefit.title} illustration`}
-                        className="h-full w-full object-cover object-center"
-                        loading="lazy"
+                <div className="flex flex-col justify-start animate-[fadeIn_0.45s_ease-out]">
+                  <h3 className="text-lg font-semibold text-cyan-100">{activeBenefit.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-200/85">{activeBenefit.detail}</p>
+
+                  <div className="mt-6 flex items-center gap-2">
+                    {businessBenefits.map((benefit, index) => (
+                      <button
+                        key={benefit.title}
+                        type="button"
+                        onClick={() => setActiveIndex(index)}
+                        className={`h-2.5 rounded-full transition ${
+                          index === activeIndex ? "w-8 bg-cyan-300" : "w-2.5 bg-white/35"
+                        }`}
+                        aria-label={`View ${benefit.title}`}
                       />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col justify-start animate-[fadeIn_0.45s_ease-out]">
-                    <h3 className="text-lg font-semibold text-cyan-100">{activeBenefit.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-200/85">{activeBenefit.detail}</p>
-
-                    <div className="mt-6 flex items-center gap-2">
-                      {businessBenefits.map((benefit, index) => (
-                        <button
-                          key={benefit.title}
-                          type="button"
-                          onClick={() => setActiveIndex(index)}
-                          className={`h-2.5 rounded-full transition ${
-                            index === activeIndex ? "w-8 bg-cyan-300" : "w-2.5 bg-white/35"
-                          }`}
-                          aria-label={`View ${benefit.title}`}
-                        />
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
