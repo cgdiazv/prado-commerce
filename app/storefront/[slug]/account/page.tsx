@@ -50,7 +50,7 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
     <div className={`flex min-h-screen flex-col ${themeClasses.shell}`}>
       <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} isAccountActive mainColor={store.mainColor} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-        <AccountSidebarLayout mainColor={store.mainColor} />
+        <AccountSidebarLayout />
       </main>
       <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
       <StorefrontFooter storeName={store.name} />

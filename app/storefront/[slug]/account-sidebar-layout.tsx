@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { User, UserCog, ShoppingBag, MapPin, LogOut, ChevronRight, CheckCircle2 } from "lucide-react";
-import { darkenHexColor, normalizeMainColor } from "@/lib/branding";
 import OrdersPanel from "./orders-panel";
 
 type AddressEntry = {
@@ -29,11 +28,7 @@ type AccountCustomer = {
 
 type TabType = "account" | "profile" | "orders" | "addresses";
 
-type AccountSidebarLayoutProps = {
-  mainColor: string;
-};
-
-export default function AccountSidebarLayout({ mainColor }: AccountSidebarLayoutProps) {
+export default function AccountSidebarLayout() {
   const [activeTab, setActiveTab] = useState<TabType>("account");
   const [customer, setCustomer] = useState<AccountCustomer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,8 +49,6 @@ export default function AccountSidebarLayout({ mainColor }: AccountSidebarLayout
   const [status, setStatus] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const resolvedMainColor = normalizeMainColor(mainColor);
-  const bannerPillColor = darkenHexColor(resolvedMainColor, 0.18);
 
   useEffect(() => {
     async function loadAccount() {
@@ -248,20 +241,14 @@ export default function AccountSidebarLayout({ mainColor }: AccountSidebarLayout
         {/* Tab 1: Account Overview */}
         {activeTab === "account" && (
           <div className="space-y-6">
-            <div
-              style={{ backgroundColor: resolvedMainColor }}
-              className="rounded-2xl border border-slate-200 p-6 text-white shadow-sm"
-            >
-              <span
-                style={{ backgroundColor: bannerPillColor }}
-                className="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white"
-              >
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm">
+              <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700">
                 Account
               </span>
-              <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+              <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
                 Welcome back, {customer?.firstName || "shopper"}!
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-100">
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
                 Welcome to your account dashboard. Here you can manage your profile information, track your past orders, update shipping addresses, and control your storefront access.
               </p>
             </div>
