@@ -44,29 +44,12 @@ function parseRateValue(value: string, type: string): number {
   return isNaN(num) ? 0 : num;
 }
 
-function loadSavedShippingZones(): ShippingZone[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const saved = localStorage.getItem("prado_shipping_zones");
-  if (!saved) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(saved) as ShippingZone[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 type CheckoutFormProps = {
   cartId: string;
   currency: string;
   subtotal: number;
   storeId: string;
+  initialShippingZones: ShippingZone[];
   offlinePaymentsEnabled?: boolean;
   stripeOnlinePaymentsEnabled?: boolean;
   onlinePaymentProvider?: "stripe" | "authorize_net" | null;
@@ -83,6 +66,7 @@ export default function CheckoutForm({
   currency,
   subtotal,
   storeId,
+  initialShippingZones,
   offlinePaymentsEnabled = false,
   stripeOnlinePaymentsEnabled = true,
   onlinePaymentProvider = null,
@@ -107,10 +91,10 @@ export default function CheckoutForm({
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("");
   const [savedAddresses, setSavedAddresses] = useState<AddressEntry[]>([]);
-  const [shippingZones] = useState<ShippingZone[]>(() => loadSavedShippingZones());
+  const [shippingZones] = useState<ShippingZone[]>(() => initialShippingZones);
   const [selectedZoneIdx, setSelectedZoneIdx] = useState<number>(0);
   const [shippingAmount, setShippingAmount] = useState<number>(() => {
-    const zones = loadSavedShippingZones();
+    const zones = initialShippingZones;
     if (zones.length === 0) {
       return 0;
     }

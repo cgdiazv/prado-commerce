@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { buildEmailBrandingStyles, normalizeMainColor } from "@/lib/branding";
 
+const STORE_PROFILE_CONTACT_KEY = "prado_store_profile_contact";
+
 export default function StoreProfilePage() {
   const router = useRouter();
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -12,6 +14,8 @@ export default function StoreProfilePage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [storeMainColor, setStoreMainColor] = useState("#0f172a");
+  const [storeDisplayName, setStoreDisplayName] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +30,7 @@ export default function StoreProfilePage() {
       try {
         const response = await fetch("/api/stores", { cache: "no-store" });
         const payload = (await response.json()) as
-          | Array<{ id: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>
+          | Array<{ id: string; name?: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>
           | { error?: string };
 
         if (!response.ok) {
@@ -42,7 +46,7 @@ export default function StoreProfilePage() {
           throw new Error(apiError || "Unable to load store profile settings.");
         }
 
-        const stores = payload as Array<{ id: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>;
+        const stores = payload as Array<{ id: string; name?: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>;
         const activeStore = Array.isArray(stores) ? stores[0] : null;
 
         if (!activeStore?.id) {
@@ -50,8 +54,21 @@ export default function StoreProfilePage() {
         }
 
         setStoreId(activeStore.id);
+        setStoreDisplayName((activeStore.name ?? "").trim());
         setStoreMainColor(normalizeMainColor(activeStore.mainColor ?? "#0f172a"));
         setLogoUrl(activeStore.logoUrl ?? null);
+
+        const rawContact = localStorage.getItem(STORE_PROFILE_CONTACT_KEY);
+        if (rawContact) {
+          try {
+            const stored = JSON.parse(rawContact) as { address?: string; phone?: string };
+            setStoreAddress(typeof stored.address === "string" ? stored.address : "");
+            setPhone(typeof stored.phone === "string" ? stored.phone.replace(/\D/g, "") : "");
+          } catch {
+            setStoreAddress("");
+            setPhone("");
+          }
+        }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Unable to load store profile settings.");
       }
@@ -129,6 +146,7 @@ export default function StoreProfilePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: storeDisplayName.trim() || undefined,
           mainColor: normalizeMainColor(storeMainColor),
           logoUrl,
         }),
@@ -139,6 +157,14 @@ export default function StoreProfilePage() {
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to save store profile settings.");
       }
+
+      localStorage.setItem(
+        STORE_PROFILE_CONTACT_KEY,
+        JSON.stringify({
+          address: storeAddress.trim(),
+          phone: phone.trim(),
+        }),
+      );
 
       setSuccess("Store branding updated. This color now drives storefront primary actions and email template accents.");
       router.refresh();
@@ -300,6 +326,8 @@ export default function StoreProfilePage() {
             </p>
             <input
               type="text"
+              value={storeDisplayName}
+              onChange={(event) => setStoreDisplayName(event.target.value)}
               placeholder="Store display name"
               className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
@@ -308,6 +336,8 @@ export default function StoreProfilePage() {
           <div>
             <label className="block text-sm font-semibold text-slate-900">Address</label>
             <textarea
+              value={storeAddress}
+              onChange={(event) => setStoreAddress(event.target.value)}
               placeholder="Street address, city, state, postal code"
               className="mt-1 min-h-28 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />

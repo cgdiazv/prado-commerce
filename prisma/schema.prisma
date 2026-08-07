@@ -75,6 +75,7 @@ model Store {
   senderName     String?
   senderEmail    String?
   replyToEmail   String?
+  shippingZones  Json?
 
   apiKeys        ApiKey[]
   products       Product[]

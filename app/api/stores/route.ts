@@ -47,6 +47,7 @@ export async function GET(request: Request) {
           senderName: true,
           senderEmail: true,
           replyToEmail: true,
+          shippingZones: true,
           createdAt: true,
           updatedAt: true,
           apiKeys: {
@@ -115,6 +116,7 @@ export async function GET(request: Request) {
           senderName: null,
           senderEmail: null,
           replyToEmail: null,
+          shippingZones: [],
         }));
       } else {
         throw error;

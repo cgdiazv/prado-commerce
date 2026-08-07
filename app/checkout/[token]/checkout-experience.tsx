@@ -11,6 +11,13 @@ type CheckoutItem = {
   quantity: number;
 };
 
+type ShippingZone = {
+  name: string;
+  regions: string;
+  rateType: "free" | "flat" | "pickup";
+  rateValue: string;
+};
+
 type CartSnapshot = {
   subtotal: number;
   items: Array<{
@@ -35,6 +42,7 @@ type CheckoutExperienceProps = {
     clientKey: string;
     environment: "sandbox" | "production";
   } | null;
+  shippingZones: ShippingZone[];
   initialItems: CheckoutItem[];
 };
 
@@ -52,6 +60,7 @@ export default function CheckoutExperience({
   stripeOnlinePaymentsEnabled,
   onlinePaymentProvider,
   authorizeNetConfig,
+  shippingZones,
   initialItems,
 }: CheckoutExperienceProps) {
   const router = useRouter();
@@ -149,6 +158,7 @@ export default function CheckoutExperience({
         stripeOnlinePaymentsEnabled={stripeOnlinePaymentsEnabled}
         onlinePaymentProvider={onlinePaymentProvider}
         authorizeNetConfig={authorizeNetConfig}
+        initialShippingZones={shippingZones}
         isCartEmpty={items.length === 0}
       />
 

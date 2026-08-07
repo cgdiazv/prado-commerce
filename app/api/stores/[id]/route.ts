@@ -12,6 +12,51 @@ type RouteContext = {
   }>;
 };
 
+type ShippingZoneInput = {
+  name: string;
+  regions: string;
+  rateType: "free" | "flat" | "pickup";
+  rateValue: string;
+};
+
+function sanitizeShippingZones(value: unknown): ShippingZoneInput[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const zones: ShippingZoneInput[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const next = item as Record<string, unknown>;
+    const rateType = String(next.rateType ?? "").trim().toLowerCase();
+
+    if (rateType !== "free" && rateType !== "flat" && rateType !== "pickup") {
+      continue;
+    }
+
+    const name = String(next.name ?? "").trim();
+    const regions = String(next.regions ?? "").trim();
+    const rateValue = String(next.rateValue ?? "").trim();
+
+    if (!name || !regions) {
+      continue;
+    }
+
+    zones.push({
+      name,
+      regions,
+      rateType,
+      rateValue: rateValue || (rateType === "free" ? "$0.00" : rateType === "pickup" ? "Pickup at store" : "$0.00"),
+    });
+  }
+
+  return zones;
+}
+
 export async function GET(_req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
@@ -55,6 +100,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
           senderName: true,
           senderEmail: true,
           replyToEmail: true,
+          shippingZones: true,
           createdAt: true,
           updatedAt: true,
           apiKeys: {
@@ -135,6 +181,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
               senderName: null,
               senderEmail: null,
               replyToEmail: null,
+              shippingZones: [],
             }
           : null;
       } else {
@@ -220,6 +267,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderName,
       senderEmail,
       replyToEmail,
+      shippingZones,
     } = body as {
       name?: string;
       slug?: string;
@@ -246,6 +294,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderName?: string | null;
       senderEmail?: string | null;
       replyToEmail?: string | null;
+      shippingZones?: unknown;
     };
 
     const updates: {
@@ -274,6 +323,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderName?: string | null;
       senderEmail?: string | null;
       replyToEmail?: string | null;
+      shippingZones?: unknown;
     } = {};
 
     if (typeof name === "string" && name.trim()) {
@@ -435,6 +485,17 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.replyToEmail = typeof replyToEmail === "string" && replyToEmail.trim() ? replyToEmail.trim().toLowerCase() : null;
     }
 
+    if (shippingZones !== undefined) {
+      if (!Array.isArray(shippingZones)) {
+        return NextResponse.json(
+          { error: "shippingZones must be an array" },
+          { status: 400 },
+        );
+      }
+
+      updates.shippingZones = sanitizeShippingZones(shippingZones);
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "At least one field must be provided for update" },
@@ -482,6 +543,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         senderName: true,
         senderEmail: true,
         replyToEmail: true,
+        shippingZones: true,
         createdAt: true,
         updatedAt: true,
       },

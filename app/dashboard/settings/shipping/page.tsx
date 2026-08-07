@@ -5,11 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 
+const STORE_PROFILE_CONTACT_KEY = "prado_store_profile_contact";
+
 type ShippingZone = {
   name: string;
   regions: string;
   rateType: "free" | "flat" | "pickup";
   rateValue: string;
+};
+
+type StoreShippingSettings = {
+  id: string;
+  name?: string;
+  shippingZones?: unknown;
 };
 
 type CarrierConnection = {
@@ -42,35 +50,148 @@ const carrierButtonClasses: Record<string, string> = {
 
 export default function ShippingPage() {
   const router = useRouter();
+  const [storeId, setStoreId] = useState("");
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [carriers, setCarriers] = useState<CarrierConnection[]>(initialCarriers);
-  const [originName, setOriginName] = useState("Store profile origin");
-  const [originAddress, setOriginAddress] = useState("Use the origin address from Store profile");
-  const [originPhone, setOriginPhone] = useState("Use the phone number from Store profile");
+  const [originName, setOriginName] = useState("");
+  const [originAddress, setOriginAddress] = useState("");
+  const [originPhone, setOriginPhone] = useState("");
   const [newZoneName, setNewZoneName] = useState("");
   const [newZoneRegions, setNewZoneRegions] = useState("");
   const [newZoneType, setNewZoneType] = useState<ShippingZone["rateType"]>("flat");
   const [newZoneValue, setNewZoneValue] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function normalizeShippingZones(value: unknown): ShippingZone[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const zonesFromStore = value
+      .map((zone) => {
+        if (!zone || typeof zone !== "object") {
+          return null;
+        }
+
+        const next = zone as Record<string, unknown>;
+        const rateType = String(next.rateType ?? "").trim().toLowerCase();
+
+        if (rateType !== "free" && rateType !== "flat" && rateType !== "pickup") {
+          return null;
+        }
+
+        const name = String(next.name ?? "").trim();
+        const regions = String(next.regions ?? "").trim();
+        const rateValue = String(next.rateValue ?? "").trim();
+
+        if (!name || !regions) {
+          return null;
+        }
+
+        return {
+          name,
+          regions,
+          rateType,
+          rateValue: rateValue || (rateType === "free" ? "$0.00" : rateType === "pickup" ? "Pickup at store" : "$0.00"),
+        } as ShippingZone;
+      })
+      .filter((zone): zone is ShippingZone => zone !== null);
+
+    return zonesFromStore;
+  }
 
   useEffect(() => {
-    const saved = localStorage.getItem("prado_shipping_zones");
-    if (saved) {
+    async function loadShippingSettings() {
       try {
-        setZones(JSON.parse(saved));
+        const [storesResponse, storedContactRaw] = await Promise.all([
+          fetch("/api/stores", { cache: "no-store" }),
+          Promise.resolve(localStorage.getItem(STORE_PROFILE_CONTACT_KEY)),
+        ]);
+
+        if (storesResponse.ok) {
+          const stores = (await storesResponse.json()) as StoreShippingSettings[];
+          const firstStore = Array.isArray(stores) ? stores[0] : null;
+          setStoreId(firstStore?.id ?? "");
+          setOriginName((firstStore?.name ?? "").trim());
+
+          const zonesFromStore = normalizeShippingZones(firstStore?.shippingZones);
+          if (zonesFromStore.length > 0) {
+            setZones(zonesFromStore);
+          } else {
+            const savedZones = localStorage.getItem("prado_shipping_zones");
+            if (savedZones) {
+              try {
+                const parsed = normalizeShippingZones(JSON.parse(savedZones));
+                setZones(parsed.length > 0 ? parsed : initialZones);
+              } catch {
+                setZones(initialZones);
+              }
+            } else {
+              setZones(initialZones);
+            }
+          }
+        } else {
+          setZones(initialZones);
+        }
+
+        if (storedContactRaw) {
+          try {
+            const storedContact = JSON.parse(storedContactRaw) as { address?: string; phone?: string };
+            setOriginAddress(typeof storedContact.address === "string" ? storedContact.address : "");
+            setOriginPhone(typeof storedContact.phone === "string" ? storedContact.phone : "");
+          } catch {
+            setOriginAddress("");
+            setOriginPhone("");
+          }
+        }
       } catch {
+        setStoreId("");
         setZones(initialZones);
+        setOriginName("");
+        setOriginAddress("");
+        setOriginPhone("");
       }
-    } else {
-      setZones(initialZones);
     }
+
+    void loadShippingSettings();
   }, []);
 
   const carrierLabel = useMemo(() => (carrier: CarrierConnection) => (carrier.connected ? "Connected" : "Not connected"), []);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    localStorage.setItem("prado_shipping_zones", JSON.stringify(zones));
-    router.push("/dashboard/settings");
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      if (!storeId) {
+        throw new Error("No store found. Create a store first to configure shipping.");
+      }
+
+      localStorage.setItem("prado_shipping_zones", JSON.stringify(zones));
+
+      const response = await fetch(`/api/stores/${storeId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          shippingZones: zones,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to save shipping settings.");
+      }
+
+      router.push("/dashboard/settings");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to save shipping settings.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function addZone() {
@@ -124,6 +245,12 @@ export default function ShippingPage() {
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-6">
+          {error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          ) : null}
+
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Origin location</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -145,7 +272,7 @@ export default function ShippingPage() {
                 <input
                   value={originAddress}
                   onChange={(event) => setOriginAddress(event.target.value)}
-                  placeholder="Origin address from Store profile"
+                  placeholder="Use the origin address from Store profile"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
@@ -154,7 +281,7 @@ export default function ShippingPage() {
                 <input
                   value={originPhone}
                   onChange={(event) => setOriginPhone(event.target.value)}
-                  placeholder="Phone from Store profile"
+                  placeholder="Use the phone number from Store profile"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
@@ -304,9 +431,10 @@ export default function ShippingPage() {
           </Link>
           <button
             type="submit"
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            disabled={isSaving || !storeId}
+            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save changes
+            {isSaving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </form>

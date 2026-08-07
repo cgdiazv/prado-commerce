@@ -9,6 +9,48 @@ type PageProps = {
   params: Promise<{ token: string }>;
 };
 
+type ShippingZone = {
+  name: string;
+  regions: string;
+  rateType: "free" | "flat" | "pickup";
+  rateValue: string;
+};
+
+function normalizeShippingZones(value: unknown): ShippingZone[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((zone) => {
+      if (!zone || typeof zone !== "object") {
+        return null;
+      }
+
+      const next = zone as Record<string, unknown>;
+      const rateType = String(next.rateType ?? "").trim().toLowerCase();
+      if (rateType !== "free" && rateType !== "flat" && rateType !== "pickup") {
+        return null;
+      }
+
+      const name = String(next.name ?? "").trim();
+      const regions = String(next.regions ?? "").trim();
+      const rateValue = String(next.rateValue ?? "").trim();
+
+      if (!name || !regions) {
+        return null;
+      }
+
+      return {
+        name,
+        regions,
+        rateType,
+        rateValue: rateValue || (rateType === "free" ? "$0.00" : rateType === "pickup" ? "Pickup at store" : "$0.00"),
+      } as ShippingZone;
+    })
+    .filter((zone): zone is ShippingZone => zone !== null);
+}
+
 export default async function CheckoutTokenPage({ params }: PageProps) {
   const { token } = await params;
   const normalizedToken = decodeURIComponent(token).trim();
@@ -36,6 +78,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
           authNetClientKey: true,
           authNetTransKeyEncrypted: true,
           authNetEnv: true,
+          shippingZones: true,
           categories: {
             select: {
               id: true,
@@ -82,6 +125,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
   const authorizeNetReady = Boolean(
     cart.store.authNetLoginId && cart.store.authNetClientKey && cart.store.authNetTransKeyEncrypted,
   );
+  const shippingZones = normalizeShippingZones(cart.store.shippingZones);
   const onlinePaymentProvider = stripeOnlinePaymentsEnabled
     ? "stripe"
     : authorizeNetReady
@@ -118,6 +162,7 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
               clientKey: cart.store.authNetClientKey ?? "",
               environment: cart.store.authNetEnv === "production" ? "production" : "sandbox",
             } : null}
+            shippingZones={shippingZones}
             initialItems={initialItems}
           />
         </div>
