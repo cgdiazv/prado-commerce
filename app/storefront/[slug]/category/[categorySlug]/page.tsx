@@ -9,8 +9,10 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   const { slug, categorySlug } = await params;
   const { q } = await searchParams;
 
-  return StorefrontPage({
-    params: Promise.resolve({ slug }),
-    searchParams: Promise.resolve({ category: categorySlug, q }),
-  });
+  return (
+    <StorefrontPage
+      params={Promise.resolve({ slug })}
+      searchParams={Promise.resolve({ category: categorySlug, q })}
+    />
+  );
 }
