@@ -201,15 +201,15 @@ export default function AccountSidebarLayout() {
                 }}
                 className={`flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition ${
                   isActive
-                    ? "bg-slate-900 text-white shadow-xs"
+                    ? "border border-slate-100 bg-slate-50 text-slate-900 shadow-xs"
                     : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? "text-slate-500" : "text-slate-400"}`} />
                   <span>{item.label}</span>
                 </div>
-                <ChevronRight className={`h-4 w-4 ${isActive ? "text-white/70" : "text-slate-300"}`} />
+                <ChevronRight className={`h-4 w-4 ${isActive ? "text-slate-400" : "text-slate-300"}`} />
               </button>
             );
           })}
@@ -241,7 +241,7 @@ export default function AccountSidebarLayout() {
         {/* Tab 1: Account Overview */}
         {activeTab === "account" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-700 to-slate-600 p-6 text-white shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-slate-400 p-6 text-white shadow-sm">
               <span className="inline-block rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300">
                 Account
               </span>
