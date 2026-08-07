@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 
 export type StorefrontCustomer = {
@@ -26,8 +27,11 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState(initialCustomer?.email ?? "");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState(initialCustomer?.firstName ?? "");
   const [lastName, setLastName] = useState(initialCustomer?.lastName ?? "");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const resolvedMainColor = normalizeMainColor(mainColor);
@@ -71,6 +75,11 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
         return;
       }
 
+      if (mode === "signup" && password !== confirmPassword) {
+        setStatus("Password confirmation does not match.");
+        return;
+      }
+
       const response = await fetch("/api/storefront/auth", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -89,8 +98,19 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
         throw new Error(payload.error || "Unable to sign in to this storefront.");
       }
 
-      setCustomer(payload.customer ?? null);
-      setStatus(mode === "signup" ? "Account ready. You can continue shopping." : "Signed in successfully.");
+      if (mode === "signup") {
+        // Do not keep shoppers signed in immediately after account creation.
+        // This keeps the flow on sign-in as requested.
+        await fetch("/api/storefront/auth", { method: "DELETE" });
+        setCustomer(null);
+        setMode("signin");
+        setPassword("");
+        setConfirmPassword("");
+        setStatus("Account created. Please sign in.");
+      } else {
+        setCustomer(payload.customer ?? null);
+        setStatus("Signed in successfully.");
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to complete this request.");
     } finally {
@@ -171,7 +191,49 @@ export default function AuthPanel({ storeId, initialCustomer, mainColor }: AuthP
             required
           />
 
-          {mode !== "reset" ? (
+          {mode === "signup" ? (
+            <>
+              <div className="relative">
+                <input
+                  type={showSignupPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
+                  placeholder="Create a password"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSignupPassword((current) => !current)}
+                  className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
+                  aria-label={showSignupPassword ? "Hide password" : "Show password"}
+                >
+                  {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
+                  placeholder="Confirm password"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                  className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </>
+          ) : mode !== "reset" ? (
             <input
               type="password"
               value={password}

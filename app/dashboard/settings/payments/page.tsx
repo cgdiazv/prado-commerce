@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type StripeStatus = {
@@ -27,7 +26,6 @@ type StoreSummary = {
 };
 
 export default function PaymentsPage() {
-  const router = useRouter();
   const [store, setStore] = useState<StoreSummary | null>(null);
   const [stripeStatus, setStripeStatus] = useState<StripeStatus>({
     stripeConnected: false,
@@ -44,7 +42,8 @@ export default function PaymentsPage() {
   const [authNetTransKey, setAuthNetTransKey] = useState("");
   const [authNetEnv, setAuthNetEnv] = useState<"sandbox" | "production">("sandbox");
   const [isDisconnectingAuthNet, setIsDisconnectingAuthNet] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAuthNet, setIsSavingAuthNet] = useState(false);
+  const [isSavingOfflinePayments, setIsSavingOfflinePayments] = useState(false);
 
   async function refreshStripeStatus(storeId: string) {
     const response = await fetch(`/api/stores/${storeId}/stripe-connect`, { cache: "no-store" });
@@ -154,45 +153,76 @@ export default function PaymentsPage() {
     }
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSaving(true);
+  async function patchStorePaymentsSettings(payload: Record<string, unknown>) {
+    if (!store?.id) {
+      throw new Error("Store not found");
+    }
+
+    const patchResponse = await fetch(`/api/stores/${store.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const patchPayload = await patchResponse.json();
+    if (!patchResponse.ok) {
+      throw new Error(patchPayload.error || "Unable to update payments settings.");
+    }
+  }
+
+  async function handleSaveAuthorizeNet() {
+    setIsSavingAuthNet(true);
 
     try {
-      if (!store?.id) {
-        throw new Error("Store not found");
-      }
-
-      const patchResponse = await fetch(`/api/stores/${store.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          offlinePaymentsEnabled,
-          authNetLoginId,
-          authNetClientKey,
-          authNetTransKey: authNetTransKey || undefined,
-          authNetEnv,
-        }),
+      await patchStorePaymentsSettings({
+        authNetLoginId,
+        authNetClientKey,
+        authNetTransKey: authNetTransKey || undefined,
+        authNetEnv,
       });
 
-      const payload = await patchResponse.json();
-      if (!patchResponse.ok) {
-        throw new Error(payload.error || "Unable to update payments settings.");
-      }
+      const hasCredentials = Boolean(authNetLoginId.trim() && authNetClientKey.trim());
+      const hasTransKeyInput = Boolean(authNetTransKey.trim());
+
+      setStore((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          authNetLoginId: authNetLoginId.trim() || null,
+          authNetClientKey: authNetClientKey.trim() || null,
+          authNetEnv,
+          authNetConfigured: hasCredentials && (hasTransKeyInput || Boolean(current.authNetConfigured)),
+        };
+      });
 
       setAuthNetTransKey("");
-
-      router.push("/dashboard/settings");
+      alert("Authorize.net settings saved.");
     } catch (error) {
       console.error("[PAYMENTS_SETTINGS_SAVE_ERROR]", error);
       alert(error instanceof Error ? error.message : "Unable to save payments settings.");
     } finally {
-      setIsSaving(false);
+      setIsSavingAuthNet(false);
     }
   }
 
-  function toggleOfflinePayments() {
-    setOfflinePaymentsEnabled((current) => !current);
+  async function handleToggleOfflinePayments() {
+    const nextValue = !offlinePaymentsEnabled;
+    setOfflinePaymentsEnabled(nextValue);
+    setIsSavingOfflinePayments(true);
+
+    try {
+      await patchStorePaymentsSettings({ offlinePaymentsEnabled: nextValue });
+      setStore((current) => current ? { ...current, offlinePaymentsEnabled: nextValue } : current);
+    } catch (error) {
+      setOfflinePaymentsEnabled(!nextValue);
+      console.error("[OFFLINE_PAYMENTS_TOGGLE_ERROR]", error);
+      alert(error instanceof Error ? error.message : "Unable to update offline payment setting.");
+    } finally {
+      setIsSavingOfflinePayments(false);
+    }
   }
 
   async function handleDisconnectAuthorizeNet() {
@@ -262,7 +292,7 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-5">
           {store ? (
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
@@ -411,6 +441,14 @@ export default function PaymentsPage() {
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   type="button"
+                  disabled={!store || isSavingAuthNet}
+                  onClick={() => void handleSaveAuthorizeNet()}
+                  className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingAuthNet ? "Saving..." : "Save Authorize.net"}
+                </button>
+                <button
+                  type="button"
                   disabled={!store?.authNetConfigured || isDisconnectingAuthNet}
                   onClick={() => {
                     if (confirm("Disconnect Authorize.net from this store?")) {
@@ -435,10 +473,27 @@ export default function PaymentsPage() {
               </div>
               <button
                 type="button"
-                onClick={toggleOfflinePayments}
-                className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${offlinePaymentsEnabled ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                disabled={!store || isSavingOfflinePayments}
+                onClick={() => void handleToggleOfflinePayments()}
+                role="switch"
+                aria-checked={offlinePaymentsEnabled}
+                aria-label="Toggle offline payments"
+                className="inline-flex items-center gap-2 rounded-full text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {offlinePaymentsEnabled ? "Enabled" : "Enable"}
+                <span
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full border transition ${
+                    offlinePaymentsEnabled
+                      ? "border-cyan-500 bg-cyan-500"
+                      : "border-slate-300 bg-slate-200"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                      offlinePaymentsEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+                <span>{isSavingOfflinePayments ? "Saving..." : offlinePaymentsEnabled ? "On" : "Off"}</span>
               </button>
             </div>
 
@@ -449,26 +504,11 @@ export default function PaymentsPage() {
                 <li>• You can confirm payment manually from the order dashboard.</li>
                 <li>• Add notes for pickup, invoicing, or bank-transfer instructions.</li>
               </ul>
+
             </div>
           </div>
         </div>
-
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Link
-            href="/dashboard/settings"
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSaving ? "Saving..." : "Save changes"}
-          </button>
-        </div>
-      </form>
+      </div>
     </section>
   );
 }
