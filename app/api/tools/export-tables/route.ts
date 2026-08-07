@@ -76,7 +76,19 @@ async function exportCustomers(storeId: string) {
     },
   });
 
-  return customers.map((customer) => ({
+  function readAddressField(address: Record<string, unknown>, keys: string[]) {
+    for (const key of keys) {
+      const value = address[key];
+
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value);
+      }
+    }
+
+    return null;
+  }
+
+  return customers.map((customer) => {
     const shippingAddress =
       customer.shippingAddress && typeof customer.shippingAddress === "object"
         ? (customer.shippingAddress as Record<string, unknown>)
@@ -86,35 +98,25 @@ async function exportCustomers(storeId: string) {
         ? (customer.billingAddress as Record<string, unknown>)
         : {};
 
-    const readAddressField = (address: Record<string, unknown>, keys: string[]) => {
-      for (const key of keys) {
-        const value = address[key];
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return String(value);
-        }
-      }
-      return null;
-    };
-
     return {
-    email: customer.email,
-    firstName: customer.firstName,
-    lastName: customer.lastName,
-    phone: customer.phone,
-    shippingAddressLine1: readAddressField(shippingAddress, ["line1", "address1", "street", "street1"]),
-    shippingAddressLine2: readAddressField(shippingAddress, ["line2", "address2", "street2"]),
-    shippingAddressCity: readAddressField(shippingAddress, ["city"]),
-    shippingAddressState: readAddressField(shippingAddress, ["state", "province", "region"]),
-    shippingAddressPostalCode: readAddressField(shippingAddress, ["postalCode", "zip", "zipCode", "postal_code"]),
-    shippingAddressCountry: readAddressField(shippingAddress, ["country", "countryCode"]),
-    billingAddressLine1: readAddressField(billingAddress, ["line1", "address1", "street", "street1"]),
-    billingAddressLine2: readAddressField(billingAddress, ["line2", "address2", "street2"]),
-    billingAddressCity: readAddressField(billingAddress, ["city"]),
-    billingAddressState: readAddressField(billingAddress, ["state", "province", "region"]),
-    billingAddressPostalCode: readAddressField(billingAddress, ["postalCode", "zip", "zipCode", "postal_code"]),
-    billingAddressCountry: readAddressField(billingAddress, ["country", "countryCode"]),
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
+      email: customer.email,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      shippingAddressLine1: readAddressField(shippingAddress, ["line1", "address1", "street", "street1"]),
+      shippingAddressLine2: readAddressField(shippingAddress, ["line2", "address2", "street2"]),
+      shippingAddressCity: readAddressField(shippingAddress, ["city"]),
+      shippingAddressState: readAddressField(shippingAddress, ["state", "province", "region"]),
+      shippingAddressPostalCode: readAddressField(shippingAddress, ["postalCode", "zip", "zipCode", "postal_code"]),
+      shippingAddressCountry: readAddressField(shippingAddress, ["country", "countryCode"]),
+      billingAddressLine1: readAddressField(billingAddress, ["line1", "address1", "street", "street1"]),
+      billingAddressLine2: readAddressField(billingAddress, ["line2", "address2", "street2"]),
+      billingAddressCity: readAddressField(billingAddress, ["city"]),
+      billingAddressState: readAddressField(billingAddress, ["state", "province", "region"]),
+      billingAddressPostalCode: readAddressField(billingAddress, ["postalCode", "zip", "zipCode", "postal_code"]),
+      billingAddressCountry: readAddressField(billingAddress, ["country", "countryCode"]),
+      createdAt: customer.createdAt.toISOString(),
+      updatedAt: customer.updatedAt.toISOString(),
     };
   });
 }
