@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 
@@ -69,6 +68,9 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         slug: true,
         description: true,
         images: true,
+        category: {
+          select: { id: true, name: true, slug: true },
+        },
         variants: {
           select: { id: true, title: true, price: true },
           take: 1,
@@ -103,8 +105,13 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
     }),
   ]);
 
-  const activeCategoryObj = activeCategory ? categories.find((c) => c.slug === activeCategory) : null;
-  const activeCategoryName = activeCategoryObj ? activeCategoryObj.name : activeCategory ? activeCategory : null;
+  const productGroups = categories
+    .map((category) => ({
+      ...category,
+      products: products.filter((product) => product.category?.id === category.id),
+    }))
+    .filter((group) => group.products.length > 0);
+  const uncategorizedProducts = products.filter((product) => !product.category);
   const hasHeroImage = Boolean(store.heroImageUrl);
 
   return (
@@ -226,11 +233,8 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
             id="featured-products"
             className={`mb-10 ${theme === "minimal" ? "" : `rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`}`}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4">
               <h2 className="text-lg font-semibold">Featured products</h2>
-              <a href="#all-products" className="text-sm font-semibold text-[var(--store-main-color)] hover:underline">
-                Browse all
-              </a>
             </div>
             {theme === "bold" ? (
               <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
@@ -330,36 +334,18 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
           </section>
         ) : null}
 
-        <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link href={base ? `${base}/` : "/"} className="transition hover:text-slate-900">
-            Home
-          </Link>
-          <ChevronRight className="h-4 w-4 text-slate-400" />
-          <Link href={base ? `${base}/` : "/"} className="transition hover:text-slate-900">
-            Categories
-          </Link>
-          {activeCategoryName ? (
-            <>
-              <ChevronRight className="h-4 w-4 text-slate-400" />
-              <span className="font-semibold text-slate-900" aria-current="page">
-                {activeCategoryName}
-              </span>
-            </>
-          ) : (
-            <>
-              <ChevronRight className="h-4 w-4 text-slate-400" />
-              <span className="font-semibold text-slate-900" aria-current="page">
-                All Products
-              </span>
-            </>
-          )}
-        </nav>
         <section id="all-products">
         {products.length === 0 ? (
           <p className="text-center text-slate-500">No products available yet.</p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => {
+          <div className="space-y-12">
+            {[...productGroups, ...(uncategorizedProducts.length > 0 ? [{ id: "uncategorized", name: "Other products", slug: "uncategorized", products: uncategorizedProducts }] : [])].map((group) => (
+              <section key={group.id} aria-labelledby={`category-${group.id}`}>
+                <h2 id={`category-${group.id}`} className="mb-5 text-xl font-semibold text-slate-900">
+                  {group.name}
+                </h2>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {group.products.map((product) => {
               const price = product.variants[0]?.price;
               const variantId = product.variants[0]?.id;
               return (
@@ -407,7 +393,10 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   </div>
                 </div>
               );
-            })}
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
         </section>
