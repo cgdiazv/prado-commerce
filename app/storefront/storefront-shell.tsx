@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import type { StorefrontTheme } from "@prisma/client";
 import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import StorefrontFooter from "./storefront-footer";
@@ -10,7 +11,7 @@ type StorefrontShellProps = {
     id: string;
     name: string;
     logoUrl: string | null;
-    activeTheme: string;
+    activeTheme: StorefrontTheme;
     mainColor: string;
   };
   categories: StorefrontCategory[];
