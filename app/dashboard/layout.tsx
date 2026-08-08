@@ -22,6 +22,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const currentYear = new Date().getFullYear();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
   const [isStoresOpen, setIsStoresOpen] = useState(pathname.startsWith("/dashboard/stores"));
   const [isToolsOpen, setIsToolsOpen] = useState(pathname.startsWith("/dashboard/tools"));
@@ -355,7 +356,7 @@ export default function DashboardLayout({
             Help
           </a>
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
-            Prado Systems. All rights reserved.
+            Copyright © {currentYear} Prado Systems. All rights reserved.
           </p>
         </div>
       </>
