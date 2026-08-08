@@ -116,7 +116,7 @@ function LoginPageContent() {
         <p className="mt-5 text-center text-sm text-slate-300">
           Need an account?{" "}
           <Link href="/signup" className="font-semibold text-cyan-200 hover:text-cyan-100">
-            Create account
+            Start free
           </Link>
         </p>
 

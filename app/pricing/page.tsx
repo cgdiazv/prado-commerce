@@ -179,7 +179,7 @@ export default function PricingPage() {
               className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
               onClick={closeMobileMenu}
             >
-              Create account
+              Start free
             </Link>
           </div>
         </header>
@@ -225,7 +225,7 @@ export default function PricingPage() {
               className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
               onClick={closeMobileMenu}
             >
-              Create account
+              Start free
             </Link>
           </nav>
         </aside>

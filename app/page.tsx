@@ -122,7 +122,7 @@ export default function Home() {
                 className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
                 onClick={closeMobileMenu}
               >
-                Create account
+                Start free
               </Link>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function Home() {
               className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
               onClick={closeMobileMenu}
             >
-              Create account
+              Start free
             </Link>
           </nav>
         </aside>
@@ -185,13 +185,16 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div className="prado-fade-up prado-delay-1">
               <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-                One platform, many storefronts
+                Free Starter plan · $0/month
               </p>
               <h1 className="mt-5 max-w-xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
                 Build storefront velocity without platform chaos.
               </h1>
               <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
                 Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
+              </p>
+              <p className="mt-4 max-w-xl text-sm font-semibold text-teal-100">
+                Start free with up to 50 products. No credit card required. A 2% platform transaction fee applies to sales.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -205,7 +208,7 @@ export default function Home() {
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
                 >
-                  Create account
+                  Start free
                 </Link>
               </div>
             </div>
@@ -349,7 +352,7 @@ export default function Home() {
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
                 >
-                  Create account
+                  Start free
                 </Link>
               </div>
             </div>

@@ -37,7 +37,7 @@ export default async function CheckoutPage({
             href="/signup"
             className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
           >
-            Create account
+            Start free
           </Link>
         </div>
       </div>
