@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 type Store = {
   id: string;
@@ -40,6 +40,7 @@ export function CustomersDashboard({
   const [stores] = useState(initialStores);
   const [customers, setCustomers] = useState(initialCustomers);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<"name" | "email" | "phone" | "createdAt">("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -51,7 +52,20 @@ export function CustomersDashboard({
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const activeCustomers = useMemo(() => {
-    const filtered = customers.filter((customer) => customer.storeId === activeStoreId);
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filtered = customers.filter((customer) => {
+      if (customer.storeId !== activeStoreId) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const fullName = `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim();
+      return [fullName, customer.email, customer.phone ?? ""]
+        .some((value) => value.toLowerCase().includes(normalizedQuery));
+    });
     
     return [...filtered].sort((a, b) => {
       let valA: any;
@@ -72,7 +86,7 @@ export function CustomersDashboard({
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [customers, activeStoreId, sortField, sortDirection]);
+  }, [customers, activeStoreId, searchQuery, sortField, sortDirection]);
 
   const totalCustomers = activeCustomers.length;
   const totalPages = Math.max(1, Math.ceil(totalCustomers / pageSize));
@@ -276,6 +290,23 @@ export function CustomersDashboard({
             </select>
           </div>
 
+          <label className="w-full max-w-md flex-col gap-2 lg:flex-1">
+            <span className="text-sm font-medium text-slate-700">Search</span>
+            <div className="relative mt-2">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Name, email, or phone"
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </div>
+          </label>
+
           <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
               <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
@@ -315,7 +346,7 @@ export function CustomersDashboard({
         <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {totalCustomers === 0 ? (
             <div className="p-10 text-center text-slate-500">
-              No customers yet for this store.
+              {searchQuery.trim() ? "No customers match your search." : "No customers yet for this store."}
             </div>
           ) : (
             <>

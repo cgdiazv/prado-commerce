@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Star } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 
 type Store = {
   id: string;
@@ -388,15 +388,19 @@ export function ProductsDashboard({
             </label>
             <label className="flex w-full flex-col gap-2 lg:max-w-md">
               <span className="text-sm font-medium text-slate-700">Search products</span>
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder="Search by title, slug, or status"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search by title, slug, or status"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </div>
             </label>
 
             <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">

@@ -70,6 +70,7 @@ function serializeOrder(order: {
   storeId: string;
   orderNumber: number;
   customerEmail: string;
+  customer?: { firstName: string | null; lastName: string | null } | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
   subtotal: { toString(): string };
@@ -84,6 +85,7 @@ function serializeOrder(order: {
     storeId: order.storeId,
     orderNumber: order.orderNumber,
     customerEmail: order.customerEmail,
+    customerName: [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ") || null,
     status: order.status,
     paymentStatus: order.paymentStatus,
     subtotal: order.subtotal.toString(),
@@ -127,6 +129,12 @@ export async function GET(request: Request) {
         storeId: true,
         orderNumber: true,
         customerEmail: true,
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
         status: true,
         paymentStatus: true,
         subtotal: true,

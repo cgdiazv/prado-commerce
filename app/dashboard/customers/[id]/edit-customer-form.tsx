@@ -155,7 +155,7 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
             </div>
           </div>
 
-          <label className="flex flex-col gap-2 sm:col-span-2">
+          <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
             <span className="text-sm font-medium text-slate-700">Email</span>
             <input
               type="email"
@@ -164,6 +164,16 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
               placeholder="customer@example.com"
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               required
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
+            <span className="text-sm font-medium text-slate-700">Phone</span>
+            <input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+1 555 123 4567"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
 
@@ -187,18 +197,8 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
             />
           </label>
 
-          <label className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Phone</span>
-            <input
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+1 555 123 4567"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </label>
-
           {/* Shipping Address Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2 lg:col-span-1">
             <p className="text-sm font-semibold text-slate-800">Shipping address</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 sm:col-span-2">
@@ -264,7 +264,7 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
           </div>
 
           {/* Billing Address Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2 lg:col-span-1">
             <p className="text-sm font-semibold text-slate-800">Billing address</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 sm:col-span-2">

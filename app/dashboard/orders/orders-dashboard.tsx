@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 type Store = {
   id: string;
@@ -16,6 +16,7 @@ type Order = {
   storeId: string;
   orderNumber: number;
   customerEmail: string;
+  customerName: string | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
   subtotal: string;
@@ -43,8 +44,9 @@ export function OrdersDashboard({
   const [stores] = useState(initialStores);
   const [orders, setOrders] = useState(initialOrders);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<keyof Order | "customerEmail" | "paymentStatus">("createdAt");
+  const [sortField, setSortField] = useState<keyof Order | "paymentStatus">("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,7 +64,19 @@ export function OrdersDashboard({
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const visibleOrders = useMemo(() => {
-    const filtered = orders.filter((order) => order.storeId === activeStoreId);
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filtered = orders.filter((order) => {
+      if (order.storeId !== activeStoreId) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [order.customerName ?? "", order.customerEmail, order.status, order.paymentStatus]
+        .some((value) => value.toLowerCase().includes(normalizedQuery));
+    });
     
     return [...filtered].sort((a, b) => {
       let valA: any;
@@ -71,6 +85,9 @@ export function OrdersDashboard({
       if (sortField === "total") {
         valA = parseFloat(a.total);
         valB = parseFloat(b.total);
+      } else if (sortField === "customerName") {
+        valA = (a.customerName || a.customerEmail).toLowerCase();
+        valB = (b.customerName || b.customerEmail).toLowerCase();
       } else if (sortField === "createdAt") {
         valA = new Date(a.createdAt).getTime();
         valB = new Date(b.createdAt).getTime();
@@ -83,7 +100,7 @@ export function OrdersDashboard({
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [orders, activeStoreId, sortField, sortDirection]);
+  }, [orders, activeStoreId, searchQuery, sortField, sortDirection]);
 
   const totalOrders = visibleOrders.length;
   const totalPages = Math.max(1, Math.ceil(totalOrders / pageSize));
@@ -334,6 +351,23 @@ export function OrdersDashboard({
             </select>
           </div>
 
+          <label className="w-full max-w-md flex-col gap-2 lg:flex-1">
+            <span className="text-sm font-medium text-slate-700">Search</span>
+            <div className="relative mt-2">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Customer, status, or payment"
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </div>
+          </label>
+
           <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
               <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
@@ -377,7 +411,7 @@ export function OrdersDashboard({
         <div className="mt-8 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {totalOrders === 0 ? (
             <div className="p-10 text-center text-slate-500">
-              No orders yet for this store.
+              {searchQuery.trim() ? "No orders match your search." : "No orders yet for this store."}
             </div>
           ) : (
             <>
