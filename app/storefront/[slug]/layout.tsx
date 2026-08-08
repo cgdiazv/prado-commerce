@@ -10,17 +10,20 @@ type StorefrontSlugLayoutProps = {
 
 export default async function StorefrontSlugLayout({ children, params }: StorefrontSlugLayoutProps) {
   const { slug } = await params;
-  const [store, categories] = await Promise.all([
-    prisma.store.findUnique({
-      where: { slug },
-      select: { id: true, name: true, logoUrl: true, activeTheme: true, mainColor: true },
-    }),
-    prisma.category.findMany({
-      where: { store: { slug } },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true },
-    }),
-  ]);
+  const store = await prisma.store.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      logoUrl: true,
+      activeTheme: true,
+      mainColor: true,
+      categories: {
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, slug: true },
+      },
+    },
+  });
 
   if (!store) {
     notFound();
@@ -30,7 +33,7 @@ export default async function StorefrontSlugLayout({ children, params }: Storefr
   const basePath = hdrs.get("x-storefront-subdomain") === "1" ? "" : `/storefront/${slug}`;
 
   return (
-    <StorefrontShell store={store} categories={categories} basePath={basePath}>
+    <StorefrontShell store={store} categories={store.categories} basePath={basePath}>
       {children}
     </StorefrontShell>
   );

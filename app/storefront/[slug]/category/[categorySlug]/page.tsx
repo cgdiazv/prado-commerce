@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import CategoryPageContent from "../../../category-page-content";
@@ -10,12 +11,28 @@ type PageProps = {
   searchParams: Promise<{ q?: string }>;
 };
 
+const getCategory = cache((storeSlug: string, categorySlug: string) =>
+  prisma.category.findFirst({
+    where: { slug: categorySlug, store: { slug: storeSlug } },
+    select: {
+      id: true,
+      name: true,
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          currency: true,
+          activeTheme: true,
+        },
+      },
+    },
+  }),
+);
+
 export async function generateMetadata({ params }: Pick<PageProps, "params">): Promise<Metadata> {
   const { slug, categorySlug } = await params;
-  const category = await prisma.category.findFirst({
-    where: { slug: categorySlug, store: { slug } },
-    select: { name: true, store: { select: { name: true } } },
-  });
+  const category = await getCategory(slug, categorySlug);
 
   if (!category) {
     return {};
@@ -32,22 +49,7 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   const { q } = await searchParams;
   const searchQuery = q?.trim() ?? "";
 
-  const category = await prisma.category.findFirst({
-    where: { slug: categorySlug, store: { slug } },
-    select: {
-      id: true,
-      name: true,
-      store: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          currency: true,
-          activeTheme: true,
-        },
-      },
-    },
-  });
+  const category = await getCategory(slug, categorySlug);
 
   if (!category) {
     notFound();
