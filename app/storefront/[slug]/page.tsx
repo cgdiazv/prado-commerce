@@ -1,13 +1,9 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
-import StorefrontNavbar from "../storefront-navbar";
-import StorefrontFooter from "../storefront-footer";
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ category?: string; q?: string }> };
 
@@ -112,20 +108,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const hasHeroImage = Boolean(store.heroImageUrl);
 
   return (
-    <div
-      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className={`flex min-h-screen flex-col ${themeClasses.shell}`}
-    >
-      <StorefrontNavbar
-        storeName={store.name}
-        logoUrl={store.logoUrl}
-        theme={theme}
-        basePath={base}
-        categories={categories}
-        activeCategory={activeCategory}
-        searchQuery={searchQuery}
-        mainColor={store.mainColor}
-      />
+    <div className="contents">
 
       {theme === "minimal" ? (
         <section
@@ -430,8 +413,6 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         </section>
       </main>
 
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
-      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

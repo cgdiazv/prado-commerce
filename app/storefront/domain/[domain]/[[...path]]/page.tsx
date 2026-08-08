@@ -1,13 +1,9 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
-import StorefrontNavbar from "../../../storefront-navbar";
-import StorefrontFooter from "../../../storefront-footer";
 import PasswordResetForm from "../../../password-reset-form";
 
 export const dynamic = "force-dynamic";
@@ -93,11 +89,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     const primaryVariant = product.variants[0];
 
     return (
-      <div
-        style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-        className={`flex min-h-screen flex-col ${themeClasses.shell}`}
-      >
-        <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} mainColor={store.mainColor} />
+      <div className="contents">
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
           <div className={`grid gap-10 rounded-3xl border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
             <div>
@@ -128,8 +120,6 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
             </div>
           </div>
         </main>
-        <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
-        <StorefrontFooter storeName={store.name} />
       </div>
     );
   }
@@ -196,20 +186,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
   const hasHeroImage = Boolean(store.heroImageUrl);
 
   return (
-    <div
-      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className={`min-h-screen ${themeClasses.shell}`}
-    >
-      <StorefrontNavbar
-        storeName={store.name}
-        logoUrl={store.logoUrl}
-        theme={theme}
-        categories={categories}
-        activeCategory={activeCategory}
-        searchQuery={searchQuery}
-        mainColor={store.mainColor}
-      />
-
+    <div className="contents">
       {theme === "minimal" ? (
         <section
           className={`w-full border-b px-6 py-14 text-center ${themeClasses.hero}`}
@@ -513,8 +490,6 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         </section>
       </main>
 
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
-      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

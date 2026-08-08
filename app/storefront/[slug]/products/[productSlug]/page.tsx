@@ -1,14 +1,10 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
-import StorefrontNavbar from "../../../storefront-navbar";
-import StorefrontFooter from "../../../storefront-footer";
 
 type PageProps = {
   params: Promise<{ slug: string; productSlug: string }>;
@@ -72,12 +68,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
   const primaryVariant = product.variants[0];
 
   return (
-    <div
-      style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
-      className={`flex min-h-screen flex-col ${themeClasses.shell}`}
-    >
-      <StorefrontNavbar storeName={store.name} logoUrl={store.logoUrl} theme={theme} basePath={base} mainColor={store.mainColor} />
-
+    <div className="contents">
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
           <Link href={base ? `${base}/` : "/"} className="transition hover:text-slate-900">
@@ -134,8 +125,6 @@ export default async function StorefrontProductPage({ params }: PageProps) {
         </div>
       </main>
 
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
-      <StorefrontFooter storeName={store.name} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
@@ -17,9 +18,6 @@ type StorefrontNavbarProps = {
   logoUrl?: string | null;
   basePath?: string;
   categories?: StorefrontCategory[];
-  activeCategory?: string;
-  searchQuery?: string;
-  isAccountActive?: boolean;
   theme?: StorefrontThemeId;
   mainColor?: string;
 };
@@ -29,13 +27,17 @@ export default function StorefrontNavbar({
   logoUrl = null,
   basePath = "",
   categories = [],
-  activeCategory,
-  searchQuery = "",
-  isAccountActive = false,
   theme = "minimal",
   mainColor = "#0f172a",
 }: StorefrontNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const categorySegmentIndex = pathSegments.lastIndexOf("category");
+  const activeCategory = categorySegmentIndex >= 0 ? pathSegments[categorySegmentIndex + 1] : searchParams.get("category") ?? undefined;
+  const searchQuery = searchParams.get("q") ?? "";
+  const isAccountActive = pathSegments.at(-1) === "account";
   const homeHref = basePath ? `${basePath}/` : "/";
   const accountHref = basePath ? `${basePath}/account` : "/account";
   const activeCategoryHref = activeCategory
