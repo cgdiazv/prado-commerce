@@ -193,9 +193,6 @@ export default function Home() {
               <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
                 Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
               </p>
-              <p className="mt-4 max-w-xl text-sm font-semibold text-teal-100">
-                Start free with up to 50 products. No credit card required. A 2% platform transaction fee applies to sales.
-              </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
