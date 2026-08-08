@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getStorefrontThemeClasses, getStorefrontThemeHeroContentWithOverrides, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import AddToCartWithQuantity from "../../../add-to-cart-with-quantity";
 import PasswordResetForm from "../../../password-reset-form";
+import CategoryPageContent from "../../../category-page-content";
 
 export const dynamic = "force-dynamic";
 
@@ -182,6 +183,26 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       select: { id: true, name: true, slug: true },
     }),
   ]);
+
+  if (activeCategoryFromPath) {
+    const category = categories.find((candidate) => candidate.slug === activeCategoryFromPath);
+
+    if (!category) {
+      notFound();
+    }
+
+    return (
+      <CategoryPageContent
+        storeName={store.name}
+        currency={store.currency}
+        categoryName={category.name}
+        products={products}
+        basePath=""
+        theme={theme}
+        searchQuery={searchQuery}
+      />
+    );
+  }
 
   const productGroups = categories
     .map((category) => ({
