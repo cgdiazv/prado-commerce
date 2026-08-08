@@ -36,11 +36,13 @@ export default function PaymentsPage() {
   });
   const [isStripeLoading, setIsStripeLoading] = useState(true);
   const [isStripeActionPending, setIsStripeActionPending] = useState(false);
+  const [isStripeExpanded, setIsStripeExpanded] = useState(false);
   const [offlinePaymentsEnabled, setOfflinePaymentsEnabled] = useState(false);
   const [authNetLoginId, setAuthNetLoginId] = useState("");
   const [authNetClientKey, setAuthNetClientKey] = useState("");
   const [authNetTransKey, setAuthNetTransKey] = useState("");
   const [authNetEnv, setAuthNetEnv] = useState<"sandbox" | "production">("sandbox");
+  const [isAuthorizeNetExpanded, setIsAuthorizeNetExpanded] = useState(false);
   const [isDisconnectingAuthNet, setIsDisconnectingAuthNet] = useState(false);
   const [isSavingAuthNet, setIsSavingAuthNet] = useState(false);
   const [isSavingOfflinePayments, setIsSavingOfflinePayments] = useState(false);
@@ -306,160 +308,190 @@ export default function PaymentsPage() {
 
           <div className="grid gap-4">
             <article className={`rounded-xl border p-5 shadow-sm ${isStripeReady ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"}`}>
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-base font-semibold text-slate-950">Stripe</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
                     Connect a Stripe account to accept online card payments in checkout.
                   </p>
                 </div>
-                <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
-                  isStripeReady
-                    ? "bg-emerald-100 text-emerald-700"
-                    : showStripePending
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-slate-100 text-slate-500"
-                }`}>
-                  {isStripeLoading
-                    ? "Checking"
-                    : isStripeReady
-                      ? "Connected"
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
+                    isStripeReady
+                      ? "bg-emerald-100 text-emerald-700"
                       : showStripePending
-                        ? "Pending setup"
-                        : "Not connected"}
-                </span>
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-slate-100 text-slate-500"
+                  }`}>
+                    {isStripeLoading
+                      ? "Checking"
+                      : isStripeReady
+                        ? "Connected"
+                        : showStripePending
+                          ? "Pending setup"
+                          : "Not connected"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isStripeExpanded}
+                    aria-controls="stripe-settings"
+                    onClick={() => setIsStripeExpanded((current) => !current)}
+                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {isStripeExpanded ? "Done" : "Manage"}
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                <p>
-                  Charges enabled: <span className="font-semibold">{stripeStatus.stripeChargesEnabled ? "Yes" : "No"}</span>
-                </p>
-                <p className="mt-1">
-                  Payouts enabled: <span className="font-semibold">{stripeStatus.stripePayoutsEnabled ? "Yes" : "No"}</span>
-                </p>
-              </div>
+              {isStripeExpanded ? (
+                <div id="stripe-settings">
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                    <p>
+                      Charges enabled: <span className="font-semibold">{stripeStatus.stripeChargesEnabled ? "Yes" : "No"}</span>
+                    </p>
+                    <p className="mt-1">
+                      Payouts enabled: <span className="font-semibold">{stripeStatus.stripePayoutsEnabled ? "Yes" : "No"}</span>
+                    </p>
+                  </div>
 
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={!store || isStripeActionPending}
-                  onClick={() => void handleStripeAction("onboard")}
-                  className="rounded-full bg-[#635BFF] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5247f5]"
-                >
-                  {showStripePending ? "Continue onboarding" : isStripeReady ? "Reconnect Stripe" : "Connect Stripe"}
-                </button>
-                <button
-                  type="button"
-                  disabled={!store || isStripeActionPending || !isStripeReady}
-                  onClick={() => void handleStripeAction("dashboard")}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Open Stripe dashboard
-                </button>
-                <button
-                  type="button"
-                  disabled={disableStripeDisconnect}
-                  onClick={() => {
-                    if (confirm("Disconnect Stripe from this store?")) {
-                      void handleStripeAction("disconnect");
-                    }
-                  }}
-                  className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Disconnect Stripe
-                </button>
-              </div>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={!store || isStripeActionPending}
+                      onClick={() => void handleStripeAction("onboard")}
+                      className="rounded-full bg-[#635BFF] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5247f5]"
+                    >
+                      {showStripePending ? "Continue onboarding" : isStripeReady ? "Reconnect Stripe" : "Connect Stripe"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!store || isStripeActionPending || !isStripeReady}
+                      onClick={() => void handleStripeAction("dashboard")}
+                      className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Open Stripe dashboard
+                    </button>
+                    <button
+                      type="button"
+                      disabled={disableStripeDisconnect}
+                      onClick={() => {
+                        if (confirm("Disconnect Stripe from this store?")) {
+                          void handleStripeAction("disconnect");
+                        }
+                      }}
+                      className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Disconnect Stripe
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </article>
 
             <article className={`rounded-xl border p-5 shadow-sm ${store?.authNetConfigured ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"}`}>
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-base font-semibold text-slate-950">Authorize.net</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
                     Use Accept.js tokenization so Prado Commerce never receives raw card numbers.
                   </p>
                 </div>
-                <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${store?.authNetConfigured ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                  {store?.authNetConfigured ? "Configured" : "Not connected"}
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">API Login ID</span>
-                  <input
-                    value={authNetLoginId}
-                    onChange={(event) => setAuthNetLoginId(event.target.value)}
-                    placeholder="5KP3u95bQpv"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-700">Public Client Key</span>
-                  <input
-                    value={authNetClientKey}
-                    onChange={(event) => setAuthNetClientKey(event.target.value)}
-                    placeholder="1234567890abcdef1234567890abcdef"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Transaction Key</span>
-                  <input
-                    type="password"
-                    value={authNetTransKey}
-                    onChange={(event) => setAuthNetTransKey(event.target.value)}
-                    placeholder={store?.authNetConfigured ? "Leave blank to keep the current key" : "Enter transaction key"}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Environment</span>
-                  <select
-                    value={authNetEnv}
-                    onChange={(event) => setAuthNetEnv(event.target.value === "production" ? "production" : "sandbox")}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${store?.authNetConfigured ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                    {store?.authNetConfigured ? "Configured" : "Not connected"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isAuthorizeNetExpanded}
+                    aria-controls="authorize-net-settings"
+                    onClick={() => setIsAuthorizeNetExpanded((current) => !current)}
+                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
-                    <option value="sandbox">Sandbox (testing)</option>
-                    <option value="production">Production (live)</option>
-                  </select>
-                </label>
+                    {isAuthorizeNetExpanded ? "Done" : "Manage"}
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                <p className="font-semibold text-slate-900">How this works</p>
-                <ul className="mt-2 space-y-2 leading-6">
-                  <li>• Buyers enter card details in the storefront, and Accept.js tokenizes them in the browser.</li>
-                  <li>• Prado Commerce receives only the one-time opaque token and routes the charge through your gateway credentials.</li>
-                  <li>• If Stripe is also connected, Stripe remains the preferred online card provider for now.</li>
-                </ul>
-              </div>
+              {isAuthorizeNetExpanded ? (
+                <div id="authorize-net-settings">
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">API Login ID</span>
+                      <input
+                        value={authNetLoginId}
+                        onChange={(event) => setAuthNetLoginId(event.target.value)}
+                        placeholder="5KP3u95bQpv"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
 
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={!store || isSavingAuthNet}
-                  onClick={() => void handleSaveAuthorizeNet()}
-                  className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSavingAuthNet ? "Saving..." : "Save Authorize.net"}
-                </button>
-                <button
-                  type="button"
-                  disabled={!store?.authNetConfigured || isDisconnectingAuthNet}
-                  onClick={() => {
-                    if (confirm("Disconnect Authorize.net from this store?")) {
-                      void handleDisconnectAuthorizeNet();
-                    }
-                  }}
-                  className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Disconnect Authorize.net
-                </button>
-              </div>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">Public Client Key</span>
+                      <input
+                        value={authNetClientKey}
+                        onChange={(event) => setAuthNetClientKey(event.target.value)}
+                        placeholder="1234567890abcdef1234567890abcdef"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">Transaction Key</span>
+                      <input
+                        type="password"
+                        value={authNetTransKey}
+                        onChange={(event) => setAuthNetTransKey(event.target.value)}
+                        placeholder={store?.authNetConfigured ? "Leave blank to keep the current key" : "Enter transaction key"}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">Environment</span>
+                      <select
+                        value={authNetEnv}
+                        onChange={(event) => setAuthNetEnv(event.target.value === "production" ? "production" : "sandbox")}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      >
+                        <option value="sandbox">Sandbox (testing)</option>
+                        <option value="production">Production (live)</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-900">How this works</p>
+                    <ul className="mt-2 space-y-2 leading-6">
+                      <li>• Buyers enter card details in the storefront, and Accept.js tokenizes them in the browser.</li>
+                      <li>• Prado Commerce receives only the one-time opaque token and routes the charge through your gateway credentials.</li>
+                      <li>• If Stripe is also connected, Stripe remains the preferred online card provider for now.</li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={!store || isSavingAuthNet}
+                      onClick={() => void handleSaveAuthorizeNet()}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingAuthNet ? "Saving..." : "Save Authorize.net"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!store?.authNetConfigured || isDisconnectingAuthNet}
+                      onClick={() => {
+                        if (confirm("Disconnect Authorize.net from this store?")) {
+                          void handleDisconnectAuthorizeNet();
+                        }
+                      }}
+                      className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Disconnect Authorize.net
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </article>
           </div>
 
