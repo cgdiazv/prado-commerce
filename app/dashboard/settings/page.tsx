@@ -68,9 +68,9 @@ export default async function SettingsPage() {
         </div>
 
         <div className="mt-8 space-y-5">
-          <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Account profile</h2>
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+          <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <h2 className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Account profile</h2>
+            <div className="border-t border-slate-200">
               {accountProfileItems.map((item) => (
                 <Link
                   href={item.href ?? "#"}
@@ -87,9 +87,9 @@ export default async function SettingsPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Security</h2>
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+          <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <h2 className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Security</h2>
+            <div className="border-t border-slate-200">
               {securityItems.map((item) => (
                 <Link
                   href={item.href}
@@ -106,9 +106,9 @@ export default async function SettingsPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">API access</h2>
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+          <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <h2 className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">API access</h2>
+            <div className="border-t border-slate-200">
               <Link
                 href="/dashboard/settings/security/api"
                 className="grid w-full grid-cols-[1.3fr_2fr_auto] items-center gap-4 px-4 py-3 text-left hover:bg-slate-50"
