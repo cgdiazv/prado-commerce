@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 
 const STORE_PROFILE_CONTACT_KEY = "prado_store_profile_contact";
@@ -20,42 +20,25 @@ type StoreShippingSettings = {
   shippingZones?: unknown;
 };
 
-type CarrierConnection = {
-  name: string;
-  description: string;
-  connected: boolean;
-};
-
 const initialZones: ShippingZone[] = [
   { name: "Domestic Standard", regions: "United States", rateType: "flat", rateValue: "$8.00" },
   { name: "Free Shipping Promo", regions: "United States", rateType: "free", rateValue: "$0.00" },
   { name: "Local Pickup", regions: "Local area", rateType: "pickup", rateValue: "Pickup at store" },
 ];
 
-const initialCarriers: CarrierConnection[] = [
-  { name: "ShipStation", description: "Sync orders and fulfillment workflows.", connected: false },
-  { name: "FedEx", description: "Connect labels and live shipping rates.", connected: false },
-  { name: "UPS", description: "Enable UPS service levels and tracking.", connected: false },
-  { name: "DHL", description: "Use DHL for international deliveries.", connected: false },
-  { name: "USPS", description: "Connect USPS for domestic postal services.", connected: false },
-];
-
-const carrierButtonClasses: Record<string, string> = {
-  ShipStation: "bg-[#00A9E0] hover:bg-[#0093c2]",
-  FedEx: "bg-[#4D148C] hover:bg-[#3f1073]",
-  UPS: "bg-[#5C3A21] hover:bg-[#4a2f1b]",
-  DHL: "bg-[#FFCC00] text-slate-900 hover:bg-[#e6b800]",
-  USPS: "bg-[#333366] hover:bg-[#292952]",
-};
-
 export default function ShippingPage() {
   const router = useRouter();
   const [storeId, setStoreId] = useState("");
   const [zones, setZones] = useState<ShippingZone[]>([]);
-  const [carriers, setCarriers] = useState<CarrierConnection[]>(initialCarriers);
+  const [shipStationConnected, setShipStationConnected] = useState(false);
   const [originName, setOriginName] = useState("");
   const [originAddress, setOriginAddress] = useState("");
   const [originPhone, setOriginPhone] = useState("");
+  const [shipStationApiKey, setShipStationApiKey] = useState("");
+  const [shipStationApiSecret, setShipStationApiSecret] = useState("");
+  const [showShipStationConfig, setShowShipStationConfig] = useState(false);
+  const [isUpdatingShipStation, setIsUpdatingShipStation] = useState(false);
+  const [shipStationMessage, setShipStationMessage] = useState<string | null>(null);
   const [newZoneName, setNewZoneName] = useState("");
   const [newZoneRegions, setNewZoneRegions] = useState("");
   const [newZoneType, setNewZoneType] = useState<ShippingZone["rateType"]>("flat");
@@ -115,6 +98,14 @@ export default function ShippingPage() {
           setStoreId(firstStore?.id ?? "");
           setOriginName((firstStore?.name ?? "").trim());
 
+          if (firstStore?.id) {
+            const connectionResponse = await fetch(`/api/stores/${firstStore.id}/shipstation`, { cache: "no-store" });
+            if (connectionResponse.ok) {
+              const connection = await connectionResponse.json() as { connected?: boolean };
+              setShipStationConnected(Boolean(connection.connected));
+            }
+          }
+
           const zonesFromStore = normalizeShippingZones(firstStore?.shippingZones);
           if (zonesFromStore.length > 0) {
             setZones(zonesFromStore);
@@ -156,8 +147,6 @@ export default function ShippingPage() {
 
     void loadShippingSettings();
   }, []);
-
-  const carrierLabel = useMemo(() => (carrier: CarrierConnection) => (carrier.connected ? "Connected" : "Not connected"), []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -216,8 +205,52 @@ export default function ShippingPage() {
     setZones((current) => current.filter((zone) => zone.name !== zoneName));
   }
 
-  function toggleCarrier(name: string) {
-    setCarriers((current) => current.map((carrier) => (carrier.name === name ? { ...carrier, connected: !carrier.connected } : carrier)));
+  async function connectShipStation() {
+    if (!storeId || !shipStationApiKey.trim() || !shipStationApiSecret.trim()) return;
+
+    setIsUpdatingShipStation(true);
+    setError(null);
+    setShipStationMessage(null);
+    try {
+      const response = await fetch(`/api/stores/${storeId}/shipstation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: shipStationApiKey, apiSecret: shipStationApiSecret }),
+      });
+      const payload = await response.json() as { error?: string; warning?: string | null };
+      if (!response.ok) throw new Error(payload.error || "Unable to connect ShipStation.");
+
+      setShipStationConnected(true);
+      setShipStationApiKey("");
+      setShipStationApiSecret("");
+      setShowShipStationConfig(false);
+      setShipStationMessage(payload.warning || "ShipStation connected.");
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : "Unable to connect ShipStation.");
+    } finally {
+      setIsUpdatingShipStation(false);
+    }
+  }
+
+  async function disconnectShipStation() {
+    if (!storeId || !confirm("Disconnect ShipStation? New paid orders will stop syncing.")) return;
+
+    setIsUpdatingShipStation(true);
+    setError(null);
+    setShipStationMessage(null);
+    try {
+      const response = await fetch(`/api/stores/${storeId}/shipstation`, { method: "DELETE" });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to disconnect ShipStation.");
+
+      setShipStationConnected(false);
+      setShowShipStationConfig(false);
+      setShipStationMessage("ShipStation disconnected.");
+    } catch (disconnectError) {
+      setError(disconnectError instanceof Error ? disconnectError.message : "Unable to disconnect ShipStation.");
+    } finally {
+      setIsUpdatingShipStation(false);
+    }
   }
 
   return (
@@ -248,6 +281,12 @@ export default function ShippingPage() {
           {error ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
+            </div>
+          ) : null}
+
+          {shipStationMessage ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {shipStationMessage}
             </div>
           ) : null}
 
@@ -389,35 +428,71 @@ export default function ShippingPage() {
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Connect shipping carriers and fulfillment services for label creation, rates, and tracking.
             </p>
-            <div className="mt-4 grid gap-4">
-              {carriers.map((carrier) => (
-                <div key={carrier.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-950">{carrier.name}</h3>
-                      <p className="mt-1 text-sm leading-6 text-slate-500">{carrier.description}</p>
-                    </div>
-                    <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${carrier.connected ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                      {carrierLabel(carrier)}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleCarrier(carrier.name)}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold text-white transition ${carrierButtonClasses[carrier.name] ?? "bg-slate-900 hover:bg-slate-800"}`}
-                    >
-                      {carrier.connected ? "Disconnect" : "Connect"}
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Configure
-                    </button>
-                  </div>
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950">ShipStation</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">Sync orders and fulfillment workflows.</p>
                 </div>
-              ))}
+                <span className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${shipStationConnected ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {shipStationConnected ? "Connected" : "Not connected"}
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (shipStationConnected) void disconnectShipStation();
+                    else setShowShipStationConfig(true);
+                  }}
+                  disabled={isUpdatingShipStation}
+                  className="rounded-full bg-[#00A9E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isUpdatingShipStation ? "Working..." : shipStationConnected ? "Disconnect" : "Connect"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowShipStationConfig((current) => !current)}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Configure
+                </button>
+              </div>
+              {showShipStationConfig ? (
+                <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2">
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-slate-700">API Key</span>
+                        <input
+                          value={shipStationApiKey}
+                          onChange={(event) => setShipStationApiKey(event.target.value)}
+                          autoComplete="off"
+                          placeholder={shipStationConnected ? "Enter a replacement key" : "ShipStation API Key"}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-slate-700">API Secret</span>
+                        <input
+                          type="password"
+                          value={shipStationApiSecret}
+                          onChange={(event) => setShipStationApiSecret(event.target.value)}
+                          autoComplete="new-password"
+                          placeholder={shipStationConnected ? "Enter a replacement secret" : "ShipStation API Secret"}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                        />
+                      </label>
+                      <div className="flex justify-end sm:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => void connectShipStation()}
+                          disabled={isUpdatingShipStation || !shipStationApiKey.trim() || !shipStationApiSecret.trim()}
+                          className="rounded-full bg-[#00A9E0] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isUpdatingShipStation ? "Testing..." : shipStationConnected ? "Replace credentials" : "Save credentials"}
+                        </button>
+                      </div>
+                </div>
+              ) : null}
             </div>
           </article>
         </div>

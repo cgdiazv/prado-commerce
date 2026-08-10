@@ -37,6 +37,7 @@ function shouldRateLimit(pathname: string) {
   return pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth/") &&
     pathname !== "/api/stripe/webhook" &&
+    !pathname.startsWith("/api/webhooks/shipstation/") &&
     pathname !== "/api/health";
 }
 

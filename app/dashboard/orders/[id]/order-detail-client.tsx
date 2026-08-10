@@ -1,9 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, CreditCard, Mail, Phone, MapPin, Package, CheckCircle, ShieldAlert } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck } from "lucide-react";
+
+type Address = {
+  firstName?: string;
+  lastName?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
+} | null;
+
+function parseAddress(value: unknown): Address {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Exclude<Address, null>
+    : null;
+}
 
 type OrderItem = {
   id: string;
@@ -18,13 +35,21 @@ type Order = {
   customerEmail: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+  fulfillmentStatus: "UNFULFILLED" | "SHIPPED";
+  trackingNumber: string | null;
+  trackingCarrier: string | null;
+  trackingUrl: string | null;
+  shippedAt: string | null;
+  shipStationOrderId: string | null;
+  shipStationSyncedAt: string | null;
+  shipStationSyncError: string | null;
   subtotal: string;
   tax: string;
   shipping: string;
   total: string;
   currency: string;
-  shippingAddress: any;
-  billingAddress: any;
+  shippingAddress: unknown;
+  billingAddress: unknown;
   createdAt: string;
   items: OrderItem[];
   store: {
@@ -64,8 +89,8 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
     currency: order.currency || "USD",
   });
 
-  const parsedShipping = order.shippingAddress;
-  const parsedBilling = order.billingAddress;
+  const parsedShipping = parseAddress(order.shippingAddress);
+  const parsedBilling = parseAddress(order.billingAddress);
 
   async function handleSaveChanges() {
     setIsSaving(true);
@@ -229,6 +254,60 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
 
         {/* Right Side Process Card */}
         <div className="space-y-6">
+          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <Truck className="h-4 w-4 text-slate-400" /> Fulfillment
+            </h2>
+            <div className="mt-4 space-y-2 text-sm text-slate-700">
+              <div className="flex justify-between gap-4">
+                <span>Status</span>
+                <span className="font-semibold text-slate-950">
+                  {order.fulfillmentStatus === "SHIPPED" ? "Shipped" : "Unfulfilled"}
+                </span>
+              </div>
+              {order.shipStationOrderId ? (
+                <div className="flex justify-between gap-4">
+                  <span>ShipStation order</span>
+                  <span className="font-medium text-slate-950">{order.shipStationOrderId}</span>
+                </div>
+              ) : null}
+              {order.trackingNumber ? (
+                <div className="flex justify-between gap-4">
+                  <span>Tracking</span>
+                  {order.trackingUrl ? (
+                    <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="font-medium text-cyan-700 hover:underline">
+                      {order.trackingNumber}
+                    </a>
+                  ) : (
+                    <span className="font-medium text-slate-950">{order.trackingNumber}</span>
+                  )}
+                </div>
+              ) : null}
+              {order.trackingCarrier ? (
+                <div className="flex justify-between gap-4">
+                  <span>Carrier</span>
+                  <span className="font-medium text-slate-950">{order.trackingCarrier}</span>
+                </div>
+              ) : null}
+              {order.shippedAt ? (
+                <div className="flex justify-between gap-4">
+                  <span>Shipped</span>
+                  <span>{new Date(order.shippedAt).toLocaleDateString()}</span>
+                </div>
+              ) : null}
+              {order.shipStationSyncError ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                  ShipStation sync: {order.shipStationSyncError}
+                </p>
+              ) : null}
+              {!order.shipStationSyncError && order.shipStationSyncedAt ? (
+                <p className="text-xs text-slate-500">
+                  Synced {new Date(order.shipStationSyncedAt).toLocaleString()}
+                </p>
+              ) : null}
+            </div>
+          </article>
+
           {/* Order Processing Actions */}
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -239,7 +318,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 <label className="block text-sm font-medium text-slate-700">Order Status</label>
                 <select
                   value={status}
-                  onChange={(event) => setStatus(event.target.value as any)}
+                  onChange={(event) => setStatus(event.target.value as Order["status"])}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="PENDING">Pending</option>
@@ -253,7 +332,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 <label className="block text-sm font-medium text-slate-700">Payment Status</label>
                 <select
                   value={paymentStatus}
-                  onChange={(event) => setPaymentStatus(event.target.value as any)}
+                  onChange={(event) => setPaymentStatus(event.target.value as Order["paymentStatus"])}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="UNPAID">Unpaid</option>

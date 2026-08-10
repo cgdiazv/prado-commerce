@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
+import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -25,6 +26,25 @@ function parseMetadataAmount(value: string | undefined, fallback: number) {
   }
 
   return Number(parsed.toFixed(2));
+}
+
+function addressFromMetadata(metadata: Stripe.Metadata, prefix: "shipping" | "billing") {
+  const line1 = metadata[`${prefix}Line1`] || "";
+  const city = metadata[`${prefix}City`] || "";
+  const state = metadata[`${prefix}State`] || "";
+  const postalCode = metadata[`${prefix}PostalCode`] || "";
+  const country = metadata[`${prefix}Country`] || "";
+
+  if (!line1 && !city && !state && !postalCode && !country) return null;
+
+  return {
+    line1: line1 || null,
+    line2: metadata[`${prefix}Line2`] || null,
+    city: city || null,
+    state: state || null,
+    postalCode: postalCode || null,
+    country: country || null,
+  };
 }
 
 export async function POST(request: Request) {
@@ -58,6 +78,8 @@ export async function POST(request: Request) {
       const firstName = String(metadata.firstName || "").trim() || null;
       const lastName = String(metadata.lastName || "").trim() || null;
       const phone = String(metadata.phone || session.customer_details?.phone || "").trim() || null;
+      const shippingAddress = addressFromMetadata(metadata, "shipping");
+      const billingAddress = addressFromMetadata(metadata, "billing");
 
       if (!storeId || !cartId || !email) {
         return NextResponse.json({ ok: true });
@@ -117,6 +139,8 @@ export async function POST(request: Request) {
           firstName,
           lastName,
           phone,
+          shippingAddress: shippingAddress ?? undefined,
+          billingAddress: billingAddress ?? undefined,
         },
         create: {
           storeId,
@@ -124,6 +148,8 @@ export async function POST(request: Request) {
           firstName,
           lastName,
           phone,
+          shippingAddress: shippingAddress ?? undefined,
+          billingAddress: billingAddress ?? undefined,
         },
         select: { id: true },
       });
@@ -150,6 +176,8 @@ export async function POST(request: Request) {
             paymentMethod: "card",
             paymentProvider: "stripe",
             gatewayTransactionId: paymentIntentId,
+            shippingAddress: shippingAddress ?? undefined,
+            billingAddress: billingAddress ?? undefined,
             items: {
               create: cart.items.map((item) => ({
                 title: item.variant.title,
@@ -187,6 +215,10 @@ export async function POST(request: Request) {
           console.error("[ORDER_CONFIRMATION_EMAIL_ERROR]", emailError);
         }
       }
+
+      after(() => syncPaidOrderToShipStation(order.id).catch((error) => {
+        console.error("[SHIPSTATION_ORDER_SYNC_ERROR]", error);
+      }));
     }
 
     return NextResponse.json({ ok: true });

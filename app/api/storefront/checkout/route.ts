@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { chargeAuthorizeNetOpaquePayment } from "@/lib/authorizenet";
@@ -6,6 +6,7 @@ import { decryptStoredSecret } from "@/lib/credentials";
 import { getShopperSessionCookieValueFromRequest } from "@/lib/shopper-auth";
 import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
 import { findSensitivePaymentField } from "@/lib/payment-pci-guard";
+import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -23,6 +24,18 @@ function resolveAppUrl(request: Request) {
 
 function toDecimal(value: number) {
   return Number(value.toFixed(2));
+}
+
+function addressMetadata(value: unknown, prefix: "shipping" | "billing") {
+  const address = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  return {
+    [`${prefix}Line1`]: String(address.line1 ?? ""),
+    [`${prefix}Line2`]: String(address.line2 ?? ""),
+    [`${prefix}City`]: String(address.city ?? ""),
+    [`${prefix}State`]: String(address.state ?? ""),
+    [`${prefix}PostalCode`]: String(address.postalCode ?? ""),
+    [`${prefix}Country`]: String(address.country ?? ""),
+  };
 }
 
 type FinalizeOrderInput = {
@@ -161,6 +174,12 @@ async function finalizeOrder({
     } catch (emailError) {
       console.error("[ORDER_CONFIRMATION_EMAIL_ERROR]", emailError);
     }
+  }
+
+  if (paymentProvider !== "manual") {
+    after(() => syncPaidOrderToShipStation(order.id).catch((error) => {
+      console.error("[SHIPSTATION_ORDER_SYNC_ERROR]", error);
+    }));
   }
 
   return order;
@@ -427,6 +446,8 @@ export async function POST(request: Request) {
             shipping: shipping.toFixed(2),
             tax: tax.toFixed(2),
             total: total.toFixed(2),
+            ...addressMetadata(shippingAddress, "shipping"),
+            ...addressMetadata(billingAddress, "billing"),
           },
           payment_intent_data: {
             transfer_data: {

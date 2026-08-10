@@ -61,6 +61,10 @@ model Store {
   authNetClientKey String?
   authNetTransKeyEncrypted String?
   authNetEnv     String     @default("sandbox")
+  shipStationApiKeyEncrypted String?
+  shipStationApiSecretEncrypted String?
+  shipStationWebhookId String?
+  shipStationWebhookSecretHash String?
   mainColor      String     @default("#0f172a")
   ownerId        String
   ownerUserId    String?
@@ -76,6 +80,7 @@ model Store {
   senderEmail    String?
   replyToEmail   String?
   shippingZones  Json?
+  shippingOrigin Json?
 
   apiKeys        ApiKey[]
   products       Product[]
@@ -307,6 +312,14 @@ model Order {
   shippingAddress Json?
   billingAddress  Json?
   paymentMethod   String?       @default("card")
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  trackingNumber String?
+  trackingCarrier String?
+  trackingUrl String?
+  shippedAt DateTime?
+  shipStationOrderId String? @unique
+  shipStationSyncedAt DateTime?
+  shipStationSyncError String?
 
   items           OrderItem[]
 
@@ -330,6 +343,11 @@ enum PaymentStatus {
   PAID
   REFUNDED
   FAILED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  SHIPPED
 }
 
 model OrderItem {

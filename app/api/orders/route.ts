@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
 function parseAmount(value: unknown): number {
   const numericValue =
@@ -265,6 +266,12 @@ export async function POST(request: Request) {
         createdAt: true,
       },
     });
+
+    if (createdOrder.paymentStatus === "PAID") {
+      after(() => syncPaidOrderToShipStation(createdOrder.id).catch((error) => {
+        console.error("[SHIPSTATION_ORDER_SYNC_ERROR]", error);
+      }));
+    }
 
     return NextResponse.json(serializeOrder(createdOrder), { status: 201 });
   } catch (error) {

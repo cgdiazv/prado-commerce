@@ -51,6 +51,14 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
     customerEmail: order.customerEmail,
     status: order.status,
     paymentStatus: order.paymentStatus,
+    fulfillmentStatus: order.fulfillmentStatus,
+    trackingNumber: order.trackingNumber,
+    trackingCarrier: order.trackingCarrier,
+    trackingUrl: order.trackingUrl,
+    shippedAt: order.shippedAt?.toISOString() ?? null,
+    shipStationOrderId: order.shipStationOrderId,
+    shipStationSyncedAt: order.shipStationSyncedAt?.toISOString() ?? null,
+    shipStationSyncError: order.shipStationSyncError,
     subtotal: order.subtotal.toString(),
     tax: order.tax.toString(),
     shipping: order.shipping.toString(),
@@ -71,5 +79,5 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
     },
   };
 
-  return <OrderDetailClient initialOrder={serializedOrder as any} />;
+  return <OrderDetailClient initialOrder={serializedOrder} />;
 }

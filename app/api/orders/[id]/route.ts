@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getStoreEmailConfig, sendInvoiceEmail } from "@/lib/email-notifications";
+import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
 type RouteContext = {
   params: Promise<{
@@ -44,21 +45,25 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     const validStatuses = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
     const validPaymentStatuses = ["UNPAID", "PAID", "REFUNDED", "FAILED"] as const;
+    const isOrderStatus = (value: string): value is (typeof validStatuses)[number] =>
+      validStatuses.some((statusValue) => statusValue === value);
+    const isPaymentStatus = (value: string): value is (typeof validPaymentStatuses)[number] =>
+      validPaymentStatuses.some((statusValue) => statusValue === value);
 
     if (status !== undefined) {
       const upperStatus = status.toUpperCase();
-      if (!validStatuses.includes(upperStatus as any)) {
+      if (!isOrderStatus(upperStatus)) {
         return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
       }
-      updates.status = upperStatus as any;
+      updates.status = upperStatus;
     }
 
     if (paymentStatus !== undefined) {
       const upperPaymentStatus = paymentStatus.toUpperCase();
-      if (!validPaymentStatuses.includes(upperPaymentStatus as any)) {
+      if (!isPaymentStatus(upperPaymentStatus)) {
         return NextResponse.json({ error: "Invalid payment status" }, { status: 400 });
       }
-      updates.paymentStatus = upperPaymentStatus as any;
+      updates.paymentStatus = upperPaymentStatus;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -89,6 +94,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           console.error("[INVOICE_EMAIL_ERROR]", emailError);
         }
       }
+    }
+
+    if (becamePaid) {
+      after(() => syncPaidOrderToShipStation(updatedOrder.id).catch((error) => {
+        console.error("[SHIPSTATION_ORDER_SYNC_ERROR]", error);
+      }));
     }
 
     return NextResponse.json({
