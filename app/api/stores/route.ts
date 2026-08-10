@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { normalizeMainColor } from "@/lib/branding";
+import { isReservedStoreSlug, normalizeStoreSlug } from "@/lib/store-slug";
 
 export async function GET(request: Request) {
   try {
@@ -185,7 +186,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const formattedSlug = normalizeStoreSlug(slug);
+
+    if (!formattedSlug) {
+      return NextResponse.json({ error: "Enter a valid store URL." }, { status: 400 });
+    }
+
+    if (isReservedStoreSlug(formattedSlug)) {
+      return NextResponse.json({ error: "This store URL is reserved. Choose another one." }, { status: 409 });
+    }
+
     const formattedCustomDomain = customDomain?.trim().toLowerCase() || null;
     const formattedMainColor = normalizeMainColor(mainColor ?? "#0f172a");
     const formattedAllowedDomains = (allowedDomains ?? [])

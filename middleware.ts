@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isReservedStoreSlug } from "@/lib/store-slug";
 
 const SESSION_COOKIE = "prado_session";
 const PLAN_COOKIE = "prado_plan";
 const protectedPaths = ["/dashboard", "/products"];
-const reservedSubdomains = ["app", "api", "cdn", "www"];
 
 type RateBucket = {
   count: number;
@@ -123,7 +123,7 @@ export function middleware(request: NextRequest) {
   const parts = hostname.split(".");
   if (parts.length >= 3) {
     const slug = parts[0];
-    if (slug && !reservedSubdomains.includes(slug)) {
+    if (slug && !isReservedStoreSlug(slug)) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-storefront-subdomain", "1");
       if (pathname.startsWith("/api/") || pathname === "/cart.js" || pathname.startsWith("/checkout")) {

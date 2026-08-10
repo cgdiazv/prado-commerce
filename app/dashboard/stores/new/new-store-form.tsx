@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { normalizeStoreSlug } from "@/lib/store-slug";
 import { CURRENCIES, Field, SelectField, TIMEZONES } from "../../stores-dashboard";
 
 type NewStoreFormProps = {
@@ -29,8 +30,24 @@ const defaultFormState: StoreFormState = {
   allowedDomains: "",
 };
 
-function toSlug(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+type SlugAvailability = {
+  slug: string;
+  available: boolean;
+  reason: string | null;
+};
+
+async function getSlugAvailability(slug: string, signal?: AbortSignal) {
+  const response = await fetch(`/api/stores/slug-availability?slug=${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+    signal,
+  });
+  const result = await response.json() as SlugAvailability & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(result.error ?? "Unable to check store URL availability.");
+  }
+
+  return result;
 }
 
 export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null }: NewStoreFormProps) {
@@ -38,9 +55,48 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
   const [formState, setFormState] = useState<StoreFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slugCheck, setSlugCheck] = useState<{
+    slug: string;
+    status: "checking" | "available" | "unavailable" | "error";
+    message: string | null;
+  } | null>(null);
 
   const isStarter = currentPlan === "STARTER";
   const hasReachedStoreLimit = isStarter && initialStoreCount >= 1;
+  const normalizedSlug = normalizeStoreSlug(formState.slug);
+  const currentSlugCheck = slugCheck?.slug === normalizedSlug ? slugCheck : null;
+
+  useEffect(() => {
+    if (!normalizedSlug) return;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSlugCheck({ slug: normalizedSlug, status: "checking", message: null });
+
+      try {
+        const result = await getSlugAvailability(normalizedSlug, controller.signal);
+        setSlugCheck({
+          slug: result.slug,
+          status: result.available ? "available" : "unavailable",
+          message: result.reason,
+        });
+      } catch (availabilityError) {
+        if (controller.signal.aborted) return;
+        setSlugCheck({
+          slug: normalizedSlug,
+          status: "error",
+          message: availabilityError instanceof Error
+            ? availabilityError.message
+            : "Unable to check store URL availability.",
+        });
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [normalizedSlug]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,9 +110,20 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
     setError(null);
 
     try {
+      const availability = await getSlugAvailability(normalizedSlug);
+      setSlugCheck({
+        slug: availability.slug,
+        status: availability.available ? "available" : "unavailable",
+        message: availability.reason,
+      });
+
+      if (!availability.available) {
+        throw new Error(availability.reason ?? "This store URL is not available.");
+      }
+
       const payload = {
         name: formState.name,
-        slug: formState.slug,
+        slug: availability.slug,
         customDomain: formState.customDomain || null,
         currency: formState.currency,
         timezone: formState.timezone,
@@ -131,17 +198,37 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
               setFormState((current) => ({
                 ...current,
                 name: value,
-                slug: current.slug === toSlug(current.name) ? toSlug(value) : current.slug,
+                slug: current.slug === normalizeStoreSlug(current.name)
+                  ? normalizeStoreSlug(value)
+                  : current.slug,
               }));
             }}
             placeholder="My Brand"
           />
-          <Field
-            label="Slug"
-            value={formState.slug}
-            onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
-            placeholder="my-brand"
-          />
+          <div>
+            <Field
+              label="Store URL"
+              value={formState.slug}
+              onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
+              placeholder="my-brand"
+            />
+            {normalizedSlug ? (
+              <div className="mt-2 text-xs">
+                <p className="break-all text-slate-500">
+                  https://{normalizedSlug}.pradocommerce.com
+                </p>
+                {currentSlugCheck?.status === "checking" ? (
+                  <p className="mt-1 text-slate-500">Checking availability...</p>
+                ) : currentSlugCheck?.status === "available" ? (
+                  <p className="mt-1 font-medium text-emerald-700">Available</p>
+                ) : currentSlugCheck?.status === "unavailable" ? (
+                  <p className="mt-1 font-medium text-rose-700">{currentSlugCheck.message}</p>
+                ) : currentSlugCheck?.status === "error" ? (
+                  <p className="mt-1 font-medium text-amber-700">{currentSlugCheck.message}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
           <SelectField
             label="Currency"
             value={formState.currency}

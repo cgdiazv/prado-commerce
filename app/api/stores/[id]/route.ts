@@ -5,6 +5,7 @@ import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { normalizeMainColor } from "@/lib/branding";
 import { encryptStoredSecret } from "@/lib/credentials";
+import { isReservedStoreSlug, normalizeStoreSlug } from "@/lib/store-slug";
 import { addVercelDomain, getVercelDomainStatus, removeVercelDomain } from "@/lib/vercel-domains";
 
 type RouteContext = {
@@ -331,8 +332,18 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.name = name.trim();
     }
 
-    if (typeof slug === "string" && slug.trim()) {
-      updates.slug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    if (typeof slug === "string") {
+      const normalizedSlug = normalizeStoreSlug(slug);
+
+      if (!normalizedSlug) {
+        return NextResponse.json({ error: "Enter a valid store URL." }, { status: 400 });
+      }
+
+      if (isReservedStoreSlug(normalizedSlug)) {
+        return NextResponse.json({ error: "This store URL is reserved. Choose another one." }, { status: 409 });
+      }
+
+      updates.slug = normalizedSlug;
     }
 
     if (logoUrl !== undefined) {
