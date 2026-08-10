@@ -356,7 +356,7 @@ export default function DashboardLayout({
             Help
           </a>
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
-            Copyright © {currentYear} Prado Systems. All rights reserved.
+            © {currentYear} Prado Systems. All rights reserved.
           </p>
         </div>
       </>
