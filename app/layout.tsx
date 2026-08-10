@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import { PublicFooter } from "@/components/public-footer";
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +31,7 @@ export default async function RootLayout({
     Boolean(hdrs.get("x-storefront-custom-domain"));
 
   return (
-    <html lang="en">
+    <html lang="en" className={roboto.variable}>
       <body>
         {children}
         <PublicFooter forceHidden={isStorefrontRequest} />
