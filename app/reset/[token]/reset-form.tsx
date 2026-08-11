@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { PradoLogo } from "@/components/PradoLogo";
 
 export function ResetForm({ token }: { token: string }) {
   const router = useRouter();
@@ -61,11 +62,8 @@ export function ResetForm({ token }: { token: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-16 text-slate-100">
       <section className="w-full max-w-md rounded-xl border border-white/15 bg-white/8 p-8 backdrop-blur-md">
-        <Link
-          href="/"
-          className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100 transition hover:text-cyan-50"
-        >
-          Prado Commerce
+        <Link href="/" className="inline-block transition hover:opacity-85">
+          <PradoLogo theme="dark" subtitle="Unified E-Commerce" size="md" />
         </Link>
         <h1 className="mt-3 text-3xl font-semibold text-white">Choose a new password</h1>
         <p className="mt-2 text-sm text-slate-300">

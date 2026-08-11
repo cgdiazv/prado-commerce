@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { PradoLogo } from "@/components/PradoLogo";
 
 const frictionStories = [
   {
@@ -87,9 +88,9 @@ export default function Home() {
       <div className="relative w-full pb-0">
         <header className="prado-fade-up relative w-full border-b border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md sm:px-8 lg:px-10">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
-            <div className="flex items-center">
-              <img src="/logo.webp" alt="Prado Commerce" className="h-5 w-auto" />
-            </div>
+            <Link href="/" className="inline-flex items-center">
+              <PradoLogo theme="dark" subtitle="Unified E-Commerce" size="md" />
+            </Link>
 
             <button
               type="button"

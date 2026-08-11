@@ -3,6 +3,7 @@
 import { useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { PradoLogo } from "@/components/PradoLogo";
 
 type Tier = {
   name: "Starter" | "Pro" | "Enterprise";
@@ -151,8 +152,8 @@ export default function PricingPage() {
 
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-12 pt-8 sm:px-8 lg:px-10">
         <header className="prado-fade-up relative flex items-center justify-between gap-3">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <img src="/logo.webp" alt="Prado Commerce" className="h-5 w-auto" />
+          <Link href="/" className="inline-flex items-center">
+            <PradoLogo theme="dark" subtitle="Unified E-Commerce" size="md" />
           </Link>
 
           <button
