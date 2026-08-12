@@ -34,16 +34,32 @@ export default function DashboardLayout({
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
   const [isInitialized, setIsInitialized] = useState(false);
-  const [notifications, setNotifications] = useState<{
-    id: string;
-    title: string;
-    message: string;
-    time: string;
-    read: boolean;
-    orderId: string;
-  }[]>([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [toast, setToast] = useState<{ id: string; title: string; message: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    email?: string;
+    name?: string | null;
+    company?: string | null;
+    plan?: string;
+    authenticated?: boolean;
+    verified?: boolean;
+  } | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchCurrentUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch user profile", e);
+      }
+    }
+    void fetchCurrentUser();
+  }, []);
 
   function showToast(newToast: { id: string; title: string; message: string }) {
     setToast(newToast);
@@ -51,18 +67,6 @@ export default function DashboardLayout({
       setToast((current) => (current?.id === newToast.id ? null : current));
     }, 6000);
   }
-
-  function markAsRead(notificationId: string) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-    );
-  }
-
-  function markAllAsRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     async function fetchStores() {
@@ -122,18 +126,6 @@ export default function DashboardLayout({
           }
 
           if (newOrders.length > 0) {
-            setNotifications((prev) => {
-              const added = newOrders.map((order) => ({
-                id: Math.random().toString(),
-                title: "New Order Received!",
-                message: `Order #${order.orderNumber} of ${order.currency} ${order.total} placed at ${order.storeName}`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                read: false,
-                orderId: order.id,
-              }));
-              return [...added, ...prev];
-            });
-
             const latestOrder = newOrders[0];
             showToast({
               id: latestOrder.id,
@@ -277,7 +269,7 @@ export default function DashboardLayout({
                       onClick={() => onNavigate?.()}
                       className="flex flex-1 items-center gap-3 px-3 py-1.5"
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
                       <span>{item.label}</span>
                     </a>
                     <button
@@ -299,7 +291,7 @@ export default function DashboardLayout({
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
                     <span>{item.label}</span>
                   </a>
                 )}
@@ -342,21 +334,25 @@ export default function DashboardLayout({
               </div>
             );
           })}
+
+          <div className="pt-1">
+            <div className="my-2 border-t border-slate-200" />
+            <a
+              href="/dashboard/help"
+              onClick={() => onNavigate?.()}
+              className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isHelpActive
+                  ? "bg-cyan-50 text-cyan-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <CircleHelp className={`h-4 w-4 shrink-0 ${isHelpActive ? "text-cyan-700" : "text-cyan-600"}`} />
+              <span>Help</span>
+            </a>
+          </div>
         </nav>
 
-        <div className="mt-6 border-t border-slate-200 pt-3 text-left">
-          <a
-            href="/dashboard/help"
-            onClick={() => onNavigate?.()}
-            className={`mb-2 inline-flex items-center gap-2 rounded-md px-2 py-1 text-[11px] font-medium tracking-[0.02em] transition ${
-              isHelpActive
-                ? "bg-cyan-50 text-cyan-700"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-            }`}
-          >
-            <CircleHelp className="h-3.5 w-3.5" />
-            Help
-          </a>
+        <div className="mt-4 text-left">
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
             © {currentYear} Prado Systems. All rights reserved.
           </p>
@@ -377,83 +373,69 @@ export default function DashboardLayout({
             <PradoLogo theme="light" subtitle="Merchant Dashboard" size="sm" />
           </Link>
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {/* Notification Bell with Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen((open) => !open)}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                aria-label="View notifications"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-2 ring-white animate-pulse">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="h-6 w-px bg-slate-200" />
+            {(() => {
+              const merchantName = currentUser?.name || stores[0]?.name || (currentUser?.email ? currentUser.email.split("@")[0] : "Merchant");
+              const merchantInitial = merchantName.trim().charAt(0).toUpperCase() || "M";
+              const merchantSubtitle = currentUser?.company || (currentUser?.plan ? `${currentUser.plan} Merchant` : stores[0]?.name ? `${stores[0].name} Store` : "Merchant Store");
 
-              {/* Glassmorphic Dropdown */}
-              {isDropdownOpen && (
-                <div 
-                  className="fixed left-1/2 top-16 z-50 w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-md transition-all sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 sm:max-w-none sm:translate-x-0"
-                  onMouseLeave={() => setIsDropdownOpen(false)}
-                >
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={markAllAsRead}
-                        className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mt-3 max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-                    {notifications.length === 0 ? (
-                      <div className="py-6 text-center text-sm text-slate-400">
-                        No notifications yet.
+              return (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen((open) => !open)}
+                    className="flex items-center gap-2.5 rounded-xl px-2 py-1 transition hover:bg-slate-100/70 focus:outline-none"
+                    aria-label="User profile menu"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-600 font-bold text-white text-xs shadow-xs ring-2 ring-cyan-600/20">
+                      {merchantInitial}
+                    </div>
+                    <div className="hidden text-left sm:block">
+                      <div className="text-xs font-bold text-slate-900 leading-tight">
+                        {merchantName}
                       </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            markAsRead(n.id);
-                            setIsDropdownOpen(false);
-                            window.location.href = "/dashboard/orders";
-                          }}
-                          className={`flex flex-col gap-1 rounded-xl p-3 cursor-pointer border text-left transition ${
-                            n.read
-                              ? "bg-slate-50/50 border-slate-100/50 text-slate-600"
-                              : "bg-cyan-50/20 border-cyan-100/40 hover:bg-cyan-50/40 text-slate-900"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="font-semibold text-xs text-slate-800">{n.title}</span>
-                            <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 leading-normal">{n.message}</p>
+                      {(currentUser?.verified || currentUser?.authenticated) && (
+                        <div className="text-[10px] font-medium text-slate-400 leading-tight">
+                          Authenticated
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-150 ${
+                        isUserMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-            <a
-              href="/api/auth/logout"
-              aria-label="Sign out"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-1.5"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden text-xs font-semibold sm:inline">Sign out</span>
-            </a>
+                  {/* Profile Dropdown */}
+                  {isUserMenuOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl backdrop-blur-md z-50 transition-all"
+                      onMouseLeave={() => setIsUserMenuOpen(false)}
+                    >
+                      <div className="px-2.5 py-1.5">
+                        <p className="text-xs font-bold text-slate-900">
+                          {merchantName}
+                        </p>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                          {merchantSubtitle}
+                        </p>
+                      </div>
+                      <div className="my-2 border-t border-slate-100" />
+                      <a
+                        href="/api/auth/logout"
+                        className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-cyan-600 transition hover:bg-cyan-50 hover:text-cyan-700"
+                      >
+                        <LogOut className="h-4 w-4 text-cyan-600" />
+                        <span>Sign Out</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}

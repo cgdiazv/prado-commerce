@@ -2,12 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { DollarSign, ShoppingCart, TrendingUp, Store } from "lucide-react";
 
-function getTimeOfDayGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -105,10 +99,10 @@ export default async function DashboardPage() {
             </span>
           </div>
           <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            {getTimeOfDayGreeting()}, {user?.name || "Merchant"}
+            E-Commerce & Storefront Management Console
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Here's a quick overview of your store performance and activity.
+            Unified control plane for managing your stores, products, sales channels, and customer orders.
           </p>
         </div>
 

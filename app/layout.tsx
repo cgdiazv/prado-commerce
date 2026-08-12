@@ -31,8 +31,8 @@ export default async function RootLayout({
     Boolean(hdrs.get("x-storefront-custom-domain"));
 
   return (
-    <html lang="en" className={roboto.variable}>
-      <body>
+    <html lang="en" className={roboto.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         {children}
         <PublicFooter forceHidden={isStorefrontRequest} />
       </body>
