@@ -229,3 +229,85 @@ export async function sendInvoiceEmail(input: InvoiceEmailInput) {
 
   await sendEmail(input.store, input.to, `Invoice for order #${input.orderNumber}`, html);
 }
+
+type SupportTicketInput = {
+  userEmail: string;
+  userName?: string | null;
+  userId?: string | null;
+  subject: string;
+  category?: string;
+  priority?: string;
+  message: string;
+};
+
+export async function sendSupportTicketEmail(input: SupportTicketInput) {
+  const from = "Prado Support <notifications@pradojob.com>";
+  const to = "support@pradocommerce.com";
+  const replyTo = input.userEmail.trim();
+
+  if (!resend) {
+    console.warn("[SUPPORT_TICKET_DISABLED] RESEND_API_KEY is not configured.");
+    return { ok: true, simulated: true };
+  }
+
+  const categoryLabel = input.category || "General Support";
+  const priorityLabel = input.priority || "NORMAL";
+  const userDisplayName = input.userName?.trim() || input.userEmail;
+
+  const html = `
+    <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" style="max-width:640px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
+        <tr>
+          <td style="padding:24px 28px;background:#0f172a;color:#ffffff;">
+            <p style="margin:0 0 6px 0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;font-weight:700;">Prado Commerce Support Ticket</p>
+            <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3;color:#ffffff;">${input.subject}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 28px;font-size:14px;line-height:1.6;color:#334155;">
+            <table role="presentation" style="width:100%;margin-bottom:24px;border-collapse:collapse;font-size:13px;">
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#64748b;width:130px;"><strong>Submitted By:</strong></td>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-weight:600;">${userDisplayName} &lt;${input.userEmail}&gt;</td>
+              </tr>
+              ${input.userId ? `
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#64748b;"><strong>User ID:</strong></td>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-family:monospace;">${input.userId}</td>
+              </tr>` : ""}
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#64748b;"><strong>Category:</strong></td>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;">${categoryLabel}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#64748b;"><strong>Priority:</strong></td>
+                <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;"><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#e2e8f0;color:#1e293b;">${priorityLabel}</span></td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Submitted At:</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${new Date().toUTCString()}</td>
+              </tr>
+            </table>
+
+            <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+              <p style="margin:0 0 10px 0;font-weight:700;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;">Ticket Message:</p>
+              <div style="white-space:pre-wrap;color:#334155;font-size:14px;line-height:1.6;">${input.message}</div>
+            </div>
+
+            <p style="margin:24px 0 0 0;font-size:12px;color:#94a3b8;border-t:1px solid #f1f5f9;padding-top:16px;">
+              Replying to this email directly will respond to <strong>${input.userEmail}</strong>.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  return await resend.emails.send({
+    from,
+    to,
+    replyTo,
+    subject: `[Helpdesk Ticket] ${input.subject}`,
+    html,
+  });
+}

@@ -157,7 +157,7 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+    <section className="min-w-0 space-y-6">
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
@@ -170,10 +170,10 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
         </div>
       ) : null}
 
-      <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-5">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">New store</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-950">Create a new tenant</h1>
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">New store</p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-950">Create a new storefront</h1>
         </div>
         <Link
           href="/dashboard/stores"
@@ -183,79 +183,82 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Store name"
-            value={formState.name}
-            onChange={(value) => {
-              setFormState((current) => ({
-                ...current,
-                name: value,
-                slug: current.slug === normalizeStoreSlug(current.name)
-                  ? normalizeStoreSlug(value)
-                  : current.slug,
-              }));
-            }}
-            placeholder="My Brand"
-          />
-          <div>
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Store configuration</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Store URL"
-              value={formState.slug}
-              onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
-              placeholder="my-brand"
+              label="Store name"
+              value={formState.name}
+              onChange={(value) => {
+                setFormState((current) => ({
+                  ...current,
+                  name: value,
+                  slug: current.slug === normalizeStoreSlug(current.name)
+                    ? normalizeStoreSlug(value)
+                    : current.slug,
+                }));
+              }}
+              placeholder="My Brand"
             />
-            {normalizedSlug ? (
-              <div className="mt-2 text-xs">
-                <p className="break-all text-slate-500">
-                  https://{normalizedSlug}.pradocommerce.com
-                </p>
-                {currentSlugCheck?.status === "checking" ? (
-                  <p className="mt-1 text-slate-500">Checking availability...</p>
-                ) : currentSlugCheck?.status === "available" ? (
-                  <p className="mt-1 font-medium text-emerald-700">Available</p>
-                ) : currentSlugCheck?.status === "unavailable" ? (
-                  <p className="mt-1 font-medium text-rose-700">{currentSlugCheck.message}</p>
-                ) : currentSlugCheck?.status === "error" ? (
-                  <p className="mt-1 font-medium text-amber-700">{currentSlugCheck.message}</p>
-                ) : null}
-              </div>
-            ) : null}
+            <div>
+              <Field
+                label="Store URL"
+                value={formState.slug}
+                onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
+                placeholder="my-brand"
+              />
+              {normalizedSlug ? (
+                <div className="mt-2 text-xs">
+                  <p className="break-all text-slate-500">
+                    https://{normalizedSlug}.pradocommerce.com
+                  </p>
+                  {currentSlugCheck?.status === "checking" ? (
+                    <p className="mt-1 text-slate-500">Checking availability...</p>
+                  ) : currentSlugCheck?.status === "available" ? (
+                    <p className="mt-1 font-medium text-emerald-700">Available</p>
+                  ) : currentSlugCheck?.status === "unavailable" ? (
+                    <p className="mt-1 font-medium text-rose-700">{currentSlugCheck.message}</p>
+                  ) : currentSlugCheck?.status === "error" ? (
+                    <p className="mt-1 font-medium text-amber-700">{currentSlugCheck.message}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+            <SelectField
+              label="Currency"
+              value={formState.currency}
+              onChange={(value) => setFormState((current) => ({ ...current, currency: value }))}
+              options={CURRENCIES}
+            />
+            <SelectField
+              label="Timezone"
+              value={formState.timezone}
+              onChange={(value) => setFormState((current) => ({ ...current, timezone: value }))}
+              options={TIMEZONES}
+            />
+            <Field
+              label="Custom domain (optional)"
+              labelHint="Use a domain you own (for example from GoDaddy). Next steps: 1) Add this exact domain in your DNS provider. 2) Point DNS to your Prado Commerce Storefront. 3) Save this store and open the domain to verify storefront routing."
+              value={formState.customDomain}
+              onChange={(value) => setFormState((current) => ({ ...current, customDomain: value }))}
+              placeholder="checkout.mybrand.com"
+              className="sm:col-span-2"
+            />
+            <Field
+              label="Allowed domains (optional)"
+              value={formState.allowedDomains}
+              onChange={(value) => setFormState((current) => ({ ...current, allowedDomains: value }))}
+              placeholder="https://mybrand.com, https://store.mybrand.com"
+              className="sm:col-span-2"
+            />
           </div>
-          <SelectField
-            label="Currency"
-            value={formState.currency}
-            onChange={(value) => setFormState((current) => ({ ...current, currency: value }))}
-            options={CURRENCIES}
-          />
-          <SelectField
-            label="Timezone"
-            value={formState.timezone}
-            onChange={(value) => setFormState((current) => ({ ...current, timezone: value }))}
-            options={TIMEZONES}
-          />
-          <Field
-            label="Custom domain (optional)"
-            labelHint="Use a domain you own (for example from GoDaddy). Next steps: 1) Add this exact domain in your DNS provider. 2) Point DNS to your Prado Commerce Storefront. 3) Save this store and open the domain to verify storefront routing."
-            value={formState.customDomain}
-            onChange={(value) => setFormState((current) => ({ ...current, customDomain: value }))}
-            placeholder="checkout.mybrand.com"
-            className="sm:col-span-2"
-          />
-          <Field
-            label="Allowed domains (optional)"
-            value={formState.allowedDomains}
-            onChange={(value) => setFormState((current) => ({ ...current, allowedDomains: value }))}
-            placeholder="https://mybrand.com, https://store.mybrand.com"
-            className="sm:col-span-2"
-          />
         </div>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

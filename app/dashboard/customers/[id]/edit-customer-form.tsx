@@ -120,7 +120,7 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+    <section className="min-w-0 space-y-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -146,60 +146,66 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Store Selection Card (Readonly) */}
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 font-medium">
-              {activeStore ? `${activeStore.name} / ${activeStore.currency}` : "Unknown Store"}
+        {/* Customer Details Card */}
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Customer details</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Store Selection Card (Readonly) */}
+            <div className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-slate-700">Store</span>
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 font-medium">
+                {activeStore ? `${activeStore.name} / ${activeStore.currency}` : "Unknown Store"}
+              </div>
             </div>
+
+            <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
+              <span className="text-sm font-medium text-slate-700">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="customer@example.com"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                required
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
+              <span className="text-sm font-medium text-slate-700">Phone</span>
+              <input
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="+1 555 123 4567"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">First name</span>
+              <input
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                placeholder="Jane"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">Last name</span>
+              <input
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+                placeholder="Doe"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </label>
           </div>
+        </div>
 
-          <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
-            <span className="text-sm font-medium text-slate-700">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="customer@example.com"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              required
-            />
-          </label>
+        <div className="grid gap-6 lg:grid-cols-2">
 
-          <label className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
-            <span className="text-sm font-medium text-slate-700">Phone</span>
-            <input
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+1 555 123 4567"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">First name</span>
-            <input
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              placeholder="Jane"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Last name</span>
-            <input
-              value={lastName}
-              onChange={(event) => setLastName(event.target.value)}
-              placeholder="Doe"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </label>
-
-          {/* Shipping Address Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2 lg:col-span-1">
-            <p className="text-sm font-semibold text-slate-800">Shipping address</p>
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Shipping address</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">Address line 1</span>
@@ -263,9 +269,8 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
             </div>
           </div>
 
-          {/* Billing Address Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:col-span-2 lg:col-span-1">
-            <p className="text-sm font-semibold text-slate-800">Billing address</p>
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Billing address</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">Address line 1</span>

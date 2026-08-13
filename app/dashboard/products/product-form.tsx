@@ -399,7 +399,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+    <section className="min-w-0 space-y-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -419,7 +419,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Product details</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label="Title"
             value={productForm.title}
@@ -575,8 +577,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             <p className="text-xs text-slate-400">Up to 6 images — JPEG, PNG, WebP or GIF, max 5 MB each</p>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <label className="text-sm font-medium text-slate-700">Store</label>
@@ -600,7 +603,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-slate-950">Variants</h3>

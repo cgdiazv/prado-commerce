@@ -33,22 +33,29 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     }
 
     const body = await req.json();
-    const { status, paymentStatus } = body as {
+    const { status, paymentStatus, fulfillmentStatus } = body as {
       status?: string;
       paymentStatus?: string;
+      fulfillmentStatus?: string;
     };
 
     const updates: {
       status?: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
       paymentStatus?: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+      fulfillmentStatus?: "UNFULFILLED" | "SHIPPED";
+      shippedAt?: Date | null;
     } = {};
 
     const validStatuses = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
     const validPaymentStatuses = ["UNPAID", "PAID", "REFUNDED", "FAILED"] as const;
+    const validFulfillmentStatuses = ["UNFULFILLED", "SHIPPED"] as const;
+
     const isOrderStatus = (value: string): value is (typeof validStatuses)[number] =>
       validStatuses.some((statusValue) => statusValue === value);
     const isPaymentStatus = (value: string): value is (typeof validPaymentStatuses)[number] =>
       validPaymentStatuses.some((statusValue) => statusValue === value);
+    const isFulfillmentStatus = (value: string): value is (typeof validFulfillmentStatuses)[number] =>
+      validFulfillmentStatuses.some((statusValue) => statusValue === value);
 
     if (status !== undefined) {
       const upperStatus = status.toUpperCase();
@@ -56,6 +63,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
       }
       updates.status = upperStatus;
+      if (upperStatus === "COMPLETED" && order.fulfillmentStatus === "UNFULFILLED" && !fulfillmentStatus) {
+        updates.fulfillmentStatus = "SHIPPED";
+        if (!order.shippedAt) {
+          updates.shippedAt = new Date();
+        }
+      }
     }
 
     if (paymentStatus !== undefined) {
@@ -64,6 +77,17 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         return NextResponse.json({ error: "Invalid payment status" }, { status: 400 });
       }
       updates.paymentStatus = upperPaymentStatus;
+    }
+
+    if (fulfillmentStatus !== undefined) {
+      const upperFulfillment = fulfillmentStatus.toUpperCase();
+      if (!isFulfillmentStatus(upperFulfillment)) {
+        return NextResponse.json({ error: "Invalid fulfillment status" }, { status: 400 });
+      }
+      updates.fulfillmentStatus = upperFulfillment;
+      if (upperFulfillment === "SHIPPED" && !order.shippedAt) {
+        updates.shippedAt = new Date();
+      }
     }
 
     if (Object.keys(updates).length === 0) {
@@ -108,6 +132,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         id: updatedOrder.id,
         status: updatedOrder.status,
         paymentStatus: updatedOrder.paymentStatus,
+        fulfillmentStatus: updatedOrder.fulfillmentStatus,
       },
     });
   } catch (error) {

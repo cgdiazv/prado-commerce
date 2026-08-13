@@ -81,6 +81,11 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   const [order, setOrder] = useState<Order>(initialOrder);
   const [status, setStatus] = useState(initialOrder.status);
   const [paymentStatus, setPaymentStatus] = useState(initialOrder.paymentStatus);
+  const [fulfillmentStatus, setFulfillmentStatus] = useState(
+    initialOrder.fulfillmentStatus === "SHIPPED" || initialOrder.status === "COMPLETED"
+      ? "SHIPPED"
+      : initialOrder.fulfillmentStatus
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
@@ -103,6 +108,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         body: JSON.stringify({
           status,
           paymentStatus,
+          fulfillmentStatus,
         }),
       });
 
@@ -115,7 +121,9 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         ...current,
         status: payload.order.status,
         paymentStatus: payload.order.paymentStatus,
+        fulfillmentStatus: payload.order.fulfillmentStatus,
       }));
+      setFulfillmentStatus(payload.order.fulfillmentStatus);
       setSaveStatus("Changes saved successfully!");
       router.refresh();
     } catch (error) {
@@ -126,7 +134,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur space-y-6">
+    <section className="min-w-0 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -262,7 +270,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
               <div className="flex justify-between gap-4">
                 <span>Status</span>
                 <span className="font-semibold text-slate-950">
-                  {order.fulfillmentStatus === "SHIPPED" ? "Shipped" : "Unfulfilled"}
+                  {order.fulfillmentStatus === "SHIPPED" || order.status === "COMPLETED" || fulfillmentStatus === "SHIPPED" ? "Shipped" : "Unfulfilled"}
                 </span>
               </div>
               {order.shipStationOrderId ? (
@@ -318,7 +326,13 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 <label className="block text-sm font-medium text-slate-700">Order Status</label>
                 <select
                   value={status}
-                  onChange={(event) => setStatus(event.target.value as Order["status"])}
+                  onChange={(event) => {
+                    const newStatus = event.target.value as Order["status"];
+                    setStatus(newStatus);
+                    if (newStatus === "COMPLETED" && fulfillmentStatus === "UNFULFILLED") {
+                      setFulfillmentStatus("SHIPPED");
+                    }
+                  }}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="PENDING">Pending</option>
@@ -339,6 +353,18 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                   <option value="PAID">Paid</option>
                   <option value="REFUNDED">Refunded</option>
                   <option value="FAILED">Failed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Fulfillment Status</label>
+                <select
+                  value={fulfillmentStatus}
+                  onChange={(event) => setFulfillmentStatus(event.target.value as Order["fulfillmentStatus"])}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="UNFULFILLED">Unfulfilled</option>
+                  <option value="SHIPPED">Shipped</option>
                 </select>
               </div>
 

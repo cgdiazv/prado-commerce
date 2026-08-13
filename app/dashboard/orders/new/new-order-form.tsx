@@ -144,14 +144,12 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/70 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+    <section className="min-w-0 space-y-6">
       {setupError ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
         </div>
       ) : null}
-
-      <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -172,7 +170,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Order Details Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Order configuration</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2">
@@ -239,9 +237,9 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 bg-slate-50/50">
-              <h2 className="text-sm font-semibold text-slate-900">Line items</h2>
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 bg-white">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Line items</h2>
               <button
                 type="button"
                 onClick={addItem}
@@ -252,7 +250,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
               </button>
             </div>
 
-            <div className="space-y-3 p-4">
+            <div className="space-y-3 p-5">
               {items.map((item, index) => (
                 <div key={`${index}-${item.title}`} className="grid gap-3 sm:grid-cols-12">
                   <input
@@ -295,7 +293,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
           </div>
 
           {/* Financial Adjustments Card */}
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Financial adjustments</h3>
             <div className="grid gap-4 sm:grid-cols-3">
               <label className="flex flex-col gap-2">
@@ -336,7 +334,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-700 shadow-sm">
             <p>Subtotal: {currency} {toMoney(subtotal)}</p>
             <p>Tax: {currency} {toMoney(taxAmount)}</p>
             <p>Shipping: {currency} {toMoney(shippingAmount)}</p>
@@ -367,12 +365,11 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
           </div>
         </form>
 
-        {!activeStore && stores.length === 0 ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Create a store first before creating orders.
-          </div>
-        ) : null}
-      </div>
+      {!activeStore && stores.length === 0 ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Create a store first before creating orders.
+        </div>
+      ) : null}
     </section>
   );
 }
