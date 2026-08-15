@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizeStoreSlug } from "@/lib/store-slug";
+import { getPlanLimits } from "@/lib/subscription";
 import { CURRENCIES, Field, SelectField, TIMEZONES } from "../../stores-dashboard";
 
 type NewStoreFormProps = {
@@ -61,8 +62,10 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
     message: string | null;
   } | null>(null);
 
+  const limits = getPlanLimits(currentPlan);
   const isStarter = currentPlan === "STARTER";
-  const hasReachedStoreLimit = isStarter && initialStoreCount >= 1;
+  const isPro = currentPlan === "PRO";
+  const hasReachedStoreLimit = initialStoreCount >= limits.maxStores;
   const normalizedSlug = normalizeStoreSlug(formState.slug);
   const currentSlugCheck = slugCheck?.slug === normalizedSlug ? slugCheck : null;
 
@@ -102,7 +105,13 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
     event.preventDefault();
 
     if (hasReachedStoreLimit) {
-      setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add more stores.");
+      if (isStarter) {
+        setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores.");
+      } else if (isPro) {
+        setError("Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores.");
+      } else {
+        setError("Store limit reached for your current plan.");
+      }
       return;
     }
 
@@ -166,7 +175,11 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
 
       {hasReachedStoreLimit ? (
         <div className="mb-6 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
-          Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.
+          {isStarter
+            ? "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains."
+            : isPro
+              ? "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores."
+              : "Store limit reached for your current plan."}
         </div>
       ) : null}
 

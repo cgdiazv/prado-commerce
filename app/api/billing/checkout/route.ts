@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { STRIPE_PRICE_MAP } from "@/lib/stripe-pricing";
+import { getCurrentUserFromRequest } from "@/lib/session";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -8,6 +9,11 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUserFromRequest(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { plan, interval } = body as {
       plan?: keyof typeof STRIPE_PRICE_MAP;
@@ -37,17 +43,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
+      client_reference_id: user.id,
+      customer_email: user.email,
+      metadata: {
+        userId: user.id,
+        plan,
+      },
       line_items: [
         {
           price: selectedPriceId,
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?billing=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?billing=cancelled`,
+      success_url: `${appUrl}/dashboard?billing=success`,
+      cancel_url: `${appUrl}/dashboard?billing=cancelled`,
     });
 
     return NextResponse.json({ url: session.url });
@@ -59,3 +72,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

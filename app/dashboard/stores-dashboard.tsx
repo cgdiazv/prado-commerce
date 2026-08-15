@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { getPlanLimits } from "@/lib/subscription";
 
 type Store = {
   id: string;
@@ -61,8 +62,10 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
   const [domainStatusError, setDomainStatusError] = useState<string | null>(null);
   const [isCheckingDomainStatus, setIsCheckingDomainStatus] = useState(false);
   const [deletingStoreId, setDeletingStoreId] = useState<string | null>(null);
+  const limits = getPlanLimits(currentPlan);
   const isStarter = currentPlan === "STARTER";
-  const hasReachedStoreLimit = isStarter && stores.length >= 1;
+  const isPro = currentPlan === "PRO";
+  const hasReachedStoreLimit = stores.length >= limits.maxStores;
 
   const filteredStores = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -319,7 +322,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                   <button
                     type="button"
                     onClick={() => {
-                      setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add more stores.");
+                      if (isStarter) {
+                        setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores.");
+                      } else if (isPro) {
+                        setError("Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores.");
+                      } else {
+                        setError("Store limit reached for your current plan.");
+                      }
                     }}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white opacity-60 sm:w-auto"
                   >
@@ -335,9 +344,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                     New store
                   </Link>
                 )}
-                {isStarter ? (
+                {hasReachedStoreLimit ? (
                   <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800 shadow-lg group-hover:block group-focus-within:block sm:w-80">
-                    Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.
+                    {isStarter
+                      ? "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains."
+                      : isPro
+                        ? "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores."
+                        : "Store limit reached for your current plan."}
                   </div>
                 ) : null}
               </div>

@@ -3,12 +3,24 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
+import { STRIPE_PRICE_MAP } from "@/lib/stripe-pricing";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+function getPlanFromPriceId(priceId: string | undefined): "PRO" | "ENTERPRISE" | null {
+  if (!priceId) return null;
+  if (priceId === STRIPE_PRICE_MAP.PRO.month || priceId === STRIPE_PRICE_MAP.PRO.year) {
+    return "PRO";
+  }
+  if (priceId === STRIPE_PRICE_MAP.ENTERPRISE.month || priceId === STRIPE_PRICE_MAP.ENTERPRISE.year) {
+    return "ENTERPRISE";
+  }
+  return null;
+}
 
 function toDecimalFromCents(value: number | null | undefined) {
   const cents = Number(value ?? 0);
@@ -68,9 +80,61 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      await prisma.merchantUser.updateMany({
+        where: { stripeSubId: subscription.id },
+        data: {
+          plan: "STARTER",
+          stripeSubId: null,
+        },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const priceId = subscription.items?.data[0]?.price?.id;
+      const plan = getPlanFromPriceId(priceId);
+
+      if (plan && (subscription.status === "active" || subscription.status === "trialing")) {
+        await prisma.merchantUser.updateMany({
+          where: { stripeSubId: subscription.id },
+          data: { plan },
+        });
+      } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
+        await prisma.merchantUser.updateMany({
+          where: { stripeSubId: subscription.id },
+          data: { plan: "STARTER" },
+        });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata ?? {};
+
+      if (session.mode === "subscription") {
+        const userId = session.client_reference_id || metadata.userId;
+        const rawPlan = metadata.plan?.toUpperCase();
+        const plan: "STARTER" | "PRO" | "ENTERPRISE" =
+          rawPlan === "PRO" || rawPlan === "ENTERPRISE" ? rawPlan : "PRO";
+        const customerId = typeof session.customer === "string" ? session.customer : null;
+        const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
+
+        if (userId) {
+          await prisma.merchantUser.update({
+            where: { id: userId },
+            data: {
+              plan,
+              stripeCustomerId: customerId,
+              stripeSubId: subscriptionId,
+            },
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
 
       const storeId = String(metadata.storeId || "").trim();
       const cartId = String(metadata.cartId || "").trim();

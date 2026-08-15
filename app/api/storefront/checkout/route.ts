@@ -7,6 +7,7 @@ import { getShopperSessionCookieValueFromRequest } from "@/lib/shopper-auth";
 import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
 import { findSensitivePaymentField } from "@/lib/payment-pci-guard";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
+import { getPlanLimits, getPlanOrDefault, type SubscriptionPlan } from "@/lib/subscription";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -238,6 +239,9 @@ export async function POST(request: Request) {
         authNetClientKey: string | null;
         authNetTransKeyEncrypted: string | null;
         authNetEnv: string;
+        ownerUser?: {
+          plan: SubscriptionPlan;
+        } | null;
       } | null;
       items: {
         quantity: number;
@@ -273,6 +277,11 @@ export async function POST(request: Request) {
               authNetClientKey: true,
               authNetTransKeyEncrypted: true,
               authNetEnv: true,
+              ownerUser: {
+                select: {
+                  plan: true,
+                },
+              },
             },
           },
           items: {
@@ -335,6 +344,7 @@ export async function POST(request: Request) {
                 authNetClientKey: null,
                 authNetTransKeyEncrypted: null,
                 authNetEnv: "sandbox",
+                ownerUser: null,
               },
             }
           : null;
@@ -428,6 +438,12 @@ export async function POST(request: Request) {
         }
 
         const appUrl = resolveAppUrl(request);
+        const ownerPlan = getPlanOrDefault(cart.store?.ownerUser?.plan);
+        const limits = getPlanLimits(ownerPlan);
+        const platformFeeAmountCents = limits.platformFeeRate > 0
+          ? Math.round(total * 100 * limits.platformFeeRate)
+          : 0;
+
         const session = await stripe.checkout.sessions.create({
           mode: "payment",
           payment_method_types: ["card"],
@@ -450,6 +466,7 @@ export async function POST(request: Request) {
             ...addressMetadata(billingAddress, "billing"),
           },
           payment_intent_data: {
+            ...(platformFeeAmountCents > 0 ? { application_fee_amount: platformFeeAmountCents } : {}),
             transfer_data: {
               destination: stripeDestinationAccountId,
             },
