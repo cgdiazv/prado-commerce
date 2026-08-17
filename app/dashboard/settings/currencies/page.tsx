@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const availableCurrencies = ["USD", "EUR", "GBP", "CAD", "AED", "AUD"] as const;
+const availableCurrencies = ["USD", "EUR", "GBP", "CAD", "AED", "AUD", "HNL"] as const;
 
 type CurrencyCode = (typeof availableCurrencies)[number];
 
@@ -12,6 +12,24 @@ export default function CurrenciesPage() {
   const router = useRouter();
   const [baseCurrency, setBaseCurrency] = useState<CurrencyCode>("USD");
   const [enabledCurrencies, setEnabledCurrencies] = useState<CurrencyCode[]>(["USD", "EUR"]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const savedBase = localStorage.getItem("prado_base_currency") as CurrencyCode;
+    if (savedBase && availableCurrencies.includes(savedBase)) {
+      setBaseCurrency(savedBase);
+    }
+    const savedEnabled = localStorage.getItem("prado_enabled_currencies");
+    if (savedEnabled) {
+      try {
+        const parsed = JSON.parse(savedEnabled);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setEnabledCurrencies(parsed.filter((c) => availableCurrencies.includes(c)));
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   function toggleCurrency(currency: CurrencyCode) {
     setEnabledCurrencies((current) =>
@@ -21,8 +39,12 @@ export default function CurrenciesPage() {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    localStorage.setItem("prado_base_currency", baseCurrency);
+    localStorage.setItem("prado_enabled_currencies", JSON.stringify(enabledCurrencies));
     router.push("/dashboard/settings");
   }
+
+  if (!isMounted) return null;
 
   return (
     <section className="space-y-4">
