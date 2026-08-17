@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashSecret, verifySecret } from "@/lib/credentials";
 import { buildSessionCookieValue } from "@/lib/session";
+import { sendMerchantSubscriptionWelcomeEmail } from "@/lib/email-notifications";
 
 const SESSION_COOKIE = "prado_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
       select: {
         id: true,
         email: true,
+        name: true,
+        plan: true,
         sessionVersion: true,
         onboardingTokenHash: true,
         onboardingTokenExpiresAt: true,
@@ -66,6 +69,18 @@ export async function POST(request: Request) {
         onboardingTokenExpiresAt: null,
       },
     });
+
+    if (merchantUser.plan === "STARTER") {
+      try {
+        await sendMerchantSubscriptionWelcomeEmail({
+          email: merchantUser.email,
+          name: merchantUser.name,
+          plan: "STARTER",
+        });
+      } catch (emailError) {
+        console.error("[MERCHANT_WELCOME_EMAIL_ERROR]", emailError);
+      }
+    }
 
     const response = NextResponse.json({ ok: true });
     response.cookies.set({

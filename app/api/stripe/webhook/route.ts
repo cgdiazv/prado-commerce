@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-notifications";
+import { getStoreEmailConfig, sendOrderConfirmationEmail, sendMerchantSubscriptionWelcomeEmail } from "@/lib/email-notifications";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 import { STRIPE_PRICE_MAP } from "@/lib/stripe-pricing";
 
@@ -124,14 +124,27 @@ export async function POST(request: Request) {
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
 
         if (userId) {
-          await prisma.merchantUser.update({
+          const user = await prisma.merchantUser.update({
             where: { id: userId },
             data: {
               plan,
               stripeCustomerId: customerId,
               stripeSubId: subscriptionId,
             },
+            select: { email: true, name: true, plan: true }
           });
+
+          if (plan === "PRO" || plan === "ENTERPRISE") {
+            try {
+              await sendMerchantSubscriptionWelcomeEmail({
+                email: user.email,
+                name: user.name,
+                plan: user.plan,
+              });
+            } catch (err) {
+              console.error("[MERCHANT_WELCOME_EMAIL_ERROR]", err);
+            }
+          }
         }
         return NextResponse.json({ ok: true });
       }

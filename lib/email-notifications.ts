@@ -311,3 +311,64 @@ export async function sendSupportTicketEmail(input: SupportTicketInput) {
     html,
   });
 }
+
+type MerchantSubscriptionEmailInput = {
+  email: string;
+  name?: string | null;
+  plan: "STARTER" | "PRO" | "ENTERPRISE";
+};
+
+export async function sendMerchantSubscriptionWelcomeEmail(input: MerchantSubscriptionEmailInput) {
+  const from = "Prado Commerce <notifications@pradocommerce.com>";
+  const to = input.email;
+
+  if (!resend) {
+    console.warn("[MERCHANT_WELCOME_EMAIL_DISABLED] RESEND_API_KEY is not configured.");
+    return { ok: true, simulated: true };
+  }
+
+  const userDisplayName = input.name?.trim() || "there";
+  
+  const planDisplayNames = {
+    STARTER: "Starter",
+    PRO: "Pro",
+    ENTERPRISE: "Enterprise",
+  };
+  
+  const planName = planDisplayNames[input.plan] || "Starter";
+  const isStarter = input.plan === "STARTER";
+
+  const html = `
+    <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" style="max-width:620px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+        <tr>
+          <td style="padding:24px 24px 8px 24px;">
+            <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">Prado Commerce</p>
+            <h1 style="margin:0;font-size:24px;line-height:1.3;color:#0f172a;">Welcome to the ${planName} Plan</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 24px 24px 24px;font-size:15px;line-height:1.6;color:#334155;">
+            <p style="margin:0 0 12px 0;">Hi ${userDisplayName},</p>
+            <p style="margin:0 0 12px 0;">
+              ${
+                isStarter
+                  ? "Welcome to Prado Commerce! Your new account is ready and you are now on the Starter plan. You can start setting up your store right away."
+                  : `Thank you for upgrading to the ${planName} plan! Your subscription is now active, and you have access to all the premium features.`
+              }
+            </p>
+            <p style="margin:0 0 12px 0;">If you have any questions, feel free to reach out to our support team.</p>
+            <p style="margin:0;"><strong>The Prado Commerce Team</strong></p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  return await resend.emails.send({
+    from,
+    to,
+    subject: `Welcome to the Prado Commerce ${planName} Plan`,
+    html,
+  });
+}
