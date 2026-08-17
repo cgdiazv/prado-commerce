@@ -12,6 +12,7 @@ export default async function DashboardPage() {
   let totalOrders = 0;
   let totalProducts = 0;
   let totalStores = 0;
+  let baseCurrency = "USD";
   let dashboardError: string | null =
     user === null
       ? "Could not verify your session. Please sign in again after database connectivity is restored."
@@ -21,12 +22,13 @@ export default async function DashboardPage() {
     try {
     const stores = await prisma.store.findMany({
       where: { ownerUserId: user.id },
-      select: { id: true },
+      select: { id: true, currency: true },
     });
 
     totalStores = stores.length;
 
       if (stores.length > 0) {
+      baseCurrency = stores[0].currency;
       const storeIds = stores.map((s) => s.id);
 
       const products = await prisma.product.findMany({
@@ -53,6 +55,11 @@ export default async function DashboardPage() {
     }
   }
 
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: baseCurrency,
+  });
+
   const summaryCards = [
     {
       label: "Total Stores",
@@ -68,7 +75,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Total Revenue",
-      value: `$${totalRevenue.toFixed(2)}`,
+      value: formatter.format(totalRevenue),
       icon: DollarSign,
       color: "green",
     },
