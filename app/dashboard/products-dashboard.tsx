@@ -527,7 +527,15 @@ export function ProductsDashboard({
                         const thumbnailUrl = product.images[0];
                         const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                         const firstSku = firstVariant?.sku ?? "—";
-                        const firstPrice = firstVariant ? `$${Number(firstVariant.price).toFixed(2)}` : "—";
+                        
+                        const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
+                        const currencyCode = activeStore?.currency || "USD";
+                        const formatter = new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: currencyCode,
+                        });
+                        
+                        const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
                         const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
 
                         return (
@@ -608,7 +616,15 @@ export function ProductsDashboard({
                     const thumbnailUrl = product.images[0];
                     const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                     const firstSku = firstVariant?.sku ?? "—";
-                    const firstPrice = firstVariant ? `$${Number(firstVariant.price).toFixed(2)}` : "—";
+                    
+                    const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
+                    const currencyCode = activeStore?.currency || "USD";
+                    const formatter = new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: currencyCode,
+                    });
+                    
+                    const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
                     const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
 
                     return (

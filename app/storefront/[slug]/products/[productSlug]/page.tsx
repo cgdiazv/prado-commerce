@@ -67,6 +67,11 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
   const primaryVariant = product.variants[0];
 
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: store.currency || "USD",
+  });
+
   return (
     <div className="contents">
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -116,7 +121,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
                 <div>
                   <p className="text-sm font-medium text-slate-500">Starting at</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-900">
-                    {store.currency} {Number(primaryVariant?.price ?? 0).toFixed(2)}
+                    {formatter.format(Number(primaryVariant?.price ?? 0))}
                   </p>
                 </div>
               </div>

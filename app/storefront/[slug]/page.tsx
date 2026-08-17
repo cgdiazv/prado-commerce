@@ -114,6 +114,11 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const uncategorizedProducts = products.filter((product) => !product.category);
   const hasHeroImage = Boolean(store.heroImageUrl);
 
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: store.currency || "USD",
+  });
+
   return (
     <div className="contents">
 
@@ -251,7 +256,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                   <p className="mt-4 text-base font-semibold text-slate-900">{featuredProducts[0].title}</p>
                   <p className="mt-1 text-sm text-slate-600">
                     {featuredProducts[0].variants[0]?.price != null
-                      ? `${store.currency} ${Number(featuredProducts[0].variants[0].price).toFixed(2)}`
+                      ? formatter.format(Number(featuredProducts[0].variants[0].price))
                       : "Select options"}
                   </p>
                 </Link>
@@ -272,7 +277,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                         )}
                         <p className="mt-3 text-sm font-semibold text-slate-900">{product.title}</p>
                         <p className="mt-1 text-xs text-slate-600">
-                          {featuredPrice != null ? `${store.currency} ${Number(featuredPrice).toFixed(2)}` : "Select options"}
+                          {featuredPrice != null ? formatter.format(Number(featuredPrice)) : "Select options"}
                         </p>
                       </Link>
                     );
@@ -300,7 +305,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                         <p className="mt-1 text-sm font-semibold text-slate-900">{product.title}</p>
                       </div>
                       <p className="text-xs font-semibold text-slate-700">
-                        {featuredPrice != null ? `${store.currency} ${Number(featuredPrice).toFixed(2)}` : "Select options"}
+                        {featuredPrice != null ? formatter.format(Number(featuredPrice)) : "Select options"}
                       </p>
                     </Link>
                   );
@@ -324,7 +329,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                       )}
                       <p className="mt-3 text-sm font-semibold text-slate-900">{product.title}</p>
                       <p className="mt-1 text-xs text-slate-600">
-                        {featuredPrice != null ? `${store.currency} ${Number(featuredPrice).toFixed(2)}` : "Select options"}
+                        {featuredPrice != null ? formatter.format(Number(featuredPrice)) : "Select options"}
                       </p>
                     </Link>
                   );
@@ -376,7 +381,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
                     <div className="mt-3 flex items-center justify-between">
                       {price != null ? (
                         <span className="text-sm font-semibold text-slate-700">
-                          {store.currency} {Number(price).toFixed(2)}
+                          {formatter.format(Number(price))}
                         </span>
                       ) : <span className="text-sm text-slate-400">Select options</span>}
                       {variantId ? (

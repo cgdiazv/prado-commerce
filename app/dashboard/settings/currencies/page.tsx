@@ -10,16 +10,60 @@ type CurrencyCode = (typeof availableCurrencies)[number];
 
 export default function CurrenciesPage() {
   const router = useRouter();
+  const [storeId, setStoreId] = useState<string>("");
   const [baseCurrency, setBaseCurrency] = useState<CurrencyCode>("USD");
   const [enabledCurrencies, setEnabledCurrencies] = useState<CurrencyCode[]>(["USD", "EUR"]);
   const [isMounted, setIsMounted] = useState(false);
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    const savedBase = localStorage.getItem("prado_base_currency") as CurrencyCode;
-    if (savedBase && availableCurrencies.includes(savedBase)) {
-      setBaseCurrency(savedBase);
+
+    async function loadStoreCurrency() {
+      try {
+        const response = await fetch("/api/stores", { cache: "no-store" });
+        const payload = (await response.json()) as
+          | Array<{ id: string; currency?: string }>
+          | { error?: string };
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+          }
+
+          const apiError =
+            typeof payload === "object" && payload !== null && "error" in payload
+              ? (payload as { error?: string }).error
+              : null;
+
+          throw new Error(apiError || "Unable to load store settings.");
+        }
+
+        const stores = payload as Array<{ id: string; currency?: string }>;
+        const activeStore = Array.isArray(stores) ? stores[0] : null;
+
+        if (!activeStore?.id) {
+          throw new Error("No store found.");
+        }
+
+        setStoreId(activeStore.id);
+        
+        if (activeStore.currency && availableCurrencies.includes(activeStore.currency as CurrencyCode)) {
+          setBaseCurrency(activeStore.currency as CurrencyCode);
+          // also save it to localStorage for compatibility with anything still relying on it
+          localStorage.setItem("prado_base_currency", activeStore.currency);
+        }
+
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Unable to load currency settings.");
+      }
     }
+
+    void loadStoreCurrency();
+
     const savedEnabled = localStorage.getItem("prado_enabled_currencies");
     if (savedEnabled) {
       try {
@@ -37,11 +81,43 @@ export default function CurrenciesPage() {
     );
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    localStorage.setItem("prado_base_currency", baseCurrency);
-    localStorage.setItem("prado_enabled_currencies", JSON.stringify(enabledCurrencies));
-    router.push("/dashboard/settings");
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      if (!storeId) {
+        throw new Error("No store found.");
+      }
+
+      const response = await fetch(`/api/stores/${storeId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currency: baseCurrency,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to save currency settings.");
+      }
+
+      localStorage.setItem("prado_base_currency", baseCurrency);
+      localStorage.setItem("prado_enabled_currencies", JSON.stringify(enabledCurrencies));
+
+      setSuccess("Currency settings updated successfully.");
+      router.refresh();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save currency settings.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (!isMounted) return null;
@@ -73,6 +149,18 @@ export default function CurrenciesPage() {
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-6">
+          {error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          ) : null}
+
+          {success ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {success}
+            </div>
+          ) : null}
+
           <div>
             <label className="block text-sm font-semibold text-slate-900">Base currency</label>
             <p className="mt-1 text-sm leading-6 text-slate-500">This is the main currency used for pricing and reporting.</p>
@@ -136,12 +224,14 @@ export default function CurrenciesPage() {
           </Link>
           <button
             type="submit"
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            disabled={isSaving || !storeId}
+            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save changes
+            {isSaving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </form>
     </section>
   );
 }
+

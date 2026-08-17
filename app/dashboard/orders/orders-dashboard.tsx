@@ -518,7 +518,13 @@ export function OrdersDashboard({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {paginatedOrders.map((order) => (
+                  {paginatedOrders.map((order) => {
+                    const formatter = new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: order.currency || "USD",
+                    });
+                    
+                    return (
                     <tr
                       key={order.id}
                       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
@@ -538,12 +544,13 @@ export function OrdersDashboard({
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.status}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.paymentStatus}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.currency} {order.total}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{formatter.format(Number(order.total))}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-600">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
                 </table>
               </div>
