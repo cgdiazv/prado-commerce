@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import { corsJson, withCorsHeaders } from "@/lib/api-cors";
+
+export async function OPTIONS() {
+  return withCorsHeaders(new Response(null, { status: 204 }));
+}
 
 type RouteContext = {
   params: Promise<{
@@ -48,26 +53,59 @@ function isPrismaError(error: unknown, code: string) {
   );
 }
 
+async function verifyCustomerAccess(request: Request, customerStoreId: string, storeOwnerUserId: string | null) {
+  // 1. Secret Key or Header Key
+  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+  const secretKeyHeader = request.headers.get("x-secret-key") || request.headers.get("x-api-key");
+  let token: string | null = null;
+
+  if (authHeader?.startsWith("Bearer ") || authHeader?.startsWith("bearer ")) {
+    token = authHeader.slice(7).trim();
+  } else if (secretKeyHeader) {
+    token = secretKeyHeader.trim();
+  }
+
+  if (token) {
+    const apiKey = await prisma.apiKey.findFirst({
+      where: { key: token, type: "SECRET" },
+      select: { id: true, storeId: true, expiresAt: true },
+    });
+
+    if (apiKey && apiKey.storeId === customerStoreId && (!apiKey.expiresAt || apiKey.expiresAt > new Date())) {
+      prisma.apiKey.update({ where: { id: apiKey.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
+      return true;
+    }
+  }
+
+  // 2. Merchant Session
+  const user = await getCurrentUserFromRequest(request);
+  if (user && storeOwnerUserId === user.id) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function PATCH(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
-    const user = await getCurrentUserFromRequest(req);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const customer = await prisma.customer.findUnique({
       where: { id },
       include: {
         store: {
-          select: { ownerUserId: true },
+          select: { id: true, ownerUserId: true },
         },
       },
     });
 
-    if (!customer || customer.store.ownerUserId !== user.id) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!customer) {
+      return corsJson({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const hasAccess = await verifyCustomerAccess(req, customer.storeId, customer.store.ownerUserId);
+    if (!hasAccess) {
+      return corsJson({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -79,7 +117,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     const billingAddress = normalizeAddress(body?.billingAddress as AddressInput | undefined);
 
     if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return corsJson({ error: "Email is required" }, { status: 400 });
     }
 
     const updatedCustomer = await prisma.customer.update({
@@ -94,7 +132,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       },
     });
 
-    return NextResponse.json({
+    return corsJson({
       ok: true,
       customer: {
         id: updatedCustomer.id,
@@ -106,41 +144,42 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     });
   } catch (error) {
     console.error("[CUSTOMER_PATCH_ERROR]", error);
-    return NextResponse.json({ error: "Failed to update customer" }, { status: 500 });
+    return corsJson({ error: "Failed to update customer" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
-    const user = await getCurrentUserFromRequest(req);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const customer = await prisma.customer.findUnique({
       where: { id },
       include: {
         store: {
-          select: { ownerUserId: true },
+          select: { id: true, ownerUserId: true },
         },
       },
     });
 
-    if (!customer || customer.store.ownerUserId !== user.id) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!customer) {
+      return corsJson({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const hasAccess = await verifyCustomerAccess(req, customer.storeId, customer.store.ownerUserId);
+    if (!hasAccess) {
+      return corsJson({ error: "Unauthorized" }, { status: 401 });
     }
 
     await prisma.customer.delete({ where: { id } });
 
-    return NextResponse.json({ ok: true });
+    return corsJson({ ok: true });
   } catch (error: unknown) {
     if (isPrismaError(error, "P2025")) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      return corsJson({ error: "Customer not found" }, { status: 404 });
     }
 
     console.error("[CUSTOMER_DELETE_ERROR]", error);
-    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
+    return corsJson({ error: "Failed to delete customer" }, { status: 500 });
   }
 }
+
