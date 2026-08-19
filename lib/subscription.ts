@@ -4,6 +4,7 @@ type PlanLimits = {
   maxStores: number;
   maxProductsPerStore: number;
   allowCustomDomains: boolean;
+  allowShipStation: boolean;
   apiRateLimitPerMinute: number;
   platformFeeRate: number;
 };
@@ -13,6 +14,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     maxStores: 1,
     maxProductsPerStore: 50,
     allowCustomDomains: false,
+    allowShipStation: false,
     apiRateLimitPerMinute: 60,
     platformFeeRate: 0.02,
   },
@@ -20,6 +22,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     maxStores: 5,
     maxProductsPerStore: Number.POSITIVE_INFINITY,
     allowCustomDomains: true,
+    allowShipStation: false,
     apiRateLimitPerMinute: 1000,
     platformFeeRate: 0.005,
   },
@@ -27,6 +30,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     maxStores: Number.POSITIVE_INFINITY,
     maxProductsPerStore: Number.POSITIVE_INFINITY,
     allowCustomDomains: true,
+    allowShipStation: true,
     apiRateLimitPerMinute: Number.POSITIVE_INFINITY,
     platformFeeRate: 0,
   },

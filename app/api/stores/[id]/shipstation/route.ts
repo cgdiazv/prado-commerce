@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decryptStoredSecret, encryptStoredSecret, hashSecret } from "@/lib/credentials";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import {
   subscribeShipStationWebhook,
   testShipStationConnection,
@@ -40,6 +41,11 @@ async function getOwnedStore(request: Request, storeId: string) {
       shipStationApiKeyEncrypted: true,
       shipStationApiSecretEncrypted: true,
       shipStationWebhookId: true,
+      ownerUser: {
+        select: {
+          plan: true,
+        },
+      },
     },
   });
 }
@@ -49,9 +55,13 @@ export async function GET(request: Request, { params }: RouteContext) {
   const store = await getOwnedStore(request, id);
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
+  const ownerPlan = getPlanOrDefault(store.ownerUser?.plan);
+  const limits = getPlanLimits(ownerPlan);
+
   return NextResponse.json({
     connected: Boolean(store.shipStationApiKeyEncrypted && store.shipStationApiSecretEncrypted),
     webhookConfigured: Boolean(store.shipStationWebhookId),
+    allowedByPlan: limits.allowShipStation,
   });
 }
 
@@ -60,6 +70,16 @@ export async function POST(request: Request, { params }: RouteContext) {
     const { id } = await params;
     const store = await getOwnedStore(request, id);
     if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+
+    const ownerPlan = getPlanOrDefault(store.ownerUser?.plan);
+    const limits = getPlanLimits(ownerPlan);
+
+    if (!limits.allowShipStation) {
+      return NextResponse.json(
+        { error: "ShipStation integration requires a Prado Commerce Enterprise subscription." },
+        { status: 403 },
+      );
+    }
 
     const body = await request.json() as { apiKey?: string; apiSecret?: string };
     const apiKey = String(body.apiKey ?? "").trim();

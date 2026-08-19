@@ -31,6 +31,7 @@ export default function ShippingPage() {
   const [storeId, setStoreId] = useState("");
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [shipStationConnected, setShipStationConnected] = useState(false);
+  const [shipStationAllowedByPlan, setShipStationAllowedByPlan] = useState(true);
   const [originName, setOriginName] = useState("");
   const [originAddress, setOriginAddress] = useState("");
   const [originPhone, setOriginPhone] = useState("");
@@ -101,8 +102,9 @@ export default function ShippingPage() {
           if (firstStore?.id) {
             const connectionResponse = await fetch(`/api/stores/${firstStore.id}/shipstation`, { cache: "no-store" });
             if (connectionResponse.ok) {
-              const connection = await connectionResponse.json() as { connected?: boolean };
+              const connection = await connectionResponse.json() as { connected?: boolean; allowedByPlan?: boolean };
               setShipStationConnected(Boolean(connection.connected));
+              setShipStationAllowedByPlan(connection.allowedByPlan !== false);
             }
           }
 
@@ -438,61 +440,79 @@ export default function ShippingPage() {
                   {shipStationConnected ? "Connected" : "Not connected"}
                 </span>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (shipStationConnected) void disconnectShipStation();
-                    else setShowShipStationConfig(true);
-                  }}
-                  disabled={isUpdatingShipStation}
-                  className="rounded-full bg-[#00A9E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isUpdatingShipStation ? "Working..." : shipStationConnected ? "Disconnect" : "Connect"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowShipStationConfig((current) => !current)}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Configure
-                </button>
-              </div>
-              {showShipStationConfig ? (
-                <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2">
-                      <label className="flex flex-col gap-2">
-                        <span className="text-sm font-medium text-slate-700">API Key</span>
-                        <input
-                          value={shipStationApiKey}
-                          onChange={(event) => setShipStationApiKey(event.target.value)}
-                          autoComplete="off"
-                          placeholder={shipStationConnected ? "Enter a replacement key" : "ShipStation API Key"}
-                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                        />
-                      </label>
-                      <label className="flex flex-col gap-2">
-                        <span className="text-sm font-medium text-slate-700">API Secret</span>
-                        <input
-                          type="password"
-                          value={shipStationApiSecret}
-                          onChange={(event) => setShipStationApiSecret(event.target.value)}
-                          autoComplete="new-password"
-                          placeholder={shipStationConnected ? "Enter a replacement secret" : "ShipStation API Secret"}
-                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                        />
-                      </label>
-                      <div className="flex justify-end sm:col-span-2">
-                        <button
-                          type="button"
-                          onClick={() => void connectShipStation()}
-                          disabled={isUpdatingShipStation || !shipStationApiKey.trim() || !shipStationApiSecret.trim()}
-                          className="rounded-full bg-[#00A9E0] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isUpdatingShipStation ? "Testing..." : shipStationConnected ? "Replace credentials" : "Save credentials"}
-                        </button>
-                      </div>
+              {!shipStationAllowedByPlan ? (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-sm text-amber-900">
+                  <p className="font-medium">
+                    ShipStation carrier integration requires a Prado Commerce <strong className="font-semibold text-slate-900">Enterprise</strong> subscription.
+                  </p>
+                  <Link
+                    href="/pricing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Upgrade plan
+                  </Link>
                 </div>
-              ) : null}
+              ) : (
+                <>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (shipStationConnected) void disconnectShipStation();
+                        else setShowShipStationConfig(true);
+                      }}
+                      disabled={isUpdatingShipStation}
+                      className="rounded-full bg-[#00A9E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isUpdatingShipStation ? "Working..." : shipStationConnected ? "Disconnect" : "Connect"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowShipStationConfig((current) => !current)}
+                      className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Configure
+                    </button>
+                  </div>
+                  {showShipStationConfig ? (
+                    <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2">
+                          <label className="flex flex-col gap-2">
+                            <span className="text-sm font-medium text-slate-700">API Key</span>
+                            <input
+                              value={shipStationApiKey}
+                              onChange={(event) => setShipStationApiKey(event.target.value)}
+                              autoComplete="off"
+                              placeholder={shipStationConnected ? "Enter a replacement key" : "ShipStation API Key"}
+                              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-2">
+                            <span className="text-sm font-medium text-slate-700">API Secret</span>
+                            <input
+                              type="password"
+                              value={shipStationApiSecret}
+                              onChange={(event) => setShipStationApiSecret(event.target.value)}
+                              autoComplete="new-password"
+                              placeholder={shipStationConnected ? "Enter a replacement secret" : "ShipStation API Secret"}
+                              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                            />
+                          </label>
+                          <div className="flex justify-end sm:col-span-2">
+                            <button
+                              type="button"
+                              onClick={() => void connectShipStation()}
+                              disabled={isUpdatingShipStation || !shipStationApiKey.trim() || !shipStationApiSecret.trim()}
+                              className="rounded-full bg-[#00A9E0] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0093c2] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isUpdatingShipStation ? "Testing..." : shipStationConnected ? "Replace credentials" : "Save credentials"}
+                            </button>
+                          </div>
+                    </div>
+                  ) : null}
+                </>
+              )}
             </div>
           </article>
         </div>

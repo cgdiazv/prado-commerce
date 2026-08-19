@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { decryptStoredSecret } from "@/lib/credentials";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 const SHIPSTATION_API_URL = "https://ssapi.shipstation.com";
 
@@ -146,6 +147,11 @@ export async function syncPaidOrderToShipStation(orderId: string) {
         select: {
           shipStationApiKeyEncrypted: true,
           shipStationApiSecretEncrypted: true,
+          ownerUser: {
+            select: {
+              plan: true,
+            },
+          },
         },
       },
       customer: {
@@ -165,6 +171,10 @@ export async function syncPaidOrderToShipStation(orderId: string) {
   });
 
   if (!order || order.paymentStatus !== "PAID") return;
+
+  const ownerPlan = getPlanOrDefault(order.store.ownerUser?.plan);
+  const limits = getPlanLimits(ownerPlan);
+  if (!limits.allowShipStation) return;
 
   const encryptedKey = order.store.shipStationApiKeyEncrypted;
   const encryptedSecret = order.store.shipStationApiSecretEncrypted;
