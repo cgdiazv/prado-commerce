@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
+import { useState, useEffect, Suspense, type MouseEvent } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 
@@ -106,7 +107,8 @@ const comparisonRows: Array<{ label: string; values: [string, string, string] }>
   },
 ];
 
-export default function PricingPage() {
+function PricingPageContent() {
+  const searchParams = useSearchParams();
   const [billingMode, setBillingMode] = useState<BillingMode>("monthly");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -114,15 +116,17 @@ export default function PricingPage() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement>, tier: Tier) => {
+  const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement> | null, tier: Tier, forcedInterval?: "month" | "year") => {
     if (tier.name === "Starter") {
       return;
     }
 
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
 
     const plan = tier.name.toUpperCase() as keyof typeof STRIPE_PRICE_MAP;
-    const interval = billingMode === "annual" ? "year" : "month";
+    const interval = forcedInterval || (billingMode === "annual" ? "year" : "month");
 
     const response = await fetch("/api/billing/checkout", {
       method: "POST",
@@ -131,6 +135,12 @@ export default function PricingPage() {
     });
 
     const data = await response.json();
+
+    if (response.status === 401 || data?.error === "Unauthorized") {
+      const nextUrl = `/pricing?plan=${tier.name}&interval=${interval}&autoCheckout=true`;
+      window.location.assign(`/login?next=${encodeURIComponent(nextUrl)}`);
+      return;
+    }
 
     if (data?.url) {
       window.location.assign(data.url);
@@ -143,6 +153,21 @@ export default function PricingPage() {
       window.location.assign(`/checkout?${query.toString()}`);
     }
   };
+
+  useEffect(() => {
+    const autoCheckout = searchParams.get("autoCheckout");
+    const planParam = searchParams.get("plan");
+    const intervalParam = searchParams.get("interval") as "month" | "year" | null;
+
+    if (autoCheckout === "true" && planParam) {
+      const targetTier = tiers.find(
+        (t) => t.name.toLowerCase() === planParam.toLowerCase(),
+      );
+      if (targetTier) {
+        void handleUpgrade(null, targetTier, intervalParam || "month");
+      }
+    }
+  }, [searchParams]);
 
   return (
     <main data-route-kind="pricing" className="relative isolate min-h-screen overflow-hidden bg-[#0c1624] text-slate-100">
@@ -381,5 +406,19 @@ export default function PricingPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#0c1624] text-slate-100">
+          <p className="text-sm text-slate-300">Loading pricing...</p>
+        </main>
+      }
+    >
+      <PricingPageContent />
+    </Suspense>
   );
 }
