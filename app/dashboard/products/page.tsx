@@ -61,21 +61,29 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         })
       : [];
 
-    const serializedProducts = products.map((product) => ({
-      ...product,
-      createdAt: product.createdAt.toISOString(),
-      updatedAt: product.updatedAt.toISOString(),
-      variants: product.variants.map((variant) => ({
-        ...variant,
-        price: variant.price.toString(),
-        compareAtPrice: variant.compareAtPrice?.toString() ?? null,
-      })),
-      categoryName: product.category?.name ?? null,
-    }));
+    const serializedProducts = JSON.parse(
+      JSON.stringify(
+        products.map((product) => ({
+          ...product,
+          createdAt: product.createdAt.toISOString(),
+          updatedAt: product.updatedAt.toISOString(),
+          variants: product.variants.map((variant) => ({
+            ...variant,
+            price: variant.price.toString(),
+            compareAtPrice: variant.compareAtPrice?.toString() ?? null,
+            createdAt: variant.createdAt.toISOString(),
+            updatedAt: variant.updatedAt.toISOString(),
+          })),
+          categoryName: product.category?.name ?? null,
+        }))
+      )
+    );
+
+    const serializedStores = JSON.parse(JSON.stringify(stores));
 
     return (
       <ProductsDashboard
-        initialStores={stores}
+        initialStores={serializedStores}
         initialProducts={serializedProducts}
         selectedStoreId={selectedStoreId}
         currentPlan={user.plan}

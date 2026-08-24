@@ -9,6 +9,47 @@ type OrderPageProps = {
   }>;
 };
 
+type OrderRecord = {
+  id: string;
+  orderNumber: number;
+  customerEmail: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
+  paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+  fulfillmentStatus: "UNFULFILLED" | "SHIPPED";
+  trackingNumber: string | null;
+  trackingCarrier: string | null;
+  trackingUrl: string | null;
+  shippedAt: Date | null;
+  shipStationOrderId: string | null;
+  shipStationSyncedAt: Date | null;
+  shipStationSyncError: string | null;
+  subtotal: { toString(): string };
+  tax: { toString(): string };
+  shipping: { toString(): string };
+  total: { toString(): string };
+  currency: string;
+  shippingAddress: unknown;
+  billingAddress: unknown;
+  createdAt: Date;
+  items: Array<{
+    id: string;
+    title: string;
+    price: { toString(): string };
+    quantity: number;
+  }>;
+  store: {
+    name: string;
+    currency: string;
+    logoUrl?: string | null;
+    senderEmail?: string | null;
+    shippingOrigin?: unknown;
+    customDomain?: string | null;
+    slug?: string;
+    invoiceFooterText?: string | null;
+    invoicePrefix?: string | null;
+  };
+};
+
 export default async function OrderDetailPage({ params }: OrderPageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
@@ -23,7 +64,7 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
     );
   }
 
-  const order = await prisma.order.findFirst({
+  const order = (await (prisma.order.findFirst as any)({
     where: {
       id,
       store: {
@@ -32,52 +73,56 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
     },
     include: {
       items: true,
-      store: {
-        select: {
-          name: true,
-          currency: true,
-        },
-      },
+      store: true,
     },
-  });
+  })) as OrderRecord | null;
 
   if (!order) {
     notFound();
   }
 
-  const serializedOrder = {
-    id: order.id,
-    orderNumber: order.orderNumber,
-    customerEmail: order.customerEmail,
-    status: order.status,
-    paymentStatus: order.paymentStatus,
-    fulfillmentStatus: order.fulfillmentStatus,
-    trackingNumber: order.trackingNumber,
-    trackingCarrier: order.trackingCarrier,
-    trackingUrl: order.trackingUrl,
-    shippedAt: order.shippedAt?.toISOString() ?? null,
-    shipStationOrderId: order.shipStationOrderId,
-    shipStationSyncedAt: order.shipStationSyncedAt?.toISOString() ?? null,
-    shipStationSyncError: order.shipStationSyncError,
-    subtotal: order.subtotal.toString(),
-    tax: order.tax.toString(),
-    shipping: order.shipping.toString(),
-    total: order.total.toString(),
-    currency: order.currency,
-    shippingAddress: order.shippingAddress,
-    billingAddress: order.billingAddress,
-    createdAt: order.createdAt.toISOString(),
-    items: order.items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      price: item.price.toString(),
-      quantity: item.quantity,
-    })),
-    store: {
-      name: order.store.name,
-      currency: order.store.currency,
-    },
-  };
+  const serializedOrder = JSON.parse(
+    JSON.stringify({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerEmail: order.customerEmail,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      fulfillmentStatus: order.fulfillmentStatus,
+      trackingNumber: order.trackingNumber,
+      trackingCarrier: order.trackingCarrier,
+      trackingUrl: order.trackingUrl,
+      shippedAt: order.shippedAt?.toISOString() ?? null,
+      shipStationOrderId: order.shipStationOrderId,
+      shipStationSyncedAt: order.shipStationSyncedAt?.toISOString() ?? null,
+      shipStationSyncError: order.shipStationSyncError,
+      subtotal: order.subtotal.toString(),
+      tax: order.tax.toString(),
+      shipping: order.shipping.toString(),
+      total: order.total.toString(),
+      currency: order.currency,
+      shippingAddress: order.shippingAddress,
+      billingAddress: order.billingAddress,
+      createdAt: order.createdAt.toISOString(),
+      items: order.items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price.toString(),
+        quantity: item.quantity,
+      })),
+      store: {
+        name: order.store.name,
+        currency: order.store.currency,
+        logoUrl: order.store.logoUrl ?? null,
+        senderEmail: order.store.senderEmail ?? null,
+        shippingOrigin: order.store.shippingOrigin ?? null,
+        customDomain: order.store.customDomain ?? null,
+        slug: order.store.slug ?? "",
+        invoiceFooterText: order.store.invoiceFooterText ?? null,
+        invoicePrefix: order.store.invoicePrefix ?? "INV-",
+      },
+    })
+  );
 
   return <OrderDetailClient initialOrder={serializedOrder} />;
 }

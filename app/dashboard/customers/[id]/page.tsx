@@ -46,16 +46,20 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
     notFound();
   }
 
-  const serializedCustomer = {
-    id: customer.id,
-    storeId: customer.storeId,
-    email: customer.email,
-    firstName: customer.firstName,
-    lastName: customer.lastName,
-    phone: customer.phone,
-    shippingAddress: customer.shippingAddress,
-    billingAddress: customer.billingAddress,
-  };
+  const serializedCustomer = JSON.parse(
+    JSON.stringify({
+      id: customer.id,
+      storeId: customer.storeId,
+      email: customer.email,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      shippingAddress: customer.shippingAddress,
+      billingAddress: customer.billingAddress,
+    })
+  );
 
-  return <EditCustomerForm stores={stores} customer={serializedCustomer} />;
+  const serializedStores = JSON.parse(JSON.stringify(stores));
+
+  return <EditCustomerForm stores={serializedStores} customer={serializedCustomer} />;
 }

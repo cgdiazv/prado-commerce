@@ -66,14 +66,20 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         })
       : [];
 
-    const serializedCustomers = customers.map((customer) => ({
-      ...customer,
-      createdAt: customer.createdAt.toISOString(),
-    }));
+    const serializedCustomers = JSON.parse(
+      JSON.stringify(
+        customers.map((customer) => ({
+          ...customer,
+          createdAt: customer.createdAt.toISOString(),
+        }))
+      )
+    );
+
+    const serializedStores = JSON.parse(JSON.stringify(stores));
 
     return (
       <CustomersDashboard
-        initialStores={stores}
+        initialStores={serializedStores}
         initialCustomers={serializedCustomers as CustomerRecord[]}
         selectedStoreId={selectedStoreId}
       />

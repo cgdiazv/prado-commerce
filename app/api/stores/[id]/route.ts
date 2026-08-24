@@ -103,6 +103,10 @@ export async function GET(_req: Request, { params }: RouteContext) {
           senderEmail: true,
           replyToEmail: true,
           shippingZones: true,
+          shippingOrigin: true,
+          invoiceFooterText: true,
+          invoicePrefix: true,
+          nextInvoiceNumber: true,
           createdAt: true,
           updatedAt: true,
           apiKeys: {
@@ -270,6 +274,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderEmail,
       replyToEmail,
       shippingZones,
+      shippingOrigin,
+      invoiceFooterText,
+      invoicePrefix,
+      nextInvoiceNumber,
     } = body as {
       name?: string;
       slug?: string;
@@ -297,6 +305,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderEmail?: string | null;
       replyToEmail?: string | null;
       shippingZones?: unknown;
+      shippingOrigin?: unknown;
+      invoiceFooterText?: string | null;
+      invoicePrefix?: string | null;
+      nextInvoiceNumber?: number;
     };
 
     const updates: {
@@ -326,6 +338,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       senderEmail?: string | null;
       replyToEmail?: string | null;
       shippingZones?: Prisma.InputJsonValue;
+      shippingOrigin?: Prisma.InputJsonValue;
+      invoiceFooterText?: string | null;
+      invoicePrefix?: string | null;
+      nextInvoiceNumber?: number;
     } = {};
 
     if (typeof name === "string" && name.trim()) {
@@ -508,6 +524,22 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.shippingZones = sanitizeShippingZones(shippingZones);
     }
 
+    if (shippingOrigin !== undefined) {
+      updates.shippingOrigin = shippingOrigin && typeof shippingOrigin === "object" ? (shippingOrigin as Prisma.InputJsonValue) : undefined;
+    }
+
+    if (invoiceFooterText !== undefined) {
+      updates.invoiceFooterText = typeof invoiceFooterText === "string" && invoiceFooterText.trim() ? invoiceFooterText.trim() : null;
+    }
+
+    if (invoicePrefix !== undefined) {
+      updates.invoicePrefix = typeof invoicePrefix === "string" && invoicePrefix.trim() ? invoicePrefix.trim() : null;
+    }
+
+    if (typeof nextInvoiceNumber === "number" && Number.isInteger(nextInvoiceNumber) && nextInvoiceNumber >= 1) {
+      updates.nextInvoiceNumber = nextInvoiceNumber;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "At least one field must be provided for update" },
@@ -556,6 +588,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         senderEmail: true,
         replyToEmail: true,
         shippingZones: true,
+        shippingOrigin: true,
+        invoiceFooterText: true,
+        invoicePrefix: true,
+        nextInvoiceNumber: true,
         createdAt: true,
         updatedAt: true,
       },

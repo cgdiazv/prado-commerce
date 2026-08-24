@@ -56,21 +56,28 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
     select: { id: true, name: true, storeId: true },
   });
 
-  const serializedProduct = {
-    ...product,
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
-    variants: product.variants.map((variant) => ({
-      ...variant,
-      price: variant.price.toString(),
-      compareAtPrice: variant.compareAtPrice?.toString() ?? null,
-    })),
-  };
+  const serializedProduct = JSON.parse(
+    JSON.stringify({
+      ...product,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        price: variant.price.toString(),
+        compareAtPrice: variant.compareAtPrice?.toString() ?? null,
+        createdAt: variant.createdAt.toISOString(),
+        updatedAt: variant.updatedAt.toISOString(),
+      })),
+    })
+  );
+
+  const serializedStores = JSON.parse(JSON.stringify(stores));
+  const serializedCategories = JSON.parse(JSON.stringify(categories));
 
   return (
     <ProductForm
-      stores={stores}
-      categories={categories}
+      stores={serializedStores}
+      categories={serializedCategories}
       initialProduct={serializedProduct}
       selectedStoreId={product.storeId}
     />

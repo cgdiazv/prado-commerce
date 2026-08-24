@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer } from "lucide-react";
 
 type Address = {
   firstName?: string;
@@ -20,6 +20,17 @@ function parseAddress(value: unknown): Address {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Exclude<Address, null>
     : null;
+}
+
+function parseOriginContact(origin: unknown) {
+  let address = "";
+  let phone = "";
+  if (origin && typeof origin === "object") {
+    const o = origin as Record<string, unknown>;
+    if (typeof o.address === "string") address = o.address;
+    if (typeof o.phone === "string") phone = o.phone;
+  }
+  return { address, phone };
 }
 
 type OrderItem = {
@@ -55,6 +66,13 @@ type Order = {
   store: {
     name: string;
     currency: string;
+    logoUrl?: string | null;
+    senderEmail?: string | null;
+    shippingOrigin?: unknown;
+    customDomain?: string | null;
+    slug?: string;
+    invoiceFooterText?: string | null;
+    invoicePrefix?: string | null;
   };
 };
 
@@ -133,36 +151,50 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
     }
   }
 
+  const storeContact = parseOriginContact(order.store.shippingOrigin);
+  const storeDomainLabel = order.store.customDomain || (order.store.slug ? `${order.store.slug}.pradocommerce.com` : "");
+
   return (
-    <section className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
-        <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Process Order
-          </p>
-          <div className="mt-2 flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-              Order #{order.orderNumber}
-            </h1>
-            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[order.status]}`}>
-              {order.status}
-            </span>
-            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${paymentStatusColors[order.paymentStatus]}`}>
-              {order.paymentStatus}
-            </span>
+    <>
+      <section className="min-w-0 space-y-6 print:hidden">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
+          <div>
+            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Process Order
+            </p>
+            <div className="mt-2 flex items-center gap-3">
+              <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                Order #{(order.store.invoicePrefix || "INV-").trim()}{order.orderNumber}
+              </h1>
+              <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[order.status]}`}>
+                {order.status}
+              </span>
+              <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${paymentStatusColors[order.paymentStatus]}`}>
+                {order.paymentStatus}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              Placed on {new Date(order.createdAt).toLocaleString()} at {order.store.name}
+            </p>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            Placed on {new Date(order.createdAt).toLocaleString()} at {order.store.name}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              <Printer className="h-4 w-4 text-slate-600" />
+              Print Invoice
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Back
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 self-start sm:self-center"
-        >
-          Back
-        </button>
-      </div>
 
       {saveStatus && (
         <div className={`rounded-xl border px-4 py-3 text-sm ${saveStatus.includes("success") ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>
@@ -406,5 +438,155 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         </div>
       </div>
     </section>
+
+    {/* Printable Invoice Document (Visible only during print) */}
+    <div className="hidden print:block font-sans text-slate-900 bg-white print:p-12 print:max-w-none print:w-full">
+      {/* Invoice Header */}
+      <div className="flex items-start justify-between border-b border-slate-300 pb-6">
+        <div>
+          {order.store.logoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={order.store.logoUrl} alt={order.store.name} className="h-12 w-auto max-w-[200px] object-contain mb-2" />
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950">{order.store.name}</h1>
+          )}
+          {storeContact.address && <p className="text-xs text-slate-600 whitespace-pre-line mt-1">{storeContact.address}</p>}
+          {order.store.senderEmail && <p className="text-xs text-slate-600 mt-0.5">Email: {order.store.senderEmail}</p>}
+          {storeContact.phone && <p className="text-xs text-slate-600 mt-0.5">Phone: {storeContact.phone}</p>}
+          {storeDomainLabel && <p className="text-xs text-slate-500 mt-0.5">https://{storeDomainLabel}</p>}
+        </div>
+        <div className="text-right">
+          <h2 className="text-2xl font-extrabold tracking-wider uppercase text-slate-900">INVOICE</h2>
+          <p className="mt-1 text-sm font-semibold text-slate-700">#{(order.store.invoicePrefix || "INV-").trim()}{order.orderNumber}</p>
+          <p className="mt-1 text-xs text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
+          <div className="mt-2 flex flex-col items-end gap-1 text-xs font-semibold">
+            <span className="inline-block rounded bg-slate-100 px-2 py-0.5 border border-slate-300">
+              Payment: {order.paymentStatus}
+            </span>
+            <span className="inline-block rounded bg-slate-100 px-2 py-0.5 border border-slate-300">
+              Fulfillment: {order.fulfillmentStatus}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Addresses */}
+      <div className="mt-6 grid grid-cols-2 gap-6 border-b border-slate-200 pb-6">
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Billed To</h3>
+          {parsedBilling && (parsedBilling.line1 || parsedBilling.city) ? (
+            <div className="text-sm text-slate-800 space-y-0.5">
+              <p className="font-semibold text-slate-950">
+                {[parsedBilling.firstName, parsedBilling.lastName].filter(Boolean).join(" ") || "Customer"}
+              </p>
+              <p>{parsedBilling.line1}</p>
+              {parsedBilling.line2 && <p>{parsedBilling.line2}</p>}
+              <p>{[parsedBilling.city, parsedBilling.state, parsedBilling.postalCode].filter(Boolean).join(", ")}</p>
+              <p>{parsedBilling.country}</p>
+              <p className="text-xs text-slate-500 mt-1">{order.customerEmail}</p>
+            </div>
+          ) : (
+            <div className="text-sm text-slate-800">
+              <p className="font-semibold text-slate-950">{order.customerEmail}</p>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Shipped To</h3>
+          {parsedShipping && (parsedShipping.line1 || parsedShipping.city) ? (
+            <div className="text-sm text-slate-800 space-y-0.5">
+              <p className="font-semibold text-slate-950">
+                {[parsedShipping.firstName, parsedShipping.lastName].filter(Boolean).join(" ") || "Customer"}
+              </p>
+              <p>{parsedShipping.line1}</p>
+              {parsedShipping.line2 && <p>{parsedShipping.line2}</p>}
+              <p>{[parsedShipping.city, parsedShipping.state, parsedShipping.postalCode].filter(Boolean).join(", ")}</p>
+              <p>{parsedShipping.country}</p>
+              {parsedShipping.phone && <p className="text-xs text-slate-500 mt-1">Phone: {parsedShipping.phone}</p>}
+            </div>
+          ) : (
+            <div className="text-sm text-slate-500 italic">Same as billing / Digital fulfillment</div>
+          )}
+        </div>
+      </div>
+
+      {/* Itemized Table */}
+      <div className="mt-6">
+        <table className="w-full text-left text-sm divide-y divide-slate-300">
+          <thead>
+            <tr className="border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider">
+              <th className="py-2.5 px-3">Item Description</th>
+              <th className="py-2.5 px-3 text-center">Qty</th>
+              <th className="py-2.5 px-3 text-right">Unit Price</th>
+              <th className="py-2.5 px-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {order.items.map((item) => (
+              <tr key={item.id}>
+                <td className="py-3 px-3 font-medium text-slate-900">{item.title}</td>
+                <td className="py-3 px-3 text-center text-slate-700">{item.quantity}</td>
+                <td className="py-3 px-3 text-right text-slate-700">{formatter.format(Number(item.price))}</td>
+                <td className="py-3 px-3 text-right font-semibold text-slate-900">
+                  {formatter.format(Number(item.price) * item.quantity)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Financial Totals */}
+      <div className="mt-6 flex justify-end border-t border-slate-300 pt-4">
+        <div className="w-64 space-y-2 text-sm text-slate-700">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span className="font-medium text-slate-900">{formatter.format(Number(order.subtotal))}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Shipping:</span>
+            <span className="font-medium text-slate-900">{formatter.format(Number(order.shipping))}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Tax:</span>
+            <span className="font-medium text-slate-900">{formatter.format(Number(order.tax))}</span>
+          </div>
+          <div className="flex justify-between border-t border-slate-400 pt-2 text-base font-bold text-slate-950">
+            <span>Total Paid:</span>
+            <span>{formatter.format(Number(order.total))}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
+        {order.store.invoiceFooterText ? (
+          <p className="whitespace-pre-line font-medium text-slate-700">{order.store.invoiceFooterText}</p>
+        ) : (
+          <p className="font-medium text-slate-700">Thank you for shopping with {order.store.name}!</p>
+        )}
+        <p className="mt-1">If you have any questions about this invoice, please contact {order.store.senderEmail || "customer support"}.</p>
+      </div>
+    </div>
+
+    {/* Print Page Styles - @page margin: 0 removes browser native headers (timestamp, title) & footers (URL) */}
+    <style dangerouslySetInnerHTML={{ __html: `
+      @media print {
+        @page {
+          margin: 0;
+          size: auto;
+        }
+        html, body {
+          background-color: #ffffff !important;
+          color: #0f172a !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    ` }} />
+    </>
   );
 }

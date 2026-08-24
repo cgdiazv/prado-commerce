@@ -2,132 +2,65 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { buildEmailBrandingStyles, normalizeMainColor } from "@/lib/branding";
+import { useEffect, useState } from "react";
 
-const STORE_PROFILE_CONTACT_KEY = "prado_store_profile_contact";
+const MERCHANT_PROFILE_CACHE_KEY = "prado_merchant_profile_contact";
 
 export default function StoreProfilePage() {
   const router = useRouter();
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const [storeId, setStoreId] = useState<string>("");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [storeMainColor, setStoreMainColor] = useState("#0f172a");
-  const [storeDisplayName, setStoreDisplayName] = useState("");
-  const [storeAddress, setStoreAddress] = useState("");
+  const [merchantName, setMerchantName] = useState("");
+  const [company, setCompany] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [addressType, setAddressType] = useState("Choose address type");
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  const MAX_BYTES = 5 * 1024 * 1024;
-  const emailBranding = buildEmailBrandingStyles(storeMainColor);
-
   useEffect(() => {
-    async function loadStoreProfile() {
+    async function loadMerchantProfile() {
       try {
-        const response = await fetch("/api/stores", { cache: "no-store" });
-        const payload = (await response.json()) as
-          | Array<{ id: string; name?: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>
-          | { error?: string };
+        setIsLoading(true);
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = await response.json();
 
         if (!response.ok) {
           if (response.status === 401) {
             throw new Error("Your session has expired. Please sign in again.");
           }
-
-          const apiError =
-            typeof payload === "object" && payload !== null && "error" in payload
-              ? (payload as { error?: string }).error
-              : null;
-
-          throw new Error(apiError || "Unable to load store profile settings.");
+          throw new Error(data.error || "Unable to load merchant profile.");
         }
 
-        const stores = payload as Array<{ id: string; name?: string; mainColor?: string; logoUrl?: string | null; phone?: string | null }>;
-        const activeStore = Array.isArray(stores) ? stores[0] : null;
+        setMerchantName(data.name || "");
+        setCompany(data.company || "");
+        setEmail(data.email || "");
+        setPhone(data.phone ? data.phone.replace(/\D/g, "") : "");
+        setAddress(data.address || "");
+        setAddressType(data.addressType || "Choose address type");
 
-        if (!activeStore?.id) {
-          throw new Error("No store found. Create a store first to manage branding.");
-        }
-
-        setStoreId(activeStore.id);
-        setStoreDisplayName((activeStore.name ?? "").trim());
-        setStoreMainColor(normalizeMainColor(activeStore.mainColor ?? "#0f172a"));
-        setLogoUrl(activeStore.logoUrl ?? null);
-
-        const rawContact = localStorage.getItem(STORE_PROFILE_CONTACT_KEY);
-        if (rawContact) {
+        // Cache fallback
+        const rawCache = localStorage.getItem(MERCHANT_PROFILE_CACHE_KEY);
+        if (rawCache) {
           try {
-            const stored = JSON.parse(rawContact) as { address?: string; phone?: string };
-            setStoreAddress(typeof stored.address === "string" ? stored.address : "");
-            setPhone(typeof stored.phone === "string" ? stored.phone.replace(/\D/g, "") : "");
+            const cached = JSON.parse(rawCache);
+            if (!data.phone && cached.phone) setPhone(cached.phone);
+            if (!data.address && cached.address) setAddress(cached.address);
+            if (!data.addressType && cached.addressType) setAddressType(cached.addressType);
           } catch {
-            setStoreAddress("");
-            setPhone("");
+            // ignore cache parse errors
           }
         }
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load store profile settings.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to load merchant profile.");
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    void loadStoreProfile();
+    void loadMerchantProfile();
   }, []);
-
-  async function parseUploadResponse(response: Response): Promise<{ url?: string; error?: string }> {
-    const raw = await response.text();
-
-    if (!raw) {
-      return { error: "Upload failed. Empty response from server." };
-    }
-
-    try {
-      return JSON.parse(raw) as { url?: string; error?: string };
-    } catch {
-      return { error: "Upload failed. Unexpected server response." };
-    }
-  }
-
-  async function handleLogoPick(event: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
-
-    const file = files[0];
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      alert(`"${file.name}" is not allowed. Use JPEG, PNG, WebP, or GIF.`);
-      if (logoInputRef.current) logoInputRef.current.value = "";
-      return;
-    }
-
-    if (file.size > MAX_BYTES) {
-      alert(`"${file.name}" exceeds the 5 MB limit.`);
-      if (logoInputRef.current) logoInputRef.current.value = "";
-      return;
-    }
-
-    setIsUploadingLogo(true);
-
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch("/api/uploads/products", { method: "POST", body: form });
-      const data = await parseUploadResponse(response);
-
-      if (!response.ok) throw new Error(data.error ?? "Upload failed");
-      if (!data.url) throw new Error("Upload failed");
-
-      setLogoUrl(data.url);
-    } catch (uploadError) {
-      alert(uploadError instanceof Error ? uploadError.message : "Upload failed");
-    } finally {
-      setIsUploadingLogo(false);
-      if (logoInputRef.current) logoInputRef.current.value = "";
-    }
-  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,40 +69,39 @@ export default function StoreProfilePage() {
     setSuccess(null);
 
     try {
-      if (!storeId) {
-        throw new Error("No store found. Create a store first to update branding.");
-      }
-
-      const response = await fetch(`/api/stores/${storeId}`, {
+      const response = await fetch("/api/auth/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: storeDisplayName.trim() || undefined,
-          mainColor: normalizeMainColor(storeMainColor),
-          logoUrl,
+          name: merchantName.trim(),
+          company: company.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          addressType: addressType === "Choose address type" ? "" : addressType,
         }),
       });
 
-      const result = (await response.json()) as { error?: string };
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Unable to save store profile settings.");
+        throw new Error(result.error ?? "Unable to save merchant profile.");
       }
 
       localStorage.setItem(
-        STORE_PROFILE_CONTACT_KEY,
+        MERCHANT_PROFILE_CACHE_KEY,
         JSON.stringify({
-          address: storeAddress.trim(),
+          address: address.trim(),
           phone: phone.trim(),
-        }),
+          addressType: addressType === "Choose address type" ? "" : addressType,
+        })
       );
 
-      setSuccess("Store branding updated. This color now drives storefront primary actions and email template accents.");
+      setSuccess("Merchant profile updated successfully.");
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save store profile settings.");
+      setError(saveError instanceof Error ? saveError.message : "Unable to save merchant profile.");
     } finally {
       setIsSaving(false);
     }
@@ -184,7 +116,7 @@ export default function StoreProfilePage() {
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Store profile
+              Merchant profile
             </h1>
 
             <Link
@@ -195,7 +127,7 @@ export default function StoreProfilePage() {
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
-            Update your store contact details and storefront identity.
+            Manage your merchant account details, legal business identity, and official contact information.
           </p>
         </div>
       </div>
@@ -214,181 +146,100 @@ export default function StoreProfilePage() {
             </div>
           ) : null}
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Logo</label>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              Upload a logo to use on your storefront instead of the default text logo.
-            </p>
-
-            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                {logoUrl ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={logoUrl} alt="Store logo preview" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLogoUrl(null);
-                        setSuccess(null);
-                        setError(null);
-                      }}
-                      disabled={isUploadingLogo || isSaving}
-                      className="absolute inset-0 flex items-center justify-center bg-slate-950/55 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Remove
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Logo</span>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
+          {isLoading ? (
+            <div className="py-8 text-center text-sm text-slate-500">Loading merchant profile...</div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Merchant name</label>
+                <p className="mt-1 text-sm text-slate-500">Full legal name of the merchant account owner.</p>
                 <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handleLogoPick}
-                  className="hidden"
+                  type="text"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  placeholder="e.g. Carlos Diaz del Valle"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
-                <button
-                  type="button"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                  className="inline-flex w-fit items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Company / Business name</label>
+                <p className="mt-1 text-sm text-slate-500">Official registered company or business name.</p>
+                <input
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="e.g. Indeva Websites"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Address</label>
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street address, city, state, postal code"
+                  className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Address type</label>
+                <select
+                  value={addressType}
+                  onChange={(e) => setAddressType(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400 bg-white"
                 >
-                  {isUploadingLogo ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
-                </button>
-                <p className="text-xs text-slate-400">JPEG, PNG, WebP or GIF — max 5 MB</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Main brand color</label>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              This color is used for your storefront primary actions and customer email template accents.
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-[96px_1fr]">
-              <input
-                type="color"
-                value={storeMainColor}
-                onChange={(event) => setStoreMainColor(normalizeMainColor(event.target.value))}
-                className="h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-white p-1"
-              />
-              <input
-                type="text"
-                value={storeMainColor}
-                onChange={(event) => setStoreMainColor(normalizeMainColor(event.target.value, storeMainColor))}
-                placeholder="#0f172a"
-                className="w-full max-w-[180px] rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </div>
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Storefront preview</p>
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-medium text-slate-700">Primary action button</p>
-                  <button
-                    type="button"
-                    style={{ backgroundColor: emailBranding.primary }}
-                    className="mt-3 rounded-full px-4 py-2 text-sm font-semibold text-white"
-                  >
-                    Add to cart
-                  </button>
-                </div>
+                  <option>Choose address type</option>
+                  <option>Home office</option>
+                  <option>Corporate office</option>
+                  <option>Warehouse</option>
+                  <option>Retail store</option>
+                  <option>Other</option>
+                </select>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Email template preview</p>
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm text-slate-600">Order #PRD-1024 is confirmed.</p>
-                  <p className="mt-2 text-sm" style={{ color: emailBranding.primary }}>
-                    Thanks for shopping with your store.
-                  </p>
-                  <button
-                    type="button"
-                    style={{ backgroundColor: emailBranding.primary }}
-                    className="mt-3 rounded-full px-4 py-2 text-xs font-semibold text-white"
-                  >
-                    View order
-                  </button>
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Email</label>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Primary login and account notification email address.</p>
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  disabled
+                  placeholder="name@company.com"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none cursor-not-allowed"
+                />
               </div>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Store display name</label>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              Store display name is used as your storefront&apos;s default text logo.
-            </p>
-            <input
-              type="text"
-              value={storeDisplayName}
-              onChange={(event) => setStoreDisplayName(event.target.value)}
-              placeholder="Store display name"
-              className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Address</label>
-            <textarea
-              value={storeAddress}
-              onChange={(event) => setStoreAddress(event.target.value)}
-              placeholder="Street address, city, state, postal code"
-              className="mt-1 min-h-28 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Address type</label>
-            <select className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400">
-              <option>Choose address type</option>
-              <option>Home office</option>
-              <option>Warehouse</option>
-              <option>Retail store</option>
-              <option>Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Email</label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">All emails to customers will be sent from this address.</p>
-            <input
-              type="email"
-              placeholder="name@company.com"
-              className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-900">Phone <span className="font-normal text-slate-500">(optional)</span></label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">The number displayed on your storefront. Adding a number improves conversion rates.</p>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
-              placeholder="0000000000"
-              className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900">Phone <span className="font-normal text-slate-500">(optional)</span></label>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Primary merchant phone number for account verification and billing.</p>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  placeholder="e.g. 8329558892"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/dashboard/settings"
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 text-center"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            disabled={isSaving || !storeId}
+            disabled={isSaving || isLoading}
             className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSaving ? "Saving..." : "Save changes"}

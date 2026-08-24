@@ -79,25 +79,31 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         })
       : [];
 
-    const serializedOrders = orders.map((order) => ({
-      id: order.id,
-      storeId: order.storeId,
-      orderNumber: order.orderNumber,
-      customerEmail: order.customerEmail,
-      customerName: [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ") || null,
-      status: order.status,
-      paymentStatus: order.paymentStatus,
-      subtotal: order.subtotal.toString(),
-      tax: order.tax.toString(),
-      shipping: order.shipping.toString(),
-      total: order.total.toString(),
-      currency: order.currency,
-      createdAt: order.createdAt.toISOString(),
-    }));
+    const serializedOrders = JSON.parse(
+      JSON.stringify(
+        orders.map((order) => ({
+          id: order.id,
+          storeId: order.storeId,
+          orderNumber: order.orderNumber,
+          customerEmail: order.customerEmail,
+          customerName: [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ") || null,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          subtotal: order.subtotal.toString(),
+          tax: order.tax.toString(),
+          shipping: order.shipping.toString(),
+          total: order.total.toString(),
+          currency: order.currency,
+          createdAt: order.createdAt.toISOString(),
+        }))
+      )
+    );
+
+    const serializedStores = JSON.parse(JSON.stringify(stores));
 
     return (
       <OrdersDashboard
-        initialStores={stores}
+        initialStores={serializedStores}
         initialOrders={serializedOrders as OrderRecord[]}
         selectedStoreId={selectedStoreId}
       />

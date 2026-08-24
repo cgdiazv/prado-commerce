@@ -8,8 +8,8 @@ export default async function SettingsPage() {
 
   const accountProfileItems = [
     {
-      title: "Store profile",
-      detail: "Basic information about your business and storefront identity.",
+      title: "Merchant profile",
+      detail: "Basic contact and business information for your merchant account.",
       href: "/dashboard/settings/store-profile",
     },
     {

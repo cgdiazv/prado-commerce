@@ -367,7 +367,7 @@ export default function DashboardLayout({
       className="min-h-screen bg-[#f8fafc] text-slate-900"
       style={{ colorScheme: "light" }}
     >
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <PradoLogo theme="light" subtitle="Merchant Dashboard" size="sm" />
@@ -449,7 +449,7 @@ export default function DashboardLayout({
       </header>
 
       {isMobileMenuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <button
             type="button"
             aria-label="Close navigation menu"
@@ -475,12 +475,12 @@ export default function DashboardLayout({
         </div>
       ) : null}
 
-      <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc]">
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex">
+      <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex print:hidden">
           <SidebarContent />
         </aside>
 
-        <main className="min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10">
+        <main className="min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10 print:bg-white print:p-0">
           <div
             className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||

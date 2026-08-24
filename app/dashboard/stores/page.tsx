@@ -34,7 +34,9 @@ export default async function StoresPage() {
       },
     });
 
-    return <StoresDashboard initialStores={stores} currentPlan={user.plan} />;
+    const serializedStores = JSON.parse(JSON.stringify(stores));
+
+    return <StoresDashboard initialStores={serializedStores} currentPlan={user.plan} />;
   } catch (error) {
     console.error("[STORES_PAGE_DB_ERROR]", error);
 

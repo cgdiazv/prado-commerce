@@ -23,16 +23,6 @@ type StoresDashboardProps = {
   setupError?: string | null;
 };
 
-type StoreFormState = {
-  name: string;
-  slug: string;
-  ownerId: string; // unused in UI, kept for API compat
-  customDomain: string;
-  currency: string;
-  timezone: string;
-  allowedDomains: string;
-};
-
 type DomainSetupNotice = {
   storeId: string;
   storeName: string;
@@ -40,23 +30,9 @@ type DomainSetupNotice = {
   status: "valid" | "pending" | "invalid" | "unknown" | null;
 };
 
-const defaultFormState: StoreFormState = {
-  name: "",
-  slug: "",
-  ownerId: "",
-  customDomain: "",
-  currency: "USD",
-  timezone: "America/New_York",
-  allowedDomains: "",
-};
-
 export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupError = null }: StoresDashboardProps) {
   const [stores, setStores] = useState(initialStores);
   const [query, setQuery] = useState("");
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingStore, setEditingStore] = useState<Store | null>(null);
-  const [formState, setFormState] = useState<StoreFormState>(defaultFormState);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [domainSetupNotice, setDomainSetupNotice] = useState<DomainSetupNotice | null>(null);
   const [domainStatusError, setDomainStatusError] = useState<string | null>(null);
@@ -84,28 +60,6 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
     });
   }, [query, stores]);
 
-  function openEditModal(store: Store) {
-    setEditingStore(store);
-    setFormState({
-      name: store.name,
-      slug: store.slug,
-      ownerId: "",
-      customDomain: store.customDomain ?? "",
-      currency: store.currency,
-      timezone: store.timezone,
-      allowedDomains: store.allowedDomains.join(", "),
-    });
-    setError(null);
-    setIsEditOpen(true);
-  }
-
-  function closeModal() {
-    setIsEditOpen(false);
-    setEditingStore(null);
-    setError(null);
-    setFormState(defaultFormState);
-  }
-
   async function handleDelete(storeId: string) {
     setDeletingStoreId(storeId);
     try {
@@ -119,84 +73,6 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
       alert(deleteError instanceof Error ? deleteError.message : "Failed to delete store");
     } finally {
       setDeletingStoreId(null);
-    }
-  }
-
-  async function refreshStores() {
-    const response = await fetch("/api/stores", {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to refresh stores");
-    }
-
-    const data = (await response.json()) as Store[];
-    setStores(data);
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const payload = {
-        name: formState.name,
-        slug: formState.slug,
-        customDomain: formState.customDomain || null,
-        currency: formState.currency,
-        timezone: formState.timezone,
-        allowedDomains: formState.allowedDomains
-          .split(",")
-          .map((domain) => domain.trim())
-          .filter(Boolean),
-      };
-
-      if (!editingStore) {
-        throw new Error("Store not found for editing.");
-      }
-
-      const response = await fetch(`/api/stores/${editingStore.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json() as Store & {
-        error?: string;
-        domainStatus?: "valid" | "pending" | "invalid" | "unknown" | null;
-      };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Something went wrong");
-      }
-
-      if (result.customDomain) {
-        setDomainSetupNotice({
-          storeId: result.id,
-          storeName: result.name,
-          domain: result.customDomain,
-          status: result.domainStatus ?? "unknown",
-        });
-        setDomainStatusError(null);
-      } else {
-        setDomainSetupNotice(null);
-        setDomainStatusError(null);
-      }
-
-      await refreshStores();
-      closeModal();
-    } catch (submissionError) {
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Failed to save store",
-      );
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -398,14 +274,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                         return (
                           <tr key={store.id} className="hover:bg-slate-50/70">
                             <td className="px-4 py-3 align-top">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(store)}
-                                className="text-left"
+                              <Link
+                                href={`/dashboard/stores/${store.id}`}
+                                className="group text-left"
                               >
-                                <p className="font-semibold text-slate-900 transition hover:text-cyan-700">{store.name}</p>
+                                <p className="font-semibold text-slate-900 transition group-hover:text-cyan-700">{store.name}</p>
                                 <p className="text-xs text-slate-500">/{store.slug}</p>
-                              </button>
+                              </Link>
                             </td>
                             <td className="px-4 py-3 align-top">
                               <a
@@ -427,6 +302,14 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             </td>
                             <td className="px-4 py-3 align-top">
                               <div className="flex justify-end gap-2">
+                                <Link
+                                  href={`/dashboard/stores/${store.id}`}
+                                  aria-label="Edit store"
+                                  title="Edit store"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Link>
                                 <button
                                   type="button"
                                   disabled={deletingStoreId === store.id}
@@ -458,14 +341,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                       <article key={store.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(store)}
-                              className="text-left"
+                            <Link
+                              href={`/dashboard/stores/${store.id}`}
+                              className="group text-left"
                             >
-                              <p className="font-semibold text-slate-900 transition hover:text-cyan-700">{store.name}</p>
+                              <p className="font-semibold text-slate-900 transition group-hover:text-cyan-700">{store.name}</p>
                               <p className="mt-1 text-xs text-slate-500">/{store.slug}</p>
-                            </button>
+                            </Link>
                           </div>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                             {store.currency}
@@ -502,6 +384,14 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             Updated {new Date(store.updatedAt).toLocaleDateString()}
                           </p>
                           <div className="flex w-full justify-end gap-2 sm:w-auto">
+                            <Link
+                              href={`/dashboard/stores/${store.id}`}
+                              aria-label="Edit store"
+                              title="Edit store"
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
                             <button
                               type="button"
                               disabled={deletingStoreId === store.id}
@@ -525,112 +415,8 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
             )}
           </div>
         </section>
-
-      {isEditOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-sm">
-          <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/60 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Edit store
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold text-slate-950">
-                  Update tenant settings
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5 px-6 py-6">
-              {error ? (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Store name"
-                  value={formState.name}
-                  onChange={(value) => {
-                    setFormState((current) => ({
-                      ...current,
-                      name: value,
-                      // auto-slug only when creating and slug hasn't been manually edited
-                      slug: !editingStore && current.slug === toSlug(current.name)
-                        ? toSlug(value)
-                        : current.slug,
-                    }));
-                  }}
-                  placeholder="My Brand"
-                />
-                <Field
-                  label="Slug"
-                  value={formState.slug}
-                  onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
-                  placeholder="my-brand"
-                />
-                <SelectField
-                  label="Currency"
-                  value={formState.currency}
-                  onChange={(value) => setFormState((current) => ({ ...current, currency: value }))}
-                  options={CURRENCIES}
-                />
-                <SelectField
-                  label="Timezone"
-                  value={formState.timezone}
-                  onChange={(value) => setFormState((current) => ({ ...current, timezone: value }))}
-                  options={TIMEZONES}
-                />
-                <Field
-                  label="Custom domain (optional)"
-                  labelHint="Use a domain you own (for example from GoDaddy). Next steps: 1) Add this exact domain in your DNS provider. 2) Point DNS to your Prado Commerce Storefront. 3) Save this store and open the domain to verify storefront routing."
-                  value={formState.customDomain}
-                  onChange={(value) => setFormState((current) => ({ ...current, customDomain: value }))}
-                  placeholder="checkout.mybrand.com"
-                  className="sm:col-span-2"
-                />
-                <Field
-                  label="Allowed domains (optional)"
-                  value={formState.allowedDomains}
-                  onChange={(value) => setFormState((current) => ({ ...current, allowedDomains: value }))}
-                  placeholder="https://mybrand.com, https://store.mybrand.com"
-                  className="sm:col-span-2"
-                />
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSaving ? "Saving..." : "Save changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
     </>
   );
-}
-
-function toSlug(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function StatCard({
@@ -651,198 +437,4 @@ function StatCard({
   );
 }
 
-export function Field({
-  label,
-  labelHint,
-  value,
-  onChange,
-  placeholder,
-  className = "",
-}: {
-  label: string;
-  labelHint?: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-}) {
-  return (
-    <label className={`flex flex-col gap-2 ${className}`.trim()}>
-      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-        <span>{label}</span>
-        {labelHint ? (
-          <span className="group relative inline-flex items-center">
-            <button
-              type="button"
-              aria-label={`${label} help`}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 hover:text-blue-800"
-            >
-              ?
-            </button>
-            <span className="pointer-events-none absolute left-1/2 top-7 z-20 hidden w-72 -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-normal leading-5 text-blue-800 shadow-lg group-hover:block group-focus-within:block">
-              {labelHint}
-            </span>
-          </span>
-        ) : null}
-      </span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
-      />
-    </label>
-  );
-}
-
-export const TIMEZONES = [
-  // North America
-  { value: "America/New_York", label: "America/New_York (ET)" },
-  { value: "America/Chicago", label: "America/Chicago (CT)" },
-  { value: "America/Denver", label: "America/Denver (MT)" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles (PT)" },
-  { value: "America/Anchorage", label: "America/Anchorage (AKT)" },
-  { value: "Pacific/Honolulu", label: "Pacific/Honolulu (HST)" },
-  { value: "America/Toronto", label: "America/Toronto" },
-  { value: "America/Vancouver", label: "America/Vancouver" },
-  // Central America
-  { value: "America/Mexico_City", label: "America/Mexico_City" },
-  { value: "America/Guatemala", label: "America/Guatemala" },
-  { value: "America/Costa_Rica", label: "America/Costa_Rica" },
-  { value: "America/Panama", label: "America/Panama" },
-  // South America
-  { value: "America/Bogota", label: "America/Bogota" },
-  { value: "America/Lima", label: "America/Lima" },
-  { value: "America/Caracas", label: "America/Caracas" },
-  { value: "America/Santiago", label: "America/Santiago" },
-  { value: "America/Sao_Paulo", label: "America/Sao_Paulo" },
-  { value: "America/Argentina/Buenos_Aires", label: "America/Argentina/Buenos_Aires" },
-  { value: "America/Montevideo", label: "America/Montevideo" },
-  { value: "America/Asuncion", label: "America/Asuncion" },
-  { value: "America/La_Paz", label: "America/La_Paz" },
-  { value: "America/Guayaquil", label: "America/Guayaquil" },
-  // Europe
-  { value: "Europe/London", label: "Europe/London (GMT/BST)" },
-  { value: "Europe/Dublin", label: "Europe/Dublin" },
-  { value: "Europe/Lisbon", label: "Europe/Lisbon" },
-  { value: "Europe/Madrid", label: "Europe/Madrid" },
-  { value: "Europe/Paris", label: "Europe/Paris" },
-  { value: "Europe/Berlin", label: "Europe/Berlin" },
-  { value: "Europe/Rome", label: "Europe/Rome" },
-  { value: "Europe/Amsterdam", label: "Europe/Amsterdam" },
-  { value: "Europe/Brussels", label: "Europe/Brussels" },
-  { value: "Europe/Warsaw", label: "Europe/Warsaw" },
-  { value: "Europe/Stockholm", label: "Europe/Stockholm" },
-  { value: "Europe/Helsinki", label: "Europe/Helsinki" },
-  { value: "Europe/Athens", label: "Europe/Athens" },
-  { value: "Europe/Bucharest", label: "Europe/Bucharest" },
-  { value: "Europe/Moscow", label: "Europe/Moscow" },
-  { value: "Europe/Istanbul", label: "Europe/Istanbul" },
-  // Africa
-  { value: "Africa/Cairo", label: "Africa/Cairo" },
-  { value: "Africa/Johannesburg", label: "Africa/Johannesburg" },
-  { value: "Africa/Lagos", label: "Africa/Lagos" },
-  { value: "Africa/Nairobi", label: "Africa/Nairobi" },
-  { value: "Africa/Casablanca", label: "Africa/Casablanca" },
-  { value: "Africa/Accra", label: "Africa/Accra" },
-  // Middle East
-  { value: "Asia/Dubai", label: "Asia/Dubai" },
-  { value: "Asia/Riyadh", label: "Asia/Riyadh" },
-  { value: "Asia/Kuwait", label: "Asia/Kuwait" },
-  { value: "Asia/Beirut", label: "Asia/Beirut" },
-  { value: "Asia/Jerusalem", label: "Asia/Jerusalem" },
-  { value: "Asia/Baghdad", label: "Asia/Baghdad" },
-  { value: "Asia/Tehran", label: "Asia/Tehran" },
-  // Asia
-  { value: "Asia/Karachi", label: "Asia/Karachi" },
-  { value: "Asia/Kolkata", label: "Asia/Kolkata" },
-  { value: "Asia/Dhaka", label: "Asia/Dhaka" },
-  { value: "Asia/Colombo", label: "Asia/Colombo" },
-  { value: "Asia/Kathmandu", label: "Asia/Kathmandu" },
-  { value: "Asia/Almaty", label: "Asia/Almaty" },
-  { value: "Asia/Bangkok", label: "Asia/Bangkok" },
-  { value: "Asia/Ho_Chi_Minh", label: "Asia/Ho_Chi_Minh" },
-  { value: "Asia/Jakarta", label: "Asia/Jakarta" },
-  { value: "Asia/Singapore", label: "Asia/Singapore" },
-  { value: "Asia/Kuala_Lumpur", label: "Asia/Kuala_Lumpur" },
-  { value: "Asia/Manila", label: "Asia/Manila" },
-  { value: "Asia/Shanghai", label: "Asia/Shanghai" },
-  { value: "Asia/Hong_Kong", label: "Asia/Hong_Kong" },
-  { value: "Asia/Taipei", label: "Asia/Taipei" },
-  { value: "Asia/Seoul", label: "Asia/Seoul" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo" },
-  // Oceania
-  { value: "Australia/Perth", label: "Australia/Perth" },
-  { value: "Australia/Darwin", label: "Australia/Darwin" },
-  { value: "Australia/Adelaide", label: "Australia/Adelaide" },
-  { value: "Australia/Brisbane", label: "Australia/Brisbane" },
-  { value: "Australia/Sydney", label: "Australia/Sydney" },
-  { value: "Australia/Melbourne", label: "Australia/Melbourne" },
-  { value: "Pacific/Auckland", label: "Pacific/Auckland" },
-  { value: "Pacific/Fiji", label: "Pacific/Fiji" },
-  // UTC
-  { value: "UTC", label: "UTC" },
-];
-
-export const CURRENCIES = [
-  { value: "USD", label: "USD — US Dollar" },
-  { value: "EUR", label: "EUR — Euro" },
-  { value: "GBP", label: "GBP — British Pound" },
-  { value: "CAD", label: "CAD — Canadian Dollar" },
-  { value: "AUD", label: "AUD — Australian Dollar" },
-  { value: "JPY", label: "JPY — Japanese Yen" },
-  { value: "CHF", label: "CHF — Swiss Franc" },
-  { value: "INR", label: "INR — Indian Rupee" },
-  { value: "SGD", label: "SGD — Singapore Dollar" },
-  { value: "AED", label: "AED — UAE Dirham" },
-  // South America
-  { value: "BRL", label: "BRL — Brazilian Real" },
-  { value: "ARS", label: "ARS — Argentine Peso" },
-  { value: "CLP", label: "CLP — Chilean Peso" },
-  { value: "COP", label: "COP — Colombian Peso" },
-  { value: "PEN", label: "PEN — Peruvian Sol" },
-  { value: "VES", label: "VES — Venezuelan Bolívar" },
-  { value: "BOB", label: "BOB — Bolivian Boliviano" },
-  { value: "PYG", label: "PYG — Paraguayan Guaraní" },
-  { value: "UYU", label: "UYU — Uruguayan Peso" },
-  { value: "GYD", label: "GYD — Guyanese Dollar" },
-  { value: "SRD", label: "SRD — Surinamese Dollar" },
-  // Central America
-  { value: "GTQ", label: "GTQ — Guatemalan Quetzal" },
-  { value: "BZD", label: "BZD — Belize Dollar" },
-  { value: "HNL", label: "HNL — Honduran Lempira" },
-  { value: "NIO", label: "NIO — Nicaraguan Córdoba" },
-  { value: "CRC", label: "CRC — Costa Rican Colón" },
-  { value: "PAB", label: "PAB — Panamanian Balboa" },
-  { value: "DOP", label: "DOP — Dominican Peso" },
-  { value: "MXN", label: "MXN — Mexican Peso" },
-];
-
-export function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  className?: string;
-}) {
-  return (
-    <label className={`flex flex-col gap-2 ${className}`.trim()}>
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
+export { Field, SelectField, CURRENCIES, TIMEZONES } from "./stores/store-form-controls";

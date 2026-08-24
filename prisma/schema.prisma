@@ -11,6 +11,9 @@ model MerchantUser {
   email                    String   @unique
   name                     String?
   company                  String?
+  phone                    String?
+  address                  String?
+  addressType              String?
   plan                     SubscriptionPlan @default(STARTER)
   stripeCustomerId         String?  @unique
   stripeSubId              String?  @unique
@@ -81,6 +84,9 @@ model Store {
   replyToEmail   String?
   shippingZones  Json?
   shippingOrigin Json?
+  invoiceFooterText String?
+  invoicePrefix  String?    @default("INV-")
+  nextInvoiceNumber Int     @default(1001)
 
   apiKeys        ApiKey[]
   products       Product[]

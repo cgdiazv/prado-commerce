@@ -10,6 +10,9 @@ type SessionUser = {
   email: string;
   name: string | null;
   company: string | null;
+  phone: string | null;
+  address: string | null;
+  addressType: string | null;
   plan: "STARTER" | "PRO" | "ENTERPRISE";
   sessionVersion: number;
 };
@@ -33,7 +36,7 @@ function isDatabaseConnectionError(error: unknown): boolean {
 function isUnknownSessionSelectFieldError(error: unknown): boolean {
   return (
     error instanceof Error &&
-    /Unknown field `(plan|sessionVersion)` for select statement/.test(error.message)
+    /Unknown field `[^`]+` for select statement/.test(error.message)
   );
 }
 
@@ -79,7 +82,7 @@ async function findSessionUser(email: string, sessionVersion: number): Promise<S
   try {
     const user = await prisma.merchantUser.findUnique({
       where: { email },
-      select: { id: true, email: true, name: true, company: true, plan: true, sessionVersion: true },
+      select: { id: true, email: true, name: true, company: true, phone: true, address: true, addressType: true, plan: true, sessionVersion: true },
     });
 
     if (!user) {
@@ -96,7 +99,7 @@ async function findSessionUser(email: string, sessionVersion: number): Promise<S
       throw error;
     }
 
-    // Backward-compatible fallback when an old in-memory Prisma client is still active.
+    // Backward-compatible fallback when an old in-memory Prisma client is still active during hot-reloading.
     const user = await prisma.merchantUser.findUnique({
       where: { email },
       select: { id: true, email: true, name: true, company: true },
@@ -108,6 +111,9 @@ async function findSessionUser(email: string, sessionVersion: number): Promise<S
 
     return {
       ...user,
+      phone: null,
+      address: null,
+      addressType: null,
       plan: "STARTER",
       sessionVersion: 0,
     };
