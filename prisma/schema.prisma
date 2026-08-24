@@ -94,6 +94,9 @@ model Store {
   carts          Cart[]
   orders         Order[]
   customers      Customer[]
+  vendors        Vendor[]
+  purchaseOrders PurchaseOrder[]
+  purchaseReceipts PurchaseReceipt[]
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -171,6 +174,7 @@ model Product {
   category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   variants    ProductVariant[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -209,6 +213,7 @@ model ProductVariant {
 
   cartItems      CartItem[]
   orderItems     OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -380,4 +385,125 @@ model AccountRequest {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ==========================================
+// PROCUREMENT & RECEIVING MODULES
+// ==========================================
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+model Vendor {
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  name         String
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  address      String?
+  notes        String?  @db.Text
+
+  purchaseOrders PurchaseOrder[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([name])
+}
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  storeId      String
+  store        Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  vendorId     String
+  vendor       Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  poNumber     String
+  status       PurchaseOrderStatus @default(DRAFT)
+
+  issueDate    DateTime            @default(now())
+  expectedDate DateTime?
+
+  notes        String?             @db.Text
+  subtotal     Decimal             @default(0.00) @db.Decimal(10, 2)
+  tax          Decimal             @default(0.00) @db.Decimal(10, 2)
+  shipping     Decimal             @default(0.00) @db.Decimal(10, 2)
+  total        Decimal             @default(0.00) @db.Decimal(10, 2)
+
+  items        PurchaseOrderItem[]
+  receipts     PurchaseReceipt[]
+
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([storeId, poNumber])
+  @@index([storeId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id              String         @id @default(cuid())
+  poId            String
+  purchaseOrder   PurchaseOrder  @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  productId       String?
+  product         Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  variantId       String?
+  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  title           String
+  sku             String?
+  qtyOrdered      Int
+  qtyReceived     Int            @default(0)
+  unitCost        Decimal        @db.Decimal(10, 2)
+  totalCost       Decimal        @db.Decimal(10, 2)
+
+  receiptItems    PurchaseReceiptItem[]
+
+  @@index([poId])
+  @@index([variantId])
+}
+
+model PurchaseReceipt {
+  id            String                @id @default(cuid())
+  poId          String
+  purchaseOrder PurchaseOrder         @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  storeId       String
+  store         Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  receivedAt    DateTime              @default(now())
+  receivedBy    String?
+  notes         String?               @db.Text
+
+  items         PurchaseReceiptItem[]
+
+  @@index([poId])
+  @@index([storeId])
+}
+
+model PurchaseReceiptItem {
+  id          String            @id @default(cuid())
+  receiptId   String
+  receipt     PurchaseReceipt   @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  poItemId    String
+  poItem      PurchaseOrderItem @relation(fields: [poItemId], references: [id], onDelete: Cascade)
+
+  qtyReceived Int
+
+  @@index([receiptId])
+  @@index([poItemId])
 }

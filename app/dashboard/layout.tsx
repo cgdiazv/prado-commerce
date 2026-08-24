@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 
 type NavChild = {
@@ -26,6 +26,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
+  const [isProcurementOpen, setIsProcurementOpen] = useState(pathname.startsWith("/dashboard/procurement"));
   const [isStoresOpen, setIsStoresOpen] = useState(pathname.startsWith("/dashboard/stores"));
   const [isToolsOpen, setIsToolsOpen] = useState(pathname.startsWith("/dashboard/tools"));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -166,6 +167,16 @@ export default function DashboardLayout({
         { href: "/dashboard/products/categories", label: "Categories" },
       ],
     },
+    {
+      href: "/dashboard/procurement",
+      label: "Procurement",
+      icon: Truck,
+      children: [
+        { href: "/dashboard/procurement", label: "Overview" },
+        { href: "/dashboard/procurement/purchase-orders", label: "Purchase Orders" },
+        { href: "/dashboard/procurement/vendors", label: "Vendors" },
+      ],
+    },
     { href: "/dashboard/customers", label: "Customers", icon: Users },
     {
       href: "/dashboard/stores",
@@ -203,6 +214,10 @@ export default function DashboardLayout({
       setIsProductsOpen(true);
     }
 
+    if (pathname.startsWith("/dashboard/procurement")) {
+      setIsProcurementOpen(true);
+    }
+
     if (pathname.startsWith("/dashboard/stores")) {
       setIsStoresOpen(true);
     }
@@ -219,6 +234,10 @@ export default function DashboardLayout({
       return isProductsOpen;
     }
 
+    if (href === "/dashboard/procurement") {
+      return isProcurementOpen;
+    }
+
     if (href === "/dashboard/stores") {
       return isStoresOpen;
     }
@@ -233,6 +252,11 @@ export default function DashboardLayout({
   function toggleSection(href: string) {
     if (href === "/dashboard/products") {
       setIsProductsOpen((open) => !open);
+      return;
+    }
+
+    if (href === "/dashboard/procurement") {
+      setIsProcurementOpen((open) => !open);
       return;
     }
 
