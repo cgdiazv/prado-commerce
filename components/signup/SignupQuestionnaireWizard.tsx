@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   User,
   Mail,
@@ -24,6 +25,7 @@ import {
   DollarSign,
   Lightbulb,
   ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 
@@ -70,7 +72,11 @@ const THEMES = [
   },
 ];
 
-export function SignupQuestionnaireWizard() {
+function SignupQuestionnaireWizardContent() {
+  const searchParams = useSearchParams();
+  const selectedPlan = searchParams.get("plan") || "Starter";
+  const intervalParam = searchParams.get("interval") || "month";
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Step 1 State
@@ -134,6 +140,8 @@ export function SignupQuestionnaireWizard() {
           salesChannels,
           preferredTheme,
           questionnaireAnswers: {
+            selectedPlan,
+            billingInterval: intervalParam,
             primaryCurrency,
             submittedAt: new Date().toISOString(),
           },
@@ -192,7 +200,7 @@ export function SignupQuestionnaireWizard() {
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Account Created Successfully!</h2>
             <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-              Your merchant profile and questionnaire preferences have been stored.
+              Your merchant profile and questionnaire preferences for the <span className="font-semibold text-cyan-700">{selectedPlan}</span> plan have been stored.
             </p>
             <div className="mt-6">
               <a
@@ -209,6 +217,12 @@ export function SignupQuestionnaireWizard() {
             {step === 1 && (
               <div className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
                 <div>
+                  {selectedPlan && selectedPlan !== "Starter" && (
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+                      <ShieldCheck className="h-3.5 w-3.5 text-cyan-600" />
+                      Selected Plan: <span className="font-bold text-cyan-900">{selectedPlan}</span> ({intervalParam === "year" ? "Annual" : "Monthly"})
+                    </div>
+                  )}
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Create your Merchant Account</h1>
                   <p className="mt-1 text-sm text-slate-500">
                     Step 1 of 3: Enter your contact details to start setting up your store.
@@ -493,5 +507,19 @@ export function SignupQuestionnaireWizard() {
         </p>
       </section>
     </main>
+  );
+}
+
+export function SignupQuestionnaireWizard() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-6 py-16 text-slate-600">
+          <p className="text-sm font-medium">Loading questionnaire...</p>
+        </main>
+      }
+    >
+      <SignupQuestionnaireWizardContent />
+    </Suspense>
   );
 }

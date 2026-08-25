@@ -52,7 +52,7 @@ const tiers: Tier[] = [
     checkoutExperience: "Basic embedded checkout",
     apiRateLimits: "60 requests / minute",
     integrations: "Basic webhooks",
-    ctaHref: "/signup",
+    ctaHref: "/signup?plan=Starter",
     ctaLabel: "Start free",
     ctaSubLabel: "No credit card required",
   },
@@ -69,7 +69,7 @@ const tiers: Tier[] = [
     checkoutExperience: "Embedded checkout + custom CSS styling",
     apiRateLimits: "1,000 requests / minute",
     integrations: "Stripe Connect, webhooks, CSV sync",
-    ctaHref: "/signup",
+    ctaHref: "/signup?plan=Pro",
     ctaLabel: "Choose Pro",
     highlighted: true,
   },
@@ -86,7 +86,7 @@ const tiers: Tier[] = [
     checkoutExperience: "White-labeled and headless checkout workflows",
     apiRateLimits: "Dedicated edge throughput",
     integrations: "Payment, POS and Carriers",
-    ctaHref: "/signup",
+    ctaHref: "/signup?plan=Enterprise",
     ctaLabel: "Choose Enterprise",
   },
 ];
@@ -117,6 +117,8 @@ function PricingPageContent() {
   };
 
   const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement> | null, tier: Tier, forcedInterval?: "month" | "year") => {
+    const interval = forcedInterval || (billingMode === "annual" ? "year" : "month");
+
     if (tier.name === "Starter") {
       return;
     }
@@ -126,31 +128,34 @@ function PricingPageContent() {
     }
 
     const plan = tier.name.toUpperCase() as keyof typeof STRIPE_PRICE_MAP;
-    const interval = forcedInterval || (billingMode === "annual" ? "year" : "month");
 
-    const response = await fetch("/api/billing/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, interval }),
-    });
-
-    const data = await response.json();
-
-    if (response.status === 401 || data?.error === "Unauthorized") {
-      const nextUrl = `/pricing?plan=${tier.name}&interval=${interval}&autoCheckout=true`;
-      window.location.assign(`/login?next=${encodeURIComponent(nextUrl)}`);
-      return;
-    }
-
-    if (data?.url) {
-      window.location.assign(data.url);
-    } else {
-      const query = new URLSearchParams({
-        plan: tier.name,
-        interval,
-        status: data?.error ? "unavailable" : "pending",
+    try {
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, interval }),
       });
-      window.location.assign(`/checkout?${query.toString()}`);
+
+      const data = await response.json();
+
+      if (response.status === 401 || data?.error === "Unauthorized") {
+        const signupUrl = `/signup?plan=${tier.name}&interval=${interval}`;
+        window.location.assign(signupUrl);
+        return;
+      }
+
+      if (data?.url) {
+        window.location.assign(data.url);
+      } else {
+        const query = new URLSearchParams({
+          plan: tier.name,
+          interval,
+          status: data?.error ? "unavailable" : "pending",
+        });
+        window.location.assign(`/checkout?${query.toString()}`);
+      }
+    } catch (err) {
+      window.location.assign(`/signup?plan=${tier.name}&interval=${interval}`);
     }
   };
 
