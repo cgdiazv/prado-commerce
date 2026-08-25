@@ -156,6 +156,22 @@ function parseProductType(value: unknown): "PHYSICAL" | "DIGITAL" | "SERVICE" {
   return "PHYSICAL";
 }
 
+function parseImages(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(asString).filter((url) => Boolean(url));
+  }
+
+  const str = asString(value);
+  if (!str) {
+    return [];
+  }
+
+  return str
+    .split(/[,|\n\r]+/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
 async function importCategories(storeId: string, rows: ImportRow[]): Promise<ImportSummary> {
   const summary: ImportSummary = {
     table: "categories",
@@ -387,6 +403,13 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
       }
 
       const description = asOptionalString(rowValue(row, ["description", "details"]));
+      const dimension = asOptionalString(rowValue(row, ["dimension", "dimensions", "size"]));
+      const weight = asOptionalString(rowValue(row, ["weight"]));
+      const manufacturer = asOptionalString(rowValue(row, ["manufacturer", "brand", "vendor", "maker"]));
+      const condition = asOptionalString(rowValue(row, ["condition", "itemcondition", "productcondition"]));
+      const conditionNotes = asOptionalString(rowValue(row, ["conditionnotes", "condition_notes", "conditionnote", "condition_note", "notes"]));
+      const imageInput = rowValue(row, ["imageurl", "image_url", "image", "images", "img", "photo", "picture", "featuredimage", "featured_image"]);
+      const images = parseImages(imageInput);
       const status = parseProductStatus(rowValue(row, ["status"]));
       const featured = asBoolean(rowValue(row, ["featured", "isfeatured"]), false);
       const productType = parseProductType(rowValue(row, ["producttype", "type"]));
@@ -399,19 +422,30 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
           title,
           slug,
           description,
+          dimension,
+          weight,
+          manufacturer,
+          condition,
+          conditionNotes,
           status,
           featured,
           productType,
           categoryId,
-          images: [],
+          images,
         },
         update: {
           title,
           description,
+          dimension,
+          weight,
+          manufacturer,
+          condition,
+          conditionNotes,
           status,
           featured,
           productType,
           categoryId,
+          ...(images.length > 0 ? { images } : {}),
         },
         select: {
           id: true,

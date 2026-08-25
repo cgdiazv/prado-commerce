@@ -98,6 +98,11 @@ export async function GET(request: Request) {
         title: true,
         slug: true,
         description: true,
+        dimension: true,
+        weight: true,
+        manufacturer: true,
+        condition: true,
+        conditionNotes: true,
         images: true,
         featured: true,
         status: true,
@@ -158,6 +163,11 @@ export async function POST(request: Request) {
       title,
       slug,
       description,
+      dimension,
+      weight,
+      manufacturer,
+      condition,
+      conditionNotes,
       images,
       status,
       featured,
@@ -169,6 +179,11 @@ export async function POST(request: Request) {
       title?: string;
       slug?: string;
       description?: string | null;
+      dimension?: string | null;
+      weight?: string | null;
+      manufacturer?: string | null;
+      condition?: string | null;
+      conditionNotes?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
       featured?: boolean;
@@ -228,6 +243,11 @@ export async function POST(request: Request) {
         title: title.trim(),
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
         description: description?.trim() || null,
+        dimension: dimension?.trim() || null,
+        weight: weight?.trim() || null,
+        manufacturer: manufacturer?.trim() || null,
+        condition: condition?.trim() || null,
+        conditionNotes: conditionNotes?.trim() || null,
         images: Array.isArray(images) ? images.filter((image) => typeof image === "string") : [],
         status: status ?? "DRAFT",
         featured: typeof featured === "boolean" ? featured : false,

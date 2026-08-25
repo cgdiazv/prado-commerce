@@ -77,7 +77,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         status: "ACTIVE",
       },
       select: {
-        id: true, title: true, description: true, images: true,
+        id: true, title: true, description: true, dimension: true, weight: true, manufacturer: true, condition: true, conditionNotes: true, images: true,
         variants: {
           select: { id: true, title: true, price: true },
           orderBy: { price: "asc" as const },
@@ -104,6 +104,42 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">Product details</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h2>
               <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
+              {product.manufacturer || product.dimension || product.weight || product.condition || product.conditionNotes ? (
+                <div className="mt-4 flex flex-col gap-2 text-sm text-slate-600 border-t border-b border-slate-100 py-3">
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    {product.manufacturer ? (
+                      <div>
+                        <span className="font-semibold text-slate-900">Manufacturer: </span>
+                        {product.manufacturer}
+                      </div>
+                    ) : null}
+                    {product.dimension ? (
+                      <div>
+                        <span className="font-semibold text-slate-900">Dimensions: </span>
+                        {product.dimension}
+                      </div>
+                    ) : null}
+                    {product.weight ? (
+                      <div>
+                        <span className="font-semibold text-slate-900">Weight: </span>
+                        {product.weight}
+                      </div>
+                    ) : null}
+                    {product.condition ? (
+                      <div>
+                        <span className="font-semibold text-slate-900">Condition: </span>
+                        {product.condition.replace(/_/g, " ")}
+                      </div>
+                    ) : null}
+                  </div>
+                  {product.conditionNotes ? (
+                    <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 mt-1">
+                      <span className="font-semibold text-slate-700">Condition Notes: </span>
+                      {product.conditionNotes}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <div className={`mt-8 rounded-2xl border p-5 ${themeClasses.mutedPanel}`}>
                 <div className="flex items-center justify-between">
                   {primaryVariant ? (

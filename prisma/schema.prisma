@@ -170,6 +170,12 @@ model Product {
   status      ProductStatus  @default(DRAFT)
   productType ProductType    @default(PHYSICAL)
 
+  dimension    String?
+  weight       String?
+  manufacturer String?
+  condition    String?
+  conditionNotes String?      @db.Text
+
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 

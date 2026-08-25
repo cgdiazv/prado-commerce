@@ -108,6 +108,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       title,
       slug,
       description,
+      dimension,
+      weight,
+      manufacturer,
+      condition,
+      conditionNotes,
       images,
       status,
       featured,
@@ -118,6 +123,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       title?: string;
       slug?: string;
       description?: string | null;
+      dimension?: string | null;
+      weight?: string | null;
+      manufacturer?: string | null;
+      condition?: string | null;
+      conditionNotes?: string | null;
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
       featured?: boolean;
@@ -138,6 +148,26 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     if (description !== undefined) {
       updates.description = description?.trim() || null;
+    }
+
+    if (dimension !== undefined) {
+      updates.dimension = dimension?.trim() || null;
+    }
+
+    if (weight !== undefined) {
+      updates.weight = weight?.trim() || null;
+    }
+
+    if (manufacturer !== undefined) {
+      updates.manufacturer = manufacturer?.trim() || null;
+    }
+
+    if (condition !== undefined) {
+      updates.condition = condition?.trim() || null;
+    }
+
+    if (conditionNotes !== undefined) {
+      updates.conditionNotes = conditionNotes?.trim() || null;
     }
 
     if (images !== undefined) {

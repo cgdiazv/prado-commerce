@@ -28,6 +28,11 @@ type Product = {
   title: string;
   slug: string;
   description: string | null;
+  dimension?: string | null;
+  weight?: string | null;
+  manufacturer?: string | null;
+  condition?: string | null;
+  conditionNotes?: string | null;
   images: string[];
   featured: boolean;
   status: "DRAFT" | "PUBLISHED" | "ACTIVE" | "ARCHIVED";

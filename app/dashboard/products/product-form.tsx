@@ -27,6 +27,11 @@ type Product = {
   title: string;
   slug: string;
   description: string | null;
+  dimension?: string | null;
+  weight?: string | null;
+  manufacturer?: string | null;
+  condition?: string | null;
+  conditionNotes?: string | null;
   images: string[];
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
@@ -40,6 +45,11 @@ type ProductFormState = {
   title: string;
   slug: string;
   description: string;
+  dimension: string;
+  weight: string;
+  manufacturer: string;
+  condition: string;
+  conditionNotes: string;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string;
@@ -73,6 +83,11 @@ const emptyProduct: ProductFormState = {
   title: "",
   slug: "",
   description: "",
+  dimension: "",
+  weight: "",
+  manufacturer: "",
+  condition: "",
+  conditionNotes: "",
   status: "DRAFT",
   productType: "PHYSICAL",
   categoryId: "",
@@ -117,6 +132,11 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           title: initialProduct.title,
           slug: initialProduct.slug,
           description: initialProduct.description ?? "",
+          dimension: initialProduct.dimension ?? "",
+          weight: initialProduct.weight ?? "",
+          manufacturer: initialProduct.manufacturer ?? "",
+          condition: initialProduct.condition ?? "",
+          conditionNotes: initialProduct.conditionNotes ?? "",
           status: initialProduct.status,
           productType: initialProduct.productType ?? "PHYSICAL",
           categoryId: initialProduct.categoryId ?? "",
@@ -347,6 +367,11 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         title: productForm.title,
         slug: productForm.slug,
         description: productForm.description || null,
+        dimension: productForm.dimension.trim() || null,
+        weight: productForm.weight.trim() || null,
+        manufacturer: productForm.manufacturer.trim() || null,
+        condition: productForm.condition.trim() || null,
+        conditionNotes: productForm.conditionNotes.trim() || null,
         images: [...uploadedImages, ...galleryImages],
         status: productForm.status,
         productType: productForm.productType,
@@ -499,6 +524,57 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))}
               placeholder="Product summary"
               rows={4}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
+          </label>
+          <Field
+            label="Manufacturer"
+            value={productForm.manufacturer}
+            onChange={(value) => setProductForm((current) => ({ ...current, manufacturer: value }))}
+            placeholder="Acme Corp"
+          />
+          <Field
+            label="Dimensions"
+            hint="LxWxH (Length x Width x Height)"
+            value={productForm.dimension}
+            onChange={(value) => setProductForm((current) => ({ ...current, dimension: value }))}
+            placeholder="10 x 5 x 2 in (LxWxH)"
+          />
+          <Field
+            label="Weight"
+            value={productForm.weight}
+            onChange={(value) => setProductForm((current) => ({ ...current, weight: value }))}
+            placeholder="1.5 lbs"
+          />
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Condition</span>
+            <select
+              value={productForm.condition}
+              onChange={(event) =>
+                setProductForm((current) => ({ ...current, condition: event.target.value }))
+              }
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="">New / Default</option>
+              <option value="NEW">New</option>
+              <option value="LIKE_NEW">Used - Like New / Open Box</option>
+              <option value="EXCELLENT">Used - Excellent</option>
+              <option value="VERY_GOOD">Used - Very Good</option>
+              <option value="GOOD">Used - Good</option>
+              <option value="ACCEPTABLE">Used - Fair / Acceptable</option>
+              <option value="REFURBISHED">Refurbished</option>
+              <option value="FOR_PARTS">For Parts / Repair</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Condition Notes</span>
+            <textarea
+              value={productForm.conditionNotes}
+              onChange={(event) =>
+                setProductForm((current) => ({ ...current, conditionNotes: event.target.value }))
+              }
+              placeholder="Describe any flaws, wear, packaging details, or inclusions..."
+              rows={2}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
@@ -762,6 +838,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
 
 function Field({
   label,
+  hint,
   value,
   onChange,
   placeholder,
@@ -770,6 +847,7 @@ function Field({
   className = "",
 }: {
   label: string;
+  hint?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
@@ -779,7 +857,10 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-2 ${className}`}>
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+        {hint ? <span className="text-xs text-slate-400 font-normal">{hint}</span> : null}
+      </div>
       <input
         type={type}
         min={type === "number" ? 0 : undefined}
