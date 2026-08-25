@@ -15,6 +15,11 @@ model MerchantUser {
   address                  String?
   addressType              String?
   plan                     SubscriptionPlan @default(STARTER)
+  businessCategory         String?
+  catalogSize              String?
+  salesChannels            String[] @default([])
+  preferredTheme           StorefrontTheme?
+  questionnaireAnswers     Json?
   stripeCustomerId         String?  @unique
   stripeSubId              String?  @unique
   passwordHash             String?

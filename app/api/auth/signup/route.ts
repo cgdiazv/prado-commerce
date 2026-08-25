@@ -11,6 +11,17 @@ export async function POST(request: Request) {
     const name = String(body?.name || "").trim();
     const email = String(body?.email || "").trim().toLowerCase();
     const company = String(body?.company || "").trim() || null;
+    const businessCategory = String(body?.businessCategory || "").trim() || null;
+    const catalogSize = String(body?.catalogSize || "").trim() || null;
+    const salesChannels = Array.isArray(body?.salesChannels)
+      ? body.salesChannels.map((ch: unknown) => String(ch).trim()).filter(Boolean)
+      : [];
+    const preferredTheme = ["MINIMAL", "BOLD", "CLASSIC"].includes(body?.preferredTheme)
+      ? body.preferredTheme
+      : null;
+    const questionnaireAnswers = body?.questionnaireAnswers && typeof body.questionnaireAnswers === "object"
+      ? body.questionnaireAnswers
+      : null;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -36,6 +47,11 @@ export async function POST(request: Request) {
         name,
         email,
         company,
+        businessCategory,
+        catalogSize,
+        salesChannels,
+        preferredTheme,
+        questionnaireAnswers: questionnaireAnswers ?? Prisma.DbNull,
         onboardingTokenId: tokenId,
         onboardingTokenHash: hashSecret(tokenSecret),
         onboardingTokenExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
