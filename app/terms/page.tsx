@@ -78,11 +78,34 @@ export default function TermsPage() {
           </section>
 
           <section className="rounded-xl border border-white/12 bg-white/6 p-5">
-            <h2 className="text-lg font-semibold text-cyan-100">6. Payment, shipping, and tax features</h2>
+            <h2 className="text-lg font-semibold text-cyan-100">6. Payment, shipping, and processing fees</h2>
             <p className="mt-2">
               Dashboard configuration tools are provided as operational features. You remain responsible for business policy,
               legal compliance, provider contracts, settlement outcomes, and tax filing obligations.
             </p>
+            <div className="mt-4 rounded-lg border border-white/10 bg-slate-900/60 p-4">
+              <h3 className="font-semibold text-white">Stripe Payment Processing Fees</h3>
+              <p className="mt-1 text-slate-300">
+                When you enable online payments through Stripe Connect, Stripe processing fees apply to successful card transactions.
+              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-slate-200">
+                <li>
+                  <strong className="text-cyan-200">Domestic online cards:</strong> 2.9% + $0.30 per successful transaction. Applies to Visa, Mastercard, American Express, Discover, and digital wallets (Apple Pay / Google Pay).
+                </li>
+                <li>
+                  <strong className="text-cyan-200">International cards:</strong> an additional +1.5% applies, for a total of 4.4% + $0.30.
+                </li>
+                <li>
+                  <strong className="text-cyan-200">Currency conversion:</strong> if the charge requires currency conversion, an additional +1% applies.
+                </li>
+                <li>
+                  <strong className="text-cyan-200">Manually entered cards (MOTO):</strong> an additional +0.5% applies on top of the base processing rate.
+                </li>
+                <li>
+                  <strong className="text-cyan-200">In-person cards (Stripe Terminal):</strong> 2.7% + $0.05 per transaction.
+                </li>
+              </ul>
+            </div>
           </section>
 
           <section className="rounded-xl border border-white/12 bg-white/6 p-5">
