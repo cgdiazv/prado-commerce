@@ -54,19 +54,19 @@ const THEMES = [
     id: "MINIMAL" as const,
     label: "Minimal",
     tagline: "Clean, product-first layout with elegant whitespace.",
-    colorClass: "from-cyan-500/20 to-blue-500/10 border-cyan-400/50",
+    colorClass: "from-cyan-50 to-blue-50/50 border-cyan-300",
   },
   {
     id: "BOLD" as const,
     label: "Bold",
     tagline: "High-contrast dynamic hero sections and vivid accents.",
-    colorClass: "from-purple-500/20 to-pink-500/10 border-purple-400/50",
+    colorClass: "from-purple-50 to-pink-50/50 border-purple-300",
   },
   {
     id: "CLASSIC" as const,
     label: "Classic",
     tagline: "Structured e-commerce grid with extensive metadata filters.",
-    colorClass: "from-emerald-500/20 to-teal-500/10 border-emerald-400/50",
+    colorClass: "from-emerald-50 to-teal-50/50 border-emerald-300",
   },
 ];
 
@@ -155,49 +155,49 @@ export function SignupQuestionnaireWizard() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12 text-slate-100 relative overflow-hidden">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 py-12 text-slate-900 overflow-hidden">
       {/* Dynamic Ambient Background Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <section className="relative w-full max-w-2xl rounded-2xl border border-white/15 bg-slate-900/80 p-6 md:p-10 backdrop-blur-xl shadow-2xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <section className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
           <Link href="/" className="inline-block transition hover:opacity-85">
-            <PradoLogo theme="dark" subtitle="Merchant Onboarding" size="md" />
+            <PradoLogo theme="light" subtitle="Merchant Onboarding" size="md" />
           </Link>
           <div className="flex items-center gap-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-2">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     step === i
-                      ? "bg-cyan-400 text-slate-950 ring-4 ring-cyan-400/20 shadow-lg shadow-cyan-400/30"
+                      ? "bg-cyan-600 text-white ring-4 ring-cyan-600/20 shadow-md shadow-cyan-600/30"
                       : step > i
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                      : "bg-slate-800 text-slate-400 border border-white/10"
+                      ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
                 >
                   {step > i ? <Check className="h-4 w-4" /> : i}
                 </div>
-                {i < 3 && <div className={`h-0.5 w-6 md:w-10 ${step > i ? "bg-emerald-500/50" : "bg-slate-800"}`} />}
+                {i < 3 && <div className={`h-0.5 w-6 md:w-10 ${step > i ? "bg-emerald-400" : "bg-slate-200"}`} />}
               </div>
             ))}
           </div>
         </div>
 
         {status === "success" && onboardUrl ? (
-          <div className="mt-8 rounded-2xl border border-emerald-400/40 bg-emerald-950/40 p-8 text-center backdrop-blur-md animate-in fade-in zoom-in-95">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mb-4 shadow-lg shadow-emerald-500/20">
+          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-8 text-center backdrop-blur-md animate-in fade-in zoom-in-95">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300 mb-4 shadow-sm">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h2 className="text-2xl font-bold text-white">Account Created Successfully!</h2>
-            <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-slate-900">Account Created Successfully!</h2>
+            <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
               Your merchant profile and questionnaire preferences have been stored.
             </p>
             <div className="mt-6">
               <a
                 href={onboardUrl}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 shadow-lg shadow-cyan-400/25"
+                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-cyan-700 shadow-md shadow-cyan-600/25"
               >
                 Set Your Password & Enter Dashboard <ChevronRight className="h-4 w-4" />
               </a>
@@ -209,16 +209,16 @@ export function SignupQuestionnaireWizard() {
             {step === 1 && (
               <div className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Create your Merchant Account</h1>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Create your Merchant Account</h1>
+                  <p className="mt-1 text-sm text-slate-500">
                     Step 1 of 3: Enter your contact details to start setting up your store.
                   </p>
                 </div>
 
                 <div className="space-y-4 pt-2">
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-200">
-                      <User className="h-4 w-4 text-cyan-400" /> Full Name <span className="text-cyan-400">*</span>
+                    <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <User className="h-4 w-4 text-cyan-600" /> Full Name <span className="text-cyan-600">*</span>
                     </span>
                     <input
                       type="text"
@@ -226,13 +226,13 @@ export function SignupQuestionnaireWizard() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Jane Merchant"
-                      className="w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-200">
-                      <Mail className="h-4 w-4 text-cyan-400" /> Work Email <span className="text-cyan-400">*</span>
+                    <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <Mail className="h-4 w-4 text-cyan-600" /> Work Email <span className="text-cyan-600">*</span>
                     </span>
                     <input
                       type="email"
@@ -240,12 +240,12 @@ export function SignupQuestionnaireWizard() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="jane@yourbrand.com"
-                      className="w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-200">
+                    <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
                       <Building2 className="h-4 w-4 text-slate-400" /> Company or Store Name (Optional)
                     </span>
                     <input
@@ -253,7 +253,7 @@ export function SignupQuestionnaireWizard() {
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
                       placeholder="e.g. Acme Goods"
-                      className="w-full rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
                 </div>
@@ -264,15 +264,15 @@ export function SignupQuestionnaireWizard() {
             {step === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Tell us about your Business</h1>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Tell us about your Business</h1>
+                  <p className="mt-1 text-sm text-slate-500">
                     Step 2 of 3: Help us tailor your e-commerce dashboard and inventory setup.
                   </p>
                 </div>
 
                 {/* Business Category Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-3">
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
                     What is your primary industry or product category?
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -286,15 +286,15 @@ export function SignupQuestionnaireWizard() {
                           onClick={() => setBusinessCategory(cat.id)}
                           className={`flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
                             selected
-                              ? "border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-500/10"
-                              : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/70"
+                              ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
+                              : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
                           }`}
                         >
-                          <div className={`p-2 rounded-lg mb-2 ${selected ? "bg-cyan-400 text-slate-950" : "bg-slate-800 text-slate-300"}`}>
+                          <div className={`p-2 rounded-lg mb-2 ${selected ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                             <Icon className="h-4 w-4" />
                           </div>
-                          <span className="text-xs font-semibold text-white">{cat.label}</span>
-                          <span className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{cat.desc}</span>
+                          <span className="text-xs font-bold text-slate-900">{cat.label}</span>
+                          <span className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{cat.desc}</span>
                         </button>
                       );
                     })}
@@ -303,7 +303,7 @@ export function SignupQuestionnaireWizard() {
 
                 {/* Catalog Size Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-3">
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
                     Estimated product catalog size:
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -316,15 +316,15 @@ export function SignupQuestionnaireWizard() {
                           onClick={() => setCatalogSize(size.id)}
                           className={`p-3.5 rounded-xl border text-left transition-all ${
                             selected
-                              ? "border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-400/50"
-                              : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/70"
+                              ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
+                              : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-white">{size.label}</span>
-                            {selected && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+                            <span className="text-xs font-bold text-slate-900">{size.label}</span>
+                            {selected && <Check className="h-3.5 w-3.5 text-cyan-600" />}
                           </div>
-                          <p className="text-[11px] text-slate-400 mt-1">{size.desc}</p>
+                          <p className="text-[11px] text-slate-500 mt-1">{size.desc}</p>
                         </button>
                       );
                     })}
@@ -333,8 +333,8 @@ export function SignupQuestionnaireWizard() {
 
                 {/* Sales Channels Multi-Select */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-3">
-                    Where do you plan to sell? <span className="text-xs font-normal text-slate-400">(Select all that apply)</span>
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    Where do you plan to sell? <span className="text-xs font-normal text-slate-500">(Select all that apply)</span>
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {CHANNEL_OPTIONS.map((ch) => {
@@ -347,19 +347,19 @@ export function SignupQuestionnaireWizard() {
                           onClick={() => toggleChannel(ch.id)}
                           className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${
                             isChecked
-                              ? "border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-400/50"
-                              : "border-white/10 bg-slate-950/40 hover:border-white/20"
+                              ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
+                              : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
                           }`}
                         >
-                          <div className={`p-2 rounded-lg ${isChecked ? "bg-cyan-400 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
+                          <div className={`p-2 rounded-lg ${isChecked ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-white flex items-center justify-between">
+                            <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                               {ch.label}
-                              {isChecked && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+                              {isChecked && <Check className="h-3.5 w-3.5 text-cyan-600" />}
                             </div>
-                            <div className="text-[11px] text-slate-400 truncate">{ch.desc}</div>
+                            <div className="text-[11px] text-slate-500 truncate">{ch.desc}</div>
                           </div>
                         </button>
                       );
@@ -373,16 +373,16 @@ export function SignupQuestionnaireWizard() {
             {step === 3 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Storefront Theme & Currency</h1>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Storefront Theme & Currency</h1>
+                  <p className="mt-1 text-sm text-slate-500">
                     Step 3 of 3: Choose your default theme look & currency. You can adjust these anytime.
                   </p>
                 </div>
 
                 {/* Theme Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-cyan-400" /> Storefront Design Preset:
+                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-cyan-600" /> Storefront Design Preset:
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {THEMES.map((t) => {
@@ -396,17 +396,17 @@ export function SignupQuestionnaireWizard() {
                             t.colorClass
                           } ${
                             selected
-                              ? "ring-2 ring-cyan-400 border-cyan-400 shadow-lg shadow-cyan-500/20"
-                              : "border-white/10 bg-slate-950/40 opacity-80 hover:opacity-100"
+                              ? "ring-2 ring-cyan-600 border-cyan-600 shadow-md shadow-cyan-600/10"
+                              : "border-slate-200 bg-white opacity-80 hover:opacity-100"
                           }`}
                         >
                           {selected && (
-                            <div className="absolute top-3 right-3 bg-cyan-400 text-slate-950 p-1 rounded-full">
+                            <div className="absolute top-3 right-3 bg-cyan-600 text-white p-1 rounded-full">
                               <Check className="h-3 w-3" />
                             </div>
                           )}
-                          <div className="text-sm font-bold text-white uppercase tracking-wider">{t.label}</div>
-                          <p className="text-xs text-slate-300 mt-2 leading-relaxed">{t.tagline}</p>
+                          <div className="text-sm font-bold text-slate-900 uppercase tracking-wider">{t.label}</div>
+                          <p className="text-xs text-slate-600 mt-2 leading-relaxed">{t.tagline}</p>
                         </button>
                       );
                     })}
@@ -415,13 +415,13 @@ export function SignupQuestionnaireWizard() {
 
                 {/* Primary Currency */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-2 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-cyan-400" /> Default Store Currency:
+                  <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-cyan-600" /> Default Store Currency:
                   </label>
                   <select
                     value={primaryCurrency}
                     onChange={(e) => setPrimaryCurrency(e.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                   >
                     <option value="USD">USD ($) - US Dollar</option>
                     <option value="HNL">HNL (L) - Honduran Lempira</option>
@@ -434,10 +434,10 @@ export function SignupQuestionnaireWizard() {
                   </select>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4 text-xs text-slate-400 leading-relaxed flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-cyan-400 shrink-0" />
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 leading-relaxed flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-cyan-600 shrink-0" />
                   <div>
-                    <span className="text-slate-200 font-medium">Pro-tip:</span> You can create multiple storefronts and customize custom domains, Stripe connected payments, and inventory suppliers after completing account activation.
+                    <span className="text-slate-900 font-semibold">Pro-tip:</span> You can create multiple storefronts and customize custom domains, Stripe connected payments, and inventory suppliers after completing account activation.
                   </div>
                 </div>
               </div>
@@ -445,18 +445,18 @@ export function SignupQuestionnaireWizard() {
 
             {/* Error Message Display */}
             {message && (
-              <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {message}
               </div>
             )}
 
             {/* Navigation & Submission Controls */}
-            <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-6">
+            <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
               {step > 1 ? (
                 <button
                   type="button"
                   onClick={() => setStep((current) => (current - 1) as 1 | 2)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   <ChevronLeft className="h-4 w-4" /> Back
                 </button>
@@ -467,7 +467,7 @@ export function SignupQuestionnaireWizard() {
               <button
                 type="submit"
                 disabled={status === "saving"}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60 shadow-lg shadow-cyan-400/20"
+                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:opacity-60 shadow-md shadow-cyan-600/20"
               >
                 {status === "saving" ? (
                   "Saving Profile..."
@@ -485,9 +485,9 @@ export function SignupQuestionnaireWizard() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-slate-500">
           Already registered?{" "}
-          <Link href="/login" className="font-semibold text-cyan-300 hover:underline">
+          <Link href="/login" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">
             Sign in to Dashboard
           </Link>
         </p>
