@@ -7,12 +7,15 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
 
+const poolMax = process.env.DATABASE_POOL_MAX
+  ? Number.parseInt(process.env.DATABASE_POOL_MAX, 10)
+  : 10;
+
 const adapter = new PrismaPg({
   connectionString,
-  max: 1,
-  idleTimeoutMillis: 1_000,
-  connectionTimeoutMillis: 10_000,
-  allowExitOnIdle: true,
+  max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 15_000,
 });
 
 const globalForPrisma = globalThis as unknown as {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck } from "lucide-react";
@@ -34,7 +34,7 @@ export default function DashboardLayout({
 
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
-  const [isInitialized, setIsInitialized] = useState(false);
+  const isInitializedRef = useRef(false);
   const [toast, setToast] = useState<{ id: string; title: string; message: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<{
     id?: string;
@@ -90,6 +90,10 @@ export default function DashboardLayout({
     let active = true;
 
     async function pollOrders() {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+
       try {
         const allOrdersPromises = stores.map(async (store) => {
           const res = await fetch(`/api/orders?storeId=${store.id}`, { cache: "no-store" });
@@ -121,12 +125,12 @@ export default function DashboardLayout({
             }
           }
 
-          if (prevKnown.size === 0 && !isInitialized) {
-            setIsInitialized(true);
+          if (prevKnown.size === 0 && !isInitializedRef.current) {
+            isInitializedRef.current = true;
             return nextKnown;
           }
 
-          if (newOrders.length > 0) {
+          if (isInitializedRef.current && newOrders.length > 0) {
             const latestOrder = newOrders[0];
             showToast({
               id: latestOrder.id,
@@ -146,13 +150,13 @@ export default function DashboardLayout({
 
     const interval = setInterval(() => {
       void pollOrders();
-    }, 5000);
+    }, 20000);
 
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [stores, isInitialized]);
+  }, [stores]);
 
   const navItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },

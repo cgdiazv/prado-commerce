@@ -34,6 +34,10 @@ function getRateLimitForPlan(plan: string | undefined) {
 }
 
 function shouldRateLimit(pathname: string) {
+  if (process.env.NODE_ENV === "development") {
+    return false;
+  }
+
   return pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth/") &&
     pathname !== "/api/stripe/webhook" &&
@@ -50,6 +54,17 @@ function readClientIp(request: NextRequest) {
   }
 
   return request.headers.get("x-real-ip") ?? "unknown";
+}
+
+function getRateLimitIdentifier(request: NextRequest): string {
+  const sessionVal = request.cookies.get(SESSION_COOKIE)?.value;
+  if (sessionVal) {
+    const separatorIdx = sessionVal.lastIndexOf("::");
+    const userIdentifier = separatorIdx !== -1 ? sessionVal.slice(0, separatorIdx) : sessionVal;
+    return `user:${userIdentifier.trim().toLowerCase()}`;
+  }
+
+  return `ip:${readClientIp(request)}`;
 }
 
 function isProtectedPath(pathname: string) {
@@ -89,7 +104,7 @@ export function middleware(request: NextRequest) {
 
     if (Number.isFinite(limit)) {
       const now = Date.now();
-      const key = `${readClientIp(request)}:${plan ?? "STARTER"}:${pathname}`;
+      const key = `${getRateLimitIdentifier(request)}:${plan ?? "STARTER"}:${pathname}`;
       const current = rateBuckets.get(key);
 
       if (!current || now >= current.resetAt) {
@@ -213,7 +228,7 @@ export function middleware(request: NextRequest) {
     const limit = getRateLimitForPlan(plan);
 
     if (Number.isFinite(limit)) {
-      const key = `${readClientIp(request)}:${plan ?? "STARTER"}:${pathname}`;
+      const key = `${getRateLimitIdentifier(request)}:${plan ?? "STARTER"}:${pathname}`;
       const current = rateBuckets.get(key);
       const remaining = current ? Math.max(0, limit - current.count) : limit;
       response.headers.set("X-RateLimit-Limit", String(limit));

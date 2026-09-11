@@ -19,7 +19,14 @@ type SessionUser = {
 
 function isDatabaseConnectionError(error: unknown): boolean {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return error.code === "P1000" || error.code === "P1001";
+    return (
+      error.code === "P1000" ||
+      error.code === "P1001" ||
+      error.code === "P1002" ||
+      error.code === "P1008" ||
+      error.code === "P1017" ||
+      error.code === "P2024"
+    );
   }
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
@@ -27,7 +34,9 @@ function isDatabaseConnectionError(error: unknown): boolean {
   }
 
   if (error instanceof Error) {
-    return /can't reach database server|database server at|authentication failed against the database server/i.test(error.message);
+    return /can't reach database server|database server at|authentication failed against the database server|timeout exceeded|timed out waiting for a connection|connection terminated|connection closed|too many clients|resourcerequest timed out|connection pool timeout/i.test(
+      error.message,
+    );
   }
 
   return false;
