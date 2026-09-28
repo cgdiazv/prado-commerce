@@ -55,23 +55,33 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
     );
   }
 
-  const store = await prisma.store.findFirst({
-    where: {
-      id: storeId,
-      ownerUserId: user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      activeTheme: true,
-      heroImageUrl: true,
-      heroEyebrow: true,
-      heroTitle: true,
-      heroSubtitle: true,
-      heroButtonText: true,
-    },
-  });
+  let store;
+  try {
+    store = await prisma.store.findFirst({
+      where: {
+        id: storeId,
+        ownerUserId: user.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        activeTheme: true,
+        heroImageUrl: true,
+        heroEyebrow: true,
+        heroTitle: true,
+        heroSubtitle: true,
+        heroButtonText: true,
+      },
+    });
+  } catch (error) {
+    console.error("[STORE_THEMES_PAGE_DB_ERROR]", error);
+    return (
+      <section className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        Could not load store theme settings. Please check database connectivity and refresh.
+      </section>
+    );
+  }
 
   if (!store) {
     notFound();

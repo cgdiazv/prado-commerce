@@ -95,22 +95,30 @@ export default function DashboardLayout({
       }
 
       try {
-        const allOrdersPromises = stores.map(async (store) => {
-          const res = await fetch(`/api/orders?storeId=${store.id}`, { cache: "no-store" });
-          if (!res.ok) return [];
-          const orders = await res.json();
-          return orders.map((order: any) => ({
-            id: order.id,
-            orderNumber: order.orderNumber,
-            total: order.total,
-            currency: order.currency,
-            storeName: store.name,
-            createdAt: order.createdAt,
-          }));
-        });
-
-        const results = await Promise.all(allOrdersPromises);
-        const currentOrders = results.flat();
+        const currentOrders: any[] = [];
+        for (const store of stores) {
+          if (!active) break;
+          try {
+            const res = await fetch(`/api/orders?storeId=${store.id}`, { cache: "no-store" });
+            if (res.ok) {
+              const orders = await res.json();
+              if (Array.isArray(orders)) {
+                for (const order of orders) {
+                  currentOrders.push({
+                    id: order.id,
+                    orderNumber: order.orderNumber,
+                    total: order.total,
+                    currency: order.currency,
+                    storeName: store.name,
+                    createdAt: order.createdAt,
+                  });
+                }
+              }
+            }
+          } catch {
+            // Ignore transient background poll errors
+          }
+        }
 
         if (!active) return;
 
@@ -146,14 +154,17 @@ export default function DashboardLayout({
       }
     }
 
-    void pollOrders();
+    const initialTimeout = setTimeout(() => {
+      void pollOrders();
+    }, 10000);
 
     const interval = setInterval(() => {
       void pollOrders();
-    }, 20000);
+    }, 45000);
 
     return () => {
       active = false;
+      clearTimeout(initialTimeout);
       clearInterval(interval);
     };
   }, [stores]);

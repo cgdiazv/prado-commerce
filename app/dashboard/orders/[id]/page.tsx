@@ -64,21 +64,36 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
     );
   }
 
-  const order = (await (prisma.order.findFirst as any)({
-    where: {
-      id,
-      store: {
-        ownerUserId: user.id,
+  let order: OrderRecord | null = null;
+  try {
+    order = (await (prisma.order.findFirst as any)({
+      where: {
+        id,
+        store: {
+          ownerUserId: user.id,
+        },
       },
-    },
-    include: {
-      items: true,
-      store: true,
-    },
-  })) as OrderRecord | null;
+      include: {
+        items: true,
+        store: true,
+      },
+    })) as OrderRecord | null;
 
-  if (!order) {
-    notFound();
+    if (!order) {
+      notFound();
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && String((error as any).digest).startsWith("NEXT_NOT_FOUND")) {
+      throw error;
+    }
+    console.error("[ORDER_DETAIL_PAGE_DB_ERROR]", error);
+    return (
+      <section className="min-w-0 space-y-6">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Could not load order details. Please check database connectivity and refresh.
+        </div>
+      </section>
+    );
   }
 
   const serializedOrder = JSON.parse(

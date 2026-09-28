@@ -23,27 +23,44 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
     );
   }
 
-  const stores = await prisma.store.findMany({
-    where: { ownerUserId: user.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      currency: true,
-    },
-  });
+  let stores = [];
+  let customer = null;
 
-  const customer = await prisma.customer.findFirst({
-    where: {
-      id,
-      store: {
-        ownerUserId: user.id,
+  try {
+    stores = await prisma.store.findMany({
+      where: { ownerUserId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        currency: true,
       },
-    },
-  });
+    });
 
-  if (!customer) {
-    notFound();
+    customer = await prisma.customer.findFirst({
+      where: {
+        id,
+        store: {
+          ownerUserId: user.id,
+        },
+      },
+    });
+
+    if (!customer) {
+      notFound();
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && String((error as any).digest).startsWith("NEXT_NOT_FOUND")) {
+      throw error;
+    }
+    console.error("[CUSTOMER_EDIT_PAGE_DB_ERROR]", error);
+    return (
+      <section className="min-w-0 space-y-6">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Could not load customer details. Please check database connectivity and refresh.
+        </div>
+      </section>
+    );
   }
 
   const serializedCustomer = JSON.parse(

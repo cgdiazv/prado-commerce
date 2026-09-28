@@ -140,11 +140,8 @@ export async function getCurrentUser() {
   try {
     return await findSessionUser(parsedCookie.email, parsedCookie.sessionVersion);
   } catch (error) {
-    if (isDatabaseConnectionError(error)) {
-      console.error("[SESSION_DB_UNREACHABLE]", error);
-      return null;
-    }
-    throw error;
+    console.error("[SESSION_DB_ERROR]", error);
+    return null;
   }
 }
 
@@ -166,10 +163,7 @@ export async function getCurrentUserFromRequest(request: Request) {
   try {
     return await findSessionUser(parsedCookie.email, parsedCookie.sessionVersion);
   } catch (error) {
-    if (isDatabaseConnectionError(error)) {
-      console.error("[SESSION_DB_UNREACHABLE]", error);
-      return null;
-    }
-    throw error;
+    console.error("[SESSION_REQUEST_DB_ERROR]", error);
+    return null;
   }
 }

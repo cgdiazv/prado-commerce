@@ -9,18 +9,31 @@ if (!connectionString) {
 
 const poolMax = process.env.DATABASE_POOL_MAX
   ? Number.parseInt(process.env.DATABASE_POOL_MAX, 10)
-  : 10;
-
-const adapter = new PrismaPg({
-  connectionString,
-  max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : 10,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 15_000,
-});
+  : 5;
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma?: PrismaClient;
+  adapter?: PrismaPg;
 };
+
+const adapter =
+  globalForPrisma.adapter ??
+  new PrismaPg(
+    {
+      connectionString,
+      max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : 5,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
+    },
+    {
+      onPoolError: (err) => {
+        console.error("[PRISMA_POOL_ERROR]", err);
+      },
+      onConnectionError: (err) => {
+        console.error("[PRISMA_CONNECTION_ERROR]", err);
+      },
+    },
+  );
 
 export const prisma =
   globalForPrisma.prisma ??
@@ -32,6 +45,6 @@ export const prisma =
         : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.adapter = adapter;
+globalForPrisma.prisma = prisma;
+

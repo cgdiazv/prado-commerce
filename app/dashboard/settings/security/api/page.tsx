@@ -16,39 +16,51 @@ export default async function SecurityApiPage() {
     );
   }
 
-  const stores = await prisma.store.findMany({
-    where: { ownerUserId: user.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      allowedDomains: true,
-      apiKeys: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          key: true,
-          expiresAt: true,
-          createdAt: true,
+  let stores = [];
+  try {
+    stores = await prisma.store.findMany({
+      where: { ownerUserId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        allowedDomains: true,
+        apiKeys: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            key: true,
+            expiresAt: true,
+            createdAt: true,
+          },
         },
-      },
-      products: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          title: true,
-          variants: {
-            select: {
-              id: true,
-              title: true,
+        products: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            title: true,
+            variants: {
+              select: {
+                id: true,
+                title: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[SECURITY_API_PAGE_DB_ERROR]", error);
+    return (
+      <section className="space-y-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Could not load API access settings. Please check database connectivity and refresh.
+        </div>
+      </section>
+    );
+  }
 
   const normalizedStores = stores.map((store) => ({
     id: store.id,
