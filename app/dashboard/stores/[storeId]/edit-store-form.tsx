@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Palette, Trash2 } from "lucide-react";
+import { upload } from "@vercel/blob/client";
+
 import { buildEmailBrandingStyles, normalizeMainColor } from "@/lib/branding";
 import { normalizeStoreSlug } from "@/lib/store-slug";
 import { CURRENCIES, Field, SelectField, TIMEZONES } from "../store-form-controls";
@@ -160,21 +162,16 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
     setIsUploadingLogo(true);
 
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch("/api/uploads/products", { method: "POST", body: form });
-      const rawText = await response.text();
-      let data: { url?: string; error?: string } = {};
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        throw new Error("Upload failed. Unexpected server response.");
-      }
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const filename = `stores/logo-${Date.now()}.${ext}`;
+      const blob = await upload(filename, file, {
+        access: "public",
+        handleUploadUrl: "/api/uploads/products",
+      });
 
-      if (!response.ok) throw new Error(data.error ?? "Upload failed");
-      if (!data.url) throw new Error("Upload failed");
+      if (!blob?.url) throw new Error("Upload failed. No URL returned.");
 
-      setFormState((prev) => ({ ...prev, logoUrl: data.url ?? null }));
+      setFormState((prev) => ({ ...prev, logoUrl: blob.url }));
     } catch (uploadError) {
       alert(uploadError instanceof Error ? uploadError.message : "Upload failed");
     } finally {

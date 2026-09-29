@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { upload } from "@vercel/blob/client";
+
 
 type Store = {
   id: string;
@@ -94,6 +96,10 @@ const emptyProduct: ProductFormState = {
 };
 
 async function parseUploadResponse(response: Response): Promise<{ url?: string; error?: string }> {
+  if (response.status === 413) {
+    return { error: "Upload failed: File exceeds the server's payload size limit (max 4.5 MB)." };
+  }
+
   const raw = await response.text();
 
   if (!raw) {
@@ -103,7 +109,7 @@ async function parseUploadResponse(response: Response): Promise<{ url?: string; 
   try {
     return JSON.parse(raw) as { url?: string; error?: string };
   } catch {
-    return { error: "Upload failed. Unexpected server response." };
+    return { error: `Upload failed (Status ${response.status}). Unexpected server response.` };
   }
 }
 type Category = {
@@ -208,13 +214,14 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
     try {
       const urls: string[] = [];
       for (const file of files) {
-        const form = new FormData();
-        form.append("file", file);
-        const response = await fetch("/api/uploads/products", { method: "POST", body: form });
-        const data = await parseUploadResponse(response);
-        if (!response.ok) throw new Error(data.error ?? "Upload failed");
-        if (!data.url) throw new Error("Upload failed");
-        urls.push(data.url);
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const filename = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const blob = await upload(filename, file, {
+          access: "public",
+          handleUploadUrl: "/api/uploads/products",
+        });
+        if (!blob?.url) throw new Error("Upload failed. No URL returned.");
+        urls.push(blob.url);
       }
       // Featured image is single-value, so selecting a new one replaces the current image.
       setUploadedImages(urls.slice(0, 1));
@@ -260,13 +267,14 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
     try {
       const urls: string[] = [];
       for (const file of files) {
-        const form = new FormData();
-        form.append("file", file);
-        const response = await fetch("/api/uploads/products", { method: "POST", body: form });
-        const data = await parseUploadResponse(response);
-        if (!response.ok) throw new Error(data.error ?? "Upload failed");
-        if (!data.url) throw new Error("Upload failed");
-        urls.push(data.url);
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const filename = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const blob = await upload(filename, file, {
+          access: "public",
+          handleUploadUrl: "/api/uploads/products",
+        });
+        if (!blob?.url) throw new Error("Upload failed. No URL returned.");
+        urls.push(blob.url);
       }
       setGalleryImages((current) => [...current, ...urls]);
     } catch (uploadError) {

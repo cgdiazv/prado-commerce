@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
+
 
 type HeroImageManagerProps = {
   storeId: string;
@@ -11,6 +13,10 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 async function parseUploadResponse(response: Response): Promise<{ url?: string; error?: string }> {
+  if (response.status === 413) {
+    return { error: "Upload failed: File exceeds the server's payload size limit (max 4.5 MB)." };
+  }
+
   const raw = await response.text();
 
   if (!raw) {
@@ -20,7 +26,7 @@ async function parseUploadResponse(response: Response): Promise<{ url?: string; 
   try {
     return JSON.parse(raw) as { url?: string; error?: string };
   } catch {
-    return { error: "Upload failed. Unexpected server response." };
+    return { error: `Upload failed (Status ${response.status}). Unexpected server response.` };
   }
 }
 
@@ -85,26 +91,19 @@ export default function HeroImageManager({ storeId, initialHeroImageUrl }: HeroI
     setMessage(null);
 
     try {
-      const form = new FormData();
-      form.append("file", file);
-
-      const response = await fetch("/api/uploads/products", {
-        method: "POST",
-        body: form,
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const filename = `hero/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const blob = await upload(filename, file, {
+        access: "public",
+        handleUploadUrl: "/api/uploads/products",
       });
 
-      const uploadData = await parseUploadResponse(response);
-
-      if (!response.ok) {
-        throw new Error(uploadData.error ?? "Upload failed.");
+      if (!blob?.url) {
+        throw new Error("Upload failed. No URL returned.");
       }
 
-      if (!uploadData.url) {
-        throw new Error("Upload failed.");
-      }
-
-      setHeroImageUrl(uploadData.url);
-      await saveHeroImage(uploadData.url);
+      setHeroImageUrl(blob.url);
+      await saveHeroImage(blob.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
     } finally {
