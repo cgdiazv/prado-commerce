@@ -5,7 +5,6 @@ import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
-import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function LoginPageContent() {
@@ -59,12 +58,9 @@ function LoginPageContent() {
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <section className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="inline-block transition hover:opacity-85">
-            <PradoLogo theme="light" subtitle={t.common.logoSubtitle} size="md" />
-          </Link>
-          <LanguageToggle variant="light" />
-        </div>
+        <Link href="/" className="inline-block transition hover:opacity-85">
+          <PradoLogo theme="light" subtitle={t.common.logoSubtitle} size="md" />
+        </Link>
 
         <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t.login.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
