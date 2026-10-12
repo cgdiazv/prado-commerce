@@ -370,7 +370,7 @@ export const translations: Record<Language, Translations> = {
       errorMessage: "No se pudo generar el enlace de restablecimiento",
     },
     dashboard: {
-      merchantDashboard: "Panel de Comerciante",
+      merchantDashboard: "Panel",
       help: "Ayuda",
       authenticated: "Autenticado",
       logout: "Cerrar sesión",
