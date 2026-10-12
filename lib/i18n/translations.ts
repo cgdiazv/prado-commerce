@@ -382,7 +382,7 @@ export const translations: Record<Language, Translations> = {
       addProduct: "Añadir producto",
       categories: "Categorías",
       orders: "Pedidos",
-      procurement: "Abastecimiento",
+      procurement: "Compras",
       procurementOverview: "Resumen",
       purchaseOrders: "Órdenes de compra",
       vendors: "Proveedores",

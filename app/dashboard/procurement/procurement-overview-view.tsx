@@ -52,7 +52,7 @@ export function ProcurementOverviewView({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-            {isEs ? "Centro de Compras y Abastecimiento" : "Procurement & ERP Center"}
+            {isEs ? "Centro de Compras" : "Procurement & ERP Center"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {isEs
@@ -73,7 +73,7 @@ export function ProcurementOverviewView({
             className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-4 w-4" />
-            {isEs ? "Nueva Orden de Compra" : "New Purchase Order"}
+            {isEs ? "Nueva OC" : "New Purchase Order"}
           </Link>
         </div>
       </div>
