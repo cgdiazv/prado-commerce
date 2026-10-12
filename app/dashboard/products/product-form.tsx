@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { upload } from "@vercel/blob/client";
-
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
   id: string;
@@ -127,6 +127,8 @@ type ProductFormProps = {
 
 export function ProductForm({ stores, categories = [], initialProduct = null, selectedStoreId = null }: ProductFormProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? stores[0]?.id ?? "");
   const [availableCategories, setAvailableCategories] = useState<Category[]>(categories);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -436,10 +438,14 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {editingProduct ? "Edit product" : "New product"}
+            {editingProduct
+              ? isEs ? "Editar producto" : "Edit product"
+              : isEs ? "Nuevo producto" : "New product"}
           </p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">
-            {editingProduct ? "Update product details" : "Create a new product"}
+            {editingProduct
+              ? isEs ? "Actualizar detalles del producto" : "Update product details"
+              : isEs ? "Crear un nuevo producto" : "Create a new product"}
           </h2>
         </div>
         <button
@@ -447,16 +453,18 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           onClick={() => router.back()}
           className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
         >
-          Back
+          {isEs ? "Volver" : "Back"}
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Product details</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {isEs ? "Detalles del producto" : "Product details"}
+          </h3>
           <div className="grid gap-4 sm:grid-cols-2">
           <Field
-            label="Title"
+            label={isEs ? "Título" : "Title"}
             value={productForm.title}
             onChange={(value) =>
               setProductForm((current) => ({
@@ -466,16 +474,16 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                 slug: current.slug === toSlug(current.title) ? toSlug(value) : current.slug,
               }))
             }
-            placeholder="Classic Hoodie"
+            placeholder={isEs ? "Sudadera Clásica" : "Classic Hoodie"}
           />
           <Field
             label="Slug"
             value={productForm.slug}
             onChange={(value) => setProductForm((current) => ({ ...current, slug: value }))}
-            placeholder="classic-hoodie"
+            placeholder="sudadera-clasica"
           />
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Status</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Estado" : "Status"}</span>
             <select
               value={productForm.status}
               onChange={(event) =>
@@ -486,18 +494,18 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               }
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="DRAFT">Draft</option>
-              <option value="ACTIVE">Published</option>
+              <option value="DRAFT">{isEs ? "Borrador" : "Draft"}</option>
+              <option value="ACTIVE">{isEs ? "Publicado" : "Published"}</option>
             </select>
           </label>
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Category</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Categoría" : "Category"}</span>
             <select
               value={productForm.categoryId}
               onChange={(event) => setProductForm((current) => ({ ...current, categoryId: event.target.value }))}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="">No category</option>
+              <option value="">{isEs ? "Sin categoría" : "No category"}</option>
               {activeStoreCategories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -512,7 +520,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                     void handleCreateCategory();
                   }
                 }}
-                placeholder="Create new category"
+                placeholder={isEs ? "Crear nueva categoría" : "Create new category"}
                 className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
               <button
@@ -521,41 +529,43 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                 disabled={isCreatingCategory}
                 className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isCreatingCategory ? "Adding..." : "Add"}
+                {isCreatingCategory
+                  ? isEs ? "Añadiendo..." : "Adding..."
+                  : isEs ? "Añadir" : "Add"}
               </button>
             </div>
           </label>
           <label className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Descripción" : "Description"}</span>
             <textarea
               value={productForm.description}
               onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))}
-              placeholder="Product summary"
+              placeholder={isEs ? "Resumen del producto" : "Product summary"}
               rows={4}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
           <Field
-            label="Manufacturer"
+            label={isEs ? "Fabricante" : "Manufacturer"}
             value={productForm.manufacturer}
             onChange={(value) => setProductForm((current) => ({ ...current, manufacturer: value }))}
             placeholder="Acme Corp"
           />
           <Field
-            label="Dimensions"
+            label={isEs ? "Dimensiones" : "Dimensions"}
             hint="LxWxH (Length x Width x Height)"
             value={productForm.dimension}
             onChange={(value) => setProductForm((current) => ({ ...current, dimension: value }))}
             placeholder="10 x 5 x 2 in (LxWxH)"
           />
           <Field
-            label="Weight"
+            label={isEs ? "Peso" : "Weight"}
             value={productForm.weight}
             onChange={(value) => setProductForm((current) => ({ ...current, weight: value }))}
             placeholder="1.5 lbs"
           />
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Condition</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Estado / Condición" : "Condition"}</span>
             <select
               value={productForm.condition}
               onChange={(event) =>
@@ -563,31 +573,31 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               }
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="">New / Default</option>
-              <option value="NEW">New</option>
-              <option value="LIKE_NEW">Used - Like New / Open Box</option>
-              <option value="EXCELLENT">Used - Excellent</option>
-              <option value="VERY_GOOD">Used - Very Good</option>
-              <option value="GOOD">Used - Good</option>
-              <option value="ACCEPTABLE">Used - Fair / Acceptable</option>
-              <option value="REFURBISHED">Refurbished</option>
-              <option value="FOR_PARTS">For Parts / Repair</option>
+              <option value="">{isEs ? "Nuevo / Predeterminado" : "New / Default"}</option>
+              <option value="NEW">{isEs ? "Nuevo" : "New"}</option>
+              <option value="LIKE_NEW">{isEs ? "Usado - Como nuevo / Caja abierta" : "Used - Like New / Open Box"}</option>
+              <option value="EXCELLENT">{isEs ? "Usado - Excelente" : "Used - Excellent"}</option>
+              <option value="VERY_GOOD">{isEs ? "Usado - Muy bueno" : "Used - Very Good"}</option>
+              <option value="GOOD">{isEs ? "Usado - Bueno" : "Used - Good"}</option>
+              <option value="ACCEPTABLE">{isEs ? "Usado - Aceptable" : "Used - Fair / Acceptable"}</option>
+              <option value="REFURBISHED">{isEs ? "Reacondicionado" : "Refurbished"}</option>
+              <option value="FOR_PARTS">{isEs ? "Para piezas / Reparación" : "For Parts / Repair"}</option>
             </select>
           </label>
           <label className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Condition Notes</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Notas de condición" : "Condition Notes"}</span>
             <textarea
               value={productForm.conditionNotes}
               onChange={(event) =>
                 setProductForm((current) => ({ ...current, conditionNotes: event.target.value }))
               }
-              placeholder="Describe any flaws, wear, packaging details, or inclusions..."
+              placeholder={isEs ? "Describe cualquier desgaste, defecto, empaque o accesorios incluidos..." : "Describe any flaws, wear, packaging details, or inclusions..."}
               rows={2}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Featured Image</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Imagen destacada" : "Featured Image"}</span>
             {uploadedImages.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {uploadedImages.map((url) => (
@@ -599,7 +609,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                       onClick={() => removeImage(url)}
                       className="absolute inset-0 flex items-center justify-center bg-slate-950/50 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
                     >
-                      Remove
+                      {isEs ? "Eliminar" : "Remove"}
                     </button>
                   </div>
                 ))}
@@ -618,12 +628,18 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               disabled={isUploading}
               className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isUploading ? "Uploading…" : uploadedImages.length >= 1 ? "Replace image" : "Upload image"}
+              {isUploading
+                ? isEs ? "Subiendo…" : "Uploading…"
+                : uploadedImages.length >= 1
+                  ? isEs ? "Reemplazar imagen" : "Replace image"
+                  : isEs ? "Subir imagen" : "Upload image"}
             </button>
-            <p className="text-xs text-slate-400">JPEG, PNG, WebP or GIF — max 5 MB each</p>
+            <p className="text-xs text-slate-400">{isEs ? "JPEG, PNG, WebP o GIF — máx. 5 MB por archivo" : "JPEG, PNG, WebP or GIF — max 5 MB each"}</p>
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Gallery <span className="font-normal text-slate-400">({galleryImages.length}/6)</span></span>
+            <span className="text-sm font-medium text-slate-700">
+              {isEs ? "Galería" : "Gallery"} <span className="font-normal text-slate-400">({galleryImages.length}/6)</span>
+            </span>
             {galleryImages.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {galleryImages.map((url) => (
@@ -635,7 +651,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                       onClick={() => removeGalleryImage(url)}
                       className="absolute inset-0 flex items-center justify-center bg-slate-950/50 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
                     >
-                      Remove
+                      {isEs ? "Eliminar" : "Remove"}
                     </button>
                   </div>
                 ))}
@@ -656,18 +672,29 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {!isGalleryUploading ? <Plus className="h-4 w-4" /> : null}
-              {isGalleryUploading ? "Uploading…" : "Add gallery images"}
+              {isGalleryUploading
+                ? isEs ? "Subiendo…" : "Uploading…"
+                : isEs ? "Añadir imágenes de galería" : "Add gallery images"}
             </button>
-            <p className="text-xs text-slate-400">Up to 6 images — JPEG, PNG, WebP or GIF, max 5 MB each</p>
+            <p className="text-xs text-slate-400">
+              {isEs
+                ? "Hasta 6 imágenes — JPEG, PNG, WebP o GIF, máx. 5 MB cada una"
+                : "Up to 6 images — JPEG, PNG, WebP or GIF, max 5 MB each"}
+            </p>
           </div>
         </div>
       </div>
 
+
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <label className="text-sm font-medium text-slate-700">Store</label>
-              <p className="text-xs text-slate-500">Select which store this product belongs to</p>
+              <label className="text-sm font-medium text-slate-700">
+                {isEs ? "Tienda" : "Store"}
+              </label>
+              <p className="text-xs text-slate-500">
+                {isEs ? "Selecciona a qué tienda pertenece este producto" : "Select which store this product belongs to"}
+              </p>
             </div>
             <select
               value={activeStoreId}
@@ -690,19 +717,25 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-slate-950">Variants</h3>
-              <p className="text-sm text-slate-500">Add one or more size/color price points.</p>
+              <h3 className="text-lg font-semibold text-slate-950">
+                {isEs ? "Variantes" : "Variants"}
+              </h3>
+              <p className="text-sm text-slate-500">
+                {isEs ? "Añade una o más opciones de precio por talla/color." : "Add one or more size/color price points."}
+              </p>
               {isNonPhysicalProduct ? (
                 <p className="mt-1 text-xs text-blue-700">
-                  Inventory tracking is automatically disabled for digital and service products.
+                  {isEs
+                    ? "El seguimiento de inventario se desactiva automáticamente para productos digitales y servicios."
+                    : "Inventory tracking is automatically disabled for digital and service products."}
                 </p>
               ) : null}
             </div>
             <button
               type="button"
               onClick={addVariantRow}
-              aria-label="Add variant"
-              title="Add variant"
+              aria-label={isEs ? "Añadir variante" : "Add variant"}
+              title={isEs ? "Añadir variante" : "Add variant"}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
             >
               <Plus className="h-4 w-4" />
@@ -711,9 +744,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
 
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              { value: "PHYSICAL", label: "Physical" },
-              { value: "DIGITAL", label: "Digital / Downloadable" },
-              { value: "SERVICE", label: "Service" },
+              { value: "PHYSICAL", label: isEs ? "Físico" : "Physical" },
+              { value: "DIGITAL", label: isEs ? "Digital / Descargable" : "Digital / Downloadable" },
+              { value: "SERVICE", label: isEs ? "Servicio" : "Service" },
             ].map((option) => {
               const checked = productForm.productType === option.value;
               return (
@@ -746,24 +779,26 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             {variants.map((variant, index) => (
               <div key={`${index}-${variant.title}`} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-semibold text-slate-700">Variant {index + 1}</p>
+                  <p className="text-sm font-semibold text-slate-700">
+                    {isEs ? `Variante ${index + 1}` : `Variant ${index + 1}`}
+                  </p>
                   {variants.length > 1 ? (
                     <button
                       type="button"
                       onClick={() => removeVariant(index)}
                       className="text-sm font-semibold text-rose-600"
                     >
-                      Remove
+                      {isEs ? "Eliminar" : "Remove"}
                     </button>
                   ) : null}
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <Field
-                    label="Title"
+                    label={isEs ? "Título" : "Title"}
                     value={variant.title}
                     onChange={(value) => updateVariant(index, { title: value })}
-                    placeholder="Large / Blue"
+                    placeholder={isEs ? "Grande / Azul" : "Large / Blue"}
                   />
                   <Field
                     label="SKU"
@@ -772,21 +807,21 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                     placeholder="SKU-123"
                   />
                   <Field
-                    label="Price"
+                    label={isEs ? "Precio" : "Price"}
                     value={variant.price}
                     onChange={(value) => updateVariant(index, { price: value })}
                     placeholder="99.00"
                     type="number"
                   />
                   <Field
-                    label="Sale price"
+                    label={isEs ? "Precio de oferta" : "Sale price"}
                     value={variant.compareAtPrice}
                     onChange={(value) => updateVariant(index, { compareAtPrice: value })}
                     placeholder="79.00"
                     type="number"
                   />
                   <Field
-                    label="Inventory"
+                    label={isEs ? "Inventario" : "Inventory"}
                     value={variant.inventory}
                     onChange={(value) => updateVariant(index, { inventory: value })}
                     placeholder="0"
@@ -794,7 +829,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                     disabled={isNonPhysicalProduct}
                   />
                   <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-slate-700">Track inventory</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {isEs ? "Rastrear inventario" : "Track inventory"}
+                    </span>
                     <select
                       value={isNonPhysicalProduct ? "false" : variant.trackInventory ? "true" : "false"}
                       onChange={(event) =>
@@ -803,8 +840,8 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                       disabled={isNonPhysicalProduct}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                     >
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
+                      <option value="true">{isEs ? "Sí" : "Yes"}</option>
+                      <option value="false">{isEs ? "No" : "No"}</option>
                     </select>
                   </label>
                 </div>
@@ -828,18 +865,23 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             onClick={() => router.back()}
             className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </button>
           <button
             type="submit"
             disabled={isSaving || !activeStoreId}
             className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? "Saving..." : editingProduct ? "Save changes" : "Create product"}
+            {isSaving
+              ? isEs ? "Guardando..." : "Saving..."
+              : editingProduct
+                ? isEs ? "Guardar cambios" : "Save changes"
+                : isEs ? "Crear producto" : "Create product"}
           </button>
           </div>
         </div>
       </form>
+
     </section>
   );
 }

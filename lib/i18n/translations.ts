@@ -130,14 +130,33 @@ export interface Translations {
     authenticated: string;
     logout: string;
     stores: string;
+    allStores: string;
+    themes: string;
     products: string;
+    allProducts: string;
+    addProduct: string;
     categories: string;
     orders: string;
-    customers: string;
     procurement: string;
+    procurementOverview: string;
+    purchaseOrders: string;
+    vendors: string;
+    customers: string;
     tools: string;
+    importTables: string;
+    exportTables: string;
     settings: string;
     rightsReserved: string;
+    newOrderTitle: string;
+    newOrderMessage: string;
+    overviewBadge: string;
+    consoleTitle: string;
+    consoleSubtitle: string;
+    starterPlanNotice: string;
+    totalStores: string;
+    totalProducts: string;
+    totalRevenue: string;
+    totalOrders: string;
   };
 }
 
@@ -356,14 +375,33 @@ export const translations: Record<Language, Translations> = {
       authenticated: "Autenticado",
       logout: "Cerrar sesión",
       stores: "Tiendas",
+      allStores: "Todas las tiendas",
+      themes: "Temas",
       products: "Productos",
+      allProducts: "Todos los productos",
+      addProduct: "Añadir producto",
       categories: "Categorías",
       orders: "Pedidos",
+      procurement: "Abastecimiento",
+      procurementOverview: "Resumen",
+      purchaseOrders: "Órdenes de compra",
+      vendors: "Proveedores",
       customers: "Clientes",
-      procurement: "Adquisiciones",
       tools: "Herramientas",
+      importTables: "Importar tablas",
+      exportTables: "Exportar tablas",
       settings: "Configuración",
       rightsReserved: "Todos los derechos reservados.",
+      newOrderTitle: "¡Nuevo pedido!",
+      newOrderMessage: "Pedido #{orderNumber} ({currency} {total}) recibido en {storeName}.",
+      overviewBadge: "Resumen",
+      consoleTitle: "Consola de Gestión de Comercio y Tiendas",
+      consoleSubtitle: "Panel de control unificado para administrar tus tiendas, productos, canales de venta y pedidos de clientes.",
+      starterPlanNotice: "Estás en el plan Starter: 1 tienda, hasta 50 productos por tienda y sin dominios personalizados. Actualiza a Prado Commerce Pro para desbloquear mayor capacidad.",
+      totalStores: "Tiendas totales",
+      totalProducts: "Productos totales",
+      totalRevenue: "Ingresos totales",
+      totalOrders: "Pedidos totales",
     },
   },
   en: {
@@ -580,14 +618,33 @@ export const translations: Record<Language, Translations> = {
       authenticated: "Authenticated",
       logout: "Sign out",
       stores: "Stores",
+      allStores: "All Stores",
+      themes: "Themes",
       products: "Products",
+      allProducts: "All Products",
+      addProduct: "Add Product",
       categories: "Categories",
       orders: "Orders",
-      customers: "Customers",
       procurement: "Procurement",
+      procurementOverview: "Overview",
+      purchaseOrders: "Purchase Orders",
+      vendors: "Vendors",
+      customers: "Customers",
       tools: "Tools",
+      importTables: "Import Tables",
+      exportTables: "Export Tables",
       settings: "Settings",
       rightsReserved: "All rights reserved.",
+      newOrderTitle: "New Order!",
+      newOrderMessage: "Order #{orderNumber} ({currency} {total}) received at {storeName}.",
+      overviewBadge: "Overview",
+      consoleTitle: "E-Commerce & Storefront Management Console",
+      consoleSubtitle: "Unified control plane for managing your stores, products, sales channels, and customer orders.",
+      starterPlanNotice: "You are on the Starter plan: 1 store, up to 50 products per store, and no custom domains. Upgrade to Prado Commerce Pro to unlock more growth capacity.",
+      totalStores: "Total Stores",
+      totalProducts: "Total Products",
+      totalRevenue: "Total Revenue",
+      totalOrders: "Total Orders",
     },
   },
 };

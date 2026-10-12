@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type StoreEmailSettings = {
   id: string;
@@ -18,6 +19,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function EmailSettingsPage() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [storeId, setStoreId] = useState("");
   const [welcomeEmailEnabled, setWelcomeEmailEnabled] = useState(false);
   const [orderConfirmationEmailEnabled, setOrderConfirmationEmailEnabled] = useState(false);
@@ -43,14 +47,23 @@ export default function EmailSettingsPage() {
               ? (payload as { error?: string }).error
               : null;
 
-          throw new Error(apiError || "Unable to load email settings.");
+          throw new Error(
+            apiError ||
+              (isEs
+                ? "No se pudo cargar la configuración de correos."
+                : "Unable to load email settings.")
+          );
         }
 
         const stores = payload as StoreEmailSettings[];
         const activeStore = Array.isArray(stores) ? stores[0] : null;
 
         if (!activeStore?.id) {
-          throw new Error("No store found. Create a store first to manage email settings.");
+          throw new Error(
+            isEs
+              ? "No se encontró ninguna tienda. Crea una tienda primero para administrar los correos."
+              : "No store found. Create a store first to manage email settings."
+          );
         }
 
         setStoreId(activeStore.id);
@@ -61,12 +74,18 @@ export default function EmailSettingsPage() {
         setSenderEmail(activeStore.senderEmail ?? "");
         setReplyToEmail(activeStore.replyToEmail ?? "");
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load email settings.");
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : isEs
+            ? "No se pudo cargar la configuración de correos."
+            : "Unable to load email settings."
+        );
       }
     }
 
     void loadStoreSettings();
-  }, []);
+  }, [isEs]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,15 +95,27 @@ export default function EmailSettingsPage() {
 
     try {
       if (!storeId) {
-        throw new Error("No store found. Create a store first to manage email settings.");
+        throw new Error(
+          isEs
+            ? "No se encontró ninguna tienda. Crea una tienda primero para administrar los correos."
+            : "No store found. Create a store first to manage email settings."
+        );
       }
 
       if (senderEmail.trim() && !EMAIL_REGEX.test(senderEmail.trim())) {
-        throw new Error("Sender email must be a valid email address.");
+        throw new Error(
+          isEs
+            ? "El correo de remitente debe tener un formato válido."
+            : "Sender email must be a valid email address."
+        );
       }
 
       if (replyToEmail.trim() && !EMAIL_REGEX.test(replyToEmail.trim())) {
-        throw new Error("Reply-to email must be a valid email address.");
+        throw new Error(
+          isEs
+            ? "El correo de respuesta debe tener un formato válido."
+            : "Reply-to email must be a valid email address."
+        );
       }
 
       const response = await fetch(`/api/stores/${storeId}`, {
@@ -105,19 +136,34 @@ export default function EmailSettingsPage() {
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to save email settings.");
+        throw new Error(
+          result.error ||
+            (isEs
+              ? "No se pudo guardar la configuración de correos."
+              : "Unable to save email settings.")
+        );
       }
 
-      setSuccess("Email settings saved.");
+      setSuccess(
+        isEs
+          ? "Configuración de correos guardada correctamente."
+          : "Email settings saved."
+      );
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save email settings.");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : isEs
+          ? "No se pudo guardar la configuración de correos."
+          : "Unable to save email settings."
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
-  const previewSenderName = senderName.trim() || "Your Store Team";
+  const previewSenderName = senderName.trim() || (isEs ? "Equipo de tu Tienda" : "Your Store Team");
   const previewSenderEmail = senderEmail.trim() || "notifications@pradocommerce.com";
   const previewReplyTo = replyToEmail.trim() || previewSenderEmail;
 
@@ -126,22 +172,24 @@ export default function EmailSettingsPage() {
       <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Settings
+            {isEs ? "Configuración" : "Settings"}
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Emails
+              {isEs ? "Correos Electrónicos" : "Emails"}
             </h1>
 
             <Link
               href="/dashboard/settings"
               className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              ← Back to settings
+              {isEs ? "← Volver a configuración" : "← Back to settings"}
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-2xl sm:text-lg">
-            Configure buyer welcome emails, order confirmations, and invoice emails for your storefront.
+            {isEs
+              ? "Configura correos de bienvenida, confirmaciones de compra y recibos de facturación para tus clientes."
+              : "Configure buyer welcome emails, order confirmations, and invoice emails for your storefront."}
           </p>
         </div>
       </div>
@@ -161,15 +209,25 @@ export default function EmailSettingsPage() {
           ) : null}
 
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Emails will be sent from notifications@pradocommerce.com using your store branding color.
+            {isEs
+              ? "Los correos se enviarán desde notifications@pradocommerce.com usando los colores e identidad de tu tienda."
+              : "Emails will be sent from notifications@pradocommerce.com using your store branding color."}
           </div>
 
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Automation</h2>
-            <p className="mt-1 text-sm text-slate-500">Turn each buyer-facing email on or off.</p>
+            <h2 className="text-sm font-semibold text-slate-900">
+              {isEs ? "Automatización" : "Automation"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {isEs
+                ? "Activa o desactiva cada tipo de correo enviado a compradores."
+                : "Turn each buyer-facing email on or off."}
+            </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <span className="text-sm font-medium text-slate-800">Welcome email</span>
+                <span className="text-sm font-medium text-slate-800">
+                  {isEs ? "Correo de bienvenida" : "Welcome email"}
+                </span>
                 <input
                   type="checkbox"
                   checked={welcomeEmailEnabled}
@@ -179,7 +237,9 @@ export default function EmailSettingsPage() {
               </label>
 
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <span className="text-sm font-medium text-slate-800">Order confirmation</span>
+                <span className="text-sm font-medium text-slate-800">
+                  {isEs ? "Confirmación de pedido" : "Order confirmation"}
+                </span>
                 <input
                   type="checkbox"
                   checked={orderConfirmationEmailEnabled}
@@ -189,7 +249,9 @@ export default function EmailSettingsPage() {
               </label>
 
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <span className="text-sm font-medium text-slate-800">Invoice email</span>
+                <span className="text-sm font-medium text-slate-800">
+                  {isEs ? "Recibo de factura" : "Invoice email"}
+                </span>
                 <input
                   type="checkbox"
                   checked={invoiceEmailEnabled}
@@ -201,37 +263,49 @@ export default function EmailSettingsPage() {
           </div>
 
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Sender identity</h2>
-            <p className="mt-1 text-sm text-slate-500">Choose how these emails will appear in buyer inboxes.</p>
+            <h2 className="text-sm font-semibold text-slate-900">
+              {isEs ? "Identidad del remitente" : "Sender identity"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {isEs
+                ? "Elige cómo aparecerán estos correos en la bandeja de entrada del comprador."
+                : "Choose how these emails will appear in buyer inboxes."}
+            </p>
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Sender name</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Nombre del remitente" : "Sender name"}
+                </span>
                 <input
                   value={senderName}
                   onChange={(event) => setSenderName(event.target.value)}
-                  placeholder="Your Store Team"
+                  placeholder={isEs ? "Equipo de tu Tienda" : "Your Store Team"}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Sender email</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Correo del remitente" : "Sender email"}
+                </span>
                 <input
                   type="email"
                   value={senderEmail}
                   onChange={(event) => setSenderEmail(event.target.value)}
-                  placeholder="hello@yourstore.com"
+                  placeholder="hola@tutienda.com"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Reply-to email</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Correo de respuesta (Reply-to)" : "Reply-to email"}
+                </span>
                 <input
                   type="email"
                   value={replyToEmail}
                   onChange={(event) => setReplyToEmail(event.target.value)}
-                  placeholder="support@yourstore.com"
+                  placeholder="soporte@tutienda.com"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
@@ -239,37 +313,55 @@ export default function EmailSettingsPage() {
           </div>
 
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Buyer email preview</h2>
-            <p className="mt-1 text-sm text-slate-500">Preview how your order confirmation email appears in a customer inbox.</p>
+            <h2 className="text-sm font-semibold text-slate-900">
+              {isEs ? "Vista previa del correo al comprador" : "Buyer email preview"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {isEs
+                ? "Previsualiza cómo verá un comprador la confirmación de su pedido."
+                : "Preview how your order confirmation email appears in a customer inbox."}
+            </p>
 
             <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-900">Order confirmation</p>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">Preview</span>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isEs ? "Confirmación de pedido" : "Order confirmation"}
+                  </p>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                    {isEs ? "Vista previa" : "Preview"}
+                  </span>
                 </div>
 
                 <div className="space-y-2 px-4 py-4 text-sm">
                   <p className="text-slate-700">
-                    <span className="font-medium text-slate-900">From:</span> {previewSenderName} &lt;{previewSenderEmail}&gt;
+                    <span className="font-medium text-slate-900">{isEs ? "De:" : "From:"}</span> {previewSenderName} &lt;{previewSenderEmail}&gt;
                   </p>
                   <p className="text-slate-700">
-                    <span className="font-medium text-slate-900">Reply-To:</span> {previewReplyTo}
+                    <span className="font-medium text-slate-900">{isEs ? "Responder a:" : "Reply-To:"}</span> {previewReplyTo}
                   </p>
                   <p className="text-slate-700">
-                    <span className="font-medium text-slate-900">Subject:</span> Your order with {previewSenderName} is confirmed
+                    <span className="font-medium text-slate-900">{isEs ? "Asunto:" : "Subject:"}</span> {isEs ? `Tu pedido con ${previewSenderName} está confirmado` : `Your order with ${previewSenderName} is confirmed`}
                   </p>
                 </div>
 
                 <div className="border-t border-slate-200 px-4 py-4 text-sm leading-6 text-slate-700">
-                  <p>Hi Alex,</p>
-                  <p className="mt-2">Thanks for your purchase. We have received your order #PRD-1024 and are getting it ready to ship.</p>
-                  <p className="mt-2">You can reply directly to this email if you have any questions.</p>
+                  <p>{isEs ? "Hola Alex," : "Hi Alex,"}</p>
+                  <p className="mt-2">
+                    {isEs
+                      ? "Gracias por tu compra. Hemos recibido tu pedido #PRD-1024 y lo estamos preparando para el envío."
+                      : "Thanks for your purchase. We have received your order #PRD-1024 and are getting it ready to ship."}
+                  </p>
+                  <p className="mt-2">
+                    {isEs
+                      ? "Puedes responder directamente a este correo si tienes alguna consulta."
+                      : "You can reply directly to this email if you have any questions."}
+                  </p>
                   <button
                     type="button"
                     className="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
                   >
-                    View order
+                    {isEs ? "Ver pedido" : "View order"}
                   </button>
                 </div>
               </div>
@@ -280,16 +372,22 @@ export default function EmailSettingsPage() {
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/dashboard/settings"
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 text-center"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </Link>
           <button
             type="submit"
             disabled={isSaving || !storeId}
             className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSaving ? "Saving..." : "Save email settings"}
+            {isSaving
+              ? isEs
+                ? "Guardando..."
+                : "Saving..."
+              : isEs
+              ? "Guardar configuración"
+              : "Save email settings"}
           </button>
         </div>
       </form>

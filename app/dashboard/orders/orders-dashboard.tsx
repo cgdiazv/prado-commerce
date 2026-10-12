@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
@@ -41,6 +42,8 @@ export function OrdersDashboard({
   setupError = null,
 }: OrdersDashboardProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [orders, setOrders] = useState(initialOrders);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -232,7 +235,9 @@ export function OrdersDashboard({
       patchPayload = { status: "PROCESSING" };
     } else if (bulkAction === "status_completed") {
       const confirmed = window.confirm(
-        "Mark selected orders as completed? This may trigger invoice emails for those orders.",
+        isEs
+          ? "¿Marcar los pedidos seleccionados como completados? Esto puede generar correos con factura para esos pedidos."
+          : "Mark selected orders as completed? This may trigger invoice emails for those orders.",
       );
 
       if (!confirmed) {
@@ -244,7 +249,9 @@ export function OrdersDashboard({
       patchPayload = { status: "CANCELLED" };
     } else if (bulkAction === "payment_paid") {
       const confirmed = window.confirm(
-        "Mark selected orders as paid? This may trigger invoice emails for those orders.",
+        isEs
+          ? "¿Marcar los pedidos seleccionados como pagados? Esto puede generar correos con factura para esos pedidos."
+          : "Mark selected orders as paid? This may trigger invoice emails for those orders.",
       );
 
       if (!confirmed) {
@@ -277,7 +284,7 @@ export function OrdersDashboard({
       );
 
       if (responses.some((response) => !response.ok)) {
-        throw new Error("Failed to apply bulk order updates");
+        throw new Error(isEs ? "No se pudieron actualizar los pedidos seleccionados" : "Failed to apply bulk order updates");
       }
 
       setOrders((current) =>
@@ -294,7 +301,7 @@ export function OrdersDashboard({
       setSelectedOrderIds([]);
       setBulkAction("");
     } catch {
-      setError("Failed to apply action to selected orders.");
+      setError(isEs ? "No se pudo aplicar la acción a los pedidos seleccionados." : "Failed to apply action to selected orders.");
     } finally {
       setIsApplyingBulkAction(false);
     }
@@ -316,13 +323,15 @@ export function OrdersDashboard({
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Orders
+              {isEs ? "Pedidos" : "Orders"}
             </p>
             <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Orders Manager
+              {isEs ? "Administrador de Pedidos" : "Orders Manager"}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              Manage and track all your customer orders here.
+              {isEs
+                ? "Administra y rastrea todos los pedidos de tus clientes aquí."
+                : "Manage and track all your customer orders here."}
             </p>
           </div>
 
@@ -331,13 +340,13 @@ export function OrdersDashboard({
             className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-4 w-4" />
-            New order
+            {isEs ? "Nuevo pedido" : "New order"}
           </Link>
         </div>
 
         <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
           <div className="w-full max-w-md flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={activeStoreId}
               onChange={(event) => void handleStoreChange(event.target.value)}
@@ -352,7 +361,7 @@ export function OrdersDashboard({
           </div>
 
           <label className="w-full max-w-md flex-col gap-2 lg:flex-1">
-            <span className="text-sm font-medium text-slate-700">Search</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
             <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -362,7 +371,7 @@ export function OrdersDashboard({
                   setSearchQuery(event.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Customer, status, or payment"
+                placeholder={isEs ? "Cliente, estado o pago" : "Customer, status, or payment"}
                 className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </div>
@@ -370,7 +379,7 @@ export function OrdersDashboard({
 
           <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
-              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
             </div>
             <div className="mt-2 flex items-center gap-3 lg:justify-end">
               <button
@@ -383,20 +392,20 @@ export function OrdersDashboard({
                 }
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Apply
+                {isEs ? "Aplicar" : "Apply"}
               </button>
               <select
                 value={bulkAction}
                 onChange={(event) => setBulkAction(event.target.value as typeof bulkAction)}
                 className="w-52 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                <option value="">Select action</option>
-                <option value="status_processing">Mark as processing</option>
-                <option value="status_completed">Mark as completed</option>
-                <option value="status_cancelled">Mark as cancelled</option>
-                <option value="payment_paid">Mark as paid</option>
-                <option value="payment_refunded">Mark as refunded</option>
-                <option value="clear">Clear selection</option>
+                <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+                <option value="status_processing">{isEs ? "Marcar en proceso" : "Mark as processing"}</option>
+                <option value="status_completed">{isEs ? "Marcar como completado" : "Mark as completed"}</option>
+                <option value="status_cancelled">{isEs ? "Marcar como cancelado" : "Mark as cancelled"}</option>
+                <option value="payment_paid">{isEs ? "Marcar como pagado" : "Mark as paid"}</option>
+                <option value="payment_refunded">{isEs ? "Marcar como reembolsado" : "Mark as refunded"}</option>
+                <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
               </select>
             </div>
           </div>
@@ -411,18 +420,26 @@ export function OrdersDashboard({
         <div className="mt-8 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {totalOrders === 0 ? (
             <div className="p-10 text-center text-slate-500">
-              {searchQuery.trim() ? "No orders match your search." : "No orders yet for this store."}
+              {searchQuery.trim()
+                ? (isEs ? "Ningún pedido coincide con tu búsqueda." : "No orders match your search.")
+                : (isEs ? "Aún no hay pedidos para esta tienda." : "No orders yet for this store.")}
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs font-medium text-slate-600">
-                  Showing {pageStart}-{pageEnd} of {totalOrders} orders
+                  {isEs
+                    ? `Mostrando ${pageStart}-${pageEnd} de ${totalOrders} pedidos`
+                    : `Showing ${pageStart}-${pageEnd} of ${totalOrders} orders`}
                 </p>
                 <div className="flex items-center gap-4">
-                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedOrderIds.length} selected</p>
+                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">
+                    {isEs
+                      ? `${selectedOrderIds.length} seleccionado${selectedOrderIds.length === 1 ? "" : "s"}`
+                      : `${selectedOrderIds.length} selected`}
+                  </p>
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    Rows per page
+                    {isEs ? "Filas por página" : "Rows per page"}
                     <select
                       value={pageSize}
                       onChange={(event) => {
@@ -451,7 +468,7 @@ export function OrdersDashboard({
                         type="checkbox"
                         checked={allOnPageSelected}
                         onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
-                        aria-label="Select all orders on this page"
+                        aria-label={isEs ? "Seleccionar todos los pedidos de esta página" : "Select all orders on this page"}
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                       />
                     </th>
@@ -461,7 +478,7 @@ export function OrdersDashboard({
                         onClick={() => handleSort("orderNumber")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Order
+                        {isEs ? "Pedido" : "Order"}
                         <SortIndicator active={sortField === "orderNumber"} direction={sortDirection} />
                       </button>
                     </th>
@@ -471,7 +488,7 @@ export function OrdersDashboard({
                         onClick={() => handleSort("customerEmail")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Customer
+                        {isEs ? "Cliente" : "Customer"}
                         <SortIndicator active={sortField === "customerEmail"} direction={sortDirection} />
                       </button>
                     </th>
@@ -481,7 +498,7 @@ export function OrdersDashboard({
                         onClick={() => handleSort("status")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Status
+                        {isEs ? "Estado" : "Status"}
                         <SortIndicator active={sortField === "status"} direction={sortDirection} />
                       </button>
                     </th>
@@ -491,7 +508,7 @@ export function OrdersDashboard({
                         onClick={() => handleSort("paymentStatus")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Payment
+                        {isEs ? "Pago" : "Payment"}
                         <SortIndicator active={sortField === "paymentStatus"} direction={sortDirection} />
                       </button>
                     </th>
@@ -511,7 +528,7 @@ export function OrdersDashboard({
                         onClick={() => handleSort("createdAt")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Created
+                        {isEs ? "Fecha" : "Created"}
                         <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
                       </button>
                     </th>
@@ -519,11 +536,25 @@ export function OrdersDashboard({
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {paginatedOrders.map((order) => {
-                    const formatter = new Intl.NumberFormat("en-US", {
+                    const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
                       style: "currency",
                       currency: order.currency || "USD",
                     });
                     
+                    const statusLabels: Record<string, string> = {
+                      PENDING: isEs ? "Pendiente" : "Pending",
+                      PROCESSING: isEs ? "En proceso" : "Processing",
+                      COMPLETED: isEs ? "Completado" : "Completed",
+                      CANCELLED: isEs ? "Cancelado" : "Cancelled",
+                    };
+
+                    const paymentLabels: Record<string, string> = {
+                      UNPAID: isEs ? "No pagado" : "Unpaid",
+                      PAID: isEs ? "Pagado" : "Paid",
+                      REFUNDED: isEs ? "Reembolsado" : "Refunded",
+                      FAILED: isEs ? "Fallido" : "Failed",
+                    };
+
                     return (
                     <tr
                       key={order.id}
@@ -542,11 +573,19 @@ export function OrdersDashboard({
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.status}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.paymentStatus}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                          {statusLabels[order.status] ?? order.status}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                          {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
+                        </span>
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{formatter.format(Number(order.total))}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-slate-600">
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        {new Date(order.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                       </td>
                     </tr>
                     );
@@ -562,10 +601,12 @@ export function OrdersDashboard({
                   disabled={currentPage <= 1}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Previous
+                  {isEs ? "Anterior" : "Previous"}
                 </button>
                 <p className="text-xs font-medium text-slate-600">
-                  Page {currentPage} of {totalPages}
+                  {isEs
+                    ? `Página ${currentPage} de ${totalPages}`
+                    : `Page ${currentPage} of ${totalPages}`}
                 </p>
                 <button
                   type="button"
@@ -573,7 +614,7 @@ export function OrdersDashboard({
                   disabled={currentPage >= totalPages}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Next
+                  {isEs ? "Siguiente" : "Next"}
                 </button>
               </div>
             </>

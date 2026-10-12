@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
@@ -37,6 +38,8 @@ export function CustomersDashboard({
   setupError = null,
 }: CustomersDashboardProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [customers, setCustomers] = useState(initialCustomers);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -255,13 +258,15 @@ export function CustomersDashboard({
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Customers
+              {isEs ? "Clientes" : "Customers"}
             </p>
             <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Customers Manager
+              {isEs ? "Administrador de Clientes" : "Customers Manager"}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              View and manage all your customers.
+              {isEs
+                ? "Visualiza y administra todos tus clientes."
+                : "View and manage all your customers."}
             </p>
           </div>
 
@@ -270,13 +275,13 @@ export function CustomersDashboard({
             className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-4 w-4" />
-            New customer
+            {isEs ? "Nuevo cliente" : "New customer"}
           </Link>
         </div>
 
         <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
           <div className="w-full max-w-md flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={activeStoreId}
               onChange={(event) => void handleStoreChange(event.target.value)}
@@ -291,7 +296,7 @@ export function CustomersDashboard({
           </div>
 
           <label className="w-full max-w-md flex-col gap-2 lg:flex-1">
-            <span className="text-sm font-medium text-slate-700">Search</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
             <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -301,7 +306,7 @@ export function CustomersDashboard({
                   setSearchQuery(event.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Name, email, or phone"
+                placeholder={isEs ? "Nombre, correo o teléfono" : "Name, email, or phone"}
                 className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </div>
@@ -309,7 +314,7 @@ export function CustomersDashboard({
 
           <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
-              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
             </div>
             <div className="mt-2 flex items-center gap-3 lg:justify-end">
               <button
@@ -322,16 +327,16 @@ export function CustomersDashboard({
                 }
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Apply
+                {isEs ? "Aplicar" : "Apply"}
               </button>
               <select
                 value={bulkAction}
                 onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
                 className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                <option value="">Select action</option>
-                <option value="delete">Delete selected</option>
-                <option value="clear">Clear selection</option>
+                <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+                <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
+                <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
               </select>
             </div>
           </div>
@@ -346,18 +351,26 @@ export function CustomersDashboard({
         <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {totalCustomers === 0 ? (
             <div className="p-10 text-center text-slate-500">
-              {searchQuery.trim() ? "No customers match your search." : "No customers yet for this store."}
+              {searchQuery.trim()
+                ? (isEs ? "Ningún cliente coincide con tu búsqueda." : "No customers match your search.")
+                : (isEs ? "Aún no hay clientes para esta tienda." : "No customers yet for this store.")}
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs font-medium text-slate-600">
-                  Showing {pageStart}-{pageEnd} of {totalCustomers} customers
+                  {isEs
+                    ? `Mostrando ${pageStart}-${pageEnd} de ${totalCustomers} clientes`
+                    : `Showing ${pageStart}-${pageEnd} of ${totalCustomers} customers`}
                 </p>
                 <div className="flex items-center gap-4">
-                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedCustomerIds.length} selected</p>
+                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">
+                    {isEs
+                      ? `${selectedCustomerIds.length} seleccionado${selectedCustomerIds.length === 1 ? "" : "s"}`
+                      : `${selectedCustomerIds.length} selected`}
+                  </p>
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    Rows per page
+                    {isEs ? "Filas por página" : "Rows per page"}
                     <select
                       value={pageSize}
                       onChange={(event) => {
@@ -386,7 +399,7 @@ export function CustomersDashboard({
                         type="checkbox"
                         checked={allOnPageSelected}
                         onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
-                        aria-label="Select all customers on this page"
+                        aria-label={isEs ? "Seleccionar todos los clientes de esta página" : "Select all customers on this page"}
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                       />
                     </th>
@@ -396,7 +409,7 @@ export function CustomersDashboard({
                         onClick={() => handleSort("name")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Name
+                        {isEs ? "Nombre" : "Name"}
                         <SortIndicator active={sortField === "name"} direction={sortDirection} />
                       </button>
                     </th>
@@ -406,7 +419,7 @@ export function CustomersDashboard({
                         onClick={() => handleSort("email")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Email
+                        {isEs ? "Correo" : "Email"}
                         <SortIndicator active={sortField === "email"} direction={sortDirection} />
                       </button>
                     </th>
@@ -416,7 +429,7 @@ export function CustomersDashboard({
                         onClick={() => handleSort("phone")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Phone
+                        {isEs ? "Teléfono" : "Phone"}
                         <SortIndicator active={sortField === "phone"} direction={sortDirection} />
                       </button>
                     </th>
@@ -426,7 +439,7 @@ export function CustomersDashboard({
                         onClick={() => handleSort("createdAt")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        Created
+                        {isEs ? "Fecha" : "Created"}
                         <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
                       </button>
                     </th>
@@ -458,7 +471,7 @@ export function CustomersDashboard({
                         <td className="px-4 py-3 align-top text-slate-700">{customer.email}</td>
                         <td className="px-4 py-3 align-top text-slate-700">{customer.phone || "-"}</td>
                         <td className="px-4 py-3 align-top text-slate-600">
-                          {new Date(customer.createdAt).toLocaleDateString()}
+                          {new Date(customer.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                         </td>
                       </tr>
                     );
@@ -474,10 +487,12 @@ export function CustomersDashboard({
                   disabled={currentPage <= 1}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Previous
+                  {isEs ? "Anterior" : "Previous"}
                 </button>
                 <p className="text-xs font-medium text-slate-600">
-                  Page {currentPage} of {totalPages}
+                  {isEs
+                    ? `Página ${currentPage} de ${totalPages}`
+                    : `Page ${currentPage} of ${totalPages}`}
                 </p>
                 <button
                   type="button"
@@ -485,7 +500,7 @@ export function CustomersDashboard({
                   disabled={currentPage >= totalPages}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Next
+                  {isEs ? "Siguiente" : "Next"}
                 </button>
               </div>
             </>

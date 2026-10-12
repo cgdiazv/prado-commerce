@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { saveStoreHeroContent, type HeroContentActionState } from "./actions";
 
 type HeroTextFormProps = {
@@ -25,6 +26,8 @@ export default function HeroTextForm({
   heroSubtitle,
   heroButtonText,
 }: HeroTextFormProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [state, formAction, isPending] = useActionState(saveStoreHeroContent, initialState);
 
   return (
@@ -33,42 +36,54 @@ export default function HeroTextForm({
 
       <div className="grid gap-4 lg:grid-cols-3">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Eyebrow text</span>
+          <span className="text-sm font-medium text-slate-700">
+            {isEs ? "Texto secundario / Antetítulo" : "Eyebrow text"}
+          </span>
           <input
             name="heroEyebrow"
             defaultValue={heroEyebrow ?? ""}
-            placeholder="Shop online"
+            placeholder={isEs ? "Comprar online" : "Shop online"}
             className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Hero title</span>
+          <span className="text-sm font-medium text-slate-700">
+            {isEs ? "Título principal" : "Hero title"}
+          </span>
           <input
             name="heroTitle"
             defaultValue={heroTitle ?? ""}
-            placeholder={`Explore ${storeName}`}
+            placeholder={isEs ? `Explorar ${storeName}` : `Explore ${storeName}`}
             className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Button text</span>
+          <span className="text-sm font-medium text-slate-700">
+            {isEs ? "Texto del botón" : "Button text"}
+          </span>
           <input
             name="heroButtonText"
             defaultValue={heroButtonText ?? ""}
-            placeholder="Start shopping"
+            placeholder={isEs ? "Comenzar a comprar" : "Start shopping"}
             className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-slate-700">Hero text</span>
+        <span className="text-sm font-medium text-slate-700">
+          {isEs ? "Descripción / Subtítulo" : "Hero text"}
+        </span>
         <textarea
           name="heroSubtitle"
           defaultValue={heroSubtitle ?? ""}
-          placeholder="Describe your storefront in one short sentence."
+          placeholder={
+            isEs
+              ? "Describe tu tienda en una breve frase llamativa."
+              : "Describe your storefront in one short sentence."
+          }
           rows={4}
           className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
         />
@@ -89,7 +104,9 @@ export default function HeroTextForm({
         disabled={isPending}
         className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isPending ? "Saving..." : "Save hero text"}
+        {isPending
+          ? (isEs ? "Guardando..." : "Saving...")
+          : (isEs ? "Guardar texto principal" : "Save hero text")}
       </button>
     </form>
   );

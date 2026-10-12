@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 const availableCurrencies = ["USD", "EUR", "GBP", "CAD", "AED", "AUD", "HNL"] as const;
 
@@ -10,6 +11,8 @@ type CurrencyCode = (typeof availableCurrencies)[number];
 
 export default function CurrenciesPage() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [storeId, setStoreId] = useState<string>("");
   const [baseCurrency, setBaseCurrency] = useState<CurrencyCode>("USD");
   const [enabledCurrencies, setEnabledCurrencies] = useState<CurrencyCode[]>(["USD", "EUR"]);
@@ -31,7 +34,7 @@ export default function CurrenciesPage() {
 
         if (!response.ok) {
           if (response.status === 401) {
-            throw new Error("Your session has expired. Please sign in again.");
+            throw new Error(isEs ? "Tu sesión ha expirado. Por favor inicia sesión de nuevo." : "Your session has expired. Please sign in again.");
           }
 
           const apiError =
@@ -39,14 +42,14 @@ export default function CurrenciesPage() {
               ? (payload as { error?: string }).error
               : null;
 
-          throw new Error(apiError || "Unable to load store settings.");
+          throw new Error(apiError || (isEs ? "No se pudo cargar la configuración de la tienda." : "Unable to load store settings."));
         }
 
         const stores = payload as Array<{ id: string; currency?: string }>;
         const activeStore = Array.isArray(stores) ? stores[0] : null;
 
         if (!activeStore?.id) {
-          throw new Error("No store found.");
+          throw new Error(isEs ? "No se encontró ninguna tienda." : "No store found.");
         }
 
         setStoreId(activeStore.id);
@@ -58,7 +61,7 @@ export default function CurrenciesPage() {
         }
 
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load currency settings.");
+        setError(loadError instanceof Error ? loadError.message : (isEs ? "No se pudo cargar la configuración de divisas." : "Unable to load currency settings."));
       }
     }
 
@@ -89,7 +92,7 @@ export default function CurrenciesPage() {
 
     try {
       if (!storeId) {
-        throw new Error("No store found.");
+        throw new Error(isEs ? "No se encontró ninguna tienda." : "No store found.");
       }
 
       const response = await fetch(`/api/stores/${storeId}`, {
@@ -105,16 +108,16 @@ export default function CurrenciesPage() {
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Unable to save currency settings.");
+        throw new Error(result.error ?? (isEs ? "No se pudo guardar la configuración de divisas." : "Unable to save currency settings."));
       }
 
       localStorage.setItem("prado_base_currency", baseCurrency);
       localStorage.setItem("prado_enabled_currencies", JSON.stringify(enabledCurrencies));
 
-      setSuccess("Currency settings updated successfully.");
+      setSuccess(isEs ? "Configuración de divisas actualizada correctamente." : "Currency settings updated successfully.");
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save currency settings.");
+      setError(saveError instanceof Error ? saveError.message : (isEs ? "No se pudo guardar la configuración de divisas." : "Unable to save currency settings."));
     } finally {
       setIsSaving(false);
     }
@@ -127,22 +130,24 @@ export default function CurrenciesPage() {
       <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Settings
+            {isEs ? "Configuración" : "Settings"}
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Currencies
+              {isEs ? "Monedas e Internacionalización" : "Currencies"}
             </h1>
 
             <Link
               href="/dashboard/settings"
               className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              ← Back to settings
+              {isEs ? "← Volver a configuración" : "← Back to settings"}
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
-            Choose which currencies customers can browse and pay with.
+            {isEs
+              ? "Elige las monedas en las que tus clientes pueden ver los precios y pagar."
+              : "Choose which currencies customers can browse and pay with."}
           </p>
         </div>
       </div>
@@ -162,8 +167,14 @@ export default function CurrenciesPage() {
           ) : null}
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900">Base currency</label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">This is the main currency used for pricing and reporting.</p>
+            <label className="block text-sm font-semibold text-slate-900">
+              {isEs ? "Moneda base" : "Base currency"}
+            </label>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {isEs
+                ? "Esta es la moneda principal utilizada para fijación de precios e informes."
+                : "This is the main currency used for pricing and reporting."}
+            </p>
             <select
               value={baseCurrency}
               onChange={(event) => setBaseCurrency(event.target.value as CurrencyCode)}
@@ -178,8 +189,14 @@ export default function CurrenciesPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900">Enabled currencies</label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">Select the currencies customers can browse and pay with.</p>
+            <label className="block text-sm font-semibold text-slate-900">
+              {isEs ? "Monedas habilitadas" : "Enabled currencies"}
+            </label>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {isEs
+                ? "Selecciona las monedas en que los clientes pueden navegar y abonar."
+                : "Select the currencies customers can browse and pay with."}
+            </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {availableCurrencies.map((currency) => {
                 const isSelected = enabledCurrencies.includes(currency);
@@ -205,8 +222,14 @@ export default function CurrenciesPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900">Currency display format</label>
-            <p className="mt-1 text-sm leading-6 text-slate-500">Use a generic display format placeholder for storefront pricing.</p>
+            <label className="block text-sm font-semibold text-slate-900">
+              {isEs ? "Formato de visualización" : "Currency display format"}
+            </label>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {isEs
+                ? "Ejemplo de formato numérico para precios en la tienda."
+                : "Use a generic display format placeholder for storefront pricing."}
+            </p>
             <input
               type="text"
               placeholder="$1,234.56"
@@ -218,16 +241,16 @@ export default function CurrenciesPage() {
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/dashboard/settings"
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 text-center"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </Link>
           <button
             type="submit"
             disabled={isSaving || !storeId}
             className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSaving ? "Saving..." : "Save changes"}
+            {isSaving ? (isEs ? "Guardando..." : "Saving...") : isEs ? "Guardar cambios" : "Save changes"}
           </button>
         </div>
       </form>

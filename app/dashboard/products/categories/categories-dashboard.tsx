@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
@@ -34,6 +35,8 @@ export function CategoriesDashboard({
   selectedStoreId,
   setupError = null,
 }: CategoriesDashboardProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [categories, setCategories] = useState(initialCategories);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -209,7 +212,13 @@ export function CategoriesDashboard({
   }
 
   async function handleDeleteCategory(categoryId: string) {
-    if (!confirm("Delete this category? Products in this category will become uncategorized.")) {
+    if (
+      !confirm(
+        isEs
+          ? "¿Eliminar esta categoría? Los productos de esta categoría quedarán sin categoría."
+          : "Delete this category? Products in this category will become uncategorized.",
+      )
+    ) {
       return;
     }
 
@@ -223,7 +232,7 @@ export function CategoriesDashboard({
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
-        throw new Error(data.error ?? "Failed to delete category");
+        throw new Error(data.error ?? (isEs ? "No se pudo eliminar la categoría" : "Failed to delete category"));
       }
 
       setCategories((current) => current.filter((category) => category.id !== categoryId));
@@ -231,7 +240,7 @@ export function CategoriesDashboard({
         cancelEditCategory();
       }
     } catch (error) {
-      setCategoryError(error instanceof Error ? error.message : "Failed to delete category");
+      setCategoryError(error instanceof Error ? error.message : (isEs ? "No se pudo eliminar la categoría" : "Failed to delete category"));
     } finally {
       setIsCategorySaving(false);
     }
@@ -249,13 +258,17 @@ export function CategoriesDashboard({
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-4">
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Product Categories
+              {isEs ? "Categorías de Productos" : "Product Categories"}
             </p>
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Organize your catalog with clean category groups.
+              {isEs
+                ? "Organiza tu catálogo con grupos claros de categorías."
+                : "Organize your catalog with clean category groups."}
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              Create, edit, and remove categories per store to keep product browsing structured.
+              {isEs
+                ? "Crea, edita y elimina categorías por tienda para estructurar la navegación de productos."
+                : "Create, edit, and remove categories per store to keep product browsing structured."}
             </p>
           </div>
 
@@ -267,14 +280,14 @@ export function CategoriesDashboard({
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               <Plus className="h-4 w-4" />
-              New category
+              {isEs ? "Nueva categoría" : "New category"}
             </button>
           </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-4 lg:max-w-md">
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={activeStoreId}
               onChange={(event) => void handleStoreChange(event.target.value)}
@@ -298,19 +311,21 @@ export function CategoriesDashboard({
         <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {activeStoreCategories.length === 0 ? (
             <div className="p-10 text-center text-slate-500">
-              {activeStore ? `No categories yet for ${activeStore.name}.` : "No categories yet for this store."}
+              {activeStore
+                ? (isEs ? `Aún no hay categorías para ${activeStore.name}.` : `No categories yet for ${activeStore.name}.`)
+                : (isEs ? "Aún no hay categorías para esta tienda." : "No categories yet for this store.")}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full table-fixed divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Name</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Nombre" : "Name"}</th>
                     <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Slug</th>
-                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Parent</th>
-                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">Parent slug</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Padre" : "Parent"}</th>
+                    <th className="w-1/6 px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Slug padre" : "Parent slug"}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Actualizado" : "Updated"}</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">{isEs ? "Acciones" : "Actions"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
@@ -346,7 +361,7 @@ export function CategoriesDashboard({
                             : "-"}
                         </td>
                         <td className="px-4 py-3 align-top text-slate-600">
-                          {category.updatedAt ? new Date(category.updatedAt).toLocaleDateString() : "-"}
+                          {category.updatedAt ? new Date(category.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US") : "-"}
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex justify-end gap-2">
@@ -356,8 +371,8 @@ export function CategoriesDashboard({
                                   type="button"
                                   onClick={() => void handleSaveCategory(category.id)}
                                   disabled={!editingCategoryName.trim() || isCategorySaving}
-                                  aria-label="Save category"
-                                  title="Save"
+                                  aria-label={isEs ? "Guardar categoría" : "Save category"}
+                                  title={isEs ? "Guardar" : "Save"}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <Check className="h-4 w-4" />
@@ -365,8 +380,8 @@ export function CategoriesDashboard({
                                 <button
                                   type="button"
                                   onClick={cancelEditCategory}
-                                  aria-label="Cancel category edit"
-                                  title="Cancel"
+                                  aria-label={isEs ? "Cancelar edición" : "Cancel category edit"}
+                                  title={isEs ? "Cancelar" : "Cancel"}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-white"
                                 >
                                   <X className="h-4 w-4" />
@@ -376,8 +391,8 @@ export function CategoriesDashboard({
                               <button
                                 type="button"
                                 onClick={() => beginEditCategory(category)}
-                                aria-label="Edit category"
-                                title="Edit"
+                                aria-label={isEs ? "Editar categoría" : "Edit category"}
+                                title={isEs ? "Editar" : "Edit"}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-white"
                               >
                                 <Pencil className="h-4 w-4" />
@@ -387,8 +402,8 @@ export function CategoriesDashboard({
                               type="button"
                               onClick={() => void handleDeleteCategory(category.id)}
                               disabled={isCategorySaving}
-                              aria-label="Delete category"
-                              title="Delete"
+                              aria-label={isEs ? "Eliminar categoría" : "Delete category"}
+                              title={isEs ? "Eliminar" : "Delete"}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -410,16 +425,20 @@ export function CategoriesDashboard({
           <div className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Create category</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {isEs ? "Crear categoría" : "Create category"}
+                </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  {activeStore ? `Create a category for ${activeStore.name}.` : "Select a store first."}
+                  {activeStore
+                    ? (isEs ? `Crea una categoría para ${activeStore.name}.` : `Create a category for ${activeStore.name}.`)
+                    : (isEs ? "Selecciona una tienda primero." : "Select a store first.")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeCreateCategoryModal}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-slate-50"
-                aria-label="Close create category modal"
+                aria-label={isEs ? "Cerrar modal" : "Close create category modal"}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -429,29 +448,31 @@ export function CategoriesDashboard({
               <input
                 value={categoryName}
                 onChange={(event) => setCategoryName(event.target.value)}
-                placeholder="Category name"
+                placeholder={isEs ? "Nombre de la categoría" : "Category name"}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
               <input
                 value={categorySlug}
                 onChange={(event) => setCategorySlug(event.target.value)}
-                placeholder="Slug (optional)"
+                placeholder={isEs ? "Slug (opcional)" : "Slug (optional)"}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
               <input
                 value={categoryDescription}
                 onChange={(event) => setCategoryDescription(event.target.value)}
-                placeholder="Description (optional)"
+                placeholder={isEs ? "Descripción (opcional)" : "Description (optional)"}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
               <label className="flex w-full flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">Parent category (optional)</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Categoría padre (opcional)" : "Parent category (optional)"}
+                </span>
                 <select
                   value={categoryParentCategoryId}
                   onChange={(event) => setCategoryParentCategoryId(event.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
-                  <option value="">No parent category</option>
+                  <option value="">{isEs ? "Sin categoría padre" : "No parent category"}</option>
                   {activeStoreCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -465,14 +486,16 @@ export function CategoriesDashboard({
                   onClick={closeCreateCategoryModal}
                   className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  Cancel
+                  {isEs ? "Cancelar" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={!activeStoreId || !categoryName.trim() || isCategorySaving}
                   className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isCategorySaving ? "Saving..." : "Create category"}
+                  {isCategorySaving
+                    ? (isEs ? "Guardando..." : "Saving...")
+                    : (isEs ? "Crear categoría" : "Create category")}
                 </button>
               </div>
             </form>

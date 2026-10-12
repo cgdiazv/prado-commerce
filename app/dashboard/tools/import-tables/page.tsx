@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type StoreOption = {
   id: string;
@@ -197,6 +198,9 @@ function rowsFromJson(text: string): Array<Record<string, unknown>> {
 }
 
 export default function ImportTablesPage() {
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState("");
   const [table, setTable] = useState<ImportTable>("products");
@@ -212,30 +216,31 @@ export default function ImportTablesPage() {
         const payload = await response.json() as Array<{ id: string; name: string }>;
 
         if (!response.ok) {
-          throw new Error("Could not load stores");
+          throw new Error(isEs ? "No se pudieron cargar las tiendas" : "Could not load stores");
         }
 
         setStores(payload);
         setSelectedStoreId(payload[0]?.id ?? "");
       } catch {
-        setError("Could not load stores. Refresh and try again.");
+        setError(isEs ? "No se pudieron cargar las tiendas. Actualiza la página e inténtalo de nuevo." : "Could not load stores. Refresh and try again.");
       }
     }
 
     void loadStores();
-  }, []);
+  }, [isEs]);
 
   const expectedColumns = useMemo(() => {
+    const opt = isEs ? "opcional" : "optional";
     if (table === "categories") {
-      return "name, slug (optional), description (optional)";
+      return `name, slug (${opt}), description (${opt})`;
     }
 
     if (table === "customers") {
-      return "email, firstName (optional), lastName (optional), phone (optional), shippingAddressLine1/City/State/PostalCode/Country (optional), billingAddressLine1/City/State/PostalCode/Country (optional)";
+      return `email, firstName (${opt}), lastName (${opt}), phone (${opt}), shippingAddressLine1/City/State/PostalCode/Country (${opt}), billingAddressLine1/City/State/PostalCode/Country (${opt})`;
     }
 
-    return "title, slug (optional), description (optional), status (optional), productType (optional), price/sku/inventory (optional), category/categorySlug (optional)";
-  }, [table]);
+    return `title, slug (${opt}), description (${opt}), status (${opt}), productType (${opt}), price/sku/inventory (${opt}), category/categorySlug (${opt})`;
+  }, [table, isEs]);
 
   async function handleImport(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -243,12 +248,12 @@ export default function ImportTablesPage() {
     setResult(null);
 
     if (!selectedStoreId) {
-      setError("Please choose a store.");
+      setError(isEs ? "Por favor selecciona una tienda." : "Please choose a store.");
       return;
     }
 
     if (!file) {
-      setError("Please choose a file to import.");
+      setError(isEs ? "Por favor selecciona un archivo para importar." : "Please choose a file to import.");
       return;
     }
 
@@ -262,7 +267,11 @@ export default function ImportTablesPage() {
       const rows = isJson ? rowsFromJson(text) : rowsFromCsv(text);
 
       if (!rows.length) {
-        throw new Error("No data rows found. Make sure your file includes headers and rows.");
+        throw new Error(
+          isEs
+            ? "No se encontraron filas de datos. Asegúrate de que el archivo incluya encabezados y filas."
+            : "No data rows found. Make sure your file includes headers and rows."
+        );
       }
 
       const response = await fetch("/api/tools/import-tables", {
@@ -280,12 +289,18 @@ export default function ImportTablesPage() {
       const payload = await response.json() as ImportResult & { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "Import failed");
+        throw new Error(payload.error || (isEs ? "Error al importar" : "Import failed"));
       }
 
       setResult(payload);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Import failed");
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : isEs
+            ? "Error al importar"
+            : "Import failed"
+      );
     } finally {
       setIsImporting(false);
     }
@@ -311,22 +326,24 @@ export default function ImportTablesPage() {
       <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Tools
+            {isEs ? "Herramientas" : "Tools"}
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Import tables
+              {isEs ? "Importar tablas" : "Import tables"}
             </h1>
 
             <Link
               href="/dashboard/tools"
               className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              ← Back to tools
+              {isEs ? "← Volver a herramientas" : "← Back to tools"}
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
-            Import categories, products, or customers from CSV or JSON files.
+            {isEs
+              ? "Importa categorías, productos o clientes desde archivos CSV o JSON."
+              : "Import categories, products, or customers from CSV or JSON files."}
           </p>
         </div>
       </div>
@@ -334,7 +351,7 @@ export default function ImportTablesPage() {
       <form onSubmit={handleImport} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-3">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={selectedStoreId}
               onChange={(event) => setSelectedStoreId(event.target.value)}
@@ -349,20 +366,20 @@ export default function ImportTablesPage() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Table</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tabla" : "Table"}</span>
             <select
               value={table}
               onChange={(event) => setTable(event.target.value as ImportTable)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="products">Products</option>
-              <option value="categories">Categories</option>
-              <option value="customers">Customers</option>
+              <option value="products">{isEs ? "Productos" : "Products"}</option>
+              <option value="categories">{isEs ? "Categorías" : "Categories"}</option>
+              <option value="customers">{isEs ? "Clientes" : "Customers"}</option>
             </select>
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">File</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Archivo" : "File"}</span>
             <input
               type="file"
               accept=".csv,.json,text/csv,application/json"
@@ -373,21 +390,21 @@ export default function ImportTablesPage() {
         </div>
 
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Expected columns: {expectedColumns}
+          {isEs ? "Columnas esperadas: " : "Expected columns: "} {expectedColumns}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => handleDownloadTemplate("csv")}
               className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
             >
-              Download CSV template
+              {isEs ? "Descargar plantilla CSV" : "Download CSV template"}
             </button>
             <button
               type="button"
               onClick={() => handleDownloadTemplate("json")}
               className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
             >
-              Download JSON template
+              {isEs ? "Descargar plantilla JSON" : "Download JSON template"}
             </button>
           </div>
         </div>
@@ -400,20 +417,28 @@ export default function ImportTablesPage() {
 
         {result ? (
           <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            <p className="font-semibold">Import complete</p>
+            <p className="font-semibold">{isEs ? "Importación completada" : "Import complete"}</p>
             <p className="mt-1">
-              Processed: {result.summary.processed} / {result.summary.totalRows} · Created: {result.summary.created} · Updated: {result.summary.updated} · Skipped: {result.summary.skipped}
+              {isEs
+                ? `Procesadas: ${result.summary.processed} / ${result.summary.totalRows} · Creadas: ${result.summary.created} · Actualizadas: ${result.summary.updated} · Omitidas: ${result.summary.skipped}`
+                : `Processed: ${result.summary.processed} / ${result.summary.totalRows} · Created: ${result.summary.created} · Updated: ${result.summary.updated} · Skipped: ${result.summary.skipped}`}
             </p>
             {result.summary.errors.length ? (
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em]">Row issues</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em]">{isEs ? "Problemas en filas" : "Row issues"}</p>
                 <ul className="mt-2 space-y-1 text-sm">
                   {result.summary.errors.slice(0, 10).map((item) => (
-                    <li key={`${item.row}-${item.message}`}>Row {item.row}: {item.message}</li>
+                    <li key={`${item.row}-${item.message}`}>
+                      {isEs ? `Fila ${item.row}: ${item.message}` : `Row ${item.row}: ${item.message}`}
+                    </li>
                   ))}
                 </ul>
                 {result.summary.errors.length > 10 ? (
-                  <p className="mt-2 text-xs">Showing first 10 errors of {result.summary.errors.length}.</p>
+                  <p className="mt-2 text-xs">
+                    {isEs
+                      ? `Mostrando los primeros 10 errores de ${result.summary.errors.length}.`
+                      : `Showing first 10 errors of ${result.summary.errors.length}.`}
+                  </p>
                 ) : null}
               </div>
             ) : null}
@@ -426,10 +451,13 @@ export default function ImportTablesPage() {
             disabled={isImporting}
             className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isImporting ? "Importing..." : "Run import"}
+            {isImporting
+              ? isEs ? "Importando..." : "Importing..."
+              : isEs ? "Ejecutar importación" : "Run import"}
           </button>
         </div>
       </form>
     </section>
   );
 }
+

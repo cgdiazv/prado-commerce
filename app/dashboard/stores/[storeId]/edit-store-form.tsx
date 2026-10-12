@@ -9,6 +9,7 @@ import { upload } from "@vercel/blob/client";
 import { buildEmailBrandingStyles, normalizeMainColor } from "@/lib/branding";
 import { normalizeStoreSlug } from "@/lib/store-slug";
 import { CURRENCIES, Field, SelectField, TIMEZONES } from "../store-form-controls";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
   id: string;
@@ -93,6 +94,8 @@ async function getSlugAvailability(slug: string, signal?: AbortSignal) {
 
 export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const initialContact = extractOriginContact(store.shippingOrigin);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -333,13 +336,15 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         setDomainStatusError(null);
       }
 
-      setSuccess("Store settings updated successfully.");
+      setSuccess(isEs ? "Configuración de la tienda actualizada con éxito." : "Store settings updated successfully.");
       router.refresh();
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
           ? submissionError.message
-          : "Failed to save store settings.",
+          : isEs
+            ? "Error al guardar la configuración de la tienda."
+            : "Failed to save store settings.",
       );
     } finally {
       setIsSaving(false);
@@ -366,7 +371,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
       };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Failed to check domain status");
+        throw new Error(result.error ?? (isEs ? "Error al comprobar el estado del dominio" : "Failed to check domain status"));
       }
 
       setDomainSetupNotice((current) => {
@@ -381,7 +386,11 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
       });
     } catch (statusError) {
       setDomainStatusError(
-        statusError instanceof Error ? statusError.message : "Failed to check domain status",
+        statusError instanceof Error
+          ? statusError.message
+          : isEs
+            ? "Error al comprobar el estado del dominio"
+            : "Failed to check domain status",
       );
     } finally {
       setIsCheckingDomainStatus(false);
@@ -389,7 +398,13 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
   }
 
   async function handleDelete() {
-    if (!confirm(`Are you sure you want to delete "${store.name}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        isEs
+          ? `¿Estás seguro de que deseas eliminar "${store.name}"? Esta acción no se puede deshacer.`
+          : `Are you sure you want to delete "${store.name}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -398,15 +413,16 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
       const response = await fetch(`/api/stores/${store.id}`, { method: "DELETE" });
       if (!response.ok) {
         const result = (await response.json()) as { error?: string };
-        throw new Error(result.error ?? "Failed to delete store");
+        throw new Error(result.error ?? (isEs ? "Error al eliminar la tienda" : "Failed to delete store"));
       }
       router.push("/dashboard/stores");
       router.refresh();
     } catch (deleteError) {
-      alert(deleteError instanceof Error ? deleteError.message : "Failed to delete store");
+      alert(deleteError instanceof Error ? deleteError.message : (isEs ? "Error al eliminar la tienda" : "Failed to delete store"));
       setIsDeleting(false);
     }
   }
+
 
   const domainLabel = store.customDomain || `${store.slug}.pradocommerce.com`;
 
@@ -417,16 +433,18 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             <Link href="/dashboard/stores" className="hover:text-cyan-700 transition">
-              Stores
+              {isEs ? "Tiendas" : "Stores"}
             </Link>
             <span>/</span>
-            <span>Edit Store</span>
+            <span>{isEs ? "Editar Tienda" : "Edit Store"}</span>
           </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
             {store.name}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Configure tenant parameters, custom domain, currency, and permitted origins.
+            {isEs
+              ? "Configura parámetros de la tienda, dominio personalizado, moneda y orígenes permitidos."
+              : "Configure tenant parameters, custom domain, currency, and permitted origins."}
           </p>
         </div>
 
@@ -437,7 +455,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Visit store
+            {isEs ? "Visitar tienda" : "Visit store"}
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <Link
@@ -445,14 +463,14 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             <Palette className="h-3.5 w-3.5 text-cyan-600" />
-            Theme settings
+            {isEs ? "Ajustes de tema" : "Theme settings"}
           </Link>
           <Link
             href="/dashboard/stores"
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to stores
+            {isEs ? "Volver a tiendas" : "Back to stores"}
           </Link>
         </div>
       </div>
@@ -461,25 +479,39 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-semibold">Custom domain configuration for {domainSetupNotice.storeName}</p>
+              <p className="font-semibold">
+                {isEs ? `Configuración de dominio para ${domainSetupNotice.storeName}` : `Custom domain configuration for ${domainSetupNotice.storeName}`}
+              </p>
               <p className="mt-1 break-all text-blue-800 font-mono text-xs">{domainSetupNotice.domain}</p>
               <p className="mt-1 text-blue-900">
-                Status:{" "}
+                {isEs ? "Estado: " : "Status: "}
                 <span className="font-medium">
                   {domainSetupNotice.status === "valid"
-                    ? "Verified"
+                    ? isEs ? "Verificado" : "Verified"
                     : domainSetupNotice.status === "pending"
-                      ? "Pending verification"
+                      ? isEs ? "Verificación pendiente" : "Pending verification"
                       : domainSetupNotice.status === "invalid"
-                        ? "Needs DNS fix"
-                        : "Checking"}
+                        ? isEs ? "Requiere configuración DNS" : "Needs DNS fix"
+                        : isEs ? "Comprobando" : "Checking"}
                 </span>
               </p>
               <div className="mt-3 space-y-1 text-xs text-blue-800">
-                <p className="font-medium">DNS setup instructions:</p>
-                <p>1. Subdomain: add CNAME record for <code className="bg-blue-100/80 px-1 rounded">{domainSetupNotice.domain}</code> pointing to <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</p>
-                <p>2. Apex domain: add A record @ pointing to <code className="bg-blue-100/80 px-1 rounded">76.76.21.21</code>, and CNAME for www pointing to <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</p>
-                <p>3. Wait for DNS propagation, then test connection.</p>
+                <p className="font-medium">{isEs ? "Instrucciones de configuración DNS:" : "DNS setup instructions:"}</p>
+                <p>
+                  {isEs
+                    ? <>1. Subdominio: añade un registro CNAME para <code className="bg-blue-100/80 px-1 rounded">{domainSetupNotice.domain}</code> apuntando a <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</>
+                    : <>1. Subdomain: add CNAME record for <code className="bg-blue-100/80 px-1 rounded">{domainSetupNotice.domain}</code> pointing to <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</>}
+                </p>
+                <p>
+                  {isEs
+                    ? <>2. Dominio raíz (Apex): añade registro A @ apuntando a <code className="bg-blue-100/80 px-1 rounded">76.76.21.21</code>, y registro CNAME para www apuntando a <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</>
+                    : <>2. Apex domain: add A record @ pointing to <code className="bg-blue-100/80 px-1 rounded">76.76.21.21</code>, and CNAME for www pointing to <code className="bg-blue-100/80 px-1 rounded">cname.vercel-dns.com</code>.</>}
+                </p>
+                <p>
+                  {isEs
+                    ? "3. Espera la propagación de DNS y prueba la conexión."
+                    : "3. Wait for DNS propagation, then test connection."}
+                </p>
               </div>
               {domainStatusError ? (
                 <p className="mt-3 rounded-lg border border-amber-300 bg-amber-100/80 px-3 py-2 text-xs text-amber-800">
@@ -494,7 +526,9 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                 disabled={isCheckingDomainStatus}
                 className="rounded-full border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isCheckingDomainStatus ? "Checking..." : "Check status"}
+                {isCheckingDomainStatus
+                  ? isEs ? "Comprobando..." : "Checking..."
+                  : isEs ? "Comprobar estado" : "Check status"}
               </button>
               <button
                 type="button"
@@ -504,7 +538,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                 }}
                 className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
               >
-                Dismiss
+                {isEs ? "Descartar" : "Dismiss"}
               </button>
             </div>
           </div>
@@ -528,16 +562,18 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              General Configuration
+              {isEs ? "Configuración General" : "General Configuration"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Update the core store metadata, localized currency, and timezone settings.
+              {isEs
+                ? "Actualiza los metadatos principales de la tienda, moneda localizada y zona horaria."
+                : "Update the core store metadata, localized currency, and timezone settings."}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Store name"
+              label={isEs ? "Nombre de la tienda" : "Store name"}
               value={formState.name}
               onChange={(value) => {
                 setFormState((current) => ({
@@ -545,14 +581,14 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                   name: value,
                 }));
               }}
-              placeholder="My Brand"
+              placeholder={isEs ? "Mi Marca" : "My Brand"}
             />
             <div>
               <Field
-                label="Store URL slug"
+                label={isEs ? "Slug de URL de la tienda" : "Store URL slug"}
                 value={formState.slug}
                 onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
-                placeholder="my-brand"
+                placeholder="mi-marca"
               />
               {normalizedSlug ? (
                 <div className="mt-2 text-xs">
@@ -560,9 +596,13 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                     https://{normalizedSlug}.pradocommerce.com
                   </p>
                   {!isOriginalSlug && currentSlugCheck?.status === "checking" ? (
-                    <p className="mt-1 text-slate-500">Checking availability...</p>
+                    <p className="mt-1 text-slate-500">
+                      {isEs ? "Comprobando disponibilidad..." : "Checking availability..."}
+                    </p>
                   ) : !isOriginalSlug && currentSlugCheck?.status === "available" ? (
-                    <p className="mt-1 font-medium text-emerald-700">Available</p>
+                    <p className="mt-1 font-medium text-emerald-700">
+                      {isEs ? "Disponible" : "Available"}
+                    </p>
                   ) : !isOriginalSlug && currentSlugCheck?.status === "unavailable" ? (
                     <p className="mt-1 font-medium text-rose-700">{currentSlugCheck.message}</p>
                   ) : !isOriginalSlug && currentSlugCheck?.status === "error" ? (
@@ -573,13 +613,13 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
             </div>
 
             <SelectField
-              label="Currency"
+              label={isEs ? "Moneda" : "Currency"}
               value={formState.currency}
               onChange={(value) => setFormState((current) => ({ ...current, currency: value }))}
               options={CURRENCIES}
             />
             <SelectField
-              label="Timezone"
+              label={isEs ? "Zona horaria" : "Timezone"}
               value={formState.timezone}
               onChange={(value) => setFormState((current) => ({ ...current, timezone: value }))}
               options={TIMEZONES}
@@ -591,17 +631,24 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Branding & Appearance
+              {isEs ? "Identidad de Marca y Apariencia" : "Branding & Appearance"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Upload your storefront logo, configure your brand tagline/slogan, and choose primary theme accent colors.
+              {isEs
+                ? "Sube el logo de tu tienda, define el lema/eslogan y elige los colores de acento principales."
+                : "Upload your storefront logo, configure your brand tagline/slogan, and choose primary theme accent colors."}
             </p>
           </div>
 
+
           <div>
-            <label className="block text-sm font-semibold text-slate-900">Storefront Logo</label>
+            <label className="block text-sm font-semibold text-slate-900">
+              {isEs ? "Logo de la tienda" : "Storefront Logo"}
+            </label>
             <p className="mt-1 max-w-2xl text-xs text-slate-500">
-              Upload a logo image to display on your storefront navigation bar instead of plain text.
+              {isEs
+                ? "Sube una imagen de logo para mostrar en la barra de navegación de tu tienda en lugar de texto plano."
+                : "Upload a logo image to display on your storefront navigation bar instead of plain text."}
             </p>
 
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -616,7 +663,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                       disabled={isUploadingLogo || isSaving}
                       className="absolute inset-0 flex items-center justify-center bg-slate-950/55 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 disabled:cursor-not-allowed"
                     >
-                      Remove
+                      {isEs ? "Eliminar" : "Remove"}
                     </button>
                   </>
                 ) : (
@@ -638,27 +685,41 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                   disabled={isUploadingLogo}
                   className="inline-flex w-fit items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isUploadingLogo ? "Uploading…" : formState.logoUrl ? "Replace logo" : "Upload logo"}
+                  {isUploadingLogo
+                    ? isEs ? "Subiendo…" : "Uploading…"
+                    : formState.logoUrl
+                      ? isEs ? "Reemplazar logo" : "Replace logo"
+                      : isEs ? "Subir logo" : "Upload logo"}
                 </button>
-                <p className="text-xs text-slate-400">JPEG, PNG, WebP or GIF — max 5 MB</p>
+                <p className="text-xs text-slate-400">
+                  {isEs ? "JPEG, PNG, WebP o GIF — máx. 5 MB" : "JPEG, PNG, WebP or GIF — max 5 MB"}
+                </p>
               </div>
             </div>
           </div>
 
           <div>
             <Field
-              label="Store Slogan / Tagline (optional)"
-              labelHint="Subtitle or slogan displayed under your store name on storefront headers and receipts."
+              label={isEs ? "Lema / Eslogan de la tienda (opcional)" : "Store Slogan / Tagline (optional)"}
+              labelHint={
+                isEs
+                  ? "Subtítulo o eslogan mostrado bajo el nombre de tu tienda en encabezados y recibos."
+                  : "Subtitle or slogan displayed under your store name on storefront headers and receipts."
+              }
               value={formState.slogan}
               onChange={(value) => setFormState((prev) => ({ ...prev, slogan: value }))}
-              placeholder="e.g. Premium Artisanal Handcrafted Goods"
+              placeholder={isEs ? "Ej. Productos artesanales hechos a mano" : "e.g. Premium Artisanal Handcrafted Goods"}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900">Main brand color</label>
+            <label className="block text-sm font-semibold text-slate-900">
+              {isEs ? "Color principal de marca" : "Main brand color"}
+            </label>
             <p className="mt-1 max-w-2xl text-xs text-slate-500">
-              This accent color drives primary storefront buttons, checkout actions, and customer email template headers.
+              {isEs
+                ? "Este color de acento define los botones principales de la tienda, acciones de compra y plantillas de correo."
+                : "This accent color drives primary storefront buttons, checkout actions, and customer email template headers."}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-[96px_1fr]">
               <input
@@ -685,32 +746,42 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
 
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Storefront preview</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  {isEs ? "Vista previa en tienda" : "Storefront preview"}
+                </p>
                 <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-medium text-slate-700">Primary action button</p>
-                  <button
-                    type="button"
-                    style={{ backgroundColor: emailBranding.primary }}
-                    className="mt-3 rounded-full px-4 py-2 text-xs font-semibold text-white"
-                  >
-                    Add to cart
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Email template preview</p>
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs text-slate-600">Order #PRD-1024 is confirmed.</p>
-                  <p className="mt-2 text-xs font-medium" style={{ color: emailBranding.primary }}>
-                    Thanks for shopping with {formState.name || "your store"}.
+                  <p className="text-xs font-medium text-slate-700">
+                    {isEs ? "Botón de acción principal" : "Primary action button"}
                   </p>
                   <button
                     type="button"
                     style={{ backgroundColor: emailBranding.primary }}
                     className="mt-3 rounded-full px-4 py-2 text-xs font-semibold text-white"
                   >
-                    View order
+                    {isEs ? "Añadir al carrito" : "Add to cart"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  {isEs ? "Vista previa plantilla de correo" : "Email template preview"}
+                </p>
+                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs text-slate-600">
+                    {isEs ? "El pedido #PRD-1024 está confirmado." : "Order #PRD-1024 is confirmed."}
+                  </p>
+                  <p className="mt-2 text-xs font-medium" style={{ color: emailBranding.primary }}>
+                    {isEs
+                      ? `Gracias por comprar en ${formState.name || "tu tienda"}.`
+                      : `Thanks for shopping with ${formState.name || "your store"}.`}
+                  </p>
+                  <button
+                    type="button"
+                    style={{ backgroundColor: emailBranding.primary }}
+                    className="mt-3 rounded-full px-4 py-2 text-xs font-semibold text-white"
+                  >
+                    {isEs ? "Ver pedido" : "View order"}
                   </button>
                 </div>
               </div>
@@ -722,31 +793,41 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Store Contact & Location
+              {isEs ? "Contacto y Ubicación de la Tienda" : "Store Contact & Location"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Set customer contact details, phone number, and physical store address.
+              {isEs
+                ? "Configura datos de contacto para clientes, número de teléfono y dirección física de la tienda."
+                : "Set customer contact details, phone number, and physical store address."}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Store Email"
-              labelHint="Primary contact email for customers, order inquiries, and transaction receipts."
+              label={isEs ? "Correo de la tienda" : "Store Email"}
+              labelHint={
+                isEs
+                  ? "Correo de contacto principal para clientes, consultas de pedidos y recibos de transacciones."
+                  : "Primary contact email for customers, order inquiries, and transaction receipts."
+              }
               value={formState.email}
               onChange={(value) => setFormState((current) => ({ ...current, email: value }))}
-              placeholder="contact@mybrand.com"
+              placeholder="contacto@mimarca.com"
             />
             <Field
-              label="Store Phone Number (optional)"
-              labelHint="Customer support phone number for storefront and order receipts."
+              label={isEs ? "Teléfono de la tienda (opcional)" : "Store Phone Number (optional)"}
+              labelHint={
+                isEs
+                  ? "Teléfono de atención al cliente para la tienda y recibos de pedidos."
+                  : "Customer support phone number for storefront and order receipts."
+              }
               value={formState.phone}
               onChange={(value) => setFormState((current) => ({ ...current, phone: value }))}
               placeholder="+1 (555) 000-0000"
             />
             <label className="flex flex-col gap-2 sm:col-span-2">
               <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span>Store Physical Address (optional)</span>
+                <span>{isEs ? "Dirección física de la tienda (opcional)" : "Store Physical Address (optional)"}</span>
                 <span className="group relative inline-flex items-center">
                   <button
                     type="button"
@@ -756,7 +837,9 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                     ?
                   </button>
                   <span className="pointer-events-none absolute left-1/2 top-7 z-20 hidden w-72 -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-normal leading-5 text-blue-800 shadow-lg group-hover:block group-focus-within:block">
-                    Physical business, retail, or warehouse location for shipping and contact info.
+                    {isEs
+                      ? "Ubicación del negocio, comercio o almacén para envíos e información de contacto."
+                      : "Physical business, retail, or warehouse location for shipping and contact info."}
                   </span>
                 </span>
               </span>
@@ -775,25 +858,35 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Invoice & Receipt Settings
+              {isEs ? "Ajustes de Facturas y Recibos" : "Invoice & Receipt Settings"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Customize footer notes, terms, return policy, or thank-you messages on printed order invoices.
+              {isEs
+                ? "Personaliza notas al pie, términos, política de devoluciones o agradecimientos en facturas impresas."
+                : "Customize footer notes, terms, return policy, or thank-you messages on printed order invoices."}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Invoice Prefix (optional)"
-              labelHint="Prefix added to all generated invoice and order numbers (e.g., INV-, ORD-, INV-2026-)."
+              label={isEs ? "Prefijo de Factura (opcional)" : "Invoice Prefix (optional)"}
+              labelHint={
+                isEs
+                  ? "Prefijo añadido a todas las facturas y números de pedido generados (ej. INV-, PED-, FAC-2026-)."
+                  : "Prefix added to all generated invoice and order numbers (e.g., INV-, ORD-, INV-2026-)."
+              }
               value={formState.invoicePrefix}
               onChange={(value) => setFormState((current) => ({ ...current, invoicePrefix: value }))}
               placeholder="INV-"
             />
 
             <Field
-              label="Next Invoice Number"
-              labelHint="The starting or next sequential order/invoice number to assign to your next sale."
+              label={isEs ? "Siguiente Número de Factura" : "Next Invoice Number"}
+              labelHint={
+                isEs
+                  ? "El número inicial o siguiente correlativo a asignar a tu próxima venta."
+                  : "The starting or next sequential order/invoice number to assign to your next sale."
+              }
               type="number"
               min={1}
               value={formState.nextInvoiceNumber.toString()}
@@ -809,7 +902,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Generated Invoice Format Preview
+              {isEs ? "Vista Previa de Formato de Factura" : "Generated Invoice Format Preview"}
             </span>
             <div className="mt-1.5 flex items-center gap-3">
               <span className="inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 font-mono text-sm font-bold text-white shadow-sm">
@@ -817,14 +910,16 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                 {formState.nextInvoiceNumber || 1001}
               </span>
               <span className="text-xs text-slate-500">
-                Your next order invoice will be formatted like this on receipts, emails, and PDFs.
+                {isEs
+                  ? "Tu próxima factura tendrá este formato en recibos, correos y PDFs."
+                  : "Your next order invoice will be formatted like this on receipts, emails, and PDFs."}
               </span>
             </div>
           </div>
 
           <label className="flex flex-col gap-2">
             <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <span>Invoice Footer Custom Text (optional)</span>
+              <span>{isEs ? "Texto personalizado de pie de factura (opcional)" : "Invoice Footer Custom Text (optional)"}</span>
               <span className="group relative inline-flex items-center">
                 <button
                   type="button"
@@ -834,7 +929,9 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
                   ?
                 </button>
                 <span className="pointer-events-none absolute left-1/2 top-7 z-20 hidden w-72 -translate-x-1/2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-normal leading-5 text-blue-800 shadow-lg group-hover:block group-focus-within:block">
-                  Custom text, return policy, warranty terms, or special instructions displayed at the bottom of printed invoices.
+                  {isEs
+                    ? "Texto personalizado, política de devoluciones, condiciones de garantía o notas al final de facturas impresas."
+                    : "Custom text, return policy, warranty terms, or special instructions displayed at the bottom of printed invoices."}
                 </span>
               </span>
             </span>
@@ -842,7 +939,7 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
               value={formState.invoiceFooterText}
               onChange={(e) => setFormState((prev) => ({ ...prev, invoiceFooterText: e.target.value }))}
               rows={3}
-              placeholder="e.g. Thank you for your business! All returns must be requested within 30 days of receipt."
+              placeholder={isEs ? "Ej. ¡Gracias por tu compra! Devoluciones permitidas dentro de los 30 días posteriores a la recepción." : "e.g. Thank you for your business! All returns must be requested within 30 days of receipt."}
               className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
             />
           </label>
@@ -852,28 +949,38 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="border-b border-slate-100 pb-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Domains & Security
+              {isEs ? "Dominios y Seguridad" : "Domains & Security"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Manage custom domains and CORS allowed origins for embedding storefront APIs.
+              {isEs
+                ? "Gestiona dominios personalizados y orígenes permitidos por CORS para integrar APIs de la tienda."
+                : "Manage custom domains and CORS allowed origins for embedding storefront APIs."}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Custom domain (optional)"
-              labelHint="Use a domain you own. Point your DNS records to your Prado Commerce Storefront, save settings, and verify connection."
+              label={isEs ? "Dominio personalizado (opcional)" : "Custom domain (optional)"}
+              labelHint={
+                isEs
+                  ? "Usa un dominio de tu propiedad. Apunta los registros DNS a tu tienda de Prado Commerce, guarda y verifica la conexión."
+                  : "Use a domain you own. Point your DNS records to your Prado Commerce Storefront, save settings, and verify connection."
+              }
               value={formState.customDomain}
               onChange={(value) => setFormState((current) => ({ ...current, customDomain: value }))}
-              placeholder="checkout.mybrand.com"
+              placeholder="checkout.mimarca.com"
               className="sm:col-span-2"
             />
             <Field
-              label="Allowed domains (optional)"
-              labelHint="Comma-separated list of web addresses permitted to send cross-origin requests to your store API."
+              label={isEs ? "Dominios permitidos (opcional)" : "Allowed domains (optional)"}
+              labelHint={
+                isEs
+                  ? "Lista separada por comas de direcciones web autorizadas a enviar solicitudes de origen cruzado a la API de tu tienda."
+                  : "Comma-separated list of web addresses permitted to send cross-origin requests to your store API."
+              }
               value={formState.allowedDomains}
               onChange={(value) => setFormState((current) => ({ ...current, allowedDomains: value }))}
-              placeholder="https://mybrand.com, https://store.mybrand.com"
+              placeholder="https://mimarca.com, https://tienda.mimarca.com"
               className="sm:col-span-2"
             />
           </div>
@@ -888,7 +995,9 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 className="h-4 w-4" />
-            {isDeleting ? "Deleting store..." : "Delete store"}
+            {isDeleting
+              ? isEs ? "Eliminando tienda..." : "Deleting store..."
+              : isEs ? "Eliminar tienda" : "Delete store"}
           </button>
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
@@ -896,14 +1005,16 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
               href="/dashboard/stores"
               className="rounded-full border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Cancel
+              {isEs ? "Cancelar" : "Cancel"}
             </Link>
             <button
               type="submit"
               disabled={isSaving}
               className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving changes..." : "Save changes"}
+              {isSaving
+                ? isEs ? "Guardando cambios..." : "Saving changes..."
+                : isEs ? "Guardar cambios" : "Save changes"}
             </button>
           </div>
         </div>
@@ -911,3 +1022,4 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
     </section>
   );
 }
+

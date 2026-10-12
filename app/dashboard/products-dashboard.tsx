@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Star } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
@@ -62,6 +63,8 @@ export function ProductsDashboard({
   setupError = null,
 }: ProductsDashboardProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [products, setProducts] = useState(initialProducts);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
@@ -330,411 +333,427 @@ export function ProductsDashboard({
           <div className="max-w-2xl space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Product Studio
+                {isEs ? "Estudio de Productos" : "Product Studio"}
               </p>
             </div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Create products, variants, and storefront pricing.
+              {isEs
+                ? "Crea productos, variantes y precios para tus tiendas."
+                : "Create products, variants, and storefront pricing."}
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              Manage product catalogs per store and keep variant inventory organized.
+              {isEs
+                ? "Administra catálogos de productos por tienda y mantén el inventario de variantes organizado."
+                : "Manage product catalogs per store and keep variant inventory organized."}
             </p>
-            </div>
+          </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/dashboard/products/new"
-                onClick={(event) => {
-                  if (hasReachedProductLimit) {
-                    event.preventDefault();
-                    setPlanNotice(
-                      "Starter plan includes up to 50 products per store. Upgrade to Prado Commerce Pro to add unlimited products.",
-                    );
-                  }
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/products/new"
+              onClick={(event) => {
+                if (hasReachedProductLimit) {
+                  event.preventDefault();
+                  setPlanNotice(
+                    isEs
+                      ? "El plan Starter incluye hasta 50 productos por tienda. Actualiza a Prado Commerce Pro para agregar productos ilimitados."
+                      : "Starter plan includes up to 50 products per store. Upgrade to Prado Commerce Pro to add unlimited products.",
+                  );
+                }
+              }}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto ${
+                hasReachedProductLimit ? "cursor-not-allowed opacity-60" : ""
+              }`}
+              aria-disabled={hasReachedProductLimit}
+            >
+              <Plus className="h-4 w-4" />
+              {isEs ? "Nuevo producto" : "New product"}
+            </Link>
+          </div>
+        </div>
+
+        {isStarter ? (
+          <div className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+            {isEs
+              ? "El plan Starter incluye hasta 50 productos por tienda y subdominios estándar de Prado Commerce. Actualiza a Pro para productos ilimitados y dominios personalizados."
+              : "Starter plan includes up to 50 products per store and standard Prado Commerce subdomains. Upgrade to Pro for unlimited products and custom domains."}
+          </div>
+        ) : null}
+
+        {planNotice ? (
+          <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+            {planNotice}
+          </div>
+        ) : null}
+
+        <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
+          <label className="flex w-full flex-col gap-2 lg:max-w-md">
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
+            <select
+              value={activeStoreId}
+              onChange={(event) => void handleStoreChange(event.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name} / {store.currency}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex w-full flex-col gap-2 lg:max-w-md">
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar productos" : "Search products"}</span>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setCurrentPage(1);
                 }}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto ${
-                  hasReachedProductLimit ? "cursor-not-allowed opacity-60" : ""
-                }`}
-                aria-disabled={hasReachedProductLimit}
+                placeholder={isEs ? "Buscar por título, slug o estado" : "Search by title, slug, or status"}
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </div>
+          </label>
+
+          <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
+            <div className="flex justify-end">
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
+            </div>
+            <div className="mt-2 flex items-center gap-3 lg:justify-end">
+              <button
+                type="button"
+                onClick={() => void handleApplyBulkAction()}
+                disabled={
+                  isApplyingBulkAction ||
+                  !bulkAction ||
+                  (bulkAction === "delete" && selectedProductIds.length === 0)
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Plus className="h-4 w-4" />
-                New product
-              </Link>
-            </div>
-          </div>
-
-          {isStarter ? (
-            <div className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
-              Starter plan includes up to 50 products per store and standard Prado Commerce subdomains.
-              Upgrade to Pro for unlimited products and custom domains.
-            </div>
-          ) : null}
-
-          {planNotice ? (
-            <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
-              {planNotice}
-            </div>
-          ) : null}
-
-          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
-            <label className="flex w-full flex-col gap-2 lg:max-w-md">
-              <span className="text-sm font-medium text-slate-700">Store</span>
+                {isEs ? "Aplicar" : "Apply"}
+              </button>
               <select
-                value={activeStoreId}
-                onChange={(event) => void handleStoreChange(event.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                value={bulkAction}
+                onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+                className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} / {store.currency}
-                  </option>
-                ))}
+                <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+                <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
+                <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
               </select>
-            </label>
-            <label className="flex w-full flex-col gap-2 lg:max-w-md">
-              <span className="text-sm font-medium text-slate-700">Search products</span>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Search by title, slug, or status"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                />
-              </div>
-            </label>
-
-            <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
-              <div className="flex justify-end">
-                <span className="whitespace-nowrap text-sm font-medium text-slate-700">Actions</span>
-              </div>
-              <div className="mt-2 flex items-center gap-3 lg:justify-end">
-                <button
-                  type="button"
-                  onClick={() => void handleApplyBulkAction()}
-                  disabled={
-                    isApplyingBulkAction ||
-                    !bulkAction ||
-                    (bulkAction === "delete" && selectedProductIds.length === 0)
-                  }
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Apply
-                </button>
-                <select
-                  value={bulkAction}
-                  onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
-                  className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                >
-                  <option value="">Select action</option>
-                  <option value="delete">Delete selected</option>
-                  <option value="clear">Clear selection</option>
-                </select>
-              </div>
             </div>
           </div>
+        </div>
 
-          {error ? (
-            <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
+        {error ? (
+          <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {totalProducts === 0 ? (
+            <div className="p-10 text-center text-slate-500">
+              {isEs ? "Aún no hay productos para esta tienda." : "No products yet for this store."}
             </div>
-          ) : null}
-
-          <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {totalProducts === 0 ? (
-              <div className="p-10 text-center text-slate-500">
-                No products yet for this store.
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs font-medium text-slate-600">
-                    Showing {pageStart}-{pageEnd} of {totalProducts} products
+          ) : (
+            <>
+              <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-medium text-slate-600">
+                  {isEs
+                    ? `Mostrando ${pageStart}-${pageEnd} de ${totalProducts} productos`
+                    : `Showing ${pageStart}-${pageEnd} of ${totalProducts} products`}
+                </p>
+                <div className="flex items-center gap-4">
+                  <p className="whitespace-nowrap text-xs font-medium text-slate-600">
+                    {isEs
+                      ? `${selectedProductIds.length} seleccionado${selectedProductIds.length === 1 ? "" : "s"}`
+                      : `${selectedProductIds.length} selected`}
                   </p>
-                  <div className="flex items-center gap-4">
-                    <p className="whitespace-nowrap text-xs font-medium text-slate-600">{selectedProductIds.length} selected</p>
-                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                      Rows per page
-                      <select
-                        value={pageSize}
-                        onChange={(event) => {
-                          setPageSize(Number(event.target.value));
-                          setCurrentPage(1);
-                        }}
-                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
-                      >
-                        {[25, 50, 100, 500].map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    {isEs ? "Filas por página" : "Rows per page"}
+                    <select
+                      value={pageSize}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+                    >
+                      {[25, 50, 100, 500].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
+              </div>
 
-                <div className="hidden overflow-x-auto md:block">
-                  <table className="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="w-12 px-4 py-3 text-left font-semibold text-slate-600">
-                          <input
-                            ref={selectAllRef}
-                            type="checkbox"
-                            checked={allOnPageSelected}
-                            onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
-                            aria-label="Select all products on this page"
-                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Thumbnail</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                          <button type="button" onClick={() => handleSort("name")} className="flex items-center gap-1 transition hover:text-slate-950">
-                            Name
-                            <SortIndicator active={sortKey === "name"} direction={sortDirection} />
-                          </button>
-                        </th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Featured</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                          <button type="button" onClick={() => handleSort("sku")} className="flex items-center gap-1 transition hover:text-slate-950">
-                            SKU
-                            <SortIndicator active={sortKey === "sku"} direction={sortDirection} />
-                          </button>
-                        </th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Inventory</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                          <button type="button" onClick={() => handleSort("price")} className="flex items-center gap-1 transition hover:text-slate-950">
-                            Price
-                            <SortIndicator active={sortKey === "price"} direction={sortDirection} />
-                          </button>
-                        </th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                          <button type="button" onClick={() => handleSort("category")} className="flex items-center gap-1 transition hover:text-slate-950">
-                            Category
-                            <SortIndicator active={sortKey === "category"} direction={sortDirection} />
-                          </button>
-                        </th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                          <button type="button" onClick={() => handleSort("updated")} className="flex items-center gap-1 transition hover:text-slate-950">
-                            Updated
-                            <SortIndicator active={sortKey === "updated"} direction={sortDirection} />
-                          </button>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {paginatedProducts.map((product) => {
-                        const firstVariant = product.variants[0];
-                        const thumbnailUrl = product.images[0];
-                        const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
-                        const firstSku = firstVariant?.sku ?? "—";
-                        
-                        const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
-                        const currencyCode = activeStore?.currency || "USD";
-                        const formatter = new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: currencyCode,
-                        });
-                        
-                        const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
-                        const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="w-12 px-4 py-3 text-left font-semibold text-slate-600">
+                        <input
+                          ref={selectAllRef}
+                          type="checkbox"
+                          checked={allOnPageSelected}
+                          onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                          aria-label={isEs ? "Seleccionar todos los productos de esta página" : "Select all products on this page"}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Imagen" : "Thumbnail"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("name")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Nombre" : "Name"}
+                          <SortIndicator active={sortKey === "name"} direction={sortDirection} />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Destacado" : "Featured"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("sku")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          SKU
+                          <SortIndicator active={sortKey === "sku"} direction={sortDirection} />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Inventario" : "Inventory"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("price")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Precio" : "Price"}
+                          <SortIndicator active={sortKey === "price"} direction={sortDirection} />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("category")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Categoría" : "Category"}
+                          <SortIndicator active={sortKey === "category"} direction={sortDirection} />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("updated")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Actualizado" : "Updated"}
+                          <SortIndicator active={sortKey === "updated"} direction={sortDirection} />
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {paginatedProducts.map((product) => {
+                      const firstVariant = product.variants[0];
+                      const thumbnailUrl = product.images[0];
+                      const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
+                      const firstSku = firstVariant?.sku ?? "—";
+                      
+                      const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
+                      const currencyCode = activeStore?.currency || "USD";
+                      const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
+                        style: "currency",
+                        currency: currencyCode,
+                      });
+                      
+                      const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
+                      const categoryLabel = product.categoryName ?? (product.categoryId ? (isEs ? "Asignada" : "Assigned") : (isEs ? "Sin categoría" : "Uncategorized"));
 
-                        return (
-                          <tr
-                            key={product.id}
-                            onClick={() => router.push(`/dashboard/products/${product.id}`)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                router.push(`/dashboard/products/${product.id}`);
-                              }
-                            }}
-                            role="link"
-                            tabIndex={0}
-                            className={`cursor-pointer transition-colors ${selectedProductIds.includes(product.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
-                          >
-                            <td className="px-4 py-3 align-top">
-                              <input
-                                type="checkbox"
-                                checked={selectedProductIds.includes(product.id)}
-                                onChange={() => toggleProductSelection(product.id)}
-                                onClick={(event) => event.stopPropagation()}
-                                aria-label={`Select ${product.title}`}
-                                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                              />
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              {thumbnailUrl ? (
-                                <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
-                              ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">
-                                  No image
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              <p className="block font-semibold text-slate-900">{product.title}</p>
-                              <p className="text-xs text-slate-500">/{product.slug}</p>
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  void handleToggleFeatured(product.id, product.featured);
-                                }}
-                                onKeyDown={(event) => {
-                                  event.stopPropagation();
-                                }}
-                                disabled={updatingFeaturedIds.includes(product.id)}
-                                aria-label={product.featured ? "Unfeature product" : "Feature product"}
-                                className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
-                                  product.featured
-                                    ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
-                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                } ${updatingFeaturedIds.includes(product.id) ? "cursor-not-allowed opacity-60" : ""}`}
-                              >
-                                <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
-                              </button>
-                            </td>
-                            <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
-                            <td className="px-4 py-3 align-top text-slate-700">{inventoryTotal}</td>
-                            <td className="px-4 py-3 align-top text-slate-700">{firstPrice}</td>
-                            <td className="px-4 py-3 align-top text-slate-700">{categoryLabel}</td>
-                            <td className="px-4 py-3 align-top text-slate-600">
-                              {new Date(product.updatedAt).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-col gap-3 p-3 md:hidden">
-                  {paginatedProducts.map((product) => {
-                    const firstVariant = product.variants[0];
-                    const thumbnailUrl = product.images[0];
-                    const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
-                    const firstSku = firstVariant?.sku ?? "—";
-                    
-                    const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
-                    const currencyCode = activeStore?.currency || "USD";
-                    const formatter = new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: currencyCode,
-                    });
-                    
-                    const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
-                    const categoryLabel = product.categoryName ?? (product.categoryId ? "Assigned" : "Uncategorized");
-
-                    return (
-                      <article
-                        key={product.id}
-                        onClick={() => router.push(`/dashboard/products/${product.id}`)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            router.push(`/dashboard/products/${product.id}`);
-                          }
-                        }}
-                        role="link"
-                        tabIndex={0}
-                        className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3">
+                      return (
+                        <tr
+                          key={product.id}
+                          onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/dashboard/products/${product.id}`);
+                            }
+                          }}
+                          role="link"
+                          tabIndex={0}
+                          className={`cursor-pointer transition-colors ${selectedProductIds.includes(product.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
+                        >
+                          <td className="px-4 py-3 align-top">
+                            <input
+                              type="checkbox"
+                              checked={selectedProductIds.includes(product.id)}
+                              onChange={() => toggleProductSelection(product.id)}
+                              onClick={(event) => event.stopPropagation()}
+                              aria-label={`Select ${product.title}`}
+                              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             {thumbnailUrl ? (
                               <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
                             ) : (
-                              <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs text-slate-400">
-                                No image
+                              <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">
+                                {isEs ? "Sin imagen" : "No image"}
                               </div>
                             )}
-                            <div>
-                              <p className="block font-semibold text-slate-900">{product.title}</p>
-                              <p className="mt-1 text-xs text-slate-500">/{product.slug}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Featured</p>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <p className="block font-semibold text-slate-900">{product.title}</p>
+                            <p className="text-xs text-slate-500">/{product.slug}</p>
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             <button
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 void handleToggleFeatured(product.id, product.featured);
                               }}
+                              onKeyDown={(event) => {
+                                event.stopPropagation();
+                              }}
                               disabled={updatingFeaturedIds.includes(product.id)}
-                              aria-label={product.featured ? "Unfeature product" : "Feature product"}
-                              className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
+                              aria-label={product.featured ? (isEs ? "Quitar de destacados" : "Unfeature product") : (isEs ? "Marcar como destacado" : "Feature product")}
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
                                 product.featured
-                                  ? "bg-amber-50 text-amber-500"
+                                  ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
                                   : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                               } ${updatingFeaturedIds.includes(product.id) ? "cursor-not-allowed opacity-60" : ""}`}
                             >
                               <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
                             </button>
-                          </div>
+                          </td>
+                          <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
+                          <td className="px-4 py-3 align-top text-slate-700">{inventoryTotal}</td>
+                          <td className="px-4 py-3 align-top text-slate-700">{firstPrice}</td>
+                          <td className="px-4 py-3 align-top text-slate-700">{categoryLabel}</td>
+                          <td className="px-4 py-3 align-top text-slate-600">
+                            {new Date(product.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col gap-3 p-3 md:hidden">
+                {paginatedProducts.map((product) => {
+                  const firstVariant = product.variants[0];
+                  const thumbnailUrl = product.images[0];
+                  const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
+                  const firstSku = firstVariant?.sku ?? "—";
+                  
+                  const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
+                  const currencyCode = activeStore?.currency || "USD";
+                  const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
+                    style: "currency",
+                    currency: currencyCode,
+                  });
+                  
+                  const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
+                  const categoryLabel = product.categoryName ?? (product.categoryId ? (isEs ? "Asignada" : "Assigned") : (isEs ? "Sin categoría" : "Uncategorized"));
+
+                  return (
+                    <article
+                      key={product.id}
+                      onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          router.push(`/dashboard/products/${product.id}`);
+                        }
+                      }}
+                      role="link"
+                      tabIndex={0}
+                      className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          {thumbnailUrl ? (
+                            <img src={thumbnailUrl} alt={product.title} className="h-12 w-12 rounded-lg object-cover" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs text-slate-400">
+                              {isEs ? "Sin imagen" : "No image"}
+                            </div>
+                          )}
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
-                            <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Inventory</p>
-                            <p className="mt-1 font-medium text-slate-700">{inventoryTotal}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Price</p>
-                            <p className="mt-1 font-medium text-slate-700">{firstPrice}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Category</p>
-                            <p className="mt-1 font-medium text-slate-700">{categoryLabel}</p>
+                            <p className="block font-semibold text-slate-900">{product.title}</p>
+                            <p className="mt-1 text-xs text-slate-500">/{product.slug}</p>
                           </div>
                         </div>
+                      </div>
 
-                        <div className="mt-3 border-t border-slate-200 pt-3">
-                          <p className="text-sm text-slate-500">
-                            Updated {new Date(product.updatedAt).toLocaleDateString()}
-                          </p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Destacado" : "Featured"}</p>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleToggleFeatured(product.id, product.featured);
+                            }}
+                            disabled={updatingFeaturedIds.includes(product.id)}
+                            aria-label={product.featured ? (isEs ? "Quitar de destacados" : "Unfeature product") : (isEs ? "Marcar como destacado" : "Feature product")}
+                            className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
+                              product.featured
+                                ? "bg-amber-50 text-amber-500"
+                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            } ${updatingFeaturedIds.includes(product.id) ? "cursor-not-allowed opacity-60" : ""}`}
+                          >
+                            <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
+                          </button>
                         </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
+                          <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Inventario" : "Inventory"}</p>
+                          <p className="mt-1 font-medium text-slate-700">{inventoryTotal}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Precio" : "Price"}</p>
+                          <p className="mt-1 font-medium text-slate-700">{firstPrice}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Categoría" : "Category"}</p>
+                          <p className="mt-1 font-medium text-slate-700">{categoryLabel}</p>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage <= 1}
-                    className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <p className="text-xs font-medium text-slate-600">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
+                      <div className="mt-3 border-t border-slate-200 pt-3">
+                        <p className="text-sm text-slate-500">
+                          {isEs ? "Actualizado " : "Updated "}
+                          {new Date(product.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isEs ? "Anterior" : "Previous"}
+                </button>
+                <p className="text-xs font-medium text-slate-600">
+                  {isEs
+                    ? `Página ${currentPage} de ${totalPages}`
+                    : `Page ${currentPage} of ${totalPages}`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isEs ? "Siguiente" : "Next"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
     </>
   );
 }

@@ -145,8 +145,12 @@ export default function DashboardLayout({
             const latestOrder = newOrders[0];
             showToast({
               id: latestOrder.id,
-              title: "New Order!",
-              message: `Order #${latestOrder.orderNumber} (${latestOrder.currency} ${latestOrder.total}) received at ${latestOrder.storeName}.`,
+              title: t.dashboard.newOrderTitle,
+              message: t.dashboard.newOrderMessage
+                .replace("{orderNumber}", String(latestOrder.orderNumber))
+                .replace("{currency}", latestOrder.currency)
+                .replace("{total}", latestOrder.total)
+                .replace("{storeName}", latestOrder.storeName),
             });
           }
 
@@ -173,51 +177,51 @@ export default function DashboardLayout({
   }, [stores]);
 
   const navItems: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
+    { href: "/dashboard", label: t.dashboard.merchantDashboard, icon: Home },
+    { href: "/dashboard/orders", label: t.dashboard.orders, icon: ShoppingCart },
     {
       href: "/dashboard/products",
-      label: "Products",
+      label: t.dashboard.products,
       icon: Package,
       children: [
-        { href: "/dashboard/products", label: "All Products" },
-        { href: "/dashboard/products/new", label: "Add Product" },
-        { href: "/dashboard/products/categories", label: "Categories" },
+        { href: "/dashboard/products", label: t.dashboard.allProducts },
+        { href: "/dashboard/products/new", label: t.dashboard.addProduct },
+        { href: "/dashboard/products/categories", label: t.dashboard.categories },
       ],
     },
     {
       href: "/dashboard/procurement",
-      label: "Procurement",
+      label: t.dashboard.procurement,
       icon: Truck,
       children: [
-        { href: "/dashboard/procurement", label: "Overview" },
-        { href: "/dashboard/procurement/purchase-orders", label: "Purchase Orders" },
-        { href: "/dashboard/procurement/vendors", label: "Vendors" },
+        { href: "/dashboard/procurement", label: t.dashboard.procurementOverview },
+        { href: "/dashboard/procurement/purchase-orders", label: t.dashboard.purchaseOrders },
+        { href: "/dashboard/procurement/vendors", label: t.dashboard.vendors },
       ],
     },
-    { href: "/dashboard/customers", label: "Customers", icon: Users },
+    { href: "/dashboard/customers", label: t.dashboard.customers, icon: Users },
     {
       href: "/dashboard/stores",
-      label: "Stores",
+      label: t.dashboard.stores,
       icon: Store,
       children: [
-        { href: "/dashboard/stores", label: "All Stores" },
+        { href: "/dashboard/stores", label: t.dashboard.allStores },
         {
           href: stores[0] ? `/dashboard/stores/${stores[0].id}/themes` : "/dashboard/stores",
-          label: "Themes",
+          label: t.dashboard.themes,
         },
       ],
     },
     {
       href: "/dashboard/tools",
-      label: "Tools",
+      label: t.dashboard.tools,
       icon: Wrench,
       children: [
-        { href: "/dashboard/tools/import-tables", label: "Import Tables" },
-        { href: "/dashboard/tools/export-tables", label: "Export Tables" },
+        { href: "/dashboard/tools/import-tables", label: t.dashboard.importTables },
+        { href: "/dashboard/tools/export-tables", label: t.dashboard.exportTables },
       ],
     },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard/settings", label: t.dashboard.settings, icon: Settings },
   ];
 
   function isActive(href: string): boolean {
@@ -440,7 +444,7 @@ export default function DashboardLayout({
                       </div>
                       {(currentUser?.verified || currentUser?.authenticated) && (
                         <div className="text-[10px] font-medium text-slate-400 leading-tight">
-                          Authenticated
+                          {t.dashboard.authenticated}
                         </div>
                       )}
                     </div>

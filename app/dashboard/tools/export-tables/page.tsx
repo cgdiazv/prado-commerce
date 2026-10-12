@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type StoreOption = {
   id: string;
@@ -12,6 +13,8 @@ type ExportTable = "categories" | "products" | "customers";
 type ExportFormat = "csv" | "json";
 
 export default function ExportTablesPage() {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState("");
   const [table, setTable] = useState<ExportTable>("products");
@@ -33,12 +36,12 @@ export default function ExportTablesPage() {
         setStores(payload);
         setSelectedStoreId(payload[0]?.id ?? "");
       } catch {
-        setError("Could not load stores. Refresh and try again.");
+        setError(isEs ? "No se pudieron cargar las tiendas. Actualiza e inténtalo de nuevo." : "Could not load stores. Refresh and try again.");
       }
     }
 
     void loadStores();
-  }, []);
+  }, [isEs]);
 
   async function handleExport(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,7 +49,7 @@ export default function ExportTablesPage() {
     setSuccess(null);
 
     if (!selectedStoreId) {
-      setError("Please choose a store.");
+      setError(isEs ? "Por favor selecciona una tienda." : "Please choose a store.");
       return;
     }
 
@@ -65,7 +68,7 @@ export default function ExportTablesPage() {
 
       if (!response.ok) {
         const payload = await response.json() as { error?: string };
-        throw new Error(payload.error || "Export failed");
+        throw new Error(payload.error || (isEs ? "Error al exportar" : "Export failed"));
       }
 
       const blob = await response.blob();
@@ -81,9 +84,19 @@ export default function ExportTablesPage() {
       anchor.remove();
       URL.revokeObjectURL(downloadUrl);
 
-      setSuccess(`Exported ${table} as ${extension.toUpperCase()}.`);
+      const tableNames: Record<string, string> = {
+        products: isEs ? "productos" : "products",
+        categories: isEs ? "categorías" : "categories",
+        customers: isEs ? "clientes" : "customers",
+      };
+
+      setSuccess(
+        isEs
+          ? `Se exportaron los ${tableNames[table]} en formato ${extension.toUpperCase()}.`
+          : `Exported ${table} as ${extension.toUpperCase()}.`,
+      );
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Export failed");
+      setError(submitError instanceof Error ? submitError.message : (isEs ? "Error al exportar" : "Export failed"));
     } finally {
       setIsExporting(false);
     }
@@ -94,22 +107,24 @@ export default function ExportTablesPage() {
       <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Tools
+            {isEs ? "Herramientas" : "Tools"}
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              Export tables
+              {isEs ? "Exportar tablas" : "Export tables"}
             </h1>
 
             <Link
               href="/dashboard/tools"
               className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              ← Back to tools
+              {isEs ? "← Volver a herramientas" : "← Back to tools"}
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
-            Export categories, products, or customers as CSV or JSON.
+            {isEs
+              ? "Exporta categorías, productos o clientes en formato CSV o JSON."
+              : "Export categories, products, or customers as CSV or JSON."}
           </p>
         </div>
       </div>
@@ -117,7 +132,7 @@ export default function ExportTablesPage() {
       <form onSubmit={handleExport} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-3">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Store</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={selectedStoreId}
               onChange={(event) => setSelectedStoreId(event.target.value)}
@@ -132,20 +147,20 @@ export default function ExportTablesPage() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Table</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Tabla" : "Table"}</span>
             <select
               value={table}
               onChange={(event) => setTable(event.target.value as ExportTable)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="products">Products</option>
-              <option value="categories">Categories</option>
-              <option value="customers">Customers</option>
+              <option value="products">{isEs ? "Productos" : "Products"}</option>
+              <option value="categories">{isEs ? "Categorías" : "Categories"}</option>
+              <option value="customers">{isEs ? "Clientes" : "Customers"}</option>
             </select>
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Format</span>
+            <span className="text-sm font-medium text-slate-700">{isEs ? "Formato" : "Format"}</span>
             <select
               value={format}
               onChange={(event) => setFormat(event.target.value as ExportFormat)}
@@ -175,7 +190,9 @@ export default function ExportTablesPage() {
             disabled={isExporting}
             className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isExporting ? "Exporting..." : "Export now"}
+            {isExporting
+              ? (isEs ? "Exportando..." : "Exporting...")
+              : (isEs ? "Exportar ahora" : "Export now")}
           </button>
         </div>
       </form>

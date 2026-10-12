@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Send, CheckCircle2, AlertCircle, LifeBuoy } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export function HelpdeskTicketForm() {
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("General Support");
   const [priority, setPriority] = useState("NORMAL");
@@ -37,9 +41,15 @@ export function HelpdeskTicketForm() {
     setErrorMessage(null);
 
     try {
-      if (!subject.trim()) throw new Error("Please enter a ticket subject.");
-      if (!email.trim()) throw new Error("Please enter your contact email.");
-      if (!message.trim()) throw new Error("Please enter a message description.");
+      if (!subject.trim()) {
+        throw new Error(isEs ? "Por favor ingresa un asunto para el ticket." : "Please enter a ticket subject.");
+      }
+      if (!email.trim()) {
+        throw new Error(isEs ? "Por favor ingresa tu correo de contacto." : "Please enter your contact email.");
+      }
+      if (!message.trim()) {
+        throw new Error(isEs ? "Por favor ingresa una descripción del mensaje." : "Please enter a message description.");
+      }
 
       const response = await fetch("/api/support/ticket", {
         method: "POST",
@@ -57,16 +67,24 @@ export function HelpdeskTicketForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to send helpdesk ticket.");
+        throw new Error(result.error || (isEs ? "Error al enviar el ticket." : "Failed to send helpdesk ticket."));
       }
 
       setSuccessMessage(
-        "Helpdesk ticket submitted successfully! Our support team at support@pradocommerce.com has received your request and will respond shortly.",
+        isEs
+          ? "¡Ticket de soporte enviado con éxito! Nuestro equipo en support@pradocommerce.com ha recibido tu solicitud y responderá en breve."
+          : "Helpdesk ticket submitted successfully! Our support team at support@pradocommerce.com has received your request and will respond shortly.",
       );
       setSubject("");
       setMessage("");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Failed to submit ticket.");
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : isEs
+            ? "Error al enviar el ticket."
+            : "Failed to submit ticket.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -79,9 +97,12 @@ export function HelpdeskTicketForm() {
           <LifeBuoy className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-slate-950">Open a Helpdesk Ticket</h2>
+          <h2 className="text-base font-bold text-slate-950">
+            {isEs ? "Abrir un Ticket de Soporte" : "Open a Helpdesk Ticket"}
+          </h2>
           <p className="text-xs text-slate-500">
-            Send a support ticket directly to <span className="font-semibold text-slate-700">support@pradocommerce.com</span>
+            {isEs ? "Envía un ticket directamente a " : "Send a support ticket directly to "}
+            <span className="font-semibold text-slate-700">support@pradocommerce.com</span>
           </p>
         </div>
       </div>
@@ -103,75 +124,75 @@ export function HelpdeskTicketForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 sm:col-span-2">
-            <span className="text-xs font-semibold text-slate-700">Subject</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Asunto" : "Subject"}</span>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Issue connecting Authorize.net gateway"
+              placeholder={isEs ? "Ej. Problema conectando pasarela Authorize.net" : "e.g. Issue connecting Authorize.net gateway"}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               required
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-700">Category</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Categoría" : "Category"}</span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="General Support">General Support</option>
-              <option value="Technical Issue">Technical Issue</option>
-              <option value="Orders & Shipping">Orders & Shipping</option>
-              <option value="Payments & Billing">Payments & Billing</option>
-              <option value="Account & Security">Account & Security</option>
+              <option value="General Support">{isEs ? "Soporte General" : "General Support"}</option>
+              <option value="Technical Issue">{isEs ? "Problema Técnico" : "Technical Issue"}</option>
+              <option value="Orders & Shipping">{isEs ? "Pedidos y Envíos" : "Orders & Shipping"}</option>
+              <option value="Payments & Billing">{isEs ? "Pagos y Facturación" : "Payments & Billing"}</option>
+              <option value="Account & Security">{isEs ? "Cuenta y Seguridad" : "Account & Security"}</option>
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-700">Priority</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Prioridad" : "Priority"}</span>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-slate-400"
             >
-              <option value="NORMAL">Normal</option>
-              <option value="LOW">Low</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="NORMAL">{isEs ? "Normal" : "Normal"}</option>
+              <option value="LOW">{isEs ? "Baja" : "Low"}</option>
+              <option value="HIGH">{isEs ? "Alta" : "High"}</option>
+              <option value="URGENT">{isEs ? "Urgente" : "Urgent"}</option>
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-700">Your Email</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Tu Correo" : "Your Email"}</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="merchant@example.com"
+              placeholder="comercio@ejemplo.com"
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               required
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-slate-700">Your Name (optional)</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Tu Nombre (opcional)" : "Your Name (optional)"}</span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Jane Doe"
+              placeholder="Juan Pérez"
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
 
           <label className="flex flex-col gap-1.5 sm:col-span-2">
-            <span className="text-xs font-semibold text-slate-700">Message Description</span>
+            <span className="text-xs font-semibold text-slate-700">{isEs ? "Descripción del Mensaje" : "Message Description"}</span>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Provide as much detail as possible about your question or issue..."
+              placeholder={isEs ? "Proporciona tantos detalles como sea posible sobre tu pregunta o incidencia..." : "Provide as much detail as possible about your question or issue..."}
               rows={4}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               required
@@ -186,10 +207,13 @@ export function HelpdeskTicketForm() {
             className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send className="h-4 w-4" />
-            {isSubmitting ? "Submitting ticket..." : "Submit Ticket"}
+            {isSubmitting
+              ? isEs ? "Enviando ticket..." : "Submitting ticket..."
+              : isEs ? "Enviar Ticket" : "Submit Ticket"}
           </button>
         </div>
       </form>
     </section>
   );
 }
+

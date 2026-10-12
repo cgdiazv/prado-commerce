@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type NexusRegion = {
   country: string;
@@ -20,6 +21,9 @@ const TAX_SETTINGS_STORAGE_KEY = "prado_tax_settings";
 
 export default function TaxPage() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [pricesIncludeTax, setPricesIncludeTax] = useState(false);
   const [automaticTax, setAutomaticTax] = useState(true);
   const [collectTaxOnShipping, setCollectTaxOnShipping] = useState(true);
@@ -89,9 +93,19 @@ export default function TaxPage() {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       localStorage.setItem(TAX_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
-      setSuccess("Tax calculation settings saved successfully.");
+      setSuccess(
+        isEs
+          ? "Configuración de cálculo de impuestos guardada correctamente."
+          : "Tax calculation settings saved successfully."
+      );
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save tax calculation settings.");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : isEs
+          ? "No se pudo guardar la configuración de impuestos."
+          : "Unable to save tax calculation settings."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -102,7 +116,11 @@ export default function TaxPage() {
 
     setNexusRegions((current) => [
       ...current,
-      { country: newCountry.trim(), region: newRegion.trim(), taxId: newTaxId.trim() || "Not set" },
+      {
+        country: newCountry.trim(),
+        region: newRegion.trim(),
+        taxId: newTaxId.trim() || (isEs ? "No asignado" : "Not set"),
+      },
     ]);
 
     setNewCountry("");
@@ -140,20 +158,24 @@ export default function TaxPage() {
       <div className="w-full">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Settings
+            {isEs ? "Configuración" : "Settings"}
           </p>
           <div className="mt-4 flex items-start justify-between gap-4">
-            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">Tax</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+              {isEs ? "Impuestos" : "Tax"}
+            </h1>
 
             <Link
               href="/dashboard/settings"
               className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              ← Back to settings
+              {isEs ? "← Volver a configuración" : "← Back to settings"}
             </Link>
           </div>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
-            Configure tax registrations, regions, rates, exemptions, filing, and tax service integrations.
+            {isEs
+              ? "Configura registros fiscales, regiones de nexo tributario, tasas, exenciones e integraciones."
+              : "Configure tax registrations, regions, rates, exemptions, filing, and tax service integrations."}
           </p>
         </div>
       </div>
@@ -173,57 +195,113 @@ export default function TaxPage() {
           ) : null}
 
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Tax calculation settings</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {isEs ? "Parámetros de cálculo de impuestos" : "Tax calculation settings"}
+            </h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-                <span>Prices include tax</span>
-                <input type="checkbox" checked={pricesIncludeTax} onChange={(e) => setPricesIncludeTax(e.target.checked)} className="h-4 w-4" />
+                <span>{isEs ? "Los precios ya incluyen impuestos" : "Prices include tax"}</span>
+                <input
+                  type="checkbox"
+                  checked={pricesIncludeTax}
+                  onChange={(e) => setPricesIncludeTax(e.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
               </label>
 
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-                <span>Automatic tax calculation</span>
-                <input type="checkbox" checked={automaticTax} onChange={(e) => setAutomaticTax(e.target.checked)} className="h-4 w-4" />
+                <span>{isEs ? "Cálculo automático de impuestos" : "Automatic tax calculation"}</span>
+                <input
+                  type="checkbox"
+                  checked={automaticTax}
+                  onChange={(e) => setAutomaticTax(e.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
               </label>
 
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-                <span>Collect tax on shipping</span>
-                <input type="checkbox" checked={collectTaxOnShipping} onChange={(e) => setCollectTaxOnShipping(e.target.checked)} className="h-4 w-4" />
+                <span>{isEs ? "Cobrar impuesto sobre el envío" : "Collect tax on shipping"}</span>
+                <input
+                  type="checkbox"
+                  checked={collectTaxOnShipping}
+                  onChange={(e) => setCollectTaxOnShipping(e.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
               </label>
 
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-                <span>Enable EU VAT rules</span>
-                <input type="checkbox" checked={euVatEnabled} onChange={(e) => setEuVatEnabled(e.target.checked)} className="h-4 w-4" />
+                <span>{isEs ? "Activar reglas de IVA para la UE" : "Enable EU VAT rules"}</span>
+                <input
+                  type="checkbox"
+                  checked={euVatEnabled}
+                  onChange={(e) => setEuVatEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
               </label>
             </div>
           </article>
 
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Tax nexus regions</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {isEs ? "Regiones de nexo tributario" : "Tax nexus regions"}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Add the regions where your business must collect tax.
+              {isEs
+                ? "Agrega las regiones donde tu negocio está legalmente obligado a recaudar impuestos."
+                : "Add the regions where your business must collect tax."}
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <input value={newCountry} onChange={(e) => setNewCountry(e.target.value)} placeholder="Country" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
-              <input value={newRegion} onChange={(e) => setNewRegion(e.target.value)} placeholder="State / province / region" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
-              <input value={newTaxId} onChange={(e) => setNewTaxId(e.target.value)} placeholder="Tax registration ID" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
+              <input
+                value={newCountry}
+                onChange={(e) => setNewCountry(e.target.value)}
+                placeholder={isEs ? "País (ej. México)" : "Country"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
+              <input
+                value={newRegion}
+                onChange={(e) => setNewRegion(e.target.value)}
+                placeholder={isEs ? "Estado / provincia / región" : "State / province / region"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
+              <input
+                value={newTaxId}
+                onChange={(e) => setNewTaxId(e.target.value)}
+                placeholder={isEs ? "Número de registro fiscal / RFC" : "Tax registration ID"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button type="button" onClick={addNexusRegion} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Add nexus region
+              <button
+                type="button"
+                onClick={addNexusRegion}
+                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                {isEs ? "Agregar región de nexo" : "Add nexus region"}
               </button>
             </div>
 
             <div className="mt-5 space-y-3">
               {nexusRegions.map((region, index) => (
-                <div key={`${region.country}-${region.region}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div
+                  key={`${region.country}-${region.region}-${index}`}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                >
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{region.country} · {region.region}</p>
-                    <p className="text-xs text-slate-500">Tax ID: {region.taxId}</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {region.country} · {region.region}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {isEs ? "ID Fiscal:" : "Tax ID:"} {region.taxId}
+                    </p>
                   </div>
-                  <button type="button" onClick={() => removeNexusRegion(index)} className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">
-                    Remove
+                  <button
+                    type="button"
+                    onClick={() => removeNexusRegion(index)}
+                    className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  >
+                    {isEs ? "Eliminar" : "Remove"}
                   </button>
                 </div>
               ))}
@@ -231,42 +309,87 @@ export default function TaxPage() {
           </article>
 
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Tax-exempt customers and entities</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {isEs ? "Clientes y entidades exentos de impuestos" : "Tax-exempt customers and entities"}
+            </h2>
             <div className="mt-4">
               <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-                <span>Allow tax-exempt customer profiles</span>
-                <input type="checkbox" checked={taxExemptEnabled} onChange={(e) => setTaxExemptEnabled(e.target.checked)} className="h-4 w-4" />
+                <span>
+                  {isEs
+                    ? "Permitir perfiles de clientes con exención de impuestos"
+                    : "Allow tax-exempt customer profiles"}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={taxExemptEnabled}
+                  onChange={(e) => setTaxExemptEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
               </label>
             </div>
           </article>
 
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Product tax categories</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {isEs ? "Categorías fiscales de productos" : "Product tax categories"}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Assign product categories with default tax behavior and rates.
+              {isEs
+                ? "Asigna categorías de producto con tasas y comportamiento impositivo predeterminado."
+                : "Assign product categories with default tax behavior and rates."}
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <input value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Category name" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
-              <input value={newCategoryCode} onChange={(e) => setNewCategoryCode(e.target.value)} placeholder="Category code" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
-              <input value={newCategoryRate} onChange={(e) => setNewCategoryRate(e.target.value)} placeholder="Default rate (%)" className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
+              <input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder={isEs ? "Nombre de categoría" : "Category name"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
+              <input
+                value={newCategoryCode}
+                onChange={(e) => setNewCategoryCode(e.target.value)}
+                placeholder={isEs ? "Código (ej. GEN, DIG)" : "Category code"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
+              <input
+                value={newCategoryRate}
+                onChange={(e) => setNewCategoryRate(e.target.value)}
+                placeholder={isEs ? "Tasa predeterminada (%)" : "Default rate (%)"}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              />
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button type="button" onClick={addTaxCategory} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Add tax category
+              <button
+                type="button"
+                onClick={addTaxCategory}
+                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                {isEs ? "Agregar categoría fiscal" : "Add tax category"}
               </button>
             </div>
 
             <div className="mt-5 space-y-3">
               {taxCategories.map((category, index) => (
-                <div key={`${category.code}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div
+                  key={`${category.code}-${index}`}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                >
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{category.name} ({category.code})</p>
-                    <p className="text-xs text-slate-500">Default rate: {category.defaultRate}%</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {category.name} ({category.code})
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {isEs ? "Tasa por defecto:" : "Default rate:"} {category.defaultRate}%
+                    </p>
                   </div>
-                  <button type="button" onClick={() => removeTaxCategory(index)} className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">
-                    Remove
+                  <button
+                    type="button"
+                    onClick={() => removeTaxCategory(index)}
+                    className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  >
+                    {isEs ? "Eliminar" : "Remove"}
                   </button>
                 </div>
               ))}
@@ -277,9 +400,9 @@ export default function TaxPage() {
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/dashboard/settings"
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 text-center"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </Link>
           <button
             type="submit"
@@ -292,10 +415,10 @@ export default function TaxPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>Saving options...</span>
+                <span>{isEs ? "Guardando opciones..." : "Saving options..."}</span>
               </>
             ) : (
-              <span>Save changes</span>
+              <span>{isEs ? "Guardar cambios" : "Save changes"}</span>
             )}
           </button>
         </div>
@@ -303,4 +426,3 @@ export default function TaxPage() {
     </section>
   );
 }
-

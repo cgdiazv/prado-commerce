@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type ApiKey = {
   id: string;
@@ -32,6 +33,9 @@ type Props = {
 };
 
 export function ApiAccessClient({ initialStores, apiHost }: Props) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [stores, setStores] = useState<StoreRecord[]>(initialStores);
   const [busyMap, setBusyMap] = useState<Record<string, boolean>>({});
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
@@ -56,7 +60,11 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
       setError(null);
       markCopied(copyKey);
     } catch {
-      setError("Could not copy to clipboard on this browser session.");
+      setError(
+        isEs
+          ? "No se pudo copiar al portapapeles en esta sesión de navegador."
+          : "Could not copy to clipboard on this browser session.",
+      );
     }
   }
 
@@ -90,7 +98,9 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
       });
 
       const result = (await response.json()) as ApiKey & { error?: string };
-      if (!response.ok) throw new Error(result.error ?? "Could not create API key");
+      if (!response.ok) {
+        throw new Error(result.error ?? (isEs ? "No se pudo crear la clave de API" : "Could not create API key"));
+      }
 
       setStores((current) =>
         current.map((store) =>
@@ -98,7 +108,13 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
         ),
       );
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "Could not create API key");
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : isEs
+            ? "No se pudo crear la clave de API"
+            : "Could not create API key",
+      );
     } finally {
       setBusy(busyKey, false);
     }
@@ -115,7 +131,9 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
       });
 
       const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error ?? "Could not revoke API key");
+      if (!response.ok) {
+        throw new Error(result.error ?? (isEs ? "No se pudo revocar la clave de API" : "Could not revoke API key"));
+      }
 
       setStores((current) =>
         current.map((store) =>
@@ -125,7 +143,13 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
         ),
       );
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "Could not revoke API key");
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : isEs
+            ? "No se pudo revocar la clave de API"
+            : "Could not revoke API key",
+      );
     } finally {
       setBusy(busyKey, false);
     }
@@ -138,7 +162,9 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
       ) : null}
 
       {!hasStores ? (
-        <p className="text-sm text-slate-600">No stores found for this account yet.</p>
+        <p className="text-sm text-slate-600">
+          {isEs ? "Aún no se encontraron tiendas para esta cuenta." : "No stores found for this account yet."}
+        </p>
       ) : (
         <div className="space-y-5">
           {stores.map((store) => {
@@ -155,16 +181,18 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Store ID</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {isEs ? "ID de la tienda" : "Store ID"}
+                      </p>
                       <button
                         type="button"
                         onClick={() => copyValue(`store:${store.id}:id`, store.id)}
                         className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-slate-50"
-                        aria-label={copiedMap[`store:${store.id}:id`] ? "Copied store ID" : "Copy store ID"}
-                        title={copiedMap[`store:${store.id}:id`] ? "Copied" : "Copy"}
+                        aria-label={copiedMap[`store:${store.id}:id`] ? (isEs ? "ID copiado" : "Copied store ID") : (isEs ? "Copiar ID" : "Copy store ID")}
+                        title={copiedMap[`store:${store.id}:id`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}
                       >
                         <CopyIcon copied={Boolean(copiedMap[`store:${store.id}:id`])} />
-                        <span className="sr-only">{copiedMap[`store:${store.id}:id`] ? "Copied" : "Copy"}</span>
+                        <span className="sr-only">{copiedMap[`store:${store.id}:id`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}</span>
                       </button>
                     </div>
                     <p className="mt-2 break-all font-mono text-xs text-slate-700">{store.id}</p>
@@ -172,25 +200,31 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">API host URL</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {isEs ? "URL del host de la API" : "API host URL"}
+                      </p>
                       <button
                         type="button"
                         onClick={() => copyValue(`store:${store.id}:apiHost`, apiHost)}
                         className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-slate-50"
-                        aria-label={copiedMap[`store:${store.id}:apiHost`] ? "Copied API host URL" : "Copy API host URL"}
-                        title={copiedMap[`store:${store.id}:apiHost`] ? "Copied" : "Copy"}
+                        aria-label={copiedMap[`store:${store.id}:apiHost`] ? (isEs ? "URL copiada" : "Copied API host URL") : (isEs ? "Copiar URL" : "Copy API host URL")}
+                        title={copiedMap[`store:${store.id}:apiHost`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}
                       >
                         <CopyIcon copied={Boolean(copiedMap[`store:${store.id}:apiHost`])} />
-                        <span className="sr-only">{copiedMap[`store:${store.id}:apiHost`] ? "Copied" : "Copy"}</span>
+                        <span className="sr-only">{copiedMap[`store:${store.id}:apiHost`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}</span>
                       </button>
                     </div>
                     <p className="mt-2 break-all font-mono text-xs text-slate-700">{apiHost}</p>
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-3 md:col-span-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Allowed frontend domains</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {isEs ? "Dominios frontend permitidos" : "Allowed frontend domains"}
+                    </p>
                     {store.allowedDomains.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-600">No domains configured.</p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {isEs ? "Sin dominios configurados." : "No domains configured."}
+                      </p>
                     ) : (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {store.allowedDomains.map((domain) => (
@@ -203,17 +237,23 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-3 md:col-span-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Variant IDs (add-to-cart)</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {isEs ? "IDs de variantes (agregar al carrito)" : "Variant IDs (add-to-cart)"}
+                    </p>
                     {store.variantRefs.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-600">No product variants found.</p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {isEs ? "No se encontraron variantes de producto." : "No product variants found."}
+                      </p>
                     ) : (
                       <div className="mt-2 space-y-3">
                         <p className="text-sm text-slate-600">
-                          {store.variantRefs.length} variant ID{store.variantRefs.length === 1 ? "" : "s"} available for custom add-to-cart embeds.
+                          {isEs
+                            ? `${store.variantRefs.length} ID${store.variantRefs.length === 1 ? "" : "s"} de variante disponible${store.variantRefs.length === 1 ? "" : "s"} para incrustar el botón de agregar al carrito.`
+                            : `${store.variantRefs.length} variant ID${store.variantRefs.length === 1 ? "" : "s"} available for custom add-to-cart embeds.`}
                         </p>
                         <details className="group rounded-lg border border-slate-200 bg-slate-50">
                           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-slate-700">
-                            <span>View variant IDs</span>
+                            <span>{isEs ? "Ver IDs de variantes" : "View variant IDs"}</span>
                             <span className="text-xs text-slate-500 transition group-open:rotate-180">▾</span>
                           </summary>
                           <div className="space-y-2 border-t border-slate-200 px-3 py-3">
@@ -232,19 +272,29 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
 
                 <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Publishable API keys</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {isEs ? "Claves de API públicas" : "Publishable API keys"}
+                    </p>
                     <button
                       type="button"
                       onClick={() => createKey(store.id, "PUBLISHABLE")}
                       disabled={busyMap[`create:${store.id}:PUBLISHABLE`]}
                       className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {busyMap[`create:${store.id}:PUBLISHABLE`] ? "Creating..." : "Create publishable key"}
+                      {busyMap[`create:${store.id}:PUBLISHABLE`]
+                        ? isEs
+                          ? "Creando..."
+                          : "Creating..."
+                        : isEs
+                          ? "Crear clave pública"
+                          : "Create publishable key"}
                     </button>
                   </div>
 
                   {publishableKeys.length === 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">No publishable keys created.</p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {isEs ? "No se han creado claves públicas." : "No publishable keys created."}
+                    </p>
                   ) : (
                     <div className="mt-2 space-y-2">
                       {publishableKeys.map((apiKey) => (
@@ -256,11 +306,11 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                                 type="button"
                                 onClick={() => copyValue(`key:${apiKey.id}`, apiKey.key)}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-slate-100"
-                                aria-label={copiedMap[`key:${apiKey.id}`] ? "Copied API key" : "Copy API key"}
-                                title={copiedMap[`key:${apiKey.id}`] ? "Copied" : "Copy"}
+                                aria-label={copiedMap[`key:${apiKey.id}`] ? (isEs ? "Clave copiada" : "Copied API key") : (isEs ? "Copiar clave" : "Copy API key")}
+                                title={copiedMap[`key:${apiKey.id}`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}
                               >
                                 <CopyIcon copied={Boolean(copiedMap[`key:${apiKey.id}`])} />
-                                <span className="sr-only">{copiedMap[`key:${apiKey.id}`] ? "Copied" : "Copy"}</span>
+                                <span className="sr-only">{copiedMap[`key:${apiKey.id}`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}</span>
                               </button>
                               <button
                                 type="button"
@@ -268,7 +318,13 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                                 disabled={busyMap[`delete:${apiKey.id}`]}
                                 className="rounded-full border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {busyMap[`delete:${apiKey.id}`] ? "Revoking..." : "Revoke"}
+                                {busyMap[`delete:${apiKey.id}`]
+                                  ? isEs
+                                    ? "Revocando..."
+                                    : "Revoking..."
+                                  : isEs
+                                    ? "Revocar"
+                                    : "Revoke"}
                               </button>
                             </div>
                           </div>
@@ -281,19 +337,29 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
 
                 <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Secret API keys</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {isEs ? "Claves de API secretas" : "Secret API keys"}
+                    </p>
                     <button
                       type="button"
                       onClick={() => createKey(store.id, "SECRET")}
                       disabled={busyMap[`create:${store.id}:SECRET`]}
                       className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {busyMap[`create:${store.id}:SECRET`] ? "Creating..." : "Create secret key"}
+                      {busyMap[`create:${store.id}:SECRET`]
+                        ? isEs
+                          ? "Creando..."
+                          : "Creating..."
+                        : isEs
+                          ? "Crear clave secreta"
+                          : "Create secret key"}
                     </button>
                   </div>
 
                   {secretKeys.length === 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">No secret keys created.</p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {isEs ? "No se han creado claves secretas." : "No secret keys created."}
+                    </p>
                   ) : (
                     <div className="mt-2 space-y-2">
                       {secretKeys.map((apiKey) => (
@@ -305,11 +371,11 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                                 type="button"
                                 onClick={() => copyValue(`key:${apiKey.id}`, apiKey.key)}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-slate-100"
-                                aria-label={copiedMap[`key:${apiKey.id}`] ? "Copied API key" : "Copy API key"}
-                                title={copiedMap[`key:${apiKey.id}`] ? "Copied" : "Copy"}
+                                aria-label={copiedMap[`key:${apiKey.id}`] ? (isEs ? "Clave copiada" : "Copied API key") : (isEs ? "Copiar clave" : "Copy API key")}
+                                title={copiedMap[`key:${apiKey.id}`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}
                               >
                                 <CopyIcon copied={Boolean(copiedMap[`key:${apiKey.id}`])} />
-                                <span className="sr-only">{copiedMap[`key:${apiKey.id}`] ? "Copied" : "Copy"}</span>
+                                <span className="sr-only">{copiedMap[`key:${apiKey.id}`] ? (isEs ? "Copiado" : "Copied") : (isEs ? "Copiar" : "Copy")}</span>
                               </button>
                               <button
                                 type="button"
@@ -317,7 +383,13 @@ export function ApiAccessClient({ initialStores, apiHost }: Props) {
                                 disabled={busyMap[`delete:${apiKey.id}`]}
                                 className="rounded-full border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {busyMap[`delete:${apiKey.id}`] ? "Revoking..." : "Revoke"}
+                                {busyMap[`delete:${apiKey.id}`]
+                                  ? isEs
+                                    ? "Revocando..."
+                                    : "Revoking..."
+                                  : isEs
+                                    ? "Revocar"
+                                    : "Revoke"}
                               </button>
                             </div>
                           </div>

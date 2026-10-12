@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Search, Package } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
   id: string;
@@ -52,6 +53,8 @@ type POFormClientProps = {
 
 export default function POFormClient({ initialStores, initialVendors, initialProducts }: POFormClientProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
 
   const [selectedStoreId, setSelectedStoreId] = useState<string>(initialStores[0]?.id || "");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
@@ -131,7 +134,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
   const subtotal = lineItems.reduce((acc, item) => acc + item.qtyOrdered * item.unitCost, 0);
   const total = subtotal + Number(tax || 0) + Number(shipping || 0);
 
-  const currencyFormatter = new Intl.NumberFormat("en-US", {
+  const currencyFormatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
     style: "currency",
     currency: activeStore?.currency || "USD",
   });
@@ -139,12 +142,12 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVendorId) {
-      setError("Please select a vendor for this purchase order.");
+      setError(isEs ? "Por favor selecciona un proveedor para esta orden de compra." : "Please select a vendor for this purchase order.");
       return;
     }
 
     if (lineItems.length === 0) {
-      setError("Please add at least one product SKU to the purchase order.");
+      setError(isEs ? "Por favor agrega al menos un artículo o SKU a la orden de compra." : "Please add at least one product SKU to the purchase order.");
       return;
     }
 
@@ -175,11 +178,13 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to create purchase order.");
+      if (!response.ok) {
+        throw new Error(data.error || (isEs ? "Error al crear la orden de compra." : "Failed to create purchase order."));
+      }
 
       router.push(`/dashboard/procurement/purchase-orders/${data.purchaseOrder.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : isEs ? "Ocurrió un error inesperado." : "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -194,11 +199,15 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Purchase Orders
+          {isEs ? "Volver a órdenes de compra" : "Back to Purchase Orders"}
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">New Purchase Order</h1>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+          {isEs ? "Nueva orden de compra" : "New Purchase Order"}
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Specify vendor, order lines, expected arrival date, and wholesale unit costs.
+          {isEs
+            ? "Especifica el proveedor, las líneas de pedido, la fecha estimada de llegada y los costos unitarios."
+            : "Specify vendor, order lines, expected arrival date, and wholesale unit costs."}
         </p>
       </div>
 
@@ -212,13 +221,13 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
         {/* Section 1: Vendor & Store Selection */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 border-b border-slate-100 pb-3">
-            1. Supplier & Store Details
+            {isEs ? "1. Detalles del proveedor y tienda" : "1. Supplier & Store Details"}
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {initialStores.length > 1 && (
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Store *</label>
+                <label className="block text-xs font-semibold text-slate-700">{isEs ? "Tienda *" : "Store *"}</label>
                 <select
                   value={selectedStoreId}
                   onChange={(e) => {
@@ -238,12 +247,14 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700">Vendor / Supplier *</label>
+              <label className="block text-xs font-semibold text-slate-700">
+                {isEs ? "Proveedor / Fabricante *" : "Vendor / Supplier *"}
+              </label>
               {availableVendors.length === 0 ? (
                 <div className="mt-1 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
-                  <span>No vendor found for this store.</span>
+                  <span>{isEs ? "No se encontraron proveedores para esta tienda." : "No vendor found for this store."}</span>
                   <Link href="/dashboard/procurement/vendors" className="font-bold underline">
-                    Add Vendor
+                    {isEs ? "Agregar proveedor" : "Add Vendor"}
                   </Link>
                 </div>
               ) : (
@@ -253,7 +264,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
                   onChange={(e) => setSelectedVendorId(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:bg-white"
                 >
-                  <option value="">Select a vendor...</option>
+                  <option value="">{isEs ? "Selecciona un proveedor..." : "Select a vendor..."}</option>
                   {availableVendors.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.name} {v.contactEmail ? `(${v.contactEmail})` : ""}
@@ -264,18 +275,22 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700">PO Number (optional)</label>
+              <label className="block text-xs font-semibold text-slate-700">
+                {isEs ? "N.º de orden (opcional)" : "PO Number (optional)"}
+              </label>
               <input
                 type="text"
                 value={poNumber}
                 onChange={(e) => setPoNumber(e.target.value)}
-                placeholder="Auto-generated (e.g. PO-1001)"
+                placeholder={isEs ? "Autogenerado (p. ej. PO-1001)" : "Auto-generated (e.g. PO-1001)"}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:bg-white placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700">Expected Arrival Date</label>
+              <label className="block text-xs font-semibold text-slate-700">
+                {isEs ? "Fecha estimada de llegada" : "Expected Arrival Date"}
+              </label>
               <input
                 type="date"
                 value={expectedDate}
@@ -291,9 +306,13 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                2. Order Line Items
+                {isEs ? "2. Artículos de la orden" : "2. Order Line Items"}
               </h2>
-              <p className="text-xs text-slate-500">Add products and variants you are ordering from the supplier.</p>
+              <p className="text-xs text-slate-500">
+                {isEs
+                  ? "Agrega los productos y variantes que estás solicitando al proveedor."
+                  : "Add products and variants you are ordering from the supplier."}
+              </p>
             </div>
 
             <button
@@ -302,21 +321,23 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
               className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add Product SKU
+              {isEs ? "Agregar producto / SKU" : "Add Product SKU"}
             </button>
           </div>
 
           {lineItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
               <Package className="mx-auto h-8 w-8 text-slate-400" />
-              <p className="mt-2 text-xs font-medium text-slate-600">No items added to this PO yet.</p>
+              <p className="mt-2 text-xs font-medium text-slate-600">
+                {isEs ? "Aún no se han agregado artículos a esta orden." : "No items added to this PO yet."}
+              </p>
               <button
                 type="button"
                 onClick={() => setIsProductPickerOpen(true)}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
               >
                 <Plus className="h-3.5 w-3.5 text-slate-500" />
-                Select Products
+                {isEs ? "Seleccionar productos" : "Select Products"}
               </button>
             </div>
           ) : (
@@ -324,10 +345,10 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">Item / SKU</th>
-                    <th className="px-4 py-3 w-32">Qty Ordered</th>
-                    <th className="px-4 py-3 w-36">Unit Cost ({activeStore?.currency})</th>
-                    <th className="px-4 py-3 w-36 text-right">Line Total</th>
+                    <th className="px-4 py-3">{isEs ? "Artículo / SKU" : "Item / SKU"}</th>
+                    <th className="px-4 py-3 w-32">{isEs ? "Cant. pedida" : "Qty Ordered"}</th>
+                    <th className="px-4 py-3 w-36">{isEs ? "Costo unitario" : "Unit Cost"} ({activeStore?.currency})</th>
+                    <th className="px-4 py-3 w-36 text-right">{isEs ? "Total línea" : "Line Total"}</th>
                     <th className="px-4 py-3 w-12"></th>
                   </tr>
                 </thead>
@@ -381,30 +402,30 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 border-b border-slate-100 pb-3">
-              3. PO Notes & Payment Terms
+              {isEs ? "3. Notas de la orden y términos de pago" : "3. PO Notes & Payment Terms"}
             </h2>
             <textarea
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Net 30 terms. Deliver to Dock #2 between 8 AM and 4 PM."
+              placeholder={isEs ? "p. ej. Términos a 30 días. Entregar en muelle 2 de 8 AM a 4 PM." : "e.g. Net 30 terms. Deliver to Dock #2 between 8 AM and 4 PM."}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:bg-white placeholder:text-slate-400"
             />
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 border-b border-slate-100 pb-3">
-              Cost Summary ({activeStore?.currency})
+              {isEs ? "Resumen de costos" : "Cost Summary"} ({activeStore?.currency})
             </h2>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-slate-600">
-                <span>Items Subtotal</span>
+                <span>{isEs ? "Subtotal de artículos" : "Items Subtotal"}</span>
                 <span className="font-semibold">{currencyFormatter.format(subtotal)}</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-600">
-                <span>Estimated Tax</span>
+                <span>{isEs ? "Impuesto estimado" : "Estimated Tax"}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -416,7 +437,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
               </div>
 
               <div className="flex items-center justify-between text-slate-600">
-                <span>Estimated Freight / Shipping</span>
+                <span>{isEs ? "Flete / Envío estimado" : "Estimated Freight / Shipping"}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -428,7 +449,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
               </div>
 
               <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-950">
-                <span>Total PO Amount</span>
+                <span>{isEs ? "Total de la orden" : "Total PO Amount"}</span>
                 <span>{currencyFormatter.format(total)}</span>
               </div>
             </div>
@@ -441,14 +462,20 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
             href="/dashboard/procurement/purchase-orders"
             className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </Link>
           <button
             type="submit"
             disabled={isSubmitting || lineItems.length === 0 || !selectedVendorId}
             className="rounded-full bg-slate-950 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
           >
-            {isSubmitting ? "Creating PO..." : "Save & Generate PO"}
+            {isSubmitting
+              ? isEs
+                ? "Creando orden..."
+                : "Creating PO..."
+              : isEs
+                ? "Guardar y generar orden"
+                : "Save & Generate PO"}
           </button>
         </div>
       </form>
@@ -458,13 +485,15 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Select Product SKUs</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {isEs ? "Seleccionar productos / SKU" : "Select Product SKUs"}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsProductPickerOpen(false)}
                 className="text-xs font-semibold text-slate-500 hover:text-slate-900"
               >
-                Close
+                {isEs ? "Cerrar" : "Close"}
               </button>
             </div>
 
@@ -475,7 +504,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
                 autoFocus
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Search products by title or SKU..."
+                placeholder={isEs ? "Buscar productos por título o SKU..." : "Search products by title or SKU..."}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm outline-none focus:bg-white"
               />
             </div>
@@ -483,7 +512,9 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
             <div className="mt-4 flex-1 overflow-y-auto divide-y divide-slate-100 pr-1">
               {filteredVariants.length === 0 ? (
                 <div className="p-8 text-center text-xs text-slate-500">
-                  No matching products or SKUs found in this store.
+                  {isEs
+                    ? "No se encontraron productos o SKU en esta tienda."
+                    : "No matching products or SKUs found in this store."}
                 </div>
               ) : (
                 filteredVariants.map(({ product, variant }) => {
@@ -499,8 +530,14 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
                         <p className="text-sm font-semibold text-slate-900">{title}</p>
                         <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                           {variant.sku && <span className="font-mono">SKU: {variant.sku}</span>}
-                          <span>Current Stock: {variant.inventory} units</span>
-                          <span>Retail: {currencyFormatter.format(Number(variant.price))}</span>
+                          <span>
+                            {isEs ? "Inventario actual: " : "Current Stock: "}
+                            {variant.inventory} {isEs ? "unidades" : "units"}
+                          </span>
+                          <span>
+                            {isEs ? "Precio venta: " : "Retail: "}
+                            {currencyFormatter.format(Number(variant.price))}
+                          </span>
                         </div>
                       </div>
 
@@ -513,7 +550,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
                             : "bg-slate-950 text-white hover:bg-slate-800"
                         }`}
                       >
-                        {isAlreadyAdded ? "Add More" : "Add Line"}
+                        {isAlreadyAdded ? (isEs ? "Agregar más" : "Add More") : isEs ? "Agregar" : "Add Line"}
                       </button>
                     </div>
                   );

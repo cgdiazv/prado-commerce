@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, Search, FileText, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
   id: string;
@@ -55,6 +56,9 @@ const statusColors: Record<string, string> = {
 };
 
 export default function POListClient({ initialStores, initialVendors, initialPurchaseOrders }: POListClientProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [purchaseOrders] = useState<PurchaseOrder[]>(initialPurchaseOrders);
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("ALL");
@@ -78,9 +82,13 @@ export default function POListClient({ initialStores, initialVendors, initialPur
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">Purchase Orders</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            {isEs ? "Órdenes de compra" : "Purchase Orders"}
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Create, issue, and receive inventory stock shipments from your suppliers.
+            {isEs
+              ? "Crea, emite y recibe envíos de inventario de tus proveedores."
+              : "Create, issue, and receive inventory stock shipments from your suppliers."}
           </p>
         </div>
         <Link
@@ -88,7 +96,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
           className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
           <Plus className="h-4 w-4" />
-          New Purchase Order
+          {isEs ? "Nueva orden de compra" : "New Purchase Order"}
         </Link>
       </div>
 
@@ -100,7 +108,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by PO # or vendor..."
+            placeholder={isEs ? "Buscar por N.º de OC o proveedor..." : "Search by PO # or vendor..."}
             className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </div>
@@ -112,7 +120,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
               onChange={(e) => setSelectedStoreId(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium outline-none transition focus:border-slate-400"
             >
-              <option value="ALL">All Stores</option>
+              <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
               {initialStores.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -126,7 +134,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
             onChange={(e) => setSelectedVendorId(e.target.value)}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium outline-none transition focus:border-slate-400"
           >
-            <option value="ALL">All Vendors</option>
+            <option value="ALL">{isEs ? "Todos los proveedores" : "All Vendors"}</option>
             {initialVendors.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
@@ -139,12 +147,12 @@ export default function POListClient({ initialStores, initialVendors, initialPur
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium outline-none transition focus:border-slate-400"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="DRAFT">DRAFT</option>
-            <option value="SENT">SENT</option>
-            <option value="PARTIAL">PARTIAL</option>
-            <option value="RECEIVED">RECEIVED</option>
-            <option value="CANCELLED">CANCELLED</option>
+            <option value="ALL">{isEs ? "Todos los estados" : "All Statuses"}</option>
+            <option value="DRAFT">{isEs ? "BORRADOR" : "DRAFT"}</option>
+            <option value="SENT">{isEs ? "ENVIADA" : "SENT"}</option>
+            <option value="PARTIAL">{isEs ? "PARCIAL" : "PARTIAL"}</option>
+            <option value="RECEIVED">{isEs ? "RECIBIDA" : "RECEIVED"}</option>
+            <option value="CANCELLED">{isEs ? "CANCELADA" : "CANCELLED"}</option>
           </select>
         </div>
       </div>
@@ -153,11 +161,17 @@ export default function POListClient({ initialStores, initialVendors, initialPur
       {filteredPOs.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
           <FileText className="mx-auto h-10 w-10 text-slate-400" />
-          <h3 className="mt-3 text-sm font-semibold text-slate-900">No purchase orders found</h3>
+          <h3 className="mt-3 text-sm font-semibold text-slate-900">
+            {isEs ? "No se encontraron órdenes de compra" : "No purchase orders found"}
+          </h3>
           <p className="mt-1 text-xs text-slate-500">
             {searchQuery || selectedStatus !== "ALL"
-              ? "No purchase order matches your filter criteria."
-              : "Generate a purchase order to request stock from your vendor."}
+              ? isEs
+                ? "Ninguna orden de compra coincide con los filtros."
+                : "No purchase order matches your filter criteria."
+              : isEs
+                ? "Genera una orden de compra para solicitar existencias a tu proveedor."
+                : "Generate a purchase order to request stock from your vendor."}
           </p>
           {!searchQuery && selectedStatus === "ALL" && (
             <Link
@@ -165,7 +179,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white"
             >
               <Plus className="h-3.5 w-3.5" />
-              New Purchase Order
+              {isEs ? "Nueva orden de compra" : "New Purchase Order"}
             </Link>
           )}
         </div>
@@ -175,13 +189,13 @@ export default function POListClient({ initialStores, initialVendors, initialPur
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-5 py-3.5">PO Number</th>
-                  <th className="px-5 py-3.5">Vendor</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Fulfillment Progress</th>
-                  <th className="px-5 py-3.5">Expected Date</th>
-                  <th className="px-5 py-3.5 text-right">Total</th>
-                  <th className="px-5 py-3.5 text-right">Action</th>
+                  <th className="px-5 py-3.5">{isEs ? "N.º de orden" : "PO Number"}</th>
+                  <th className="px-5 py-3.5">{isEs ? "Proveedor" : "Vendor"}</th>
+                  <th className="px-5 py-3.5">{isEs ? "Estado" : "Status"}</th>
+                  <th className="px-5 py-3.5">{isEs ? "Progreso de recepción" : "Fulfillment Progress"}</th>
+                  <th className="px-5 py-3.5">{isEs ? "Fecha estimada" : "Expected Date"}</th>
+                  <th className="px-5 py-3.5 text-right">{isEs ? "Total" : "Total"}</th>
+                  <th className="px-5 py-3.5 text-right">{isEs ? "Acción" : "Action"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -189,7 +203,15 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                   const totalOrdered = po.items.reduce((acc, i) => acc + i.qtyOrdered, 0);
                   const totalReceived = po.items.reduce((acc, i) => acc + i.qtyReceived, 0);
                   const progressPct = totalOrdered > 0 ? Math.min(100, Math.round((totalReceived / totalOrdered) * 100)) : 0;
-                  const formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: po.store.currency });
+                  const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", { style: "currency", currency: po.store.currency });
+
+                  const statusLabels: Record<string, string> = {
+                    DRAFT: isEs ? "BORRADOR" : "DRAFT",
+                    SENT: isEs ? "ENVIADA" : "SENT",
+                    PARTIAL: isEs ? "PARCIAL" : "PARTIAL",
+                    RECEIVED: isEs ? "RECIBIDA" : "RECEIVED",
+                    CANCELLED: isEs ? "CANCELADA" : "CANCELLED",
+                  };
 
                   return (
                     <tr key={po.id} className="transition hover:bg-slate-50/80">
@@ -207,12 +229,16 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[po.status]}`}>
-                          {po.status}
+                          {statusLabels[po.status] ?? po.status}
                         </span>
                       </td>
                       <td className="px-5 py-4 min-w-[160px]">
                         <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                          <span>{totalReceived} of {totalOrdered} units</span>
+                          <span>
+                            {isEs
+                              ? `${totalReceived} de ${totalOrdered} unidades`
+                              : `${totalReceived} of ${totalOrdered} units`}
+                          </span>
                           <span className="font-semibold">{progressPct}%</span>
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -223,7 +249,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                         </div>
                       </td>
                       <td className="px-5 py-4 text-xs text-slate-600">
-                        {po.expectedDate ? new Date(po.expectedDate).toLocaleDateString() : "Not specified"}
+                        {po.expectedDate ? new Date(po.expectedDate).toLocaleDateString(isEs ? "es-ES" : "en-US") : isEs ? "No especificada" : "Not specified"}
                       </td>
                       <td className="px-5 py-4 text-right font-bold text-slate-900">
                         {formatter.format(Number(po.total))}
@@ -233,7 +259,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                           href={`/dashboard/procurement/purchase-orders/${po.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-950"
                         >
-                          View / Receive
+                          {isEs ? "Ver / Recibir" : "View / Receive"}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                       </td>

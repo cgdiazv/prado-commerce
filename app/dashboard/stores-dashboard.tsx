@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { getPlanLimits } from "@/lib/subscription";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
@@ -31,6 +32,8 @@ type DomainSetupNotice = {
 };
 
 export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupError = null }: StoresDashboardProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [stores, setStores] = useState(initialStores);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -137,16 +140,39 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
         <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-semibold">Custom domain saved for {domainSetupNotice.storeName}</p>
+              <p className="font-semibold">
+                {isEs
+                  ? `Dominio personalizado guardado para ${domainSetupNotice.storeName}`
+                  : `Custom domain saved for ${domainSetupNotice.storeName}`}
+              </p>
               <p className="mt-1 break-all text-blue-800">{domainSetupNotice.domain}</p>
               <p className="mt-1 text-blue-900">
-                Status: {domainSetupNotice.status === "valid" ? "Verified" : domainSetupNotice.status === "pending" ? "Pending verification" : domainSetupNotice.status === "invalid" ? "Needs DNS fix" : "Checking"}
+                {isEs ? "Estado: " : "Status: "}
+                {domainSetupNotice.status === "valid"
+                  ? (isEs ? "Verificado" : "Verified")
+                  : domainSetupNotice.status === "pending"
+                    ? (isEs ? "Verificación pendiente" : "Pending verification")
+                    : domainSetupNotice.status === "invalid"
+                      ? (isEs ? "Requiere configuración DNS" : "Needs DNS fix")
+                      : (isEs ? "Comprobando..." : "Checking")}
               </p>
               <div className="mt-3 space-y-2 text-blue-800">
-                <p>DNS setup:</p>
-                <p>1. Subdomain (recommended): add CNAME for {domainSetupNotice.domain} pointing to cname.vercel-dns.com.</p>
-                <p>2. Apex domain: add A record @ pointing to 76.76.21.21, and add CNAME for www to cname.vercel-dns.com.</p>
-                <p>3. Wait for propagation, then open https://{domainSetupNotice.domain} to verify storefront routing.</p>
+                <p className="font-medium">{isEs ? "Configuración DNS:" : "DNS setup:"}</p>
+                <p>
+                  {isEs
+                    ? `1. Subdominio (recomendado): añade un CNAME para ${domainSetupNotice.domain} apuntando a cname.vercel-dns.com.`
+                    : `1. Subdomain (recommended): add CNAME for ${domainSetupNotice.domain} pointing to cname.vercel-dns.com.`}
+                </p>
+                <p>
+                  {isEs
+                    ? "2. Dominio raíz (apex): añade un registro A @ apuntando a 76.76.21.21, y añade un CNAME para www a cname.vercel-dns.com."
+                    : "2. Apex domain: add A record @ pointing to 76.76.21.21, and add CNAME for www to cname.vercel-dns.com."}
+                </p>
+                <p>
+                  {isEs
+                    ? `3. Espera la propagación y abre https://${domainSetupNotice.domain} para verificar el enrutamiento de la tienda.`
+                    : `3. Wait for propagation, then open https://${domainSetupNotice.domain} to verify storefront routing.`}
+                </p>
               </div>
               {domainStatusError ? (
                 <p className="mt-3 rounded-lg border border-amber-300 bg-amber-100/80 px-3 py-2 text-xs text-amber-800">
@@ -161,7 +187,9 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                 disabled={isCheckingDomainStatus}
                 className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isCheckingDomainStatus ? "Checking..." : "Check status"}
+                {isCheckingDomainStatus
+                  ? (isEs ? "Comprobando..." : "Checking...")
+                  : (isEs ? "Comprobar estado" : "Check status")}
               </button>
               <button
                 type="button"
@@ -171,7 +199,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                 }}
                 className="rounded-full border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
               >
-                Dismiss
+                {isEs ? "Descartar" : "Dismiss"}
               </button>
             </div>
           </div>
@@ -181,14 +209,14 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
         <div className="max-w-2xl space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              My Storefronts
+              {isEs ? "Mis Tiendas" : "My Storefronts"}
             </p>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            Your stores, products, and settings in one place.
+            {isEs ? "Tus tiendas, productos y configuración en un solo lugar." : "Your stores, products, and settings in one place."}
           </h1>
           <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Create and manage your storefronts, and configure domains and currencies.
+            {isEs ? "Crea y administra tus tiendas virtuales, y configura dominios y monedas." : "Create and manage your storefronts, and configure domains and currencies."}
           </p>
             </div>
 
@@ -199,17 +227,17 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                     type="button"
                     onClick={() => {
                       if (isStarter) {
-                        setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores.");
+                        setError(isEs ? "El plan Starter incluye 1 tienda activa. Actualiza a Pro para tener hasta 5 tiendas." : "Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores.");
                       } else if (isPro) {
-                        setError("Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores.");
+                        setError(isEs ? "El plan Pro incluye hasta 5 tiendas activas. Actualiza a Enterprise para tiendas ilimitadas." : "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores.");
                       } else {
-                        setError("Store limit reached for your current plan.");
+                        setError(isEs ? "Límite de tiendas alcanzado para tu plan actual." : "Store limit reached for your current plan.");
                       }
                     }}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white opacity-60 sm:w-auto"
                   >
                     <Plus className="h-4 w-4" />
-                    New store
+                    {isEs ? "Nueva tienda" : "New store"}
                   </button>
                 ) : (
                   <Link
@@ -217,16 +245,16 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
                   >
                     <Plus className="h-4 w-4" />
-                    New store
+                    {isEs ? "Nueva tienda" : "New store"}
                   </Link>
                 )}
                 {hasReachedStoreLimit ? (
                   <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800 shadow-lg group-hover:block group-focus-within:block sm:w-80">
                     {isStarter
-                      ? "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains."
+                      ? (isEs ? "El plan Starter incluye hasta 1 tienda activa y no admite dominios personalizados. Actualiza a Pro para desbloquear 5 tiendas y dominios propios." : "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains.")
                       : isPro
-                        ? "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores."
-                        : "Store limit reached for your current plan."}
+                        ? (isEs ? "El plan Pro incluye hasta 5 tiendas activas. Actualiza a Enterprise para tiendas ilimitadas." : "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores.")
+                        : (isEs ? "Límite de tiendas alcanzado para tu plan." : "Store limit reached for your current plan.")}
                   </div>
                 ) : null}
               </div>
@@ -238,19 +266,21 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, slug, domain, or currency"
+                placeholder={isEs ? "Buscar por nombre, slug, dominio o moneda" : "Search by name, slug, domain, or currency"}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </div>
             <p className="text-sm text-slate-500">
-              {filteredStores.length} store{filteredStores.length === 1 ? "" : "s"} shown
+              {isEs
+                ? `${filteredStores.length} tienda${filteredStores.length === 1 ? "" : "s"} mostrada${filteredStores.length === 1 ? "" : "s"}`
+                : `${filteredStores.length} store${filteredStores.length === 1 ? "" : "s"} shown`}
             </p>
           </div>
 
           <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {filteredStores.length === 0 ? (
               <div className="p-10 text-center text-slate-500">
-                No stores match your search.
+                {isEs ? "No hay tiendas que coincidan con tu búsqueda." : "No stores match your search."}
               </div>
             ) : (
               <>
@@ -258,13 +288,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50">
                       <tr>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Store</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Domain</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Currency</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Timezone</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Allowed domains</th>
-                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Updated</th>
-                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Tienda" : "Store"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Dominio" : "Domain"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Moneda" : "Currency"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Zona horaria" : "Timezone"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Dominios autorizados" : "Allowed domains"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Actualizado" : "Updated"}</th>
+                        <th className="px-4 py-3 text-right font-semibold text-slate-600">{isEs ? "Acciones" : "Actions"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -295,17 +325,19 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             <td className="px-4 py-3 align-top text-slate-700">{store.currency}</td>
                             <td className="px-4 py-3 align-top text-slate-700">{store.timezone}</td>
                             <td className="px-4 py-3 align-top text-slate-600">
-                              {store.allowedDomains.length > 0 ? store.allowedDomains.join(", ") : "None"}
+                              {store.allowedDomains.length > 0
+                                ? store.allowedDomains.join(", ")
+                                : (isEs ? "Ninguno" : "None")}
                             </td>
                             <td className="px-4 py-3 align-top text-slate-600">
-                              {new Date(store.updatedAt).toLocaleDateString()}
+                              {new Date(store.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                             </td>
                             <td className="px-4 py-3 align-top">
                               <div className="flex justify-end gap-2">
                                 <Link
                                   href={`/dashboard/stores/${store.id}`}
-                                  aria-label="Edit store"
-                                  title="Edit store"
+                                  aria-label={isEs ? "Editar tienda" : "Edit store"}
+                                  title={isEs ? "Editar tienda" : "Edit store"}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -314,12 +346,18 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                                   type="button"
                                   disabled={deletingStoreId === store.id}
                                   onClick={() => {
-                                    if (confirm(`Delete "${store.name}"? This cannot be undone.`)) {
+                                    if (
+                                      confirm(
+                                        isEs
+                                          ? `¿Eliminar "${store.name}"? Esta acción no se puede deshacer.`
+                                          : `Delete "${store.name}"? This cannot be undone.`,
+                                      )
+                                    ) {
                                       void handleDelete(store.id);
                                     }
                                   }}
-                                  aria-label="Delete store"
-                                  title={deletingStoreId === store.id ? "Deleting" : "Delete"}
+                                  aria-label={isEs ? "Eliminar tienda" : "Delete store"}
+                                  title={deletingStoreId === store.id ? (isEs ? "Eliminando..." : "Deleting") : (isEs ? "Eliminar" : "Delete")}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -356,7 +394,9 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
 
                         <div className="mt-3 flex flex-col gap-3 text-sm text-slate-600">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Domain</p>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                              {isEs ? "Dominio" : "Domain"}
+                            </p>
                             <a
                               href={`https://${domainLabel}`}
                               target="_blank"
@@ -367,27 +407,34 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             </a>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Timezone</p>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                              {isEs ? "Zona horaria" : "Timezone"}
+                            </p>
                             <p className="mt-1 font-medium text-slate-700">{store.timezone}</p>
                           </div>
                         </div>
 
                         <div className="mt-3 border-t border-slate-200 pt-3">
-                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Allowed domains</p>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            {isEs ? "Dominios autorizados" : "Allowed domains"}
+                          </p>
                           <p className="mt-1 text-sm text-slate-600">
-                            {store.allowedDomains.length > 0 ? store.allowedDomains.join(", ") : "None"}
+                            {store.allowedDomains.length > 0
+                              ? store.allowedDomains.join(", ")
+                              : (isEs ? "Ninguno" : "None")}
                           </p>
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
                           <p className="text-sm text-slate-500">
-                            Updated {new Date(store.updatedAt).toLocaleDateString()}
+                            {isEs ? "Actualizado " : "Updated "}
+                            {new Date(store.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                           </p>
                           <div className="flex w-full justify-end gap-2 sm:w-auto">
                             <Link
                               href={`/dashboard/stores/${store.id}`}
-                              aria-label="Edit store"
-                              title="Edit store"
+                              aria-label={isEs ? "Editar tienda" : "Edit store"}
+                              title={isEs ? "Editar tienda" : "Edit store"}
                               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                             >
                               <Pencil className="h-4 w-4" />
@@ -396,11 +443,17 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                               type="button"
                               disabled={deletingStoreId === store.id}
                               onClick={() => {
-                                if (confirm(`Delete "${store.name}"? This cannot be undone.`)) {
+                                if (
+                                  confirm(
+                                    isEs
+                                      ? `¿Eliminar "${store.name}"? Esta acción no se puede deshacer.`
+                                      : `Delete "${store.name}"? This cannot be undone.`,
+                                  )
+                                ) {
                                   void handleDelete(store.id);
                                 }
                               }}
-                              aria-label="Delete store"
+                              aria-label={isEs ? "Eliminar tienda" : "Delete store"}
                               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <Trash2 className="h-4 w-4" />

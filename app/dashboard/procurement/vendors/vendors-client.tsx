@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Search, Building2, Mail, Phone, MapPin, Trash2, Edit } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
   id: string;
@@ -29,6 +30,9 @@ type VendorsClientProps = {
 };
 
 export default function VendorsClient({ initialStores, initialVendors }: VendorsClientProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,7 +96,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formState.name.trim()) {
-      setError("Vendor name is required");
+      setError(isEs ? "El nombre del proveedor es obligatorio" : "Vendor name is required");
       return;
     }
 
@@ -115,7 +119,9 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to update vendor");
+        if (!response.ok) {
+          throw new Error(data.error || (isEs ? "Error al actualizar el proveedor" : "Failed to update vendor"));
+        }
 
         setVendors((prev) => prev.map((v) => (v.id === editingVendor.id ? { ...v, ...data.vendor } : v)));
       } else {
@@ -126,32 +132,43 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to create vendor");
+        if (!response.ok) {
+          throw new Error(data.error || (isEs ? "Error al crear el proveedor" : "Failed to create vendor"));
+        }
 
         setVendors((prev) => [data.vendor, ...prev]);
       }
 
       setIsModalOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : isEs ? "Ocurrió un error" : "An error occurred");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (vendorId: string) => {
-    if (!confirm("Are you sure you want to delete this vendor?")) return;
+    if (
+      !confirm(
+        isEs
+          ? "¿Estás seguro de que deseas eliminar este proveedor?"
+          : "Are you sure you want to delete this vendor?",
+      )
+    )
+      return;
 
     try {
       const response = await fetch(`/api/procurement/vendors/${vendorId}`, {
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Failed to delete vendor");
+      if (!response.ok) {
+        throw new Error(isEs ? "Error al eliminar el proveedor" : "Failed to delete vendor");
+      }
 
       setVendors((prev) => prev.filter((v) => v.id !== vendorId));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete vendor");
+      alert(err instanceof Error ? err.message : isEs ? "Error al eliminar el proveedor" : "Failed to delete vendor");
     }
   };
 
@@ -160,9 +177,13 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">Vendors & Suppliers</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            {isEs ? "Proveedores y fabricantes" : "Vendors & Suppliers"}
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage your merchandise manufacturers, distributors, and component suppliers.
+            {isEs
+              ? "Gestiona tus fabricantes, distribuidores y proveedores de componentes."
+              : "Manage your merchandise manufacturers, distributors, and component suppliers."}
           </p>
         </div>
         <button
@@ -171,7 +192,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
           className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
           <Plus className="h-4 w-4" />
-          Add Vendor
+          {isEs ? "Agregar proveedor" : "Add Vendor"}
         </button>
       </div>
 
@@ -183,7 +204,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search vendor by name or email..."
+            placeholder={isEs ? "Buscar proveedor por nombre o correo..." : "Search vendor by name or email..."}
             className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
           />
         </div>
@@ -194,7 +215,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
             onChange={(e) => setSelectedStoreId(e.target.value)}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-slate-400"
           >
-            <option value="ALL">All Stores</option>
+            <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
             {initialStores.map((store) => (
               <option key={store.id} value={store.id}>
                 {store.name}
@@ -208,9 +229,17 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
       {filteredVendors.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
           <Building2 className="mx-auto h-10 w-10 text-slate-400" />
-          <h3 className="mt-3 text-sm font-semibold text-slate-900">No vendors found</h3>
+          <h3 className="mt-3 text-sm font-semibold text-slate-900">
+            {isEs ? "No se encontraron proveedores" : "No vendors found"}
+          </h3>
           <p className="mt-1 text-xs text-slate-500">
-            {searchQuery ? "No vendor matching your search criteria." : "Create your first supplier profile to start generating purchase orders."}
+            {searchQuery
+              ? isEs
+                ? "Ningún proveedor coincide con tu búsqueda."
+                : "No vendor matching your search criteria."
+              : isEs
+                ? "Crea tu primer perfil de proveedor para comenzar a emitir órdenes de compra."
+                : "Create your first supplier profile to start generating purchase orders."}
           </p>
           {!searchQuery && (
             <button
@@ -219,7 +248,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add Vendor
+              {isEs ? "Agregar proveedor" : "Add Vendor"}
             </button>
           )}
         </div>
@@ -234,7 +263,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
                     <p className="text-xs text-slate-500">{vendor.store.name}</p>
                   </div>
                   <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                    {vendor._count.purchaseOrders} POs
+                    {vendor._count.purchaseOrders} {isEs ? "OC" : "POs"}
                   </span>
                 </div>
 
@@ -275,7 +304,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950"
                 >
                   <Edit className="h-3.5 w-3.5" />
-                  Edit
+                  {isEs ? "Editar" : "Edit"}
                 </button>
 
                 <button
@@ -284,7 +313,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  {isEs ? "Eliminar" : "Delete"}
                 </button>
               </div>
             </div>
@@ -296,9 +325,19 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-slate-900">{editingVendor ? "Edit Vendor" : "Add New Vendor"}</h2>
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingVendor
+                ? isEs
+                  ? "Editar proveedor"
+                  : "Edit Vendor"
+                : isEs
+                  ? "Agregar nuevo proveedor"
+                  : "Add New Vendor"}
+            </h2>
             <p className="mt-1 text-xs text-slate-500">
-              Supplier details for generating purchase orders and inventory receiving docs.
+              {isEs
+                ? "Detalles del proveedor para generar órdenes de compra y recepción de inventario."
+                : "Supplier details for generating purchase orders and inventory receiving docs."}
             </p>
 
             {error && <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-700">{error}</div>}
@@ -306,7 +345,7 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {!editingVendor && initialStores.length > 1 && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700">Store</label>
+                  <label className="block text-xs font-semibold text-slate-700">{isEs ? "Tienda" : "Store"}</label>
                   <select
                     value={formState.storeId}
                     onChange={(e) => setFormState({ ...formState, storeId: e.target.value })}
@@ -322,20 +361,24 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Vendor / Company Name *</label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {isEs ? "Nombre del proveedor o empresa *" : "Vendor / Company Name *"}
+                </label>
                 <input
                   type="text"
                   required
                   value={formState.name}
                   onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                  placeholder="e.g. Acme Apparel Corp"
+                  placeholder={isEs ? "p. ej. Confecciones Prado S.A." : "e.g. Acme Apparel Corp"}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:bg-white"
                 />
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700">Contact Person</label>
+                  <label className="block text-xs font-semibold text-slate-700">
+                    {isEs ? "Persona de contacto" : "Contact Person"}
+                  </label>
                   <input
                     type="text"
                     value={formState.contactName}
@@ -346,7 +389,9 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700">Contact Email</label>
+                  <label className="block text-xs font-semibold text-slate-700">
+                    {isEs ? "Correo de contacto" : "Contact Email"}
+                  </label>
                   <input
                     type="email"
                     value={formState.contactEmail}
@@ -358,7 +403,9 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Contact Phone</label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {isEs ? "Teléfono de contacto" : "Contact Phone"}
+                </label>
                 <input
                   type="text"
                   value={formState.contactPhone}
@@ -369,23 +416,27 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Supplier Address</label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {isEs ? "Dirección del proveedor" : "Supplier Address"}
+                </label>
                 <textarea
                   rows={2}
                   value={formState.address}
                   onChange={(e) => setFormState({ ...formState, address: e.target.value })}
-                  placeholder="100 Factory Blvd, Industrial Park, CA 90210"
+                  placeholder={isEs ? "Calle 100 # 15-20, Zona Industrial" : "100 Factory Blvd, Industrial Park, CA 90210"}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Notes / Payment Terms</label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {isEs ? "Notas / Términos de pago" : "Notes / Payment Terms"}
+                </label>
                 <textarea
                   rows={2}
                   value={formState.notes}
                   onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
-                  placeholder="Net 30 payment terms. MOQ 50 units."
+                  placeholder={isEs ? "Términos de pago a 30 días. Pedido mínimo 50 unidades." : "Net 30 payment terms. MOQ 50 units."}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:bg-white"
                 />
               </div>
@@ -396,14 +447,24 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  Cancel
+                  {isEs ? "Cancelar" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {isSubmitting ? "Saving..." : editingVendor ? "Update Vendor" : "Save Vendor"}
+                  {isSubmitting
+                    ? isEs
+                      ? "Guardando..."
+                      : "Saving..."
+                    : editingVendor
+                      ? isEs
+                        ? "Actualizar proveedor"
+                        : "Update Vendor"
+                      : isEs
+                        ? "Guardar proveedor"
+                        : "Save Vendor"}
                 </button>
               </div>
             </form>

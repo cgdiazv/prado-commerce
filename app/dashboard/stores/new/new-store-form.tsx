@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizeStoreSlug } from "@/lib/store-slug";
 import { getPlanLimits } from "@/lib/subscription";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { CURRENCIES, Field, SelectField, TIMEZONES } from "../../stores-dashboard";
 
 type NewStoreFormProps = {
@@ -53,6 +54,9 @@ async function getSlugAvailability(slug: string, signal?: AbortSignal) {
 
 export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null }: NewStoreFormProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isEs = language === "es";
+
   const [formState, setFormState] = useState<StoreFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +94,7 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
           status: "error",
           message: availabilityError instanceof Error
             ? availabilityError.message
-            : "Unable to check store URL availability.",
+            : isEs ? "No se pudo verificar la disponibilidad de la URL." : "Unable to check store URL availability.",
         });
       }
     }, 350);
@@ -99,18 +103,30 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [normalizedSlug]);
+  }, [normalizedSlug, isEs]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (hasReachedStoreLimit) {
       if (isStarter) {
-        setError("Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores.");
+        setError(
+          isEs
+            ? "El plan Starter incluye 1 tienda activa. Actualiza a Prado Commerce Pro para añadir hasta 5 tiendas."
+            : "Starter plan includes 1 active store. Upgrade to Prado Commerce Pro to add up to 5 stores."
+        );
       } else if (isPro) {
-        setError("Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores.");
+        setError(
+          isEs
+            ? "El plan Pro incluye hasta 5 tiendas activas. Actualiza a Prado Commerce Enterprise para tiendas ilimitadas."
+            : "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise for unlimited stores."
+        );
       } else {
-        setError("Store limit reached for your current plan.");
+        setError(
+          isEs
+            ? "Has alcanzado el límite de tiendas de tu plan actual."
+            : "Store limit reached for your current plan."
+        );
       }
       return;
     }
@@ -127,7 +143,9 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
       });
 
       if (!availability.available) {
-        throw new Error(availability.reason ?? "This store URL is not available.");
+        throw new Error(
+          availability.reason ?? (isEs ? "Esta URL de tienda no está disponible." : "This store URL is not available.")
+        );
       }
 
       const payload = {
@@ -153,13 +171,19 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Something went wrong");
+        throw new Error(result.error ?? (isEs ? "Ocurrió un error inesperado" : "Something went wrong"));
       }
 
       router.push("/dashboard/stores");
       router.refresh();
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Failed to create store");
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : isEs
+            ? "Error al crear la tienda"
+            : "Failed to create store"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -176,23 +200,33 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
       {hasReachedStoreLimit ? (
         <div className="mb-6 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
           {isStarter
-            ? "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains."
+            ? isEs
+              ? "El plan Starter incluye hasta 1 tienda activa y no admite dominios personalizados. Actualiza a Prado Commerce Pro para habilitar 5 tiendas y dominios personalizados."
+              : "Starter plan includes up to 1 active store and does not support custom domains. Upgrade to Prado Commerce Pro to unlock 5 stores and custom domains."
             : isPro
-              ? "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores."
-              : "Store limit reached for your current plan."}
+              ? isEs
+                ? "El plan Pro incluye hasta 5 tiendas activas. Actualiza a Prado Commerce Enterprise para tiendas ilimitadas."
+                : "Pro plan includes up to 5 active stores. Upgrade to Prado Commerce Enterprise to unlock unlimited stores."
+              : isEs
+                ? "Has alcanzado el límite de tiendas de tu plan actual."
+                : "Store limit reached for your current plan."}
         </div>
       ) : null}
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">New store</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-950">Create a new storefront</h1>
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            {isEs ? "Nueva tienda" : "New store"}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-950">
+            {isEs ? "Crear una nueva tienda" : "Create a new storefront"}
+          </h1>
         </div>
         <Link
           href="/dashboard/stores"
           className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
         >
-          Back
+          {isEs ? "Volver" : "Back"}
         </Link>
       </div>
 
@@ -204,10 +238,12 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
         ) : null}
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Store configuration</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {isEs ? "Configuración de la tienda" : "Store configuration"}
+          </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Store name"
+              label={isEs ? "Nombre de la tienda" : "Store name"}
               value={formState.name}
               onChange={(value) => {
                 setFormState((current) => ({
@@ -218,14 +254,14 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
                     : current.slug,
                 }));
               }}
-              placeholder="My Brand"
+              placeholder={isEs ? "Mi Marca" : "My Brand"}
             />
             <div>
               <Field
-                label="Store URL"
+                label={isEs ? "URL de la tienda" : "Store URL"}
                 value={formState.slug}
                 onChange={(value) => setFormState((current) => ({ ...current, slug: value }))}
-                placeholder="my-brand"
+                placeholder="mi-marca"
               />
               {normalizedSlug ? (
                 <div className="mt-2 text-xs">
@@ -233,9 +269,13 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
                     https://{normalizedSlug}.pradocommerce.com
                   </p>
                   {currentSlugCheck?.status === "checking" ? (
-                    <p className="mt-1 text-slate-500">Checking availability...</p>
+                    <p className="mt-1 text-slate-500">
+                      {isEs ? "Comprobando disponibilidad..." : "Checking availability..."}
+                    </p>
                   ) : currentSlugCheck?.status === "available" ? (
-                    <p className="mt-1 font-medium text-emerald-700">Available</p>
+                    <p className="mt-1 font-medium text-emerald-700">
+                      {isEs ? "Disponible" : "Available"}
+                    </p>
                   ) : currentSlugCheck?.status === "unavailable" ? (
                     <p className="mt-1 font-medium text-rose-700">{currentSlugCheck.message}</p>
                   ) : currentSlugCheck?.status === "error" ? (
@@ -245,30 +285,34 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
               ) : null}
             </div>
             <SelectField
-              label="Currency"
+              label={isEs ? "Moneda" : "Currency"}
               value={formState.currency}
               onChange={(value) => setFormState((current) => ({ ...current, currency: value }))}
               options={CURRENCIES}
             />
             <SelectField
-              label="Timezone"
+              label={isEs ? "Zona horaria" : "Timezone"}
               value={formState.timezone}
               onChange={(value) => setFormState((current) => ({ ...current, timezone: value }))}
               options={TIMEZONES}
             />
             <Field
-              label="Custom domain (optional)"
-              labelHint="Use a domain you own (for example from GoDaddy). Next steps: 1) Add this exact domain in your DNS provider. 2) Point DNS to your Prado Commerce Storefront. 3) Save this store and open the domain to verify storefront routing."
+              label={isEs ? "Dominio personalizado (opcional)" : "Custom domain (optional)"}
+              labelHint={
+                isEs
+                  ? "Usa un dominio de tu propiedad (por ejemplo de GoDaddy o Namecheap). Pasos: 1) Añade este dominio exacto en tu proveedor de DNS. 2) Apunta el DNS a tu tienda de Prado Commerce. 3) Guarda esta tienda y abre el dominio para verificar la ruta."
+                  : "Use a domain you own (for example from GoDaddy). Next steps: 1) Add this exact domain in your DNS provider. 2) Point DNS to your Prado Commerce Storefront. 3) Save this store and open the domain to verify storefront routing."
+              }
               value={formState.customDomain}
               onChange={(value) => setFormState((current) => ({ ...current, customDomain: value }))}
-              placeholder="checkout.mybrand.com"
+              placeholder="checkout.mimarca.com"
               className="sm:col-span-2"
             />
             <Field
-              label="Allowed domains (optional)"
+              label={isEs ? "Dominios permitidos (opcional)" : "Allowed domains (optional)"}
               value={formState.allowedDomains}
               onChange={(value) => setFormState((current) => ({ ...current, allowedDomains: value }))}
-              placeholder="https://mybrand.com, https://store.mybrand.com"
+              placeholder="https://mimarca.com, https://tienda.mimarca.com"
               className="sm:col-span-2"
             />
           </div>
@@ -279,17 +323,20 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
             href="/dashboard/stores"
             className="rounded-full border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Cancel
+            {isEs ? "Cancelar" : "Cancel"}
           </Link>
           <button
             type="submit"
             disabled={isSaving || hasReachedStoreLimit}
             className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? "Saving..." : "Create store"}
+            {isSaving
+              ? isEs ? "Guardando..." : "Saving..."
+              : isEs ? "Crear tienda" : "Create store"}
           </button>
         </div>
       </form>
     </section>
   );
 }
+

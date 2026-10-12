@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, RefreshCw, Home, Copy, Check } from "lucide-react";
 
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 export default function DashboardError({
   error,
   reset,
@@ -11,6 +13,8 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -23,7 +27,9 @@ export default function DashboardError({
     error.message.includes("omitted in production");
 
   const displayMessage = isGenericServerComponentError
-    ? "We encountered a temporary connection issue while loading this view. This usually resolves in a few moments after a quick refresh."
+    ? (isEs
+        ? "Ocurrió una demora temporal de conexión al cargar esta vista. Por lo general se resuelve en unos momentos tras actualizar."
+        : "We encountered a temporary connection issue while loading this view. This usually resolves in a few moments after a quick refresh.")
     : error.message;
 
   const handleCopyDigest = () => {
@@ -49,7 +55,7 @@ export default function DashboardError({
       </div>
 
       <h2 className="mt-4 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-        Temporary Connection Delay
+        {isEs ? "Demora Temporal de Conexión" : "Temporary Connection Delay"}
       </h2>
       <p className="mt-2 max-w-md text-sm text-slate-600 leading-relaxed">
         {displayMessage}
@@ -58,13 +64,14 @@ export default function DashboardError({
       {error.digest ? (
         <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-500">
           <span>
-            Error Reference: <code className="font-mono font-semibold text-slate-700">{error.digest}</code>
+            {isEs ? "Código de referencia: " : "Error Reference: "}
+            <code className="font-mono font-semibold text-slate-700">{error.digest}</code>
           </span>
           <button
             type="button"
             onClick={handleCopyDigest}
             className="inline-flex items-center text-slate-400 hover:text-slate-700 transition"
-            title="Copy reference code"
+            title={isEs ? "Copiar código de referencia" : "Copy reference code"}
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
@@ -78,14 +85,14 @@ export default function DashboardError({
           className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
         >
           <RefreshCw className="h-4 w-4" />
-          Try again
+          {isEs ? "Reintentar" : "Try again"}
         </button>
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           <Home className="h-4 w-4" />
-          Dashboard Overview
+          {isEs ? "Volver al panel" : "Dashboard Overview"}
         </Link>
       </div>
     </div>
