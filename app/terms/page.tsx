@@ -1,17 +1,21 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-};
+import Link from "next/link";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function TermsPage() {
+  const { t } = useLanguage();
+
   return (
     <main className="min-h-screen bg-[#0c1624] px-6 py-16 text-slate-100 sm:px-8 lg:px-10">
       <div className="mx-auto w-full max-w-3xl">
-        <Link href="/" className="text-sm font-medium text-cyan-100 transition hover:text-cyan-50">
-          Back to home
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-sm font-medium text-cyan-100 transition hover:text-cyan-50">
+            {t.nav.backToHome}
+          </Link>
+          <LanguageToggle variant="dark" />
+        </div>
 
         <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
           Terms of Service

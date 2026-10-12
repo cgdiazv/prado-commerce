@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { PublicFooter } from "@/components/public-footer";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -31,10 +32,12 @@ export default async function RootLayout({
     Boolean(hdrs.get("x-storefront-custom-domain"));
 
   return (
-    <html lang="en" className={roboto.variable} suppressHydrationWarning>
+    <html lang="es" className={roboto.variable} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {children}
-        <PublicFooter forceHidden={isStorefrontRequest} />
+        <LanguageProvider>
+          {children}
+          <PublicFooter forceHidden={isStorefrontRequest} />
+        </LanguageProvider>
       </body>
     </html>
   );

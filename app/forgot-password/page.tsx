@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PradoLogo } from "@/components/PradoLogo";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function ForgotPasswordPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -29,14 +32,14 @@ export default function ForgotPasswordPage() {
       };
 
       if (!response.ok || !result.resetPath) {
-        throw new Error(result.error ?? "Could not create reset link");
+        throw new Error(result.error ?? t.forgotPassword.errorMessage);
       }
 
       setStatus("success");
-      setMessage(`Password reset link created: ${new URL(result.resetPath, window.location.origin).toString()}`);
+      setMessage(`${t.forgotPassword.successMessage}: ${new URL(result.resetPath, window.location.origin).toString()}`);
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Could not create reset link");
+      setMessage(error instanceof Error ? error.message : t.forgotPassword.errorMessage);
     }
   }
 
@@ -46,23 +49,27 @@ export default function ForgotPasswordPage() {
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <section className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
-        <Link href="/" className="inline-block transition hover:opacity-85">
-          <PradoLogo theme="light" subtitle="Unified E-Commerce" size="md" />
-        </Link>
-        <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Reset your password</h1>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" className="inline-block transition hover:opacity-85">
+            <PradoLogo theme="light" subtitle={t.common.logoSubtitle} size="md" />
+          </Link>
+          <LanguageToggle variant="light" />
+        </div>
+
+        <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t.forgotPassword.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
-          Enter the email for your Prado Commerce account and we will generate a reset link.
+          {t.forgotPassword.subtitle}
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Email</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t.forgotPassword.emailLabel}</span>
             <input
               type="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="owner@brand.com"
+              placeholder={t.forgotPassword.emailPlaceholder}
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
             />
           </label>
@@ -78,14 +85,14 @@ export default function ForgotPasswordPage() {
             disabled={status === "saving"}
             className="inline-flex w-full items-center justify-center rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-cyan-600/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {status === "saving" ? "Creating link..." : "Create reset link"}
+            {status === "saving" ? t.forgotPassword.submitting : t.forgotPassword.submitButton}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Remembered your password?{" "}
+          {t.forgotPassword.rememberedPassword}{" "}
           <Link href="/login" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">
-            Sign in
+            {t.forgotPassword.signIn}
           </Link>
         </p>
       </section>

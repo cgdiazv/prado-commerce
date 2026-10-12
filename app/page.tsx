@@ -4,74 +4,34 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
-
-const frictionStories = [
-  {
-    title: "Sales stop after a campaign goes live",
-    detail:
-      "A maker launches a flash promo, traffic spikes, and checkout starts dropping buyers at the worst possible moment.",
-    image: "/conflict1.webp",
-  },
-  {
-    title: "Inventory says one thing, customer expectations say another",
-    detail:
-      "Store teams update products in multiple tools and still end up with mismatched stock, pricing, and fulfillment details.",
-    image: "/conflict2.webp",
-  },
-  {
-    title: "Growth exposes an operations bottleneck",
-    detail:
-      "As new channels get added, teams spend more time patching systems than improving the buying experience.",
-    image: "/conflict3.webp",
-  },
-];
-
-const businessBenefits = [
-  {
-    title: "Built For Every Business Type",
-    detail:
-      "From independent makers and local stores to fast-scaling brands, Prado Commerce adapts to physical, digital, and service-based catalogs.",
-    image: "/whyus1.webp",
-    layout: "vertical",
-  },
-  {
-    title: "Global Product Reach",
-    detail:
-      "Publish products once and connect them to the world through embedded storefront experiences, faster APIs, and flexible domain setup.",
-    image: "/whyus2.webp",
-    layout: "horizontal",
-  },
-  {
-    title: "Stronger Online Presence",
-    detail:
-      "Unify your brand across your site, checkout flows, and product pages so customers trust what they see and buy with confidence.",
-    image: "/whyus3.webp",
-    layout: "horizontal",
-  },
-];
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function Home() {
+  const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const activeBenefit = businessBenefits[activeIndex];
+
+  const benefitsCount = t.home.benefits.length;
+  const activeBenefit = t.home.benefits[activeIndex] || t.home.benefits[0];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current === businessBenefits.length - 1 ? 0 : current + 1));
+      setActiveIndex((current) => (current === benefitsCount - 1 ? 0 : current + 1));
     }, 5000);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [benefitsCount]);
 
   const goToPrevious = () => {
     setActiveIndex((current) =>
-      current === 0 ? businessBenefits.length - 1 : current - 1,
+      current === 0 ? benefitsCount - 1 : current - 1,
     );
   };
 
   const goToNext = () => {
     setActiveIndex((current) =>
-      current === businessBenefits.length - 1 ? 0 : current + 1,
+      current === benefitsCount - 1 ? 0 : current + 1,
     );
   };
 
@@ -89,42 +49,47 @@ export default function Home() {
         <header className="prado-fade-up relative w-full border-b border-white/20 bg-white/8 px-6 py-3 backdrop-blur-md sm:px-8 lg:px-10">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
             <Link href="/" className="inline-flex items-center">
-              <PradoLogo theme="dark" subtitle="Unified E-Commerce" size="md" />
+              <PradoLogo theme="dark" subtitle={t.common.logoSubtitle} size="md" />
             </Link>
 
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
-              aria-label="Open menu"
-              aria-expanded={isMobileMenuOpen}
-              aria-controls="public-mobile-menu"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <Menu size={18} />
-            </button>
+            {/* Language toggle placed to the left of the menu items / hamburger button */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <LanguageToggle variant="dark" />
 
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link
-                href="/pricing"
-                className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
-                onClick={closeMobileMenu}
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
+                aria-label={t.nav.menu}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="public-mobile-menu"
+                onClick={() => setIsMobileMenuOpen(true)}
               >
-                Pricing
-              </Link>
-              <Link
-                href="/dashboard"
-                className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
-                onClick={closeMobileMenu}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/signup"
-                className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
-                onClick={closeMobileMenu}
-              >
-                Start free
-              </Link>
+                <Menu size={18} />
+              </button>
+
+              <div className="hidden items-center gap-2 sm:flex">
+                <Link
+                  href="/pricing"
+                  className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
+                  onClick={closeMobileMenu}
+                >
+                  {t.nav.pricing}
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="px-2 py-1.5 text-xs font-semibold text-cyan-100/90 transition hover:text-cyan-50"
+                  onClick={closeMobileMenu}
+                >
+                  {t.nav.dashboard}
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+                  onClick={closeMobileMenu}
+                >
+                  {t.nav.startFree}
+                </Link>
+              </div>
             </div>
           </div>
         </header>
@@ -146,15 +111,18 @@ export default function Home() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">Menu</span>
-            <button
-              type="button"
-              onClick={closeMobileMenu}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
-              aria-label="Close menu"
-            >
-              <X size={18} />
-            </button>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">{t.nav.menu}</span>
+            <div className="flex items-center gap-2">
+              <LanguageToggle variant="dark" />
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+                aria-label={t.nav.closeMenu}
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <nav className="mt-6 flex flex-1 flex-col gap-2">
@@ -163,21 +131,21 @@ export default function Home() {
               className="px-1 py-2 text-sm font-semibold text-cyan-100/90 transition hover:text-cyan-50"
               onClick={closeMobileMenu}
             >
-              Pricing
+              {t.nav.pricing}
             </Link>
             <Link
               href="/dashboard"
               className="px-1 py-2 text-sm font-semibold text-cyan-100/90 transition hover:text-cyan-50"
               onClick={closeMobileMenu}
             >
-              Dashboard
+              {t.nav.dashboard}
             </Link>
             <Link
               href="/signup"
               className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
               onClick={closeMobileMenu}
             >
-              Start free
+              {t.nav.startFree}
             </Link>
           </nav>
         </aside>
@@ -186,13 +154,13 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div className="prado-fade-up prado-delay-1">
               <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-                Free Starter plan · $0/month
+                {t.home.starterBadge}
               </p>
               <h1 className="mt-5 max-w-xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
-                Build storefront velocity without platform chaos.
+                {t.home.heroTitle}
               </h1>
               <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-slate-200/90">
-                Prado Commerce gives you one control plane for stores, products, and embeddable cart flows. Ship features faster and more secure checkouts.
+                {t.home.heroSubtitle}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -200,13 +168,13 @@ export default function Home() {
                   href="/pricing"
                   className="inline-flex items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/55 hover:bg-cyan-300/20"
                 >
-                  View pricing
+                  {t.home.viewPricing}
                 </Link>
                 <Link
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
                 >
-                  Start free
+                  {t.home.startFree}
                 </Link>
               </div>
             </div>
@@ -214,7 +182,7 @@ export default function Home() {
             <aside className="prado-fade-up prado-delay-2">
               <img
                 src="/laptop.webp"
-                alt="Storefront dashboard running on Prado Commerce"
+                alt={t.home.heroAlt}
                 className="ml-auto h-auto w-[118%] max-w-none -translate-x-14 sm:w-[126%] sm:-translate-x-20 lg:w-[138%] lg:-translate-x-32"
               />
             </aside>
@@ -224,18 +192,18 @@ export default function Home() {
         <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 sm:px-8 lg:px-10">
           <div className="max-w-3xl">
             <p className="inline-flex rounded-full border border-teal-100/40 bg-teal-200/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-teal-100">
-              The friction most teams hit
+              {t.home.frictionBadge}
             </p>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              Growth should increase confidence, not operational chaos.
+              {t.home.frictionTitle}
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-200/85 sm:text-base">
-              Most commerce teams are not blocked by ideas. They are blocked by fragile systems, disconnected data, and checkout friction that quietly kills conversions.
+              {t.home.frictionSubtitle}
             </p>
           </div>
 
           <div className="mt-7 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {frictionStories.map((story) => (
+            {t.home.frictionStories.map((story) => (
               <article
                 key={story.title}
                 className="overflow-hidden rounded-xl border border-white/12 bg-white/8 backdrop-blur-sm"
@@ -260,26 +228,26 @@ export default function Home() {
         <section className="prado-fade-up mx-auto mt-24 w-full max-w-6xl px-6 pb-8 sm:px-8 lg:px-10">
           <div className="rounded-xl border border-cyan-200/25 bg-cyan-300/8 p-6 backdrop-blur-sm sm:p-8">
             <p className="inline-flex rounded-full border border-cyan-100/35 bg-cyan-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
-              Why Prado Commerce
+              {t.home.whyBadge}
             </p>
             <h2 className="mt-4 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              Helping all kinds of businesses connect products to the world, strengthen online presence, and grow revenue.
+              {t.home.whyTitle}
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/85 sm:text-base">
-              Prado Commerce gives teams the tools to launch faster, sell smarter, and scale without rebuilding their commerce stack each time they grow.
+              {t.home.whySubtitle}
             </p>
 
             <div className="mt-6">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-100">
-                  Why customers choose us
+                  {t.home.whyCustomersChooseUs}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={goToPrevious}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                    aria-label="View previous story"
+                    aria-label={t.home.prevStory}
                   >
                     ←
                   </button>
@@ -287,7 +255,7 @@ export default function Home() {
                     type="button"
                     onClick={goToNext}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-300/10 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                    aria-label="View next story"
+                    aria-label={t.home.nextStory}
                   >
                     →
                   </button>
@@ -312,7 +280,7 @@ export default function Home() {
                   <p className="mt-3 text-sm leading-7 text-slate-200/85">{activeBenefit.detail}</p>
 
                   <div className="mt-6 flex items-center gap-2">
-                    {businessBenefits.map((benefit, index) => (
+                    {t.home.benefits.map((benefit, index) => (
                       <button
                         key={benefit.title}
                         type="button"
@@ -320,7 +288,7 @@ export default function Home() {
                         className={`h-2.5 rounded-full transition ${
                           index === activeIndex ? "w-8 bg-cyan-300" : "w-2.5 bg-white/35"
                         }`}
-                        aria-label={`View ${benefit.title}`}
+                        aria-label={benefit.title}
                       />
                     ))}
                   </div>
@@ -335,13 +303,13 @@ export default function Home() {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-3xl">
                 <p className="inline-flex rounded-full border border-teal-100/35 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-                  Start Today
+                  {t.home.ctaBadge}
                 </p>
                 <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                  Ready to grow with Prado Commerce?
+                  {t.home.ctaTitle}
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-slate-100/90 sm:text-base">
-                  Launch your storefront, connect your products to global customers, and build a stronger online presence with Prado Commerce.
+                  {t.home.ctaSubtitle}
                 </p>
               </div>
 
@@ -350,7 +318,7 @@ export default function Home() {
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
                 >
-                  Start free
+                  {t.home.ctaButton}
                 </Link>
               </div>
             </div>

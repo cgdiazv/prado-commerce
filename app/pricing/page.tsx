@@ -1,114 +1,21 @@
 "use client";
 
-import { useState, useEffect, Suspense, type MouseEvent } from "react";
+import { useState, useEffect, useCallback, Suspense, type MouseEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import type { Translations } from "@/lib/i18n/translations";
 
-type Tier = {
-  name: "Starter" | "Pro" | "Enterprise";
-  monthlyPriceLabel: string;
-  annualPriceLabel: string;
-  annualBillingLabel: string;
-  feeLabel: string;
-  audience: string;
-  stores: string;
-  products: string;
-  customDomains: string;
-  checkoutExperience: string;
-  apiRateLimits: string;
-  integrations: string;
-  ctaHref: string;
-  ctaLabel: string;
-  ctaSubLabel?: string;
-  highlighted?: boolean;
-};
-
+type Tier = Translations["pricing"]["tiers"][number];
 type BillingMode = "monthly" | "annual";
-
-const STRIPE_PRICE_MAP = {
-  PRO: {
-    month: "price_1U0XARCXrIvkbezejpM4WVVJ",
-    year: "price_1U0XBhCXrIvkbezewGe2bIyL",
-  },
-  ENTERPRISE: {
-    month: "price_1U0XDnCXrIvkbezesLCOvRau",
-    year: "price_1U0XETCXrIvkbeze6GNZYBDt",
-  },
-};
-
-const tiers: Tier[] = [
-  {
-    name: "Starter",
-    monthlyPriceLabel: "$0 / mo",
-    annualPriceLabel: "$0 / yr",
-    annualBillingLabel: "Free on annual billing",
-    feeLabel: "+ 2% platform transaction fee",
-    audience: "Individual creators and small shops testing custom sites.",
-    stores: "1 store",
-    products: "Up to 50 products",
-    customDomains: "Not included (Prado Commerce subdomains only)",
-    checkoutExperience: "Basic embedded checkout",
-    apiRateLimits: "60 requests / minute",
-    integrations: "Basic webhooks",
-    ctaHref: "/signup?plan=Starter",
-    ctaLabel: "Start free",
-    ctaSubLabel: "No credit card required",
-  },
-  {
-    name: "Pro",
-    monthlyPriceLabel: "$49 / mo",
-    annualPriceLabel: "$39 / mo",
-    annualBillingLabel: "Billed yearly as $468",
-    feeLabel: "+ 0.5% transaction fee",
-    audience: "Scaling merchants, agencies, and medium storefront teams.",
-    stores: "Up to 5 stores",
-    products: "Unlimited products",
-    customDomains: "Included (for example checkout.yourbrand.com)",
-    checkoutExperience: "Embedded checkout + custom CSS styling",
-    apiRateLimits: "1,000 requests / minute",
-    integrations: "Stripe Connect, webhooks, CSV sync",
-    ctaHref: "/signup?plan=Pro",
-    ctaLabel: "Choose Pro",
-    highlighted: true,
-  },
-  {
-    name: "Enterprise",
-    monthlyPriceLabel: "$199 / mo",
-    annualPriceLabel: "$159 / mo",
-    annualBillingLabel: "Billed yearly as $1,908",
-    feeLabel: "0% transaction fee",
-    audience: "High-volume brands and POS-integrated operations.",
-    stores: "Unlimited stores",
-    products: "Unlimited products",
-    customDomains: "Multiple custom domains",
-    checkoutExperience: "White-labeled and headless checkout workflows",
-    apiRateLimits: "Dedicated edge throughput",
-    integrations: "Payment, POS and Carriers",
-    ctaHref: "/signup?plan=Enterprise",
-    ctaLabel: "Choose Enterprise",
-  },
-];
-
-const comparisonRows: Array<{ label: string; values: [string, string, string] }> = [
-  { label: "Monthly billing", values: ["$0", "$49", "$199"] },
-  { label: "Annual billing", values: ["$0", "$39/mo ($468/yr)", "$159/mo ($1,908/yr)"] },
-  { label: "Platform fee", values: ["2%", "0.5%", "0%"] },
-  { label: "Active stores", values: ["1", "Up to 5", "Unlimited"] },
-  { label: "Products", values: ["Up to 50", "Unlimited", "Unlimited"] },
-  {
-    label: "Custom domains",
-    values: ["Not included", "Included", "Included (multiple)"],
-  },
-  {
-    label: "API limits",
-    values: ["60 req/min", "1,000 req/min", "Dedicated throughput"],
-  },
-];
+type StripePlan = "PRO" | "ENTERPRISE";
 
 function PricingPageContent() {
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const [billingMode, setBillingMode] = useState<BillingMode>("monthly");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -116,48 +23,56 @@ function PricingPageContent() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleUpgrade = async (event: MouseEvent<HTMLAnchorElement> | null, tier: Tier, forcedInterval?: "month" | "year") => {
-    const interval = forcedInterval || (billingMode === "annual" ? "year" : "month");
+  const handleUpgrade = useCallback(
+    async (
+      event: MouseEvent<HTMLAnchorElement> | null,
+      tier: Tier,
+      forcedInterval?: "month" | "year",
+    ) => {
+      const interval =
+        forcedInterval || (billingMode === "annual" ? "year" : "month");
 
-    if (tier.name === "Starter") {
-      return;
-    }
-
-    if (event) {
-      event.preventDefault();
-    }
-
-    const plan = tier.name.toUpperCase() as keyof typeof STRIPE_PRICE_MAP;
-
-    try {
-      const response = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, interval }),
-      });
-
-      const data = await response.json();
-
-      if (response.status === 401 || data?.error === "Unauthorized") {
-        const signupUrl = `/signup?plan=${tier.name}&interval=${interval}`;
-        window.location.assign(signupUrl);
+      if (tier.name === "Starter") {
         return;
       }
 
-      if (data?.url) {
-        window.location.assign(data.url);
-      } else {
-        const query = new URLSearchParams({
-          plan: tier.name,
-          interval,
-          status: data?.error ? "unavailable" : "pending",
-        });
-        window.location.assign(`/checkout?${query.toString()}`);
+      if (event) {
+        event.preventDefault();
       }
-    } catch (err) {
-      window.location.assign(`/signup?plan=${tier.name}&interval=${interval}`);
-    }
-  };
+
+      const plan = tier.name.toUpperCase() as StripePlan;
+
+      try {
+        const response = await fetch("/api/billing/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan, interval }),
+        });
+
+        const data = await response.json();
+
+        if (response.status === 401 || data?.error === "Unauthorized") {
+          const signupUrl = `/signup?plan=${tier.name}&interval=${interval}`;
+          window.location.assign(signupUrl);
+          return;
+        }
+
+        if (data?.url) {
+          window.location.assign(data.url);
+        } else {
+          const query = new URLSearchParams({
+            plan: tier.name,
+            interval,
+            status: data?.error ? "unavailable" : "pending",
+          });
+          window.location.assign(`/checkout?${query.toString()}`);
+        }
+      } catch {
+        window.location.assign(`/signup?plan=${tier.name}&interval=${interval}`);
+      }
+    },
+    [billingMode],
+  );
 
   useEffect(() => {
     const autoCheckout = searchParams.get("autoCheckout");
@@ -165,14 +80,14 @@ function PricingPageContent() {
     const intervalParam = searchParams.get("interval") as "month" | "year" | null;
 
     if (autoCheckout === "true" && planParam) {
-      const targetTier = tiers.find(
-        (t) => t.name.toLowerCase() === planParam.toLowerCase(),
+      const targetTier = t.pricing.tiers.find(
+        (tierItem) => tierItem.name.toLowerCase() === planParam.toLowerCase(),
       );
       if (targetTier) {
         void handleUpgrade(null, targetTier, intervalParam || "month");
       }
     }
-  }, [searchParams]);
+  }, [searchParams, t.pricing.tiers, handleUpgrade]);
 
   return (
     <main data-route-kind="pricing" className="relative isolate min-h-screen overflow-hidden bg-[#0c1624] text-slate-100">
@@ -183,35 +98,40 @@ function PricingPageContent() {
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-12 pt-8 sm:px-8 lg:px-10">
         <header className="prado-fade-up relative flex items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center">
-            <PradoLogo theme="dark" subtitle="Unified E-Commerce" size="md" />
+            <PradoLogo theme="dark" subtitle={t.common.logoSubtitle} size="md" />
           </Link>
 
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
-            aria-label="Open menu"
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="pricing-mobile-menu"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu size={18} />
-          </button>
+          {/* Language toggle placed to the left of the menu / hamburger button */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <LanguageToggle variant="dark" />
 
-          <div className="hidden items-center gap-2 sm:flex">
-            <Link
-              href="/"
-              className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-              onClick={closeMobileMenu}
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-100 outline-none ring-0 ring-offset-0 transition hover:bg-cyan-300/20 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:hidden"
+              aria-label={t.nav.menu}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="pricing-mobile-menu"
+              onClick={() => setIsMobileMenuOpen(true)}
             >
-              Home
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
-              onClick={closeMobileMenu}
-            >
-              Start free
-            </Link>
+              <Menu size={18} />
+            </button>
+
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link
+                href="/"
+                className="rounded-full border border-cyan-200/40 bg-cyan-300/12 px-4 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                onClick={closeMobileMenu}
+              >
+                {t.nav.home}
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-full bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-cyan-200"
+                onClick={closeMobileMenu}
+              >
+                {t.nav.startFree}
+              </Link>
+            </div>
           </div>
         </header>
 
@@ -232,15 +152,18 @@ function PricingPageContent() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">Menu</span>
-            <button
-              type="button"
-              onClick={closeMobileMenu}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
-              aria-label="Close menu"
-            >
-              <X size={18} />
-            </button>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">{t.nav.menu}</span>
+            <div className="flex items-center gap-2">
+              <LanguageToggle variant="dark" />
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/45 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+                aria-label={t.nav.closeMenu}
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <nav className="mt-6 flex flex-1 flex-col gap-2">
@@ -249,28 +172,27 @@ function PricingPageContent() {
               className="rounded-xl border border-cyan-100/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
               onClick={closeMobileMenu}
             >
-              Home
+              {t.nav.home}
             </Link>
             <Link
               href="/signup"
               className="rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200"
               onClick={closeMobileMenu}
             >
-              Start free
+              {t.nav.startFree}
             </Link>
           </nav>
         </aside>
 
         <section className="prado-fade-up prado-delay-1 mt-10 max-w-5xl">
           <p className="inline-flex rounded-full border border-teal-100/30 bg-teal-200/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-            Pricing
+            {t.pricing.badge}
           </p>
           <h1 className="mt-5 max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">
-            Plans that scale with every Prado Commerce storefront.
+            {t.pricing.title}
           </h1>
           <p className="mt-5 max-w-4xl text-base leading-8 text-slate-200/90 sm:text-lg">
-            Start for free with Starter, unlock growth with Pro, and run advanced operations with Enterprise.
-            Every tier includes core checkout and storefront capabilities.
+            {t.pricing.subtitle}
           </p>
 
           <div className="mt-24 inline-flex items-center gap-1 rounded-full border border-cyan-200/35 bg-cyan-300/10 p-1">
@@ -283,7 +205,7 @@ function PricingPageContent() {
                   : "text-cyan-100 hover:bg-cyan-300/20"
               }`}
             >
-              Monthly
+              {t.pricing.monthly}
             </button>
             <button
               type="button"
@@ -294,14 +216,14 @@ function PricingPageContent() {
                   : "text-cyan-100 hover:bg-cyan-300/20"
               }`}
             >
-              Annual
+              {t.pricing.annual}
             </button>
-            <span className="px-2 text-xs font-semibold text-teal-100">Save about 20% (2 months free)</span>
+            <span className="px-2 text-xs font-semibold text-teal-100">{t.pricing.saveDiscount}</span>
           </div>
         </section>
 
         <section className="mt-8 mb-24 grid gap-4 lg:grid-cols-3">
-          {tiers.map((tier) => (
+          {t.pricing.tiers.map((tier) => (
             <article
               key={tier.name}
               className={`flex h-full flex-col rounded-xl border p-5 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur-sm ${
@@ -314,7 +236,7 @@ function PricingPageContent() {
                 <h2 className="text-xl font-semibold text-white">{tier.name}</h2>
                 {tier.highlighted ? (
                   <span className="rounded-full border border-cyan-200/40 bg-cyan-300/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100">
-                    Most popular
+                    {t.pricing.mostPopular}
                   </span>
                 ) : null}
               </div>
@@ -330,27 +252,27 @@ function PricingPageContent() {
 
               <dl className="mt-5 space-y-3 text-sm">
                 <div className="grid grid-cols-[9rem_1fr] gap-3 border-b border-white/12 pb-2">
-                  <dt className="text-slate-300">Active stores</dt>
+                  <dt className="text-slate-300">{t.pricing.activeStores}</dt>
                   <dd className="text-slate-100">{tier.stores}</dd>
                 </div>
                 <div className="grid grid-cols-[9rem_1fr] gap-3 border-b border-white/12 pb-2">
-                  <dt className="text-slate-300">Products</dt>
+                  <dt className="text-slate-300">{t.pricing.products}</dt>
                   <dd className="text-slate-100">{tier.products}</dd>
                 </div>
                 <div className="grid grid-cols-[9rem_1fr] gap-3 border-b border-white/12 pb-2">
-                  <dt className="text-slate-300">Custom domains</dt>
+                  <dt className="text-slate-300">{t.pricing.customDomains}</dt>
                   <dd className="text-slate-100">{tier.customDomains}</dd>
                 </div>
                 <div className="grid grid-cols-[9rem_1fr] gap-3 border-b border-white/12 pb-2">
-                  <dt className="text-slate-300">Embeddable checkout</dt>
+                  <dt className="text-slate-300">{t.pricing.embeddableCheckout}</dt>
                   <dd className="text-slate-100">{tier.checkoutExperience}</dd>
                 </div>
                 <div className="grid grid-cols-[9rem_1fr] gap-3 border-b border-white/12 pb-2">
-                  <dt className="text-slate-300">API rate limits</dt>
+                  <dt className="text-slate-300">{t.pricing.apiRateLimits}</dt>
                   <dd className="text-slate-100">{tier.apiRateLimits}</dd>
                 </div>
                 <div className="grid grid-cols-[9rem_1fr] gap-3">
-                  <dt className="text-slate-300">Integrations</dt>
+                  <dt className="text-slate-300">{t.pricing.integrations}</dt>
                   <dd className="text-slate-100">{tier.integrations}</dd>
                 </div>
               </dl>
@@ -383,20 +305,20 @@ function PricingPageContent() {
 
         <section className="mt-8 overflow-hidden rounded-xl border border-white/20 bg-white/8 shadow-[0_18px_45px_rgba(8,47,73,0.35)] backdrop-blur-sm">
           <div className="border-b border-white/15 px-4 py-3 sm:px-6">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-100">Quick comparison</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-100">{t.pricing.quickComparison}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/15 text-sm">
               <thead className="bg-slate-950/35">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-300 sm:px-6">Feature</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-300 sm:px-6">{t.pricing.featureHeader}</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-300">Starter</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-300">Pro</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-300">Enterprise</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-white/[0.03]">
-                {comparisonRows.map((row) => (
+                {t.pricing.comparisonRows.map((row) => (
                   <tr key={row.label}>
                     <td className="px-4 py-3 text-slate-200 sm:px-6">{row.label}</td>
                     <td className="px-4 py-3 text-slate-100">{row.values[0]}</td>
@@ -408,7 +330,6 @@ function PricingPageContent() {
             </table>
           </div>
         </section>
-
       </div>
     </main>
   );
@@ -419,7 +340,7 @@ export default function PricingPage() {
     <Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center bg-[#0c1624] text-slate-100">
-          <p className="text-sm text-slate-300">Loading pricing...</p>
+          <p className="text-sm text-slate-300">Loading...</p>
         </main>
       }
     >

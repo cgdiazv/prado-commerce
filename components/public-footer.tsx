@@ -27,11 +27,11 @@ function shouldRenderPublicFooter(pathname: string): boolean {
 }
 
 export function PublicFooter({ forceHidden = false }: PublicFooterProps) {
+  const pathname = usePathname();
+
   if (forceHidden) {
     return null;
   }
-
-  const pathname = usePathname();
 
   if (!shouldRenderPublicFooter(pathname)) {
     return null;

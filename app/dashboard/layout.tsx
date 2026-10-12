@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type NavChild = {
   href: string;
@@ -24,6 +26,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
   const [isProcurementOpen, setIsProcurementOpen] = useState(pathname.startsWith("/dashboard/procurement"));
@@ -386,14 +389,14 @@ export default function DashboardLayout({
               }`}
             >
               <CircleHelp className={`h-4 w-4 shrink-0 ${isHelpActive ? "text-cyan-700" : "text-cyan-600"}`} />
-              <span>Help</span>
+              <span>{t.dashboard.help}</span>
             </a>
           </div>
         </nav>
 
         <div className="mt-4 text-left">
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
-            © {currentYear} Prado Systems. All rights reserved.
+            © {currentYear} Prado Systems. {t.dashboard.rightsReserved}
           </p>
         </div>
       </>
@@ -409,10 +412,11 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <PradoLogo theme="light" subtitle="Merchant Dashboard" size="sm" />
+            <PradoLogo theme="light" subtitle={t.dashboard.merchantDashboard} size="sm" />
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
+            <LanguageToggle variant="light" />
             <div className="h-6 w-px bg-slate-200" />
             {(() => {
               const merchantName = currentUser?.name || stores[0]?.name || (currentUser?.email ? currentUser.email.split("@")[0] : "Merchant");
@@ -467,7 +471,7 @@ export default function DashboardLayout({
                         className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-cyan-600 transition hover:bg-cyan-50 hover:text-cyan-700"
                       >
                         <LogOut className="h-4 w-4 text-cyan-600" />
-                        <span>Sign Out</span>
+                        <span>{t.dashboard.logout}</span>
                       </a>
                     </div>
                   )}
