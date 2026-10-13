@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { getStorefrontThemeClasses, type StorefrontThemeId } from "@/lib/storefront-theme";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type CategoryProduct = {
   id: string;
@@ -30,8 +33,17 @@ export default function CategoryPageContent({
   theme,
   searchQuery = "",
 }: CategoryPageContentProps) {
+  const { t, language } = useLanguage();
   const themeClasses = getStorefrontThemeClasses(theme);
-  const resultLabel = products.length === 1 ? "1 product" : `${products.length} products`;
+  const resultLabel =
+    products.length === 1
+      ? `1 ${t.storefront.oneProduct}`
+      : `${products.length} ${t.storefront.countProducts}`;
+
+  const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
+    style: "currency",
+    currency: currency || "USD",
+  });
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:py-12">
@@ -44,7 +56,7 @@ export default function CategoryPageContent({
         </Link>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{categoryName}</h1>
         <p className="mt-2 text-sm opacity-75">
-          {searchQuery ? `${resultLabel} matching "${searchQuery}"` : resultLabel}
+          {searchQuery ? `${resultLabel} ${t.storefront.matching} "${searchQuery}"` : resultLabel}
         </p>
       </header>
 
@@ -70,7 +82,7 @@ export default function CategoryPageContent({
                     <img src={product.images[0]} alt={product.title} className="h-48 w-full object-cover" />
                   ) : (
                     <div className="flex h-48 items-center justify-center bg-slate-100 text-sm text-slate-400">
-                      No image
+                      {t.storefront.noImage}
                     </div>
                   )}
                   <div className="p-4">
@@ -78,10 +90,10 @@ export default function CategoryPageContent({
                     <div className="mt-3 flex items-center justify-between gap-3">
                       {price != null ? (
                         <span className="text-sm font-semibold text-slate-700">
-                          {currency} {Number(price).toFixed(2)}
+                          {formatter.format(Number(price))}
                         </span>
                       ) : (
-                        <span className="text-sm text-slate-400">Select options</span>
+                        <span className="text-sm text-slate-400">{t.storefront.selectOptions}</span>
                       )}
                       {variantId ? (
                         <button
@@ -90,7 +102,7 @@ export default function CategoryPageContent({
                           data-prado-add-to-cart={variantId}
                           className="relative z-10 rounded-full bg-[var(--store-main-color)] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
                         >
-                          Add to cart
+                          {t.storefront.addToCart}
                         </button>
                       ) : null}
                     </div>
@@ -101,11 +113,11 @@ export default function CategoryPageContent({
           </div>
         ) : (
           <div className={`rounded-2xl border p-10 text-center ${themeClasses.mutedPanel}`}>
-            <h2 className="text-lg font-semibold text-slate-900">No products found</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t.storefront.noProductsAvailable}</h2>
             <p className="mt-2 text-sm text-slate-600">
               {searchQuery
-                ? `Try another search within ${categoryName}.`
-                : `There are no active products in ${categoryName} yet.`}
+                ? `${t.storefront.tryDifferentSearch} (${categoryName})`
+                : t.storefront.noProductsInCategory}
             </p>
           </div>
         )}

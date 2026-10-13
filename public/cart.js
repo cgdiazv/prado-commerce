@@ -19,6 +19,43 @@
 
   const STORAGE_KEY = "prado_cart_" + STORE_ID;
 
+  function getLang() {
+    if (typeof window !== "undefined") {
+      if (window.PRADO_STORE_CONFIG && window.PRADO_STORE_CONFIG.lang) {
+        return window.PRADO_STORE_CONFIG.lang;
+      }
+      try {
+        const stored = localStorage.getItem("prado_lang");
+        if (stored === "es" || stored === "en") return stored;
+      } catch {}
+      if (document.documentElement && document.documentElement.lang === "en") return "en";
+    }
+    return "es";
+  }
+
+  const i18n = {
+    es: {
+      title: "Tu Carrito",
+      empty: "Tu carrito está actualmente vacío.",
+      subtotal: "Subtotal",
+      checkout: "Proceder al Pago",
+      redirecting: "Redirigiendo...",
+      item: "Producto",
+      addError: "No se pudo agregar el producto: ",
+      checkoutError: "Error al procesar el pago: ",
+    },
+    en: {
+      title: "Your Cart",
+      empty: "Your cart is currently empty.",
+      subtotal: "Subtotal",
+      checkout: "Proceed to Checkout",
+      redirecting: "Redirecting...",
+      item: "Item",
+      addError: "Could not add item to cart: ",
+      checkoutError: "Checkout Error: ",
+    },
+  };
+
   const state = {
     cartId: localStorage.getItem(STORAGE_KEY) || null,
     items: [],
@@ -89,24 +126,27 @@
     styleEl.textContent = styles;
     document.head.appendChild(styleEl);
 
+    const lang = getLang();
+    const t = i18n[lang] || i18n.es;
+
     const container = document.createElement("div");
     container.id = "prado-commerce-root";
     container.innerHTML = `
       <div class="prado-cart-overlay" id="prado-overlay"></div>
       <div class="prado-cart-drawer" id="prado-drawer">
         <div class="prado-header">
-          <h3 class="prado-title">Your Cart</h3>
+          <h3 class="prado-title" id="prado-title-text">${t.title}</h3>
           <button class="prado-close" id="prado-close-btn" type="button">&times;</button>
         </div>
         <div class="prado-body" id="prado-cart-body">
-          <div class="prado-empty">Your cart is currently empty.</div>
+          <div class="prado-empty">${t.empty}</div>
         </div>
         <div class="prado-footer">
           <div class="prado-subtotal">
-            <span>Subtotal</span>
+            <span id="prado-subtotal-label">${t.subtotal}</span>
             <span id="prado-subtotal-val">$0.00</span>
           </div>
-          <button class="prado-checkout-btn" id="prado-checkout-btn" type="button" disabled>Proceed to Checkout</button>
+          <button class="prado-checkout-btn" id="prado-checkout-btn" type="button" disabled>${t.checkout}</button>
         </div>
       </div>
     `;
@@ -256,9 +296,11 @@
       return;
     }
 
+    const lang = getLang();
+    const t = i18n[lang] || i18n.es;
     const checkoutBtn = document.getElementById("prado-checkout-btn");
     checkoutBtn.disabled = true;
-    checkoutBtn.textContent = "Redirecting...";
+    checkoutBtn.textContent = t.redirecting;
 
     try {
       const res = await apiFetch("/api/v1/checkout", "POST", { cartId: state.cartId });
@@ -268,9 +310,9 @@
         throw new Error("Checkout URL was not returned");
       }
     } catch (error) {
-      alert("Checkout Error: " + (error instanceof Error ? error.message : "Unknown error"));
+      alert(t.checkoutError + (error instanceof Error ? error.message : "Unknown error"));
       checkoutBtn.disabled = false;
-      checkoutBtn.textContent = "Proceed to Checkout";
+      checkoutBtn.textContent = t.checkout;
     }
   }
 
@@ -294,7 +336,20 @@
       return;
     }
 
-    const formatter = new Intl.NumberFormat("en-US", {
+    const lang = getLang();
+    const t = i18n[lang] || i18n.es;
+
+    const titleEl = document.getElementById("prado-title-text");
+    if (titleEl) titleEl.textContent = t.title;
+
+    const subtotalLabelEl = document.getElementById("prado-subtotal-label");
+    if (subtotalLabelEl) subtotalLabelEl.textContent = t.subtotal;
+
+    if (!checkoutBtn.disabled && checkoutBtn.textContent !== t.redirecting) {
+      checkoutBtn.textContent = t.checkout;
+    }
+
+    const formatter = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
       style: "currency",
       currency: state.currency,
     });
@@ -311,7 +366,7 @@
     });
 
     if (state.items.length === 0) {
-      bodyEl.innerHTML = '<div class="prado-empty">Your cart is currently empty.</div>';
+      bodyEl.innerHTML = `<div class="prado-empty">${t.empty}</div>`;
       return;
     }
 
@@ -320,7 +375,7 @@
         return `
       <div class="prado-item" data-variant-id="${escapeHTML(String(item.variantId || ""))}">
         <div class="prado-item-info">
-          <p class="prado-item-title">${escapeHTML(String(item.title || "Item"))}</p>
+          <p class="prado-item-title">${escapeHTML(String(item.title || t.item))}</p>
           <span class="prado-item-price">${formatter.format(Number(item.price || 0))}</span>
         </div>
         <div class="prado-qty-controls">
@@ -360,6 +415,7 @@
   }
 
   function openCart() {
+    render();
     state.isOpen = true;
     const overlay = document.getElementById("prado-overlay");
     const drawer = document.getElementById("prado-drawer");

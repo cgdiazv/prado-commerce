@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type AddToCartWithQuantityProps = {
   variantId: string;
 };
 
 export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuantityProps) {
+  const { t } = useLanguage();
   const [quantity, setQuantity] = useState(1);
 
   function decreaseQuantity() {
@@ -24,7 +26,7 @@ export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuanti
           type="button"
           onClick={decreaseQuantity}
           className="h-9 w-9 rounded-l-full text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          aria-label="Decrease quantity"
+          aria-label={t.storefront.decreaseQuantity}
         >
           -
         </button>
@@ -33,7 +35,7 @@ export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuanti
           type="button"
           onClick={increaseQuantity}
           className="h-9 w-9 rounded-r-full text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          aria-label="Increase quantity"
+          aria-label={t.storefront.increaseQuantity}
         >
           +
         </button>
@@ -46,7 +48,7 @@ export default function AddToCartWithQuantity({ variantId }: AddToCartWithQuanti
         data-prado-qty={quantity}
         className="w-full rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
       >
-        Add to cart
+        {t.storefront.addToCart}
       </button>
     </div>
   );

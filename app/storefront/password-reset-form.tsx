@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type PasswordResetFormProps = {
   token: string;
@@ -12,6 +13,7 @@ type PasswordResetFormProps = {
 };
 
 export default function PasswordResetForm({ token, successPath, storeName }: PasswordResetFormProps) {
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,12 +27,12 @@ export default function PasswordResetForm({ token, successPath, storeName }: Pas
     setError(null);
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t.storefront.passwordMinLength);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t.storefront.passwordsDoNotMatch);
       return;
     }
 
@@ -46,13 +48,13 @@ export default function PasswordResetForm({ token, successPath, storeName }: Pas
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(result.error || "Could not update password");
+        throw new Error(result.error || (language === "es" ? "No se pudo actualizar la contraseña." : "Could not update password"));
       }
 
       router.push(successPath);
       router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Could not update password");
+      setError(submitError instanceof Error ? submitError.message : (language === "es" ? "No se pudo actualizar la contraseña." : "Could not update password"));
     } finally {
       setIsSubmitting(false);
     }
@@ -64,24 +66,28 @@ export default function PasswordResetForm({ token, successPath, storeName }: Pas
         <Link href="/" className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100 transition hover:text-cyan-50">
           {storeName}
         </Link>
-        <h1 className="mt-3 text-3xl font-semibold text-white">Choose a new password</h1>
-        <p className="mt-2 text-sm text-slate-300">Set a new password for your storefront account.</p>
+        <h1 className="mt-3 text-3xl font-semibold text-white">
+          {language === "es" ? "Elige una nueva contraseña" : "Choose a new password"}
+        </h1>
+        <p className="mt-2 text-sm text-slate-300">
+          {language === "es" ? "Establece una nueva contraseña para tu cuenta." : "Set a new password for your storefront account."}
+        </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-200">New password</span>
+            <span className="mb-2 block text-sm font-medium text-slate-200">{t.storefront.newPassword}</span>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Create a new password"
+                placeholder={t.storefront.newPassword}
                 className="w-full rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 pr-11 text-sm text-slate-100 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/30"
               />
               <button
                 type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t.login.hidePassword : t.login.showPassword}
                 onClick={() => setShowPassword((current) => !current)}
                 className="absolute inset-y-0 right-0 inline-flex items-center justify-center px-3 text-slate-300 transition hover:text-cyan-100"
               >
@@ -91,19 +97,19 @@ export default function PasswordResetForm({ token, successPath, storeName }: Pas
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-200">Confirm password</span>
+            <span className="mb-2 block text-sm font-medium text-slate-200">{t.storefront.confirmNewPassword}</span>
             <div className="relative">
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 required
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="Repeat your password"
+                placeholder={t.storefront.confirmNewPassword}
                 className="w-full rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 pr-11 text-sm text-slate-100 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/30"
               />
               <button
                 type="button"
-                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                aria-label={showConfirmPassword ? t.login.hidePassword : t.login.showPassword}
                 onClick={() => setShowConfirmPassword((current) => !current)}
                 className="absolute inset-y-0 right-0 inline-flex items-center justify-center px-3 text-slate-300 transition hover:text-cyan-100"
               >
@@ -119,7 +125,7 @@ export default function PasswordResetForm({ token, successPath, storeName }: Pas
             disabled={isSubmitting}
             className="inline-flex w-full items-center justify-center rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Saving password..." : "Update password"}
+            {isSubmitting ? t.storefront.updatingPassword : t.storefront.updatePassword}
           </button>
         </form>
       </section>

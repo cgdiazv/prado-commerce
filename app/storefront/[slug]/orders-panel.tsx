@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type ShopperOrder = {
   id: string;
@@ -16,6 +17,7 @@ type ShopperOrder = {
 };
 
 export default function OrdersPanel() {
+  const { t, language } = useLanguage();
   const [orders, setOrders] = useState<ShopperOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,15 +41,15 @@ export default function OrdersPanel() {
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Your orders</p>
-          <p className="text-sm text-slate-500">Track the purchases tied to this storefront account.</p>
+          <p className="text-sm font-semibold text-slate-900">{t.storefront.yourOrders}</p>
+          <p className="text-sm text-slate-500">{t.storefront.trackPurchases}</p>
         </div>
       </div>
 
       {loading ? (
-        <p className="mt-5 text-sm text-slate-500">Loading orders…</p>
+        <p className="mt-5 text-sm text-slate-500">{t.storefront.loadingOrders}</p>
       ) : orders.length === 0 ? (
-        <p className="mt-5 text-sm text-slate-500">You have not placed any orders yet.</p>
+        <p className="mt-5 text-sm text-slate-500">{t.storefront.noOrdersYet}</p>
       ) : (
         <div className="mt-5 space-y-3">
           {orders.map((order) => (
@@ -55,7 +57,9 @@ export default function OrdersPanel() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-semibold text-slate-900">#{order.orderNumber}</p>
-                  <p className="text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-slate-500">
+                    {new Date(order.createdAt).toLocaleDateString(language === "es" ? "es-ES" : "en-US")}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">{order.currency} {order.total.toFixed(2)}</p>

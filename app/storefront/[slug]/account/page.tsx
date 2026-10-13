@@ -27,7 +27,6 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
     return (
       <div className="contents">
         <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
-          <p className="mb-6 text-center text-sm text-slate-500">Sign in to view your account and orders.</p>
           <AuthPanel storeId={store.id} mainColor={store.mainColor} />
         </main>
       </div>

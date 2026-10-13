@@ -158,6 +158,91 @@ export interface Translations {
     totalRevenue: string;
     totalOrders: string;
   };
+  storefront: {
+    searchPlaceholder: string;
+    all: string;
+    categories: string;
+    openCategoriesMenu: string;
+    closeCategoriesMenu: string;
+    account: string;
+    cart: string;
+    featuredProducts: string;
+    allProducts: string;
+    otherProducts: string;
+    selectOptions: string;
+    addToCart: string;
+    startingAt: string;
+    noImage: string;
+    noImageAvailable: string;
+    noProductsAvailable: string;
+    featuredSelection: string;
+    featuredSelectionDesc: string;
+    liveStoreStats: string;
+    productsInCatalog: string;
+    home: string;
+    productDetails: string;
+    manufacturer: string;
+    dimensions: string;
+    weight: string;
+    condition: string;
+    conditionNotes: string;
+    decreaseQuantity: string;
+    increaseQuantity: string;
+    allRightsReserved: string;
+    poweredBy: string;
+    oneProduct: string;
+    countProducts: string;
+    matching: string;
+    noProductsInCategory: string;
+    tryDifferentSearch: string;
+    welcomeBack: string;
+    shopper: string;
+    welcomeDesc: string;
+    editProfile: string;
+    editProfileDesc: string;
+    goToProfile: string;
+    orders: string;
+    ordersDesc: string;
+    viewOrders: string;
+    savedAddresses: string;
+    savedAddressesDesc: string;
+    manageAddresses: string;
+    signIn: string;
+    signUp: string;
+    createAccount: string;
+    signOut: string;
+    signingOut: string;
+    resetPassword: string;
+    forgotPassword: string;
+    signInToAccess: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+    saveChanges: string;
+    saving: string;
+    streetAddress: string;
+    city: string;
+    stateProvince: string;
+    postalCode: string;
+    country: string;
+    addAddress: string;
+    yourOrders: string;
+    trackPurchases: string;
+    loadingOrders: string;
+    noOrdersYet: string;
+    date: string;
+    total: string;
+    status: string;
+    newPassword: string;
+    confirmNewPassword: string;
+    updatePassword: string;
+    updatingPassword: string;
+    passwordMinLength: string;
+    passwordsDoNotMatch: string;
+  };
 }
 
 export const translations: Record<Language, Translations> = {
@@ -403,6 +488,91 @@ export const translations: Record<Language, Translations> = {
       totalRevenue: "Ingresos totales",
       totalOrders: "Pedidos totales",
     },
+    storefront: {
+      searchPlaceholder: "Buscar productos",
+      all: "Todos",
+      categories: "Categorías",
+      openCategoriesMenu: "Abrir menú de categorías",
+      closeCategoriesMenu: "Cerrar menú de categorías",
+      account: "Cuenta",
+      cart: "Carrito",
+      featuredProducts: "Productos destacados",
+      allProducts: "Todos los productos",
+      otherProducts: "Otros productos",
+      selectOptions: "Seleccionar opciones",
+      addToCart: "Agregar al carrito",
+      startingAt: "Desde",
+      noImage: "Sin imagen",
+      noImageAvailable: "No hay imagen disponible",
+      noProductsAvailable: "No hay productos disponibles por ahora.",
+      featuredSelection: "Selección destacada",
+      featuredSelectionDesc: "Descubre los productos elegidos por nuestro equipo esta semana.",
+      liveStoreStats: "Estadísticas de la tienda",
+      productsInCatalog: "Productos en catálogo",
+      home: "Inicio",
+      productDetails: "Detalles del producto",
+      manufacturer: "Fabricante",
+      dimensions: "Dimensiones",
+      weight: "Peso",
+      condition: "Condición",
+      conditionNotes: "Notas de condición",
+      decreaseQuantity: "Disminuir cantidad",
+      increaseQuantity: "Aumentar cantidad",
+      allRightsReserved: "Todos los derechos reservados.",
+      poweredBy: "Desarrollado por Prado Commerce",
+      oneProduct: "producto",
+      countProducts: "productos",
+      matching: "que coinciden con",
+      noProductsInCategory: "No hay productos en esta categoría.",
+      tryDifferentSearch: "Intenta buscar con otros términos.",
+      welcomeBack: "¡Bienvenido de nuevo!",
+      shopper: "comprador",
+      welcomeDesc: "Bienvenido a tu panel de cuenta. Aquí puedes administrar tus datos, rastrear tus pedidos y actualizar tus direcciones de envío.",
+      editProfile: "Editar perfil",
+      editProfileDesc: "Actualiza tu nombre, apellido y datos de contacto.",
+      goToProfile: "Ir al perfil",
+      orders: "Pedidos",
+      ordersDesc: "Consulta el estado, totales e historial de tus compras.",
+      viewOrders: "Ver pedidos",
+      savedAddresses: "Direcciones guardadas",
+      savedAddressesDesc: "Administra tus destinos de envío para agilizar tus compras.",
+      manageAddresses: "Administrar direcciones",
+      signIn: "Iniciar sesión",
+      signUp: "Crear cuenta",
+      createAccount: "Crear cuenta",
+      signOut: "Cerrar sesión",
+      signingOut: "Cerrando sesión...",
+      resetPassword: "Restablecer contraseña",
+      forgotPassword: "¿Olvidaste tu contraseña?",
+      signInToAccess: "Inicia sesión para acceder a tu panel de cuenta.",
+      firstName: "Nombre",
+      lastName: "Apellido",
+      email: "Correo electrónico",
+      phone: "Teléfono",
+      password: "Contraseña",
+      confirmPassword: "Confirmar contraseña",
+      saveChanges: "Guardar cambios",
+      saving: "Guardando...",
+      streetAddress: "Dirección",
+      city: "Ciudad",
+      stateProvince: "Estado / Provincia",
+      postalCode: "Código postal",
+      country: "País",
+      addAddress: "Agregar dirección",
+      yourOrders: "Tus pedidos",
+      trackPurchases: "Rastrea las compras asociadas a esta cuenta.",
+      loadingOrders: "Cargando pedidos...",
+      noOrdersYet: "Aún no has realizado ningún pedido.",
+      date: "Fecha",
+      total: "Total",
+      status: "Estado",
+      newPassword: "Nueva contraseña",
+      confirmNewPassword: "Confirmar nueva contraseña",
+      updatePassword: "Actualizar contraseña",
+      updatingPassword: "Actualizando...",
+      passwordMinLength: "La contraseña debe tener al menos 6 caracteres.",
+      passwordsDoNotMatch: "Las contraseñas no coinciden.",
+    },
   },
   en: {
     common: {
@@ -645,6 +815,91 @@ export const translations: Record<Language, Translations> = {
       totalProducts: "Total Products",
       totalRevenue: "Total Revenue",
       totalOrders: "Total Orders",
+    },
+    storefront: {
+      searchPlaceholder: "Search products",
+      all: "All",
+      categories: "Categories",
+      openCategoriesMenu: "Open categories menu",
+      closeCategoriesMenu: "Close categories menu",
+      account: "Account",
+      cart: "Cart",
+      featuredProducts: "Featured products",
+      allProducts: "All products",
+      otherProducts: "Other products",
+      selectOptions: "Select options",
+      addToCart: "Add to cart",
+      startingAt: "Starting at",
+      noImage: "No image",
+      noImageAvailable: "No image available",
+      noProductsAvailable: "No products available yet.",
+      featuredSelection: "Featured selection",
+      featuredSelectionDesc: "Discover the hand-picked products our team chose this week.",
+      liveStoreStats: "Live store stats",
+      productsInCatalog: "Products in catalog",
+      home: "Home",
+      productDetails: "Product details",
+      manufacturer: "Manufacturer",
+      dimensions: "Dimensions",
+      weight: "Weight",
+      condition: "Condition",
+      conditionNotes: "Condition Notes",
+      decreaseQuantity: "Decrease quantity",
+      increaseQuantity: "Increase quantity",
+      allRightsReserved: "All rights reserved.",
+      poweredBy: "Powered by Prado Commerce",
+      oneProduct: "product",
+      countProducts: "products",
+      matching: "matching",
+      noProductsInCategory: "No products found in this category.",
+      tryDifferentSearch: "Try another search within this category.",
+      welcomeBack: "Welcome back!",
+      shopper: "shopper",
+      welcomeDesc: "Welcome to your account dashboard. Here you can manage your profile information, track your past orders, update shipping addresses, and control your storefront access.",
+      editProfile: "Edit Profile",
+      editProfileDesc: "Update your first name, last name, and contact details.",
+      goToProfile: "Go to profile",
+      orders: "Orders",
+      ordersDesc: "View order status, totals, and complete purchase history.",
+      viewOrders: "View orders",
+      savedAddresses: "Saved Addresses",
+      savedAddressesDesc: "Manage saved shipping destinations to breeze through checkout.",
+      manageAddresses: "Manage addresses",
+      signIn: "Sign in",
+      signUp: "Sign up",
+      createAccount: "Create account",
+      signOut: "Sign out",
+      signingOut: "Signing out...",
+      resetPassword: "Reset password",
+      forgotPassword: "Forgot password?",
+      signInToAccess: "Sign in to access your account dashboard.",
+      firstName: "First name",
+      lastName: "Last name",
+      email: "Email",
+      phone: "Phone",
+      password: "Password",
+      confirmPassword: "Confirm password",
+      saveChanges: "Save changes",
+      saving: "Saving...",
+      streetAddress: "Street address",
+      city: "City",
+      stateProvince: "State / Province",
+      postalCode: "Postal code",
+      country: "Country",
+      addAddress: "Add address",
+      yourOrders: "Your orders",
+      trackPurchases: "Track the purchases tied to this storefront account.",
+      loadingOrders: "Loading orders…",
+      noOrdersYet: "You have not placed any orders yet.",
+      date: "Date",
+      total: "Total",
+      status: "Status",
+      newPassword: "New password",
+      confirmNewPassword: "Confirm new password",
+      updatePassword: "Update Password",
+      updatingPassword: "Updating...",
+      passwordMinLength: "Password must be at least 6 characters.",
+      passwordsDoNotMatch: "Passwords do not match.",
     },
   },
 };

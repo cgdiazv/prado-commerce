@@ -72,27 +72,35 @@ export function getStorefrontThemeHeroContentWithOverrides(
     subtitle?: string | null;
     buttonText?: string | null;
   },
+  lang: "es" | "en" = "es",
 ) {
+  const isEs = lang === "es";
   const defaults =
     theme === "bold"
       ? {
-          eyebrow: "Limited drops",
-          title: `${storeName} storefront, built to stand out`,
-          subtitle: "High-contrast layout, punchy product focus, and quick cart actions for fast buying.",
-          buttonText: "Shop featured",
+          eyebrow: isEs ? "Lanzamientos exclusivos" : "Limited drops",
+          title: isEs ? `Tienda ${storeName}, creada para destacar` : `${storeName} storefront, built to stand out`,
+          subtitle: isEs
+            ? "Diseño de alto contraste, enfoque directo en productos y compra rápida."
+            : "High-contrast layout, punchy product focus, and quick cart actions for fast buying.",
+          buttonText: isEs ? "Ver destacados" : "Shop featured",
         }
       : theme === "classic"
         ? {
-            eyebrow: "Curated collection",
-            title: `Welcome to ${storeName}`,
-            subtitle: "A timeless catalog layout that highlights quality picks and featured products first.",
-            buttonText: "View featured products",
+            eyebrow: isEs ? "Colección curada" : "Curated collection",
+            title: isEs ? `Bienvenido a ${storeName}` : `Welcome to ${storeName}`,
+            subtitle: isEs
+              ? "Un catálogo atemporal que resalta la calidad y productos destacados."
+              : "A timeless catalog layout that highlights quality picks and featured products first.",
+            buttonText: isEs ? "Ver productos destacados" : "View featured products",
           }
         : {
-            eyebrow: "Shop online",
-            title: `Explore ${storeName}`,
-            subtitle: "A clean browsing experience with search, categories, and quick add-to-cart actions.",
-            buttonText: "Start shopping",
+            eyebrow: isEs ? "Tienda en línea" : "Shop online",
+            title: isEs ? `Explora ${storeName}` : `Explore ${storeName}`,
+            subtitle: isEs
+              ? "Una experiencia de navegación limpia con búsqueda, categorías y compra rápida."
+              : "A clean browsing experience with search, categories, and quick add-to-cart actions.",
+            buttonText: isEs ? "Comenzar a comprar" : "Start shopping",
           };
 
   return {

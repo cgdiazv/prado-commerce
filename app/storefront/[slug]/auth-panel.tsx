@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type AuthPanelProps = {
   storeId: string;
@@ -20,6 +21,7 @@ type StorefrontAuthResponse = {
 };
 
 export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,20 +51,20 @@ export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
         const payload = (await response.json()) as PasswordResetRequestResponse;
 
         if (!response.ok) {
-          throw new Error(payload.error || "Unable to create a reset link.");
+          throw new Error(payload.error || t.login.errorMessage);
         }
 
         if (!payload.resetPath) {
-          throw new Error("Reset link is unavailable right now. Please try again.");
+          throw new Error(t.login.errorMessage);
         }
 
         const resetUrl = new URL(payload.resetPath, window.location.origin).toString();
-        setStatus(`Reset link created: ${resetUrl}`);
+        setStatus(`${t.storefront.resetPassword}: ${resetUrl}`);
         return;
       }
 
       if (mode === "signup" && password !== confirmPassword) {
-        setStatus("Password confirmation does not match.");
+        setStatus(t.storefront.passwordsDoNotMatch);
         return;
       }
 
@@ -81,24 +83,21 @@ export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
 
       const payload = (await response.json()) as StorefrontAuthResponse;
       if (!response.ok) {
-        throw new Error(payload.error || "Unable to sign in to this storefront.");
+        throw new Error(payload.error || t.login.errorMessage);
       }
 
       if (mode === "signup") {
-        // Do not keep shoppers signed in immediately after account creation.
-        // This keeps the flow on sign-in as requested.
         await fetch("/api/storefront/auth", { method: "DELETE" });
         setMode("signin");
         setPassword("");
         setConfirmPassword("");
-        setStatus("Account created. Please sign in.");
+        setStatus(`${t.storefront.createAccount}. ${t.storefront.signIn}.`);
       } else {
-        // Reload so the server-rendered account page can switch to the full sidebar layout.
         window.location.reload();
         return;
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to complete this request.");
+      setStatus(error instanceof Error ? error.message : t.login.errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -109,137 +108,143 @@ export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-base font-semibold text-slate-900">
-              {mode === "signin" ? "Sign in" : mode === "signup" ? "Sign up" : "Reset password"}
+            {mode === "signin" ? t.storefront.signIn : mode === "signup" ? t.storefront.signUp : t.storefront.resetPassword}
           </p>
-            <p className="text-sm text-slate-500">Sign in to access your account dashboard.</p>
+          <p className="text-sm text-slate-500">{t.storefront.signInToAccess}</p>
         </div>
       </div>
 
-        <form onSubmit={submit} className="mt-5 space-y-3">
-          <div className="flex gap-2 rounded-full border border-slate-200 p-1">
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
-            >
-              Create account
-            </button>
-          </div>
-
-          {mode === "signup" ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-                placeholder="First name"
-              />
-              <input
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-                placeholder="Last name"
-              />
-            </div>
-          ) : null}
-
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-            placeholder="Email address"
-            required
-          />
-
-          {mode === "signup" ? (
-            <>
-              <div className="relative">
-                <input
-                  type={showSignupPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
-                  placeholder="Create a password"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSignupPassword((current) => !current)}
-                  className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
-                  aria-label={showSignupPassword ? "Hide password" : "Show password"}
-                >
-                  {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
-                  placeholder="Confirm password"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((current) => !current)}
-                  className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </>
-          ) : mode !== "reset" ? (
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
-              placeholder="Password"
-              required
-              minLength={6}
-            />
-          ) : null}
-
-          {mode === "signin" ? (
-            <button
-              type="button"
-              onClick={() => setMode("reset")}
-              className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
-            >
-              Forgot password?
-            </button>
-          ) : null}
-
-          {mode === "reset" ? (
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
-            >
-              Back to sign in
-            </button>
-          ) : null}
-
+      <form onSubmit={submit} className="mt-5 space-y-3">
+        <div className="flex gap-2 rounded-full border border-slate-200 p-1">
           <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-full bg-[var(--store-main-color)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)] disabled:cursor-not-allowed disabled:opacity-70"
+            type="button"
+            onClick={() => setMode("signin")}
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
           >
-            {isSubmitting ? "Working..." : mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
+            {t.storefront.signIn}
           </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            {t.storefront.createAccount}
+          </button>
+        </div>
+
+        {mode === "signup" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+              placeholder={t.storefront.firstName}
+            />
+            <input
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+              placeholder={t.storefront.lastName}
+            />
+          </div>
+        ) : null}
+
+        <input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+          placeholder={t.storefront.email}
+          required
+        />
+
+        {mode === "signup" ? (
+          <>
+            <div className="relative">
+              <input
+                type={showSignupPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
+                placeholder={t.storefront.password}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSignupPassword((current) => !current)}
+                className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
+                aria-label={showSignupPassword ? t.login.hidePassword : t.login.showPassword}
+              >
+                {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm outline-none ring-0"
+                placeholder={t.storefront.confirmPassword}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((current) => !current)}
+                className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 transition hover:text-slate-700"
+                aria-label={showConfirmPassword ? t.login.hidePassword : t.login.showPassword}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </>
+        ) : mode !== "reset" ? (
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0"
+            placeholder={t.storefront.password}
+            required
+            minLength={6}
+          />
+        ) : null}
+
+        {mode === "signin" ? (
+          <button
+            type="button"
+            onClick={() => setMode("reset")}
+            className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
+          >
+            {t.storefront.forgotPassword}
+          </button>
+        ) : null}
+
+        {mode === "reset" ? (
+          <button
+            type="button"
+            onClick={() => setMode("signin")}
+            className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
+          >
+            {t.forgotPassword.signIn}
+          </button>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full rounded-full bg-[var(--store-main-color)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSubmitting
+            ? t.login.submitting
+            : mode === "signup"
+              ? t.storefront.createAccount
+              : mode === "reset"
+                ? t.storefront.resetPassword
+                : t.storefront.signIn}
+        </button>
       </form>
 
       {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}

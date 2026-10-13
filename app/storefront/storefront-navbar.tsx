@@ -6,6 +6,8 @@ import { useState, type CSSProperties } from "react";
 import { Menu, Search, ShoppingCart, User, X } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 import type { StorefrontThemeId } from "@/lib/storefront-theme";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export type StorefrontCategory = {
   id: string;
@@ -30,6 +32,7 @@ export default function StorefrontNavbar({
   theme = "minimal",
   mainColor = "#0f172a",
 }: StorefrontNavbarProps) {
+  const { t } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -61,14 +64,14 @@ export default function StorefrontNavbar({
       className={headerClass}
     >
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-start justify-between gap-4 sm:gap-6">
           <div className="flex items-center gap-2">
             {categories.length > 0 ? (
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 md:hidden"
-                aria-label="Open categories menu"
+                aria-label={t.storefront.openCategoriesMenu}
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="storefront-mobile-categories"
               >
@@ -98,7 +101,7 @@ export default function StorefrontNavbar({
                   type="search"
                   name="q"
                   defaultValue={searchQuery}
-                  placeholder="Search products"
+                  placeholder={t.storefront.searchPlaceholder}
                   className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
                 />
               </div>
@@ -113,7 +116,7 @@ export default function StorefrontNavbar({
                   }`}
                   style={!activeCategory ? { color: resolvedMainColor } : undefined}
                 >
-                  All
+                  {t.storefront.all}
                 </Link>
                 {categories.map((cat) => (
                   <Link
@@ -132,10 +135,11 @@ export default function StorefrontNavbar({
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <LanguageToggle variant="light" />
             <Link
               href={accountHref}
-              aria-label="Account"
+              aria-label={t.storefront.account}
               onClick={closeMobileMenu}
               className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
                 isAccountActive
@@ -148,7 +152,7 @@ export default function StorefrontNavbar({
             <button
               type="button"
               data-prado-cart-toggle
-              aria-label="Cart"
+              aria-label={t.storefront.cart}
               className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
             >
               <ShoppingCart size={20} />
@@ -167,7 +171,7 @@ export default function StorefrontNavbar({
               type="search"
               name="q"
               defaultValue={searchQuery}
-              placeholder="Search products"
+              placeholder={t.storefront.searchPlaceholder}
               className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
             />
           </div>
@@ -179,7 +183,7 @@ export default function StorefrontNavbar({
           <button
             type="button"
             onClick={closeMobileMenu}
-            aria-label="Close categories menu overlay"
+            aria-label={t.storefront.closeCategoriesMenu}
             className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity md:hidden ${
               isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
@@ -193,12 +197,12 @@ export default function StorefrontNavbar({
             aria-hidden={!isMobileMenuOpen}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Categories</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{t.storefront.categories}</p>
               <button
                 type="button"
                 onClick={closeMobileMenu}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-                aria-label="Close categories menu"
+                aria-label={t.storefront.closeCategoriesMenu}
               >
                 <X size={18} />
               </button>
@@ -212,7 +216,7 @@ export default function StorefrontNavbar({
                     type="search"
                     name="q"
                     defaultValue={searchQuery}
-                    placeholder="Search products"
+                    placeholder={t.storefront.searchPlaceholder}
                     className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition focus:border-[var(--store-main-color)]"
                   />
                 </div>
@@ -226,7 +230,7 @@ export default function StorefrontNavbar({
                 }`}
                 style={!activeCategory ? { color: resolvedMainColor } : undefined}
               >
-                All
+                {t.storefront.all}
               </Link>
 
               {categories.map((cat) => (
