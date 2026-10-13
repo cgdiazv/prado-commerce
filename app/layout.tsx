@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { PublicFooter } from "@/components/public-footer";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import type { Language } from "@/lib/i18n/translations";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -27,14 +28,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const hdrs = await headers();
+  const cookieStore = await cookies();
+  const rawLang = cookieStore.get("prado_lang")?.value;
+  const initialLanguage: Language = rawLang === "en" || rawLang === "es" ? rawLang : "es";
+
   const isStorefrontRequest =
     hdrs.get("x-storefront-subdomain") === "1" ||
     Boolean(hdrs.get("x-storefront-custom-domain"));
 
   return (
-    <html lang="es" className={roboto.variable} suppressHydrationWarning>
+    <html lang={initialLanguage} className={roboto.variable} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <LanguageProvider>
+        <LanguageProvider initialLanguage={initialLanguage}>
           {children}
           <PublicFooter forceHidden={isStorefrontRequest} />
         </LanguageProvider>

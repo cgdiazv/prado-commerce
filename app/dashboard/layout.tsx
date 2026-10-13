@@ -20,13 +20,40 @@ type NavItem = {
   children?: NavChild[];
 };
 
+const KNOWN_ORDERS_STORAGE_KEY = "prado_dashboard_known_orders";
+
+function loadKnownOrders(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = sessionStorage.getItem(KNOWN_ORDERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed);
+      }
+    }
+  } catch {
+    // Ignore storage parse error
+  }
+  return new Set();
+}
+
+function persistKnownOrders(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(KNOWN_ORDERS_STORAGE_KEY, JSON.stringify(Array.from(ids).slice(-500)));
+  } catch {
+    // Ignore storage quota/security error
+  }
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const currentYear = new Date().getFullYear();
   const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
   const [isProcurementOpen, setIsProcurementOpen] = useState(pathname.startsWith("/dashboard/procurement"));
@@ -36,9 +63,17 @@ export default function DashboardLayout({
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
-  const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
+  const sessionStartedAtRef = useRef<number>(Date.now());
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const isInitializedRef = useRef(false);
   const [toast, setToast] = useState<{ id: string; title: string; message: string } | null>(null);
+
+  useEffect(() => {
+    const stored = loadKnownOrders();
+    for (const id of stored) {
+      knownOrderIdsRef.current.add(id);
+    }
+  }, []);
   const [currentUser, setCurrentUser] = useState<{
     id?: string;
     email?: string;
@@ -125,37 +160,41 @@ export default function DashboardLayout({
 
         if (!active) return;
 
-        setKnownOrderIds((prevKnown) => {
-          const nextKnown = new Set(prevKnown);
-          const newOrders: any[] = [];
-
+        // Establish initial baseline on first run without notifying
+        if (!isInitializedRef.current) {
+          isInitializedRef.current = true;
           for (const order of currentOrders) {
-            if (!nextKnown.has(order.id)) {
-              nextKnown.add(order.id);
-              newOrders.push(order);
+            knownOrderIdsRef.current.add(order.id);
+          }
+          persistKnownOrders(knownOrderIdsRef.current);
+          return;
+        }
+
+        const genuineNewOrders: typeof currentOrders = [];
+        for (const order of currentOrders) {
+          if (!knownOrderIdsRef.current.has(order.id)) {
+            knownOrderIdsRef.current.add(order.id);
+            const orderTime = new Date(order.createdAt).getTime();
+            if (!Number.isNaN(orderTime) && orderTime > sessionStartedAtRef.current) {
+              genuineNewOrders.push(order);
             }
           }
+        }
 
-          if (prevKnown.size === 0 && !isInitializedRef.current) {
-            isInitializedRef.current = true;
-            return nextKnown;
-          }
+        persistKnownOrders(knownOrderIdsRef.current);
 
-          if (isInitializedRef.current && newOrders.length > 0) {
-            const latestOrder = newOrders[0];
-            showToast({
-              id: latestOrder.id,
-              title: t.dashboard.newOrderTitle,
-              message: t.dashboard.newOrderMessage
-                .replace("{orderNumber}", String(latestOrder.orderNumber))
-                .replace("{currency}", latestOrder.currency)
-                .replace("{total}", latestOrder.total)
-                .replace("{storeName}", latestOrder.storeName),
-            });
-          }
-
-          return nextKnown;
-        });
+        if (genuineNewOrders.length > 0) {
+          const latestOrder = genuineNewOrders[0];
+          showToast({
+            id: latestOrder.id,
+            title: t.dashboard.newOrderTitle,
+            message: t.dashboard.newOrderMessage
+              .replace("{orderNumber}", String(latestOrder.orderNumber))
+              .replace("{currency}", latestOrder.currency)
+              .replace("{total}", latestOrder.total)
+              .replace("{storeName}", latestOrder.storeName),
+          });
+        }
       } catch (error) {
         console.error("Error polling orders:", error);
       }
@@ -295,7 +334,7 @@ export default function DashboardLayout({
   function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     return (
       <>
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 min-h-0 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -310,14 +349,14 @@ export default function DashboardLayout({
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <a
+                    <Link
                       href={item.href}
                       onClick={() => onNavigate?.()}
                       className="flex flex-1 items-center gap-3 px-3 py-1.5"
                     >
                       <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
                       <span>{item.label}</span>
-                    </a>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => toggleSection(item.href)}
@@ -328,7 +367,7 @@ export default function DashboardLayout({
                     </button>
                   </div>
                 ) : (
-                  <a
+                  <Link
                     href={item.href}
                     onClick={() => onNavigate?.()}
                     className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
@@ -339,7 +378,7 @@ export default function DashboardLayout({
                   >
                     <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
                     <span>{item.label}</span>
-                  </a>
+                  </Link>
                 )}
 
                 {item.children && isSectionOpen(item.href) ? (
@@ -361,7 +400,7 @@ export default function DashboardLayout({
                             : pathname === child.href;
 
                       return (
-                        <a
+                        <Link
                           key={`${child.href}:${child.label}`}
                           href={child.href}
                           onClick={() => onNavigate?.()}
@@ -372,7 +411,7 @@ export default function DashboardLayout({
                           }`}
                         >
                           {child.label}
-                        </a>
+                        </Link>
                       );
                     })}
                   </div>
@@ -383,7 +422,7 @@ export default function DashboardLayout({
 
           <div className="pt-1">
             <div className="my-2 border-t border-slate-200" />
-            <a
+            <Link
               href="/dashboard/help"
               onClick={() => onNavigate?.()}
               className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
@@ -394,11 +433,17 @@ export default function DashboardLayout({
             >
               <CircleHelp className={`h-4 w-4 shrink-0 ${isHelpActive ? "text-cyan-700" : "text-cyan-600"}`} />
               <span>{t.dashboard.help}</span>
-            </a>
+            </Link>
           </div>
         </nav>
 
-        <div className="mt-4 text-left">
+        <div className="mt-4 pt-3 border-t border-slate-100 text-left shrink-0">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 lg:hidden">
+            <span className="text-xs font-semibold text-slate-600">
+              {language === "es" ? "Idioma" : "Language"}
+            </span>
+            <LanguageToggle variant="light" />
+          </div>
           <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">
             © {currentYear} Prado Systems. {t.dashboard.rightsReserved}
           </p>
@@ -420,8 +465,10 @@ export default function DashboardLayout({
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
-            <LanguageToggle variant="light" />
-            <div className="h-6 w-px bg-slate-200" />
+            <div className="hidden lg:flex items-center">
+              <LanguageToggle variant="light" />
+            </div>
+            <div className="hidden h-6 w-px bg-slate-200 lg:block" />
             {(() => {
               const merchantName = currentUser?.name || stores[0]?.name || (currentUser?.email ? currentUser.email.split("@")[0] : "Merchant");
               const merchantInitial = merchantName.trim().charAt(0).toUpperCase() || "M";
@@ -506,7 +553,7 @@ export default function DashboardLayout({
           <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                <PradoLogo theme="light" subtitle="Merchant Dashboard" size="sm" />
+                <PradoLogo theme="light" subtitle={t.dashboard.merchantDashboard} size="sm" />
               </Link>
               <button
                 type="button"

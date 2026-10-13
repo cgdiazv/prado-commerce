@@ -783,7 +783,7 @@ export const translations: Record<Language, Translations> = {
       errorMessage: "Could not create reset link",
     },
     dashboard: {
-      merchantDashboard: "Merchant Dashboard",
+      merchantDashboard: "Dashboard",
       help: "Help",
       authenticated: "Authenticated",
       logout: "Sign out",

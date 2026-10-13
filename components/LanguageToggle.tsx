@@ -18,10 +18,11 @@ export function LanguageToggle({
   const { language, setLanguage } = useLanguage();
 
   const isDark = variant === "dark";
+  const hasDisplayOverride = /\b(hidden|flex|inline-flex|block|inline-block)\b/.test(className);
 
   return (
     <div
-      className={`inline-flex items-center rounded-full border transition-colors ${
+      className={`${hasDisplayOverride ? "" : "inline-flex "}items-center rounded-full border transition-colors ${
         isDark
           ? "border-cyan-200/30 bg-slate-950/50 text-cyan-100 shadow-[0_2px_10px_rgba(6,182,212,0.15)]"
           : "border-slate-200 bg-slate-100/80 text-slate-700 shadow-xs"

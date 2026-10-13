@@ -29,6 +29,12 @@ function subscribe(callback: () => void) {
 
 function getSnapshot(): Language {
   try {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|;\s*)prado_lang=([^;]+)/);
+      if (match && (match[1] === "en" || match[1] === "es")) {
+        return match[1] as Language;
+      }
+    }
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "en" || saved === "es") {
       return saved;
@@ -39,20 +45,30 @@ function getSnapshot(): Language {
   return "es";
 }
 
-function getServerSnapshot(): Language {
-  return "es";
-}
-
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
+export function LanguageProvider({
+  children,
+  initialLanguage = "es",
+}: {
+  children: React.ReactNode;
+  initialLanguage?: Language;
+}) {
+  const getServerSnapshot = React.useCallback(() => initialLanguage, [initialLanguage]);
   const language = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     document.documentElement.lang = language;
+    try {
+      document.cookie = `prado_lang=${language}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem(STORAGE_KEY, language);
+    } catch {
+      // Storage access blocked
+    }
   }, [language]);
 
   const setLanguage = (newLang: Language) => {
     try {
       localStorage.setItem(STORAGE_KEY, newLang);
+      document.cookie = `prado_lang=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
       document.documentElement.lang = newLang;
       listeners.forEach((listener) => listener());
     } catch {
