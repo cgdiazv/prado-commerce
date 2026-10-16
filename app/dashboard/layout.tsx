@@ -59,6 +59,7 @@ export default function DashboardLayout({
     if (pathname.startsWith("/dashboard/orders")) return "/dashboard/orders";
     if (pathname.startsWith("/dashboard/products")) return "/dashboard/products";
     if (pathname.startsWith("/dashboard/procurement")) return "/dashboard/procurement";
+    if (pathname.startsWith("/dashboard/customers")) return "/dashboard/customers";
     if (pathname.startsWith("/dashboard/stores")) return "/dashboard/stores";
     return null;
   });
@@ -259,7 +260,17 @@ export default function DashboardLayout({
         { href: "/dashboard/procurement/vendors", label: t.dashboard.vendors },
       ],
     },
-    { href: "/dashboard/customers", label: t.dashboard.customers, icon: Users },
+    {
+      href: "/dashboard/customers",
+      label: t.dashboard.customers,
+      icon: Users,
+      children: [
+        { href: "/dashboard/customers", label: t.dashboard.allCustomers },
+        { href: "/dashboard/customers/new", label: t.dashboard.addCustomer },
+        { href: "/dashboard/customers/groups", label: t.dashboard.customerGroups },
+        { href: "/dashboard/customers/groups/new", label: t.dashboard.newCustomerGroup },
+      ],
+    },
     {
       href: "/dashboard/stores",
       label: t.dashboard.stores,
@@ -288,6 +299,8 @@ export default function DashboardLayout({
       setOpenSection("/dashboard/products");
     } else if (pathname.startsWith("/dashboard/procurement")) {
       setOpenSection("/dashboard/procurement");
+    } else if (pathname.startsWith("/dashboard/customers")) {
+      setOpenSection("/dashboard/customers");
     } else if (pathname.startsWith("/dashboard/stores")) {
       setOpenSection("/dashboard/stores");
     }
@@ -372,6 +385,14 @@ export default function DashboardLayout({
                               : child.href === "/dashboard/products/categories"
                                 ? pathname === "/dashboard/products/categories"
                                 : pathname === "/dashboard/products"
+                            : item.href === "/dashboard/customers"
+                              ? child.href === "/dashboard/customers/groups/new"
+                                ? pathname === "/dashboard/customers/groups/new"
+                                : child.href === "/dashboard/customers/groups"
+                                  ? pathname === "/dashboard/customers/groups"
+                                  : child.href === "/dashboard/customers/new"
+                                    ? pathname === "/dashboard/customers/new"
+                                    : pathname === "/dashboard/customers"
                             : item.href === "/dashboard/stores"
                               ? child.label === "Themes"
                                 ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")

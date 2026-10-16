@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
@@ -192,6 +191,13 @@ export async function GET(request: Request) {
         firstName: true,
         lastName: true,
         phone: true,
+        groupId: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         shippingAddress: true,
         billingAddress: true,
         createdAt: true,
@@ -215,6 +221,7 @@ export async function POST(request: Request) {
     const firstName = String(body?.firstName || "").trim() || null;
     const lastName = String(body?.lastName || "").trim() || null;
     const phone = String(body?.phone || "").trim() || null;
+    const groupId = typeof body?.groupId === "string" ? body.groupId.trim() || null : null;
     const password = String(body?.password || "").trim();
     const passwordHashInput = String(body?.passwordHash || "").trim();
     const shippingAddress = normalizeAddress(body?.shippingAddress as AddressInput | undefined);
@@ -260,6 +267,7 @@ export async function POST(request: Request) {
       if (firstName && !existingCustomer.firstName) updateData.firstName = firstName;
       if (lastName && !existingCustomer.lastName) updateData.lastName = lastName;
       if (phone && !existingCustomer.phone) updateData.phone = phone;
+      if (groupId) updateData.groupId = groupId;
       if (password) updateData.passwordHash = hashSecret(password);
       else if (passwordHashInput && !existingCustomer.passwordHash) updateData.passwordHash = passwordHashInput;
       if (shippingAddress && !existingCustomer.shippingAddress) updateData.shippingAddress = shippingAddress;
@@ -276,6 +284,13 @@ export async function POST(request: Request) {
             firstName: true,
             lastName: true,
             phone: true,
+            groupId: true,
+            group: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             shippingAddress: true,
             billingAddress: true,
             createdAt: true,
@@ -313,6 +328,7 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         phone,
+        groupId: groupId ?? undefined,
         passwordHash: computedPasswordHash,
         shippingAddress: shippingAddress ?? undefined,
         billingAddress: billingAddress ?? undefined,
@@ -324,6 +340,13 @@ export async function POST(request: Request) {
         firstName: true,
         lastName: true,
         phone: true,
+        groupId: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         shippingAddress: true,
         billingAddress: true,
         createdAt: true,

@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
@@ -23,11 +24,14 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
     );
   }
 
-  let stores = [];
-  let customer = null;
+  let serializedStores: Array<{ id: string; name: string; currency: string }> = [];
+  let serializedCustomer: ComponentProps<typeof EditCustomerForm>["customer"] | null = null;
+  let serializedGroups: Array<{ id: string; name: string }> = [];
+  let isNotFoundError = false;
+  let loadError: string | null = null;
 
   try {
-    stores = await prisma.store.findMany({
+    const stores = await prisma.store.findMany({
       where: { ownerUserId: user.id },
       orderBy: { createdAt: "desc" },
       select: {
@@ -37,7 +41,7 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
       },
     });
 
-    customer = await prisma.customer.findFirst({
+    const customer = await prisma.customer.findFirst({
       where: {
         id,
         store: {
@@ -47,36 +51,58 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
     });
 
     if (!customer) {
-      notFound();
+      isNotFoundError = true;
+    } else {
+      const groups = await prisma.customerGroup.findMany({
+        where: { storeId: customer.storeId },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      serializedCustomer = JSON.parse(
+        JSON.stringify({
+          id: customer.id,
+          storeId: customer.storeId,
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone,
+          groupId: customer.groupId,
+          shippingAddress: customer.shippingAddress,
+          billingAddress: customer.billingAddress,
+        })
+      );
+
+      serializedStores = JSON.parse(JSON.stringify(stores));
+      serializedGroups = JSON.parse(JSON.stringify(groups));
     }
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && String((error as any).digest).startsWith("NEXT_NOT_FOUND")) {
-      throw error;
-    }
     console.error("[CUSTOMER_EDIT_PAGE_DB_ERROR]", error);
+    loadError = "Could not load customer details. Please check database connectivity and refresh.";
+  }
+
+  if (isNotFoundError) {
+    notFound();
+  }
+
+  if (loadError || !serializedCustomer) {
     return (
       <section className="min-w-0 space-y-6">
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Could not load customer details. Please check database connectivity and refresh.
+          {loadError || "Customer not found."}
         </div>
       </section>
     );
   }
 
-  const serializedCustomer = JSON.parse(
-    JSON.stringify({
-      id: customer.id,
-      storeId: customer.storeId,
-      email: customer.email,
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      phone: customer.phone,
-      shippingAddress: customer.shippingAddress,
-      billingAddress: customer.billingAddress,
-    })
+  return (
+    <EditCustomerForm
+      stores={serializedStores}
+      customer={serializedCustomer}
+      groups={serializedGroups}
+    />
   );
-
-  const serializedStores = JSON.parse(JSON.stringify(stores));
-
-  return <EditCustomerForm stores={serializedStores} customer={serializedCustomer} />;
 }

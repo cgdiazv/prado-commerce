@@ -19,6 +19,20 @@ type AddressForm = {
   country: string;
 };
 
+type CustomerGroup = {
+  id: string;
+  name: string;
+};
+
+type AddressRecord = {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+};
+
 type Customer = {
   id: string;
   storeId: string;
@@ -26,20 +40,23 @@ type Customer = {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
-  shippingAddress: any;
-  billingAddress: any;
+  groupId?: string | null;
+  shippingAddress: AddressRecord | null;
+  billingAddress: AddressRecord | null;
 };
 
 type EditCustomerFormProps = {
   stores: Store[];
   customer: Customer;
+  groups?: CustomerGroup[];
 };
 
-export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
+export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomerFormProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [groupId, setGroupId] = useState(customer.groupId ?? "");
   const [email, setEmail] = useState(customer.email);
   const [firstName, setFirstName] = useState(customer.firstName ?? "");
   const [lastName, setLastName] = useState(customer.lastName ?? "");
@@ -100,6 +117,7 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
           firstName,
           lastName,
           phone,
+          groupId: groupId || null,
           shippingAddress,
           billingAddress,
         }),
@@ -210,6 +228,30 @@ export function EditCustomerForm({ stores, customer }: EditCustomerFormProps) {
                 placeholder="Doe"
                 className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
+            </label>
+
+            <label className="flex flex-col gap-2 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">{isEs ? "Grupo de clientes" : "Customer group"}</span>
+                <a
+                  href={`/dashboard/customers/groups/new?storeId=${encodeURIComponent(customer.storeId)}`}
+                  className="text-xs font-semibold text-cyan-700 hover:text-cyan-800"
+                >
+                  {isEs ? "+ Crear nuevo grupo" : "+ Create new group"}
+                </a>
+              </div>
+              <select
+                value={groupId}
+                onChange={(event) => setGroupId(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">{isEs ? "Ninguno (Cliente estándar)" : "None (Standard customer)"}</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         </div>

@@ -3,13 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Shield } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
   id: string;
   name: string;
   currency: string;
+};
+
+type CustomerGroup = {
+  id: string;
+  name: string;
 };
 
 type Customer = {
@@ -19,6 +24,8 @@ type Customer = {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  groupId?: string | null;
+  group?: { id: string; name: string } | null;
   shippingAddress: unknown | null;
   billingAddress: unknown | null;
   createdAt: string | Date;
@@ -27,13 +34,24 @@ type Customer = {
 type CustomersDashboardProps = {
   initialStores: Store[];
   initialCustomers: Customer[];
+  initialGroups?: CustomerGroup[];
   selectedStoreId: string | null;
   setupError?: string | null;
 };
 
+function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
+  return (
+    <span className="ml-1 flex flex-col leading-none text-[9px]">
+      <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+      <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+    </span>
+  );
+}
+
 export function CustomersDashboard({
   initialStores,
   initialCustomers,
+  initialGroups = [],
   selectedStoreId,
   setupError = null,
 }: CustomersDashboardProps) {
@@ -42,10 +60,12 @@ export function CustomersDashboard({
   const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [customers, setCustomers] = useState(initialCustomers);
+  const [groups, setGroups] = useState<CustomerGroup[]>(initialGroups);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<"name" | "email" | "phone" | "createdAt">("createdAt");
+  const [sortField, setSortField] = useState<"name" | "email" | "phone" | "group" | "createdAt">("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,22 +81,36 @@ export function CustomersDashboard({
         return false;
       }
 
+      if (selectedGroupFilter) {
+        if (selectedGroupFilter === "__none__") {
+          if (customer.groupId || customer.group?.id) return false;
+        } else {
+          if (customer.groupId !== selectedGroupFilter && customer.group?.id !== selectedGroupFilter) {
+            return false;
+          }
+        }
+      }
+
       if (!normalizedQuery) {
         return true;
       }
 
       const fullName = `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim();
-      return [fullName, customer.email, customer.phone ?? ""]
+      const groupName = customer.group?.name ?? "";
+      return [fullName, customer.email, customer.phone ?? "", groupName]
         .some((value) => value.toLowerCase().includes(normalizedQuery));
     });
     
     return [...filtered].sort((a, b) => {
-      let valA: any;
-      let valB: any;
+      let valA: string | number;
+      let valB: string | number;
 
       if (sortField === "name") {
         valA = `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim().toLowerCase();
         valB = `${b.firstName ?? ""} ${b.lastName ?? ""}`.trim().toLowerCase();
+      } else if (sortField === "group") {
+        valA = (a.group?.name ?? "").toLowerCase();
+        valB = (b.group?.name ?? "").toLowerCase();
       } else if (sortField === "createdAt") {
         valA = new Date(a.createdAt).getTime();
         valB = new Date(b.createdAt).getTime();
@@ -89,30 +123,37 @@ export function CustomersDashboard({
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [customers, activeStoreId, searchQuery, sortField, sortDirection]);
+  }, [customers, activeStoreId, searchQuery, selectedGroupFilter, sortField, sortDirection]);
 
   const totalCustomers = activeCustomers.length;
   const totalPages = Math.max(1, Math.ceil(totalCustomers / pageSize));
-  const pageStart = totalCustomers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const pageEnd = Math.min(currentPage * pageSize, totalCustomers);
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = totalCustomers === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safeCurrentPage * pageSize, totalCustomers);
 
   const paginatedCustomers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    const start = (safeCurrentPage - 1) * pageSize;
     return activeCustomers.slice(start, start + pageSize);
-  }, [activeCustomers, currentPage, pageSize]);
+  }, [activeCustomers, safeCurrentPage, pageSize]);
 
   const paginatedCustomerIds = useMemo(
     () => paginatedCustomers.map((customer) => customer.id),
     [paginatedCustomers],
   );
 
+  const activeCustomerIdSet = useMemo(
+    () => new Set(activeCustomers.map((customer) => customer.id)),
+    [activeCustomers],
+  );
+
+  const validSelectedCustomerIds = useMemo(
+    () => selectedCustomerIds.filter((id) => activeCustomerIdSet.has(id)),
+    [selectedCustomerIds, activeCustomerIdSet],
+  );
+
   const selectedOnPageCount = useMemo(
-    () => paginatedCustomerIds.filter((id) => selectedCustomerIds.includes(id)).length,
-    [paginatedCustomerIds, selectedCustomerIds],
+    () => paginatedCustomerIds.filter((id) => validSelectedCustomerIds.includes(id)).length,
+    [paginatedCustomerIds, validSelectedCustomerIds],
   );
 
   const allOnPageSelected = paginatedCustomerIds.length > 0 && selectedOnPageCount === paginatedCustomerIds.length;
@@ -129,35 +170,33 @@ export function CustomersDashboard({
     setCurrentPage(1);
   };
 
-  function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
-    return (
-      <span className="ml-1 flex flex-col leading-none text-[9px]">
-        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
-        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
-      </span>
-    );
-  }
-
   async function refreshCustomers(storeId: string) {
-    const response = await fetch(`/api/customers?storeId=${encodeURIComponent(storeId)}`, {
-      cache: "no-store",
-    });
+    const [custRes, groupRes] = await Promise.all([
+      fetch(`/api/customers?storeId=${encodeURIComponent(storeId)}`, { cache: "no-store" }),
+      fetch(`/api/customer-groups?storeId=${encodeURIComponent(storeId)}`, { cache: "no-store" }),
+    ]);
 
-    if (!response.ok) {
+    if (!custRes.ok) {
       throw new Error("Failed to refresh customers");
     }
 
-    const data = (await response.json()) as Customer[];
+    const data = (await custRes.json()) as Customer[];
     setCustomers((current) => [
       ...current.filter((customer) => customer.storeId !== storeId),
       ...data,
     ]);
+
+    if (groupRes.ok) {
+      const gData = await groupRes.json();
+      setGroups(gData);
+    }
   }
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
     setError(null);
     setCurrentPage(1);
+    setSelectedGroupFilter("");
     setSelectedCustomerIds([]);
     setBulkAction("");
 
@@ -167,11 +206,6 @@ export function CustomersDashboard({
       setError("Failed to load customers for this store.");
     }
   }
-
-  useEffect(() => {
-    const activeCustomerIdSet = new Set(activeCustomers.map((customer) => customer.id));
-    setSelectedCustomerIds((current) => current.filter((id) => activeCustomerIdSet.has(id)));
-  }, [activeCustomers]);
 
   useEffect(() => {
     if (!selectAllRef.current) {
@@ -211,7 +245,7 @@ export function CustomersDashboard({
       return;
     }
 
-    if (selectedCustomerIds.length === 0) {
+    if (validSelectedCustomerIds.length === 0) {
       return;
     }
 
@@ -220,7 +254,7 @@ export function CustomersDashboard({
 
     try {
       const responses = await Promise.all(
-        selectedCustomerIds.map((customerId) =>
+        validSelectedCustomerIds.map((customerId) =>
           fetch(`/api/customers/${customerId}`, {
             method: "DELETE",
           }),
@@ -231,7 +265,7 @@ export function CustomersDashboard({
         throw new Error("Failed to delete selected customers");
       }
 
-      const selectedIdSet = new Set(selectedCustomerIds);
+      const selectedIdSet = new Set(validSelectedCustomerIds);
       setCustomers((current) => current.filter((customer) => !selectedIdSet.has(customer.id)));
       setSelectedCustomerIds([]);
       setBulkAction("");
@@ -270,13 +304,22 @@ export function CustomersDashboard({
             </p>
           </div>
 
-          <Link
-            href={createHref}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Plus className="h-4 w-4" />
-            {isEs ? "Nuevo cliente" : "New customer"}
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
+            >
+              <Shield className="h-4 w-4 text-cyan-600" />
+              {isEs ? "Grupos de clientes" : "Customer Groups"}
+            </Link>
+            <Link
+              href={createHref}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Plus className="h-4 w-4" />
+              {isEs ? "Nuevo cliente" : "New customer"}
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
@@ -306,11 +349,33 @@ export function CustomersDashboard({
                   setSearchQuery(event.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder={isEs ? "Nombre, correo o teléfono" : "Name, email, or phone"}
+                placeholder={isEs ? "Nombre, correo, teléfono o grupo" : "Name, email, phone, or group"}
                 className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
             </div>
           </label>
+
+          {groups.length > 0 && (
+            <div className="w-full max-w-xs flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Filtrar por grupo" : "Filter by group"}</span>
+              <select
+                value={selectedGroupFilter}
+                onChange={(e) => {
+                  setSelectedGroupFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">{isEs ? "Todos los grupos" : "All groups"}</option>
+                <option value="__none__">{isEs ? "Sin grupo" : "Without group"}</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
@@ -323,7 +388,7 @@ export function CustomersDashboard({
                 disabled={
                   isApplyingBulkAction ||
                   !bulkAction ||
-                  (bulkAction === "delete" && selectedCustomerIds.length === 0)
+                  (bulkAction === "delete" && validSelectedCustomerIds.length === 0)
                 }
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -366,8 +431,8 @@ export function CustomersDashboard({
                 <div className="flex items-center gap-4">
                   <p className="whitespace-nowrap text-xs font-medium text-slate-600">
                     {isEs
-                      ? `${selectedCustomerIds.length} seleccionado${selectedCustomerIds.length === 1 ? "" : "s"}`
-                      : `${selectedCustomerIds.length} selected`}
+                      ? `${validSelectedCustomerIds.length} seleccionado${validSelectedCustomerIds.length === 1 ? "" : "s"}`
+                      : `${validSelectedCustomerIds.length} selected`}
                   </p>
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
                     {isEs ? "Filas por página" : "Rows per page"}
@@ -436,6 +501,16 @@ export function CustomersDashboard({
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
+                        onClick={() => handleSort("group")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        {isEs ? "Grupo" : "Group"}
+                        <SortIndicator active={sortField === "group"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
                         onClick={() => handleSort("createdAt")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
@@ -453,12 +528,12 @@ export function CustomersDashboard({
                       <tr
                         key={customer.id}
                         onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
-                        className={`cursor-pointer transition-colors ${selectedCustomerIds.includes(customer.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
+                        className={`cursor-pointer transition-colors ${validSelectedCustomerIds.includes(customer.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
                       >
                         <td className="px-4 py-3 align-top">
                           <input
                             type="checkbox"
-                            checked={selectedCustomerIds.includes(customer.id)}
+                            checked={validSelectedCustomerIds.includes(customer.id)}
                             onChange={() => toggleCustomerSelection(customer.id)}
                             onClick={(event) => event.stopPropagation()}
                             aria-label={`Select ${fullName || customer.email}`}
@@ -470,6 +545,15 @@ export function CustomersDashboard({
                         </td>
                         <td className="px-4 py-3 align-top text-slate-700">{customer.email}</td>
                         <td className="px-4 py-3 align-top text-slate-700">{customer.phone || "-"}</td>
+                        <td className="px-4 py-3 align-top">
+                          {customer.group?.name ? (
+                            <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700 border border-cyan-200/80">
+                              {customer.group.name}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 align-top text-slate-600">
                           {new Date(customer.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                         </td>
@@ -484,20 +568,20 @@ export function CustomersDashboard({
                 <button
                   type="button"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage <= 1}
+                  disabled={safeCurrentPage <= 1}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isEs ? "Anterior" : "Previous"}
                 </button>
                 <p className="text-xs font-medium text-slate-600">
                   {isEs
-                    ? `Página ${currentPage} de ${totalPages}`
-                    : `Page ${currentPage} of ${totalPages}`}
+                    ? `Página ${safeCurrentPage} de ${totalPages}`
+                    : `Page ${safeCurrentPage} of ${totalPages}`}
                 </p>
                 <button
                   type="button"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage >= totalPages}
+                  disabled={safeCurrentPage >= totalPages}
                   className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isEs ? "Siguiente" : "Next"}

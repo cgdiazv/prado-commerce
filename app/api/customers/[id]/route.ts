@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
 
@@ -113,6 +113,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     const firstName = String(body?.firstName || "").trim() || null;
     const lastName = String(body?.lastName || "").trim() || null;
     const phone = String(body?.phone || "").trim() || null;
+    const groupId = body?.groupId === undefined ? undefined : (typeof body.groupId === "string" ? body.groupId.trim() || null : null);
     const shippingAddress = normalizeAddress(body?.shippingAddress as AddressInput | undefined);
     const billingAddress = normalizeAddress(body?.billingAddress as AddressInput | undefined);
 
@@ -120,15 +121,29 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       return corsJson({ error: "Email is required" }, { status: 400 });
     }
 
+    const updateData: Record<string, unknown> = {
+      email,
+      firstName,
+      lastName,
+      phone,
+      shippingAddress: shippingAddress ?? Prisma.JsonNull,
+      billingAddress: billingAddress ?? Prisma.JsonNull,
+    };
+
+    if (groupId !== undefined) {
+      updateData.groupId = groupId;
+    }
+
     const updatedCustomer = await prisma.customer.update({
       where: { id },
-      data: {
-        email,
-        firstName,
-        lastName,
-        phone,
-        shippingAddress: (shippingAddress ?? null) as any,
-        billingAddress: (billingAddress ?? null) as any,
+      data: updateData,
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -140,6 +155,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         firstName: updatedCustomer.firstName,
         lastName: updatedCustomer.lastName,
         phone: updatedCustomer.phone,
+        groupId: updatedCustomer.groupId,
+        group: updatedCustomer.group,
       },
     });
   } catch (error) {

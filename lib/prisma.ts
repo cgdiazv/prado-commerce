@@ -35,15 +35,25 @@ const adapter =
     },
   );
 
+const existingPrisma = globalForPrisma.prisma;
+const isStalePrisma =
+  Boolean(existingPrisma) &&
+  typeof (existingPrisma as unknown as Record<string, unknown>).customerGroup === "undefined";
+
+if (isStalePrisma) {
+  (existingPrisma as unknown as { $disconnect?: () => Promise<void> }).$disconnect?.().catch(() => {});
+}
+
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
-  });
+  existingPrisma && !isStalePrisma
+    ? existingPrisma
+    : new PrismaClient({
+        adapter,
+        log:
+          process.env.NODE_ENV === "development"
+            ? ["query", "error", "warn"]
+            : ["error"],
+      });
 
 globalForPrisma.adapter = adapter;
 globalForPrisma.prisma = prisma;

@@ -28,18 +28,31 @@ const emptyAddress: AddressForm = {
   country: "",
 };
 
+type CustomerGroup = {
+  id: string;
+  storeId?: string;
+  name: string;
+};
+
 type NewCustomerFormProps = {
   stores: Store[];
   selectedStoreId: string | null;
+  initialGroups?: CustomerGroup[];
   setupError?: string | null;
 };
 
-export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: NewCustomerFormProps) {
+export function NewCustomerForm({
+  stores,
+  selectedStoreId,
+  initialGroups = [],
+  setupError = null,
+}: NewCustomerFormProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
 
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? stores[0]?.id ?? "");
+  const [groupId, setGroupId] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -78,6 +91,7 @@ export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: 
         },
         body: JSON.stringify({
           storeId: activeStoreId,
+          groupId: groupId || null,
           email,
           firstName,
           lastName,
@@ -198,6 +212,32 @@ export function NewCustomerForm({ stores, selectedStoreId, setupError = null }: 
                 placeholder="Doe"
                 className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
               />
+            </label>
+
+            <label className="flex flex-col gap-2 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">{isEs ? "Grupo de clientes" : "Customer group"}</span>
+                <a
+                  href={`/dashboard/customers/groups/new${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
+                  className="text-xs font-semibold text-cyan-700 hover:text-cyan-800"
+                >
+                  {isEs ? "+ Crear nuevo grupo" : "+ Create new group"}
+                </a>
+              </div>
+              <select
+                value={groupId}
+                onChange={(event) => setGroupId(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">{isEs ? "Ninguno (Cliente estándar)" : "None (Standard customer)"}</option>
+                {initialGroups
+                  .filter((g) => !g.storeId || g.storeId === activeStoreId)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+              </select>
             </label>
           </div>
         </div>

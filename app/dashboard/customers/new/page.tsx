@@ -22,8 +22,13 @@ export default async function NewCustomerPage({ searchParams }: NewCustomerPageP
     );
   }
 
+  let stores: Array<{ id: string; name: string; currency: string }> = [];
+  let groups: Array<{ id: string; storeId: string; name: string }> = [];
+  let selectedStoreId: string | null = null;
+  let setupError: string | null = null;
+
   try {
-    const stores = await prisma.store.findMany({
+    stores = await prisma.store.findMany({
       where: { ownerUserId: user.id },
       orderBy: { createdAt: "desc" },
       select: {
@@ -33,18 +38,30 @@ export default async function NewCustomerPage({ searchParams }: NewCustomerPageP
       },
     });
 
-    const selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
 
-    return <NewCustomerForm stores={stores} selectedStoreId={selectedStoreId} />;
+    groups = stores.length
+      ? await prisma.customerGroup.findMany({
+          where: { storeId: { in: stores.map((s) => s.id) } },
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            storeId: true,
+            name: true,
+          },
+        })
+      : [];
   } catch (error) {
     console.error("[NEW_CUSTOMER_PAGE_DB_ERROR]", error);
-
-    return (
-      <NewCustomerForm
-        stores={[]}
-        selectedStoreId={null}
-        setupError="Could not load stores. Check DATABASE_URL, run migrations, and make sure Postgres is reachable."
-      />
-    );
+    setupError = "Could not load stores. Check DATABASE_URL, run migrations, and make sure Postgres is reachable.";
   }
+
+  return (
+    <NewCustomerForm
+      stores={stores}
+      selectedStoreId={selectedStoreId}
+      initialGroups={groups}
+      setupError={setupError}
+    />
+  );
 }

@@ -146,6 +146,10 @@ export interface Translations {
     purchaseOrders: string;
     vendors: string;
     customers: string;
+    allCustomers: string;
+    addCustomer: string;
+    customerGroups: string;
+    newCustomerGroup: string;
     tools: string;
     importTables: string;
     exportTables: string;
@@ -476,6 +480,10 @@ export const translations: Record<Language, Translations> = {
       purchaseOrders: "Órdenes de compra",
       vendors: "Proveedores",
       customers: "Clientes",
+      allCustomers: "Todos los clientes",
+      addCustomer: "Nuevo cliente",
+      customerGroups: "Grupos de clientes",
+      newCustomerGroup: "Nuevo grupo",
       tools: "Herramientas",
       importTables: "Importar tablas",
       exportTables: "Exportar tablas",
@@ -804,6 +812,10 @@ export const translations: Record<Language, Translations> = {
       purchaseOrders: "Purchase Orders",
       vendors: "Vendors",
       customers: "Customers",
+      allCustomers: "All Customers",
+      addCustomer: "New Customer",
+      customerGroups: "Customer Groups",
+      newCustomerGroup: "New Customer Group",
       tools: "Tools",
       importTables: "Import Tables",
       exportTables: "Export Tables",

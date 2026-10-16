@@ -100,6 +100,7 @@ model Store {
   carts          Cart[]
   orders         Order[]
   customers      Customer[]
+  customerGroups CustomerGroup[]
   vendors        Vendor[]
   purchaseOrders PurchaseOrder[]
   purchaseReceipts PurchaseReceipt[]
@@ -299,6 +300,9 @@ model Customer {
   billingAddress  Json?
   savedAddresses  Json?
 
+  groupId   String?
+  group     CustomerGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
   orders    Order[]
   carts     Cart[]
 
@@ -306,6 +310,24 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   @@unique([storeId, email])
+  @@index([storeId])
+  @@index([groupId])
+}
+
+model CustomerGroup {
+  id          String     @id @default(cuid())
+  storeId     String
+  store       Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?    @db.Text
+
+  customers   Customer[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([storeId, name])
   @@index([storeId])
 }
 
