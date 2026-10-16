@@ -83,6 +83,7 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
         ...variant,
         price: variant.price.toString(),
         compareAtPrice: variant.compareAtPrice?.toString() ?? null,
+        price3: variant.price3?.toString() ?? null,
         createdAt: variant.createdAt.toISOString(),
         updatedAt: variant.updatedAt.toISOString(),
       })),

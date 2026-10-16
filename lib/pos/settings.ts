@@ -96,5 +96,6 @@ export function resolvePosSettings(
     receiptFooterText: existing.receiptFooterText ?? defaults.receiptFooterText,
     allowManualDiscounts: existing.allowManualDiscounts ?? defaults.allowManualDiscounts,
     allowCustomCashierName: existing.allowCustomCashierName ?? defaults.allowCustomCashierName,
+    defaultTaxRate: existing.defaultTaxRate !== undefined ? existing.defaultTaxRate : null,
   };
 }

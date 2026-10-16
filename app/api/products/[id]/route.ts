@@ -13,6 +13,7 @@ type ProductVariantInput = {
   title: string;
   price: string | number;
   compareAtPrice?: string | number | null;
+  price3?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
   options?: unknown;
@@ -62,6 +63,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title : "Default",
       price: candidate.price,
       compareAtPrice: candidate.compareAtPrice ?? null,
+      price3: candidate.price3 ?? null,
       inventory: candidate.inventory ?? 0,
       trackInventory: candidate.trackInventory ?? true,
       options: candidate.options ?? null,
@@ -193,6 +195,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     if (typeof taxable === "boolean") {
       updates.taxable = taxable;
+    } else if (typeof taxable === "string") {
+      updates.taxable = taxable !== "false" && taxable !== "0";
     }
 
     if (productType) {
@@ -221,6 +225,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           title: variant.title,
           price: toDecimal(variant.price, 0) ?? new Prisma.Decimal("0"),
           compareAtPrice: toDecimal(variant.compareAtPrice, null),
+          price3: toDecimal(variant.price3, null),
           inventory: variant.inventory ?? 0,
           trackInventory: variant.trackInventory ?? true,
           ...(variant.options === null || variant.options === undefined

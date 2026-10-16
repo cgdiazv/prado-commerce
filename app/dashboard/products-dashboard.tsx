@@ -19,6 +19,7 @@ type ProductVariant = {
   title: string;
   price: string;
   compareAtPrice: string | null;
+  price3?: string | null;
   inventory: number;
   trackInventory: boolean;
   options: unknown;

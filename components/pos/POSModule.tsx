@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Search,
   ShoppingCart,
@@ -57,7 +57,8 @@ export interface CartItem {
   price: number;
   selectedTier?: "P1" | "P2" | "P3";
   quantity: number;
-  taxRate: number; // 0.15 for 15% tax, 0 for exempt
+  taxRate: number; // calculated tax rate (0 for exempt)
+  taxable?: boolean; // false if marked as exempt/no-tax (overrides general settings)
   trackingType?: string;
   selectedLot?: string;
   selectedSerial?: string;
@@ -290,6 +291,129 @@ export default function POSModule({
   }, [inventory]);
 
   // ----------------------------------------------------
+  // Dynamic Tax Rate from Settings (Tax Settings & POS Settings)
+  // ----------------------------------------------------
+  const [localTaxPercent, setLocalTaxPercent] = useState<number | null>(null);
+
+  useEffect(() => {
+    const readStorageTax = () => {
+      try {
+        const saved = localStorage.getItem("prado_tax_settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.taxCategories) && parsed.taxCategories.length > 0) {
+            const cat =
+              parsed.taxCategories.find((c: any) => c.code === "GEN" || c.name?.toLowerCase().includes("general")) ||
+              parsed.taxCategories[0];
+            const parsedRate = parseFloat(cat.defaultRate);
+            if (!isNaN(parsedRate) && parsedRate >= 0) {
+              setLocalTaxPercent(parsedRate);
+              return;
+            }
+          }
+        }
+      } catch {}
+      setLocalTaxPercent(null);
+    };
+
+    readStorageTax();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "prado_tax_settings") {
+        readStorageTax();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  const configuredTaxPercent = useMemo(() => {
+    // 1. Check posSettings defaultTaxRate
+    if (typeof posSettings?.defaultTaxRate === "number" && !isNaN(posSettings.defaultTaxRate)) {
+      return posSettings.defaultTaxRate;
+    }
+
+    // 2. Read from localTaxPercent (from Dashboard > Settings > Tax)
+    if (localTaxPercent !== null) {
+      return localTaxPercent;
+    }
+
+    // 3. Fallback standard default: 15%
+    return 15;
+  }, [posSettings, localTaxPercent]);
+
+  const displayTaxPercent = useMemo(() => {
+    const rounded = Math.round(configuredTaxPercent * 100) / 100;
+    return rounded.toString();
+  }, [configuredTaxPercent]);
+
+  const configuredTaxRate = configuredTaxPercent / 100;
+
+  const isProductTaxable = useCallback((product?: { taxable?: boolean | string | number | null } | null): boolean => {
+    if (!product) return true;
+    if (
+      product.taxable === false ||
+      product.taxable === "false" ||
+      product.taxable === 0 ||
+      product.taxable === "0"
+    ) {
+      return false;
+    }
+    return true;
+  }, []);
+
+  const getProductTaxRate = useCallback(
+    (product: { taxable?: boolean | string | number | null; category?: string | null }) => {
+      // INDIVIDUAL OVERRIDE: If product is marked as no tax, tax is strictly 0%
+      if (!isProductTaxable(product)) {
+        return 0;
+      }
+
+      // Check if category has a matching rate in taxCategories
+      if (product.category && typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem("prado_tax_settings");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed.taxCategories)) {
+              const matched = parsed.taxCategories.find(
+                (c: any) =>
+                  c.name?.toLowerCase() === product.category?.toLowerCase() ||
+                  c.code?.toLowerCase() === product.category?.toLowerCase()
+              );
+              if (matched) {
+                const r = parseFloat(matched.defaultRate);
+                if (!isNaN(r) && r >= 0) return r / 100;
+              }
+            }
+          }
+        } catch {}
+      }
+
+      return configuredTaxRate;
+    },
+    [configuredTaxRate, isProductTaxable]
+  );
+
+  // Sync active cart line items whenever configuredTaxRate or inventory updates
+  useEffect(() => {
+    setCart((prev) => {
+      let changed = false;
+      const updated = prev.map((item) => {
+        const prod = inventory.find((p) => p.id === item.productId || p.sku === item.sku);
+        const itemTaxable = prod ? isProductTaxable(prod) : isProductTaxable(item);
+        const correctRate = itemTaxable ? getProductTaxRate(prod || item) : 0;
+        if (item.taxRate !== correctRate || item.taxable !== itemTaxable) {
+          changed = true;
+          return { ...item, taxable: itemTaxable, taxRate: correctRate };
+        }
+        return item;
+      });
+      return changed ? updated : prev;
+    });
+  }, [configuredTaxRate, inventory, getProductTaxRate, isProductTaxable]);
+
+  // ----------------------------------------------------
   // Cart Actions
   // ----------------------------------------------------
   const handleAddToCart = (product: InventoryItem) => {
@@ -304,6 +428,7 @@ export default function POSModule({
         );
       }
 
+      const itemTaxable = isProductTaxable(product);
       const newItem: CartItem = {
         id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         productId: product.id,
@@ -312,7 +437,8 @@ export default function POSModule({
         price: Number(product.price) || 0,
         selectedTier: "P1",
         quantity: 1,
-        taxRate: product.taxable === false ? 0 : 0.15, // 0% if exempt/non-taxable, 15% standard ISV
+        taxable: itemTaxable,
+        taxRate: itemTaxable ? getProductTaxRate(product) : 0,
         trackingType: product.trackingType,
         imageUrl: product.imageUrl,
         maxStock: product.quantity,
@@ -407,7 +533,9 @@ export default function POSModule({
     cart.forEach((item) => {
       const lineSubtotal = item.price * item.quantity;
       subtotal += lineSubtotal;
-      isv15 += lineSubtotal * item.taxRate;
+      if (item.taxable !== false && item.taxRate > 0) {
+        isv15 += lineSubtotal * item.taxRate;
+      }
     });
 
     const total = subtotal + isv15;
@@ -427,6 +555,34 @@ export default function POSModule({
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "CREDITO">("EFECTIVO");
   const [amountReceived, setAmountReceived] = useState<string>("");
+  const [convenienceFeePercent, setConvenienceFeePercent] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("prado_pos_card_fee_percent");
+        if (saved) return saved;
+        // Fallback check old key format if migrated
+        const oldSaved = localStorage.getItem("prado_pos_saved_convenience_fee");
+        if (oldSaved) {
+          const parsed = JSON.parse(oldSaved);
+          if (parsed && typeof parsed.percent === "number") return parsed.percent.toString();
+        }
+      } catch {}
+    }
+    return "";
+  });
+
+  const handleUpdateFeePercent = useCallback((val: string) => {
+    setConvenienceFeePercent(val);
+    if (typeof window !== "undefined") {
+      try {
+        if (val && parseFloat(val) > 0) {
+          localStorage.setItem("prado_pos_card_fee_percent", val);
+        } else {
+          localStorage.removeItem("prado_pos_card_fee_percent");
+        }
+      } catch {}
+    }
+  }, []);
   const [documentType, setDocumentType] = useState<"TICKET" | "SAR_INVOICE">("TICKET");
 
   // Active Register & Shift/Cashier State with localStorage persistence
@@ -659,16 +815,44 @@ export default function POSModule({
   const [completedSale, setCompletedSale] = useState<any | null>(null);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
 
+  // Convenience Fee calculation for Card payments (percentage of total)
+  const cardFee = useMemo(() => {
+    if (paymentMethod !== "TARJETA") return 0;
+    const parsedPercent = parseFloat(convenienceFeePercent);
+    if (isNaN(parsedPercent) || parsedPercent <= 0) return 0;
+    return Math.round(((cartTotals.total * parsedPercent) / 100) * 100) / 100;
+  }, [paymentMethod, convenienceFeePercent, cartTotals.total]);
+
+  const payableTotal = useMemo(() => {
+    return cartTotals.total + cardFee;
+  }, [cartTotals.total, cardFee]);
+
   const openCheckout = () => {
     if (cart.length === 0) return;
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("prado_pos_card_fee_percent");
+        if (saved) {
+          setConvenienceFeePercent(saved);
+        } else {
+          const oldSaved = localStorage.getItem("prado_pos_saved_convenience_fee");
+          if (oldSaved) {
+            const parsed = JSON.parse(oldSaved);
+            if (parsed && typeof parsed.percent === "number") {
+              setConvenienceFeePercent(parsed.percent.toString());
+            }
+          }
+        }
+      } catch {}
+    }
     setAmountReceived(cartTotals.total.toFixed(2));
     setShowCheckoutModal(true);
   };
 
   const changeDue = useMemo(() => {
     const received = parseFloat(amountReceived) || 0;
-    return Math.max(0, received - cartTotals.total);
-  }, [amountReceived, cartTotals.total]);
+    return Math.max(0, received - payableTotal);
+  }, [amountReceived, payableTotal]);
 
   // Quick Cash Denominations
   const quickCashOptions = useMemo(() => {
@@ -677,7 +861,7 @@ export default function POSModule({
       cartTotals.total,
       exact,
       exact <= 50 ? 50 : exact <= 100 ? 100 : exact <= 200 ? 200 : 500,
-      exact <= 500 ? 500 : 1000,
+      exact <= 50 ? 100 : exact <= 100 ? 200 : exact <= 200 ? 500 : 1000,
     ].filter((v, i, a) => a.indexOf(v) === i && v >= cartTotals.total);
   }, [cartTotals.total]);
 
@@ -690,6 +874,7 @@ export default function POSModule({
       const ticketNumber = `POS-${Date.now().toString().slice(-6)}`;
       const saleDate = new Date();
       const rep = salesReps.find((r) => r.name.toLowerCase() === selectedSalesRep.toLowerCase() || r.id === selectedSalesRep);
+      const finalTotal = payableTotal;
 
       const invoicePayload = {
         storeId: storeId || undefined,
@@ -704,7 +889,8 @@ export default function POSModule({
         paymentMethod: paymentMethod === "CREDITO" ? (isEs ? "Crédito" : "Credit") : paymentMethod === "TARJETA" ? (isEs ? "Tarjeta" : "Card") : paymentMethod === "TRANSFERENCIA" ? (isEs ? "Transferencia" : "Bank Transfer") : (isEs ? "Efectivo" : "Cash"),
         subtotal: cartTotals.subtotal,
         isv15: cartTotals.isv15,
-        total: cartTotals.total,
+        convenienceFee: cardFee > 0 ? cardFee : 0,
+        total: finalTotal,
         status: paymentMethod === "CREDITO" ? "Pendiente" : "Pagada",
         lines: cart.map((c) => ({
           productId: c.productId,
@@ -723,7 +909,7 @@ export default function POSModule({
         ticketNumber,
         invoicePayload,
         selectedCustomer.name || defaultCustomerName,
-        cartTotals.total
+        finalTotal
       );
 
       // Update local inventory state
@@ -756,10 +942,13 @@ export default function POSModule({
         items: [...cart],
         subtotal: cartTotals.subtotal,
         isv15: cartTotals.isv15,
-        total: cartTotals.total,
+        convenienceFee: cardFee > 0 ? cardFee : 0,
+        convenienceFeePercent: paymentMethod === "TARJETA" && cardFee > 0 ? (parseFloat(convenienceFeePercent) || 0) : 0,
+        total: finalTotal,
         paymentMethod,
-        amountReceived: parseFloat(amountReceived) || cartTotals.total,
-        changeDue,
+        taxRatePercent: configuredTaxPercent,
+        amountReceived: paymentMethod === "EFECTIVO" ? (parseFloat(amountReceived) || finalTotal) : finalTotal,
+        changeDue: paymentMethod === "EFECTIVO" ? changeDue : 0,
       };
 
       setCompletedSale(completed);
@@ -822,7 +1011,7 @@ export default function POSModule({
           ? "fixed inset-0 z-50 w-full h-full rounded-none border-0"
           : isStandalone
           ? "w-full h-screen min-h-[640px] rounded-none border-0"
-          : "w-full h-[calc(100vh-5rem)] min-h-[640px] rounded-2xl border border-slate-200 shadow-sm"
+          : "w-full h-[calc(100vh-5rem)] min-h-[640px] rounded-lg border border-slate-200 shadow-sm"
       }`}
       style={{
         overscrollBehavior: "none",
@@ -838,7 +1027,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={onNavigateBack}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer shrink-0"
+                className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition cursor-pointer shrink-0"
                 title={isEs ? "Volver a Pedidos" : "Back to Orders"}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -851,7 +1040,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={handleOpenShiftModal}
-                className="flex items-center gap-1.5 text-[11px] text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer group whitespace-nowrap truncate max-w-[150px] sm:max-w-none"
+                className="flex items-center gap-1.5 text-[11px] text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-700 transition cursor-pointer group whitespace-nowrap truncate max-w-[150px] sm:max-w-none"
                 title={isEs ? "Haz clic para seleccionar otra caja u otro cajero" : "Click to select another register or cashier"}
               >
                 <span className="font-semibold text-cyan-400 truncate">{activeRegister}</span>
@@ -861,7 +1050,7 @@ export default function POSModule({
               </button>
               <a
                 href={`/dashboard/settings/pos${storeId ? `?storeId=${storeId}` : ""}`}
-                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shrink-0"
+                className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shrink-0"
                 title={isEs ? "Configuración de Cajas y Cajeros" : "POS Settings & Registers"}
               >
                 <Settings className="w-3.5 h-3.5" />
@@ -873,7 +1062,7 @@ export default function POSModule({
           <div className="hidden md:flex items-center gap-2.5">
             {/* Indicador de Red / Offline */}
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border transition ${
                 isOnline
                   ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
                   : "bg-amber-500/20 border-amber-400/40 text-amber-300 animate-pulse"
@@ -897,7 +1086,7 @@ export default function POSModule({
             <button
               type="button"
               onClick={handleOpenSyncQueue}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition cursor-pointer ${
                 pendingSyncCount > 0
                   ? "bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30 shadow-xs"
                   : "bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-700"
@@ -925,7 +1114,7 @@ export default function POSModule({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isEs ? "Escanear código de barra o buscar producto (F2)..." : "Scan barcode or search product (F2)..."}
-                className="w-full bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-900 text-slate-100 placeholder:text-slate-400 text-xs rounded-xl pl-9 pr-8 py-2 transition outline-none border border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                className="w-full bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-900 text-slate-100 placeholder:text-slate-400 text-xs rounded-md pl-9 pr-8 py-2 transition outline-none border border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
               />
               <ScanBarcode className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5 pointer-events-none" />
               {searchQuery && (
@@ -943,7 +1132,7 @@ export default function POSModule({
             <button
               type="button"
               onClick={() => setShowParkedModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700 transition cursor-pointer"
               title={isEs ? "Ver tickets pausados en espera" : "View parked / held tickets"}
             >
               <Clock className="w-3.5 h-3.5 text-cyan-400" />
@@ -959,7 +1148,7 @@ export default function POSModule({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition cursor-pointer border border-slate-700"
+              className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition cursor-pointer border border-slate-700"
               title={isFullscreen ? (isEs ? "Salir de pantalla completa" : "Exit full screen") : (isEs ? "Pantalla completa" : "Full screen")}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -975,7 +1164,7 @@ export default function POSModule({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isEs ? "Buscar producto o SKU..." : "Search product or SKU..."}
-              className="w-full bg-slate-800/80 text-white placeholder:text-slate-400 text-xs rounded-xl pl-8 pr-7 py-1.5 outline-none border border-slate-700 focus:border-cyan-500"
+              className="w-full bg-slate-800/80 text-white placeholder:text-slate-400 text-xs rounded-md pl-8 pr-7 py-1.5 outline-none border border-slate-700 focus:border-cyan-500"
             />
             <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-2 pointer-events-none" />
             {searchQuery && (
@@ -990,7 +1179,7 @@ export default function POSModule({
           </div>
 
           <div
-            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold border ${
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-[10px] font-bold border ${
               isOnline
                 ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
                 : "bg-amber-500/20 border-amber-400/40 text-amber-300"
@@ -1002,7 +1191,7 @@ export default function POSModule({
           <button
             type="button"
             onClick={handleOpenSyncQueue}
-            className="p-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-200 relative"
+            className="p-1.5 rounded-md bg-slate-800/80 border border-slate-700 text-slate-200 relative"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-cyan-400" : ""}`} />
             {pendingSyncCount > 0 && (
@@ -1015,7 +1204,7 @@ export default function POSModule({
           <button
             type="button"
             onClick={() => setShowParkedModal(true)}
-            className="p-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-200 relative"
+            className="p-1.5 rounded-md bg-slate-800/80 border border-slate-700 text-slate-200 relative"
           >
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             {parkedTickets.length > 0 && (
@@ -1061,7 +1250,7 @@ export default function POSModule({
             <button
               type="button"
               onClick={() => setSelectedCategory("all")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 selectedCategory === "all"
                   ? "bg-cyan-600 text-white shadow-xs"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -1074,7 +1263,7 @@ export default function POSModule({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                   selectedCategory.toLowerCase() === cat.toLowerCase()
                     ? "bg-cyan-600 text-white shadow-xs"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -1109,7 +1298,7 @@ export default function POSModule({
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => handleAddToCart(product)}
-                      className={`group relative flex flex-col justify-between text-left p-2.5 sm:p-3 rounded-2xl border transition duration-150 cursor-pointer overflow-hidden ${
+                      className={`group relative flex flex-col justify-between text-left p-2.5 sm:p-3 rounded-md border transition duration-150 cursor-pointer ${
                         isOutOfStock
                           ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
                           : cartLine
@@ -1119,7 +1308,7 @@ export default function POSModule({
                     >
                       {/* Active Quantity Badge in Cart */}
                       {cartLine && (
-                        <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-cyan-600 text-white text-xs font-bold flex items-center justify-center shadow-md animate-in zoom-in-75">
+                        <div className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 rounded-full bg-cyan-600 text-white text-xs font-bold flex items-center justify-center shadow-md border-2 border-white z-10 animate-in zoom-in-75">
                           {cartLine.quantity}
                         </div>
                       )}
@@ -1130,17 +1319,24 @@ export default function POSModule({
                           <span className="font-mono text-[10px] font-bold text-slate-400 group-hover:text-cyan-600 truncate">
                             {product.sku}
                           </span>
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
-                              isOutOfStock
-                                ? "bg-rose-100 text-rose-700"
-                                : product.quantity <= 5
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {isOutOfStock ? (isEs ? "Agotado" : "Out") : `${product.quantity}`}
-                          </span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!isProductTaxable(product) && (
+                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200" title={isEs ? "Exento de impuesto" : "Tax exempt"}>
+                                {isEs ? "Exento" : "No Tax"}
+                              </span>
+                            )}
+                            <span
+                              className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                isOutOfStock
+                                  ? "bg-rose-100 text-rose-700"
+                                  : product.quantity <= 5
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {isOutOfStock ? (isEs ? "Agotado" : "Out") : `${product.quantity}`}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Title & Description */}
@@ -1191,7 +1387,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setMobileActiveTab("catalog")}
-                className="lg:hidden text-[11px] font-semibold text-cyan-600 hover:text-cyan-700 bg-cyan-50 hover:bg-cyan-100 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
+                className="lg:hidden text-[11px] font-semibold text-cyan-600 hover:text-cyan-700 bg-cyan-50 hover:bg-cyan-100 px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1"
               >
                 <ArrowLeft className="w-3 h-3" />
                 <span>{isEs ? "Catálogo" : "Catalog"}</span>
@@ -1203,7 +1399,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowCustomerModal(true)}
-                className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:border-cyan-500 flex items-center justify-between transition cursor-pointer shadow-2xs text-left"
+                className="flex-1 px-3 py-2 rounded-md bg-white border border-slate-200 hover:border-cyan-500 flex items-center justify-between transition cursor-pointer shadow-2xs text-left"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <User className="w-4 h-4 text-slate-400 shrink-0" />
@@ -1222,7 +1418,7 @@ export default function POSModule({
                     )}
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded">
                   {isEs ? "Cambiar" : "Change"}
                 </span>
               </button>
@@ -1249,12 +1445,19 @@ export default function POSModule({
                 return (
                   <div
                     key={item.id}
-                    className="p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-2"
+                    className="p-2.5 rounded-md bg-white border border-slate-200/90 shadow-2xs space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="font-mono text-[10px] font-bold text-slate-400">
-                          {item.sku}
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">
+                            {item.sku}
+                          </span>
+                          {!isProductTaxable(item) && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              {isEs ? "Exento" : "No Tax"}
+                            </span>
+                          )}
                         </div>
                         <p className="font-semibold text-xs text-slate-800 leading-tight">
                           {item.description}
@@ -1273,44 +1476,68 @@ export default function POSModule({
                     {/* Price Tiers (P1 / P2 / P3) */}
                     <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 text-[11px]">
                       <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectPriceTier(item.id, "P1")}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                            currentTier === "P1" ? "bg-cyan-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          P1
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectPriceTier(item.id, "P2")}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                            currentTier === "P2" ? "bg-cyan-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          P2
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectPriceTier(item.id, "P3")}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                            currentTier === "P3" ? "bg-cyan-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          P3
-                        </button>
+                        {(() => {
+                          const prod = inventory.find((p) => p.id === item.productId);
+                          const hasP2 = Boolean(prod?.price2 && prod.price2 > 0);
+                          const hasP3 = Boolean(prod?.price3 && prod.price3 > 0);
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectPriceTier(item.id, "P1")}
+                                title={`P1: ${formatCurrency(prod?.price ?? item.price)}`}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                                  currentTier === "P1"
+                                    ? "bg-cyan-600 text-white"
+                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                }`}
+                              >
+                                P1
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!hasP2}
+                                onClick={() => handleSelectPriceTier(item.id, "P2")}
+                                title={hasP2 ? `P2: ${formatCurrency(prod!.price2!)}` : (isEs ? "P2 no configurado" : "P2 not set")}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                                  !hasP2
+                                    ? "bg-slate-50 text-slate-300 cursor-not-allowed"
+                                    : currentTier === "P2"
+                                    ? "bg-cyan-600 text-white cursor-pointer"
+                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer"
+                                }`}
+                              >
+                                P2
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!hasP3}
+                                onClick={() => handleSelectPriceTier(item.id, "P3")}
+                                title={hasP3 ? `P3: ${formatCurrency(prod!.price3!)}` : (isEs ? "P3 no configurado" : "P3 not set")}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                                  !hasP3
+                                    ? "bg-slate-50 text-slate-300 cursor-not-allowed"
+                                    : currentTier === "P3"
+                                    ? "bg-cyan-600 text-white cursor-pointer"
+                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer"
+                                }`}
+                              >
+                                P3
+                              </button>
+                            </>
+                          );
+                        })()}
                         <span className="font-mono text-xs font-semibold text-slate-700 ml-1">
                           {formatCurrency(item.price)}
                         </span>
                       </div>
 
                       {/* Quantity Stepper */}
-                      <div className="flex items-center gap-1.5 bg-slate-100 p-0.5 rounded-lg">
+                      <div className="flex items-center gap-1.5 bg-slate-100 p-0.5 rounded">
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, -1)}
-                          className="w-5 h-5 rounded bg-white hover:bg-slate-200 flex items-center justify-center text-slate-700 transition cursor-pointer shadow-2xs"
+                          className="w-5 h-5 rounded-xs bg-white hover:bg-slate-200 flex items-center justify-center text-slate-700 transition cursor-pointer shadow-2xs"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -1326,7 +1553,7 @@ export default function POSModule({
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, 1)}
-                          className="w-5 h-5 rounded bg-white hover:bg-slate-200 flex items-center justify-center text-slate-700 transition cursor-pointer shadow-2xs"
+                          className="w-5 h-5 rounded-xs bg-white hover:bg-slate-200 flex items-center justify-center text-slate-700 transition cursor-pointer shadow-2xs"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -1352,7 +1579,7 @@ export default function POSModule({
                 <span className="font-mono font-medium">{formatCurrency(cartTotals.subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>{isEs ? "Impuestos (15%):" : "Tax (15%):"}</span>
+                <span>{isEs ? `Impuestos (${displayTaxPercent}%):` : `Tax (${displayTaxPercent}%):`}</span>
                 <span className="font-mono font-medium">{formatCurrency(cartTotals.isv15)}</span>
               </div>
               <div className="flex justify-between text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
@@ -1367,7 +1594,7 @@ export default function POSModule({
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleClearCart}
-                className="flex-1 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                className="flex-1 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>{isEs ? "Vaciar" : "Clear"}</span>
@@ -1376,7 +1603,7 @@ export default function POSModule({
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleParkOrder}
-                className="flex-1 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                className="flex-1 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
               >
                 <PauseCircle className="w-3.5 h-3.5 text-cyan-600" />
                 <span>{isEs ? "En Espera" : "Hold"}</span>
@@ -1388,7 +1615,7 @@ export default function POSModule({
               type="button"
               disabled={cart.length === 0}
               onClick={openCheckout}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-between shadow-md shadow-cyan-600/20 active:scale-98 transition cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-md bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-between shadow-md shadow-cyan-600/20 active:scale-98 transition cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Banknote className="w-5 h-5" />
@@ -1403,7 +1630,7 @@ export default function POSModule({
       {/* ================= 3. CHECKOUT & TENDER MODAL ================= */}
       {showCheckoutModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col">
             {/* Modal Header */}
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div>
@@ -1417,7 +1644,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowCheckoutModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
+                className="p-1 rounded-md hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1425,20 +1652,30 @@ export default function POSModule({
 
             <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
               {/* Grand Total Box */}
-              <div className="p-4 rounded-2xl bg-cyan-50/70 border border-cyan-200 flex items-center justify-between">
+              <div className="p-4 rounded-md bg-cyan-50/70 border border-cyan-200 flex items-center justify-between">
                 <div>
                   <div className="text-xs font-bold text-cyan-900 uppercase tracking-wider">
                     {isEs ? "Total a Cobrar" : "Total to Charge"}
                   </div>
                   <div className="text-3xl font-extrabold font-mono text-cyan-700 mt-0.5">
-                    {formatCurrency(cartTotals.total)}
+                    {formatCurrency(payableTotal)}
                   </div>
+                  {paymentMethod === "TARJETA" && cardFee > 0 && (
+                    <div className="text-[11px] text-cyan-800 font-medium mt-0.5">
+                      {formatCurrency(cartTotals.total)} + {formatCurrency(cardFee)}{convenienceFeePercent ? ` (${convenienceFeePercent}%)` : ""} {isEs ? "(Comisión Tarjeta)" : "(Card Fee)"}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-cyan-800">{isEs ? "Impuestos (15%):" : "Taxes (15%):"}</div>
+                  <div className="text-[11px] text-cyan-800">{isEs ? `Impuestos (${displayTaxPercent}%):` : `Taxes (${displayTaxPercent}%):`}</div>
                   <div className="font-mono font-bold text-cyan-900">
                     {formatCurrency(cartTotals.isv15)}
                   </div>
+                  {paymentMethod === "TARJETA" && cardFee > 0 && (
+                    <div className="text-[11px] text-slate-600 mt-0.5">
+                      {isEs ? "Comisión:" : "Fee:"} <span className="font-mono font-bold text-cyan-800">+{formatCurrency(cardFee)}{convenienceFeePercent ? ` (${convenienceFeePercent}%)` : ""}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1451,7 +1688,7 @@ export default function POSModule({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("EFECTIVO")}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                    className={`p-2.5 rounded-md border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
                       paymentMethod === "EFECTIVO"
                         ? "bg-cyan-600 text-white border-cyan-600 shadow-xs"
                         : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
@@ -1463,7 +1700,7 @@ export default function POSModule({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("TARJETA")}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                    className={`p-2.5 rounded-md border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
                       paymentMethod === "TARJETA"
                         ? "bg-cyan-600 text-white border-cyan-600 shadow-xs"
                         : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
@@ -1475,7 +1712,7 @@ export default function POSModule({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("TRANSFERENCIA")}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                    className={`p-2.5 rounded-md border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
                       paymentMethod === "TRANSFERENCIA"
                         ? "bg-cyan-600 text-white border-cyan-600 shadow-xs"
                         : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
@@ -1487,7 +1724,7 @@ export default function POSModule({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("CREDITO")}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                    className={`p-2.5 rounded-md border text-xs font-bold flex flex-col items-center gap-1.5 transition cursor-pointer ${
                       paymentMethod === "CREDITO"
                         ? "bg-cyan-600 text-white border-cyan-600 shadow-xs"
                         : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
@@ -1501,7 +1738,7 @@ export default function POSModule({
 
               {/* Cash Tendering & Change Calculator */}
               {paymentMethod === "EFECTIVO" && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       {isEs ? "Monto Recibido del Cliente" : "Amount Tendered by Customer"}
@@ -1512,7 +1749,7 @@ export default function POSModule({
                         step="any"
                         value={amountReceived}
                         onChange={(e) => setAmountReceived(e.target.value)}
-                        className="w-full text-lg font-mono font-bold rounded-xl px-3.5 py-2 bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full text-lg font-mono font-bold rounded-md px-3.5 py-2 bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
@@ -1528,7 +1765,7 @@ export default function POSModule({
                           key={opt}
                           type="button"
                           onClick={() => setAmountReceived(opt.toString())}
-                          className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-xs font-mono font-semibold text-slate-800 transition cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-xs font-mono font-semibold text-slate-800 transition cursor-pointer shadow-2xs"
                         >
                           {opt === cartTotals.total ? `${isEs ? "Exacto" : "Exact"} (${formatCurrency(opt)})` : formatCurrency(opt)}
                         </button>
@@ -1537,7 +1774,7 @@ export default function POSModule({
                   </div>
 
                   {/* Change Due Display */}
-                  <div className="p-3 rounded-lg bg-white border border-slate-200 flex items-center justify-between">
+                  <div className="p-3 rounded-md bg-white border border-slate-200 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-700">
                       {isEs ? "Cambio a Entregar:" : "Change Due:"}
                     </span>
@@ -1556,20 +1793,111 @@ export default function POSModule({
                 </div>
               )}
 
-              {/* Informative tender notices */}
+              {/* Card Payment & Convenience Fee Configuration */}
               {paymentMethod === "TARJETA" && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-cyan-600 shrink-0" />
-                  <span>
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
+                    <CreditCard className="w-4 h-4 text-cyan-600 shrink-0" />
+                    <span>
+                      {isEs ? "Cobro con Tarjeta y Comisión de Procesador (%)" : "Card Payment & Processor Fee (%)"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-700">
+                        {isEs ? "Porcentaje de Comisión por Tarjeta (%):" : "Credit Card Processor Fee (%):"}
+                      </label>
+                      {convenienceFeePercent && parseFloat(convenienceFeePercent) > 0 && (
+                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          {isEs ? "✓ Guardado para siguientes ventas" : "✓ Saved for next sales"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={convenienceFeePercent}
+                        onChange={(e) => handleUpdateFeePercent(e.target.value)}
+                        placeholder="0.0"
+                        className="w-full text-base font-mono font-bold rounded-md pl-3 pr-8 py-2 bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono font-bold text-slate-400 text-sm">
+                        %
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Percentage Presets */}
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-500 mb-1">
+                      {isEs ? "Porcentajes sugeridos rápidos:" : "Quick fee presets:"}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[3, 3.5, 4, 5].map((pct) => {
+                        const isSelected = parseFloat(convenienceFeePercent) === pct;
+                        const feeVal = Math.round(((cartTotals.total * pct) / 100) * 100) / 100;
+                        return (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => handleUpdateFeePercent(pct.toString())}
+                            className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold transition cursor-pointer shadow-2xs border ${
+                              isSelected
+                                ? "bg-cyan-600 text-white border-cyan-600"
+                                : "bg-white border-slate-200 hover:bg-slate-100 text-slate-800"
+                            }`}
+                          >
+                            {pct}% (+{formatCurrency(feeVal)})
+                          </button>
+                        );
+                      })}
+                      {convenienceFeePercent && parseFloat(convenienceFeePercent) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateFeePercent("")}
+                          className="px-2 py-1 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer ml-auto"
+                        >
+                          {isEs ? "Quitar cargo" : "Remove fee"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live Breakdown Box */}
+                  <div className="p-3 rounded-md bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
+                    <div className="flex justify-between text-slate-600">
+                      <span>{isEs ? "Total productos + impuesto:" : "Products + tax subtotal:"}</span>
+                      <span>{formatCurrency(cartTotals.total)}</span>
+                    </div>
+                    {cardFee > 0 && (
+                      <div className="flex justify-between font-semibold text-cyan-800">
+                        <span>
+                          {isEs ? "Comisión de Procesamiento:" : "Card Processing Fee:"}
+                          {convenienceFeePercent ? ` (${convenienceFeePercent}%)` : ""}
+                        </span>
+                        <span>+{formatCurrency(cardFee)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-sm text-slate-900 pt-1.5 border-t border-slate-100">
+                      <span>{isEs ? "Total a Procesar en Terminal:" : "Total to Process on Terminal:"}</span>
+                      <span className="font-mono text-cyan-700 text-base">{formatCurrency(payableTotal)}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 italic">
                     {isEs
-                      ? "Procese el pago con el terminal de tarjeta físico o lector POS."
-                      : "Process payment on your in-store card terminal or POS card reader."}
-                  </span>
+                      ? "Procese este total en su lector o terminal POS físico. El cargo de comisión aparecerá desglosado en el ticket."
+                      : "Process this amount on your physical card reader or terminal. The fee will be itemized on the ticket."}
+                  </p>
                 </div>
               )}
 
               {paymentMethod === "TRANSFERENCIA" && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
                   <QrCode className="w-4 h-4 text-cyan-600 shrink-0" />
                   <span>
                     {isEs
@@ -1580,7 +1908,7 @@ export default function POSModule({
               )}
 
               {paymentMethod === "CREDITO" && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>
                     {isEs
@@ -1596,7 +1924,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowCheckoutModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer"
+                className="px-4 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer"
               >
                 {isEs ? "Cancelar" : "Cancel"}
               </button>
@@ -1607,7 +1935,7 @@ export default function POSModule({
                   (paymentMethod === "EFECTIVO" && (parseFloat(amountReceived) || 0) < cartTotals.total)
                 }
                 onClick={handleCompleteSale}
-                className="px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-cyan-600/20"
+                className="px-6 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-cyan-600/20"
               >
                 {isProcessingSale ? (
                   <span>{isEs ? "Procesando..." : "Processing..."}</span>
@@ -1626,11 +1954,11 @@ export default function POSModule({
       {/* ================= 4. SALE COMPLETED / THERMAL RECEIPT MODAL ================= */}
       {completedSale && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-150 relative">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-150 relative">
             <button
               type="button"
               onClick={() => setCompletedSale(null)}
-              className="absolute top-2.5 right-2.5 p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer z-10"
+              className="absolute top-2.5 right-2.5 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer z-10"
               title={isEs ? "Cerrar" : "Close"}
             >
               <X className="w-4 h-4" />
@@ -1640,7 +1968,7 @@ export default function POSModule({
             <div className="p-4 bg-slate-50 border-b border-slate-200 pt-7">
               <div
                 id="pos-thermal-receipt"
-                className="bg-white p-4 rounded-xl border border-dashed border-slate-300 font-mono text-[11px] text-slate-800 space-y-2 shadow-2xs"
+                className="bg-white p-4 rounded-md border border-dashed border-slate-300 font-mono text-[11px] text-slate-800 space-y-2 shadow-2xs"
               >
                 {/* Store Header */}
                 <div className="text-center pb-2 border-b border-dashed border-slate-300">
@@ -1680,21 +2008,46 @@ export default function POSModule({
                     <span>{formatCurrency(completedSale.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>{isEs ? "Impuestos (15%):" : "Tax (15%):"}</span>
+                    <span>{isEs ? `Impuestos (${completedSale.taxRatePercent ?? displayTaxPercent}%):` : `Tax (${completedSale.taxRatePercent ?? displayTaxPercent}%):`}</span>
                     <span>{formatCurrency(completedSale.isv15)}</span>
                   </div>
+                  {completedSale.convenienceFee && completedSale.convenienceFee > 0 ? (
+                    <div className="flex justify-between font-semibold text-slate-800">
+                      <span>
+                        {isEs ? "Comisión Tarjeta" : "Card Fee"}
+                        {completedSale.convenienceFeePercent ? ` (${completedSale.convenienceFeePercent}%):` : ":"}
+                      </span>
+                      <span>{formatCurrency(completedSale.convenienceFee)}</span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between font-bold text-xs pt-1 border-t border-slate-200">
                     <span>TOTAL:</span>
                     <span>{formatCurrency(completedSale.total)}</span>
                   </div>
-                  <div className="flex justify-between pt-1">
-                    <span>{isEs ? "Recibido:" : "Tendered:"}</span>
-                    <span>{formatCurrency(completedSale.amountReceived)}</span>
+                  <div className="flex justify-between pt-1 text-[9px] text-slate-500">
+                    <span>{isEs ? "Método de Pago:" : "Payment Method:"}</span>
+                    <span className="font-semibold uppercase text-slate-700">
+                      {completedSale.paymentMethod === "TARJETA"
+                        ? (isEs ? "Tarjeta" : "Card")
+                        : completedSale.paymentMethod === "EFECTIVO"
+                        ? (isEs ? "Efectivo" : "Cash")
+                        : completedSale.paymentMethod === "TRANSFERENCIA"
+                        ? (isEs ? "Transferencia" : "Transfer")
+                        : (isEs ? "Crédito" : "Credit")}
+                    </span>
                   </div>
-                  <div className="flex justify-between font-bold text-cyan-700">
-                    <span>{isEs ? "Cambio:" : "Change:"}</span>
-                    <span>{formatCurrency(completedSale.changeDue)}</span>
-                  </div>
+                  {completedSale.paymentMethod === "EFECTIVO" && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>{isEs ? "Recibido:" : "Tendered:"}</span>
+                        <span>{formatCurrency(completedSale.amountReceived)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-cyan-700">
+                        <span>{isEs ? "Cambio:" : "Change:"}</span>
+                        <span>{formatCurrency(completedSale.changeDue)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Offline Badge on Ticket */}
@@ -1715,7 +2068,7 @@ export default function POSModule({
 
             {/* Offline / Online Status Notice */}
             {completedSale.isOffline ? (
-              <div className="mx-4 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[11px] text-amber-800 font-medium">
+              <div className="mx-4 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-center gap-2 text-[11px] text-amber-800 font-medium">
                 <WifiOff className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>
                   {isEs
@@ -1724,7 +2077,7 @@ export default function POSModule({
                 </span>
               </div>
             ) : (
-              <div className="mx-4 mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-[11px] text-emerald-800 font-medium">
+              <div className="mx-4 mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-md flex items-center gap-2 text-[11px] text-emerald-800 font-medium">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>
                   {isEs
@@ -1739,7 +2092,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={handlePrintTicket}
-                className="flex-1 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="flex-1 py-2 px-3 rounded-md border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
                 <Printer className="w-4 h-4 text-slate-600" />
                 <span>{isEs ? "Imprimir Ticket" : "Print Receipt"}</span>
@@ -1747,7 +2100,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setCompletedSale(null)}
-                className="flex-1 py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                className="flex-1 py-2 px-3 rounded-md bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
               >
                 <span>{isEs ? "Nueva Venta" : "New Sale"}</span>
               </button>
@@ -1759,7 +2112,7 @@ export default function POSModule({
       {/* ================= 5. PARKED TICKETS MODAL ================= */}
       {showParkedModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-cyan-400" />
@@ -1770,7 +2123,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowParkedModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
+                className="p-1 rounded-md hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1785,7 +2138,7 @@ export default function POSModule({
                 parkedTickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="p-3 rounded-xl border border-slate-200 bg-white hover:border-cyan-500 transition flex items-center justify-between gap-3 shadow-2xs"
+                    className="p-3 rounded-md border border-slate-200 bg-white hover:border-cyan-500 transition flex items-center justify-between gap-3 shadow-2xs"
                   >
                     <div>
                       <div className="font-bold text-xs text-slate-900">{ticket.ticketNumber}</div>
@@ -1804,14 +2157,14 @@ export default function POSModule({
                       <button
                         type="button"
                         onClick={() => handleRestoreParkedOrder(ticket)}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition cursor-pointer"
+                        className="px-2.5 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition cursor-pointer"
                       >
                         {isEs ? "Recuperar" : "Restore"}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteParkedOrder(ticket.id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                         title={isEs ? "Descartar" : "Discard"}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1828,7 +2181,7 @@ export default function POSModule({
       {/* ================= 6. CUSTOMER SELECTION MODAL ================= */}
       {showCustomerModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-cyan-400" />
@@ -1839,7 +2192,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowCustomerModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
+                className="p-1 rounded-md hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1853,7 +2206,7 @@ export default function POSModule({
                   setSelectedCustomer({ name: defaultCustomerName, rtn: "" });
                   setShowCustomerModal(false);
                 }}
-                className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition cursor-pointer ${
+                className={`w-full p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer ${
                   selectedCustomer.name === defaultCustomerName
                     ? "bg-cyan-50/70 border-cyan-500 text-cyan-950 font-bold"
                     : "border-slate-200 hover:bg-slate-50 text-slate-800"
@@ -1883,7 +2236,7 @@ export default function POSModule({
                       setSelectedCustomer({ id: c.id, name: c.name, rtn: c.rtn || "" });
                       setShowCustomerModal(false);
                     }}
-                    className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition cursor-pointer ${
+                    className={`w-full p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer ${
                       selectedCustomer.id === c.id
                         ? "bg-cyan-50/70 border-cyan-500 text-cyan-950 font-bold"
                         : "border-slate-200 hover:bg-slate-50 text-slate-800"
@@ -1907,7 +2260,7 @@ export default function POSModule({
       {/* ================= 7. REGISTER & CASHIER (SHIFT) MODAL ================= */}
       {showShiftModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div>
@@ -1921,7 +2274,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowShiftModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer transition"
+                className="p-1 rounded-md hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1954,7 +2307,7 @@ export default function POSModule({
                           onClick={() => {
                             setTempRegister(reg.name);
                           }}
-                          className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition cursor-pointer text-xs font-semibold ${
+                          className={`p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer text-xs font-semibold ${
                             isSelected
                               ? "bg-cyan-50/70 border-cyan-500 text-cyan-900 shadow-2xs ring-1 ring-cyan-500"
                               : "border-slate-200 hover:bg-slate-50 text-slate-700"
@@ -1996,7 +2349,7 @@ export default function POSModule({
                           key={rep.id || rep.name}
                           type="button"
                           onClick={() => handleSelectCashierWithPinCheck(rep)}
-                          className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition cursor-pointer text-xs ${
+                          className={`p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer text-xs ${
                             isSelected
                               ? "bg-cyan-50/70 border-cyan-500 text-cyan-900 font-bold ring-1 ring-cyan-500 shadow-2xs"
                               : "border-slate-200 hover:bg-slate-50 text-slate-700"
@@ -2027,14 +2380,14 @@ export default function POSModule({
                     })}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
+                  <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
                     {isEs ? "No hay cajeros configurados en Ajustes POS." : "No cashiers configured in POS Settings."}
                   </div>
                 )}
               </div>
 
               {/* Informative Note */}
-              <div className="p-3 rounded-xl bg-cyan-50/80 border border-cyan-200/80 text-[11px] text-cyan-950 flex items-start gap-2">
+              <div className="p-3 rounded-md bg-cyan-50/80 border border-cyan-200/80 text-[11px] text-cyan-950 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
                 <span>
                   {isEs
@@ -2058,14 +2411,14 @@ export default function POSModule({
                 <button
                   type="button"
                   onClick={() => setShowShiftModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
+                  className="px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
                 >
                   {isEs ? "Cancelar" : "Cancel"}
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveShiftConfig}
-                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{isEs ? "Guardar Cambios" : "Save Changes"}</span>
@@ -2079,11 +2432,11 @@ export default function POSModule({
       {/* ================= 8. OFFLINE SYNC QUEUE MODAL ================= */}
       {showSyncQueueModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400">
+                <div className="p-2 rounded-md bg-cyan-500/20 text-cyan-400">
                   <Database className="w-5 h-5" />
                 </div>
                 <div>
@@ -2098,7 +2451,7 @@ export default function POSModule({
               <button
                 type="button"
                 onClick={() => setShowSyncQueueModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2133,7 +2486,7 @@ export default function POSModule({
                 syncQueueList.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300 transition flex items-center justify-between gap-3 text-xs"
+                    className="p-3 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300 transition flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
@@ -2189,7 +2542,7 @@ export default function POSModule({
                 <button
                   type="button"
                   onClick={() => setShowSyncQueueModal(false)}
-                  className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
+                  className="px-3.5 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
                 >
                   {isEs ? "Cerrar" : "Close"}
                 </button>
@@ -2197,7 +2550,7 @@ export default function POSModule({
                   type="button"
                   onClick={handleManualSyncNow}
                   disabled={isSyncing || !isOnline}
-                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center gap-1.5"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
                   <span>{isSyncing ? (isEs ? "Sincronizando..." : "Syncing...") : (isEs ? "Sincronizar Ahora" : "Sync Now")}</span>
@@ -2211,7 +2564,7 @@ export default function POSModule({
       {/* ================= 9. CASHIER PIN KEYPAD MODAL ================= */}
       {pinModal && pinModal.isOpen && (
         <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-xs w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xs w-full overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="p-5 bg-[#0c1624] text-white text-center relative border-b border-slate-800">
               <button
@@ -2221,12 +2574,12 @@ export default function POSModule({
                   setEnteredPin("");
                   setPinError(false);
                 }}
-                className="absolute top-3.5 right-3.5 p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+                className="absolute top-3.5 right-3.5 p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="inline-flex p-3 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 mb-2 shadow-xs">
+              <div className="inline-flex p-3 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 mb-2 shadow-xs">
                 <Lock className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-sm text-white">
@@ -2283,7 +2636,7 @@ export default function POSModule({
                     key={digit}
                     type="button"
                     onClick={() => handlePinKeyPress(digit)}
-                    className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-base font-bold text-slate-800 shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
+                    className="h-12 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-base font-bold text-slate-800 shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
                   >
                     {digit}
                   </button>
@@ -2293,7 +2646,7 @@ export default function POSModule({
                 <button
                   type="button"
                   onClick={handlePinClear}
-                  className="h-12 rounded-xl bg-rose-50/60 hover:bg-rose-100/70 border border-rose-200 text-xs font-bold text-rose-700 active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
+                  className="h-12 rounded-md bg-rose-50/60 hover:bg-rose-100/70 border border-rose-200 text-xs font-bold text-rose-700 active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
                 >
                   {isEs ? "C" : "C"}
                 </button>
@@ -2302,7 +2655,7 @@ export default function POSModule({
                 <button
                   type="button"
                   onClick={() => handlePinKeyPress("0")}
-                  className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-base font-bold text-slate-800 shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
+                  className="h-12 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-base font-bold text-slate-800 shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
                 >
                   0
                 </button>
@@ -2311,7 +2664,7 @@ export default function POSModule({
                 <button
                   type="button"
                   onClick={handlePinBackspace}
-                  className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-sm font-bold text-slate-700 active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
+                  className="h-12 rounded-md bg-slate-100 hover:bg-slate-200 border border-slate-200 text-sm font-bold text-slate-700 active:scale-95 transition cursor-pointer flex items-center justify-center select-none"
                   title={isEs ? "Retroceso" : "Backspace"}
                 >
                   ⌫
@@ -2327,7 +2680,7 @@ export default function POSModule({
                     setEnteredPin("");
                     setPinError(false);
                   }}
-                  className="flex-1 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
+                  className="flex-1 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
                 >
                   {isEs ? "Cancelar" : "Cancel"}
                 </button>
@@ -2335,7 +2688,7 @@ export default function POSModule({
                   type="button"
                   onClick={handleVerifyPin}
                   disabled={enteredPin.length === 0}
-                  className="flex-1 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-xs font-bold text-white shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>{isEs ? "Verificar" : "Verify PIN"}</span>

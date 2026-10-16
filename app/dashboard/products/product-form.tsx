@@ -19,6 +19,7 @@ type ProductVariant = {
   title: string;
   price: string;
   compareAtPrice: string | null;
+  price3?: string | null;
   inventory: number;
   trackInventory: boolean;
   options: unknown;
@@ -65,6 +66,7 @@ type VariantFormState = {
   title: string;
   price: string;
   compareAtPrice: string;
+  price3: string;
   inventory: string;
   trackInventory: boolean;
   options: string;
@@ -79,6 +81,7 @@ const emptyVariant: VariantFormState = {
   title: "",
   price: "",
   compareAtPrice: "",
+  price3: "",
   inventory: "0",
   trackInventory: true,
   options: "",
@@ -164,6 +167,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           title: variant.title,
           price: variant.price,
           compareAtPrice: variant.compareAtPrice ?? "",
+          price3: variant.price3 ?? "",
           inventory: String(variant.inventory),
           trackInventory: variant.trackInventory,
           options: typeof variant.options === "string" ? variant.options : JSON.stringify(variant.options ?? {}, null, 2),
@@ -401,6 +405,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
             title: variant.title.trim() || productForm.title.trim() || "Default",
             price: variant.price,
             compareAtPrice: variant.compareAtPrice.trim() || null,
+            price3: variant.price3.trim() || null,
             inventory: isNonPhysicalProduct ? 0 : Number.parseInt(variant.inventory, 10) || 0,
             trackInventory: isNonPhysicalProduct ? false : variant.trackInventory,
             options: variant.options.trim() ? JSON.parse(variant.options) : null,
@@ -870,7 +875,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                   ) : null}
                 </div>
 
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <Field
                     label={isEs ? "Título" : "Title"}
                     value={variant.title}
@@ -884,26 +889,33 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                     placeholder="SKU-123"
                   />
                   <Field
-                    label={isEs ? "Precio" : "Price"}
-                    value={variant.price}
-                    onChange={(value) => updateVariant(index, { price: value })}
-                    placeholder="99.00"
-                    type="number"
-                  />
-                  <Field
-                    label={isEs ? "Precio de oferta" : "Sale price"}
-                    value={variant.compareAtPrice}
-                    onChange={(value) => updateVariant(index, { compareAtPrice: value })}
-                    placeholder="79.00"
-                    type="number"
-                  />
-                  <Field
                     label={isEs ? "Inventario" : "Inventory"}
                     value={variant.inventory}
                     onChange={(value) => updateVariant(index, { inventory: value })}
                     placeholder="0"
                     type="number"
                     disabled={isNonPhysicalProduct}
+                  />
+                  <Field
+                    label={isEs ? "Precio (P1)" : "Price (P1)"}
+                    value={variant.price}
+                    onChange={(value) => updateVariant(index, { price: value })}
+                    placeholder="99.00"
+                    type="number"
+                  />
+                  <Field
+                    label={isEs ? "Precio 2 / Oferta (P2)" : "Price 2 / Sale (P2)"}
+                    value={variant.compareAtPrice}
+                    onChange={(value) => updateVariant(index, { compareAtPrice: value })}
+                    placeholder="79.00"
+                    type="number"
+                  />
+                  <Field
+                    label={isEs ? "Precio 3 (P3)" : "Price 3 (P3)"}
+                    value={variant.price3}
+                    onChange={(value) => updateVariant(index, { price3: value })}
+                    placeholder="59.00"
+                    type="number"
                   />
                   <label className="flex flex-col gap-2">
                     <span className="text-sm font-medium text-slate-700">

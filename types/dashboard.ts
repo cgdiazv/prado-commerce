@@ -409,4 +409,5 @@ export type PosStoreSettings = {
   receiptFooterText?: string | null;
   allowManualDiscounts?: boolean;
   allowCustomCashierName?: boolean;
+  defaultTaxRate?: number | null;
 };

@@ -835,6 +835,40 @@ export function PosSettingsClient({
                     </select>
                   </div>
 
+                  {/* POS Default Tax Rate */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="default-tax-rate-input" className="block text-xs font-bold text-slate-700">
+                        {isEs ? "Tasa de Impuesto del POS (%)" : "POS Tax Rate (%)"}
+                      </label>
+                      <Link
+                        href="/dashboard/settings/tax"
+                        className="text-[11px] font-semibold text-cyan-600 hover:text-cyan-700 transition"
+                      >
+                        {isEs ? "Ajustes Generales de Impuestos →" : "General Tax Settings →"}
+                      </Link>
+                    </div>
+                    <input
+                      id="default-tax-rate-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={settings.defaultTaxRate !== undefined && settings.defaultTaxRate !== null ? settings.defaultTaxRate : ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                        setSettings({ ...settings, defaultTaxRate: isNaN(val as number) ? null : val });
+                      }}
+                      placeholder={isEs ? "Dejar vacío para usar Ajustes de Impuestos (o 15% estándar)" : "Leave blank to use Tax Settings (or 15% standard)"}
+                      className="w-full text-xs rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-cyan-500 focus:outline-none"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      {isEs
+                        ? "Porcentaje de impuesto aplicado a las ventas del Punto de Venta (ej. 15, 8.25, 7, etc.). Si está vacío, tomará automáticamente la tasa configurada en Ajustes > Impuestos."
+                        : "Tax percentage applied to Point of Sale sales (e.g., 15, 8.25, 7, etc.). If blank, it automatically uses your Tax Settings."}
+                    </p>
+                  </div>
+
                   {/* Receipt Footer Message */}
                   <div className="space-y-1.5">
                     <label htmlFor="receipt-footer-textarea" className="block text-xs font-bold text-slate-700">

@@ -218,6 +218,7 @@ model ProductVariant {
   title          String
   price          Decimal     @db.Decimal(10, 2)
   compareAtPrice Decimal?    @db.Decimal(10, 2)
+  price3         Decimal?    @db.Decimal(10, 2)
 
   inventory      Int         @default(0)
   trackInventory Boolean     @default(true)
