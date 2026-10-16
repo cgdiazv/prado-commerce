@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, getCurrentCashier } from "@/lib/session";
 
 export async function GET() {
   try {
@@ -8,6 +8,8 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ authenticated: false, verified: false }, { status: 401 });
     }
+    const cashier = await getCurrentCashier();
+
     return NextResponse.json({
       id: user.id,
       email: user.email,
@@ -19,6 +21,8 @@ export async function GET() {
       plan: user.plan,
       authenticated: true,
       verified: true,
+      isCashier: Boolean(cashier),
+      cashier: cashier || null,
     });
   } catch (error) {
     console.error("Error fetching current user:", error);

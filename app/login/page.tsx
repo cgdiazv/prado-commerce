@@ -33,13 +33,14 @@ function LoginPageContent() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; redirectTo?: string; isCashier?: boolean };
 
       if (!response.ok) {
         throw new Error(data.error || t.login.errorMessage);
       }
 
-      router.push(nextPath);
+      const destination = data.redirectTo || nextPath;
+      router.push(destination);
       router.refresh();
     } catch (submitError) {
       setError(
@@ -81,14 +82,17 @@ function LoginPageContent() {
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t.login.passwordLabel}</span>
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">{t.login.passwordLabel}</span>
+              <span className="text-xs font-normal text-slate-400">Contraseña o PIN</span>
+            </div>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder={t.login.passwordPlaceholder}
+                placeholder="•••••••• / PIN"
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
               />
               <button

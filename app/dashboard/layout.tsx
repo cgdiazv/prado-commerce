@@ -85,6 +85,15 @@ export default function DashboardLayout({
     plan?: string;
     authenticated?: boolean;
     verified?: boolean;
+    isCashier?: boolean;
+    cashier?: {
+      cashierId: string;
+      cashierName: string;
+      cashierEmail: string;
+      cashierRole: string;
+      storeId: string;
+      storeName: string;
+    } | null;
   } | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -126,7 +135,7 @@ export default function DashboardLayout({
   }, []);
 
   useEffect(() => {
-    if (stores.length === 0) return;
+    if (stores.length === 0 || currentUser?.isCashier) return;
 
     let active = true;
 
@@ -432,8 +441,8 @@ export default function DashboardLayout({
     >
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <PradoLogo theme="light" subtitle={t.dashboard.merchantDashboard} size="sm" />
+          <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="flex items-center gap-2">
+            <PradoLogo theme="light" subtitle={currentUser?.isCashier ? (language === "es" ? "Punto de Venta" : "Point of Sale") : t.dashboard.merchantDashboard} size="sm" />
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
@@ -442,16 +451,20 @@ export default function DashboardLayout({
             </div>
             <div className="hidden h-6 w-px bg-slate-200 lg:block" />
             {(() => {
-              const merchantName = currentUser?.name || stores[0]?.name || (currentUser?.email ? currentUser.email.split("@")[0] : "Merchant");
+              const merchantName = currentUser?.isCashier && currentUser.cashier?.cashierName
+                ? currentUser.cashier.cashierName
+                : currentUser?.name || stores[0]?.name || (currentUser?.email ? currentUser.email.split("@")[0] : "Merchant");
               const merchantInitial = merchantName.trim().charAt(0).toUpperCase() || "M";
-              const merchantSubtitle = currentUser?.company || (currentUser?.plan ? `${currentUser.plan} Merchant` : stores[0]?.name ? `${stores[0].name} Store` : "Merchant Store");
+              const merchantSubtitle = currentUser?.isCashier
+                ? (currentUser.cashier?.cashierRole ? `${currentUser.cashier.cashierRole} • ${currentUser.cashier.storeName || "POS"}` : (language === "es" ? "Cajero Autorizado" : "Authorized Cashier"))
+                : currentUser?.company || (currentUser?.plan ? `${currentUser.plan} Merchant` : stores[0]?.name ? `${stores[0].name} Store` : "Merchant Store");
 
               return (
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setIsUserMenuOpen((open) => !open)}
-                    className="flex items-center gap-2.5 rounded-xl px-2 py-1 transition hover:bg-slate-100/70 focus:outline-none"
+                    className="flex items-center gap-2.5 rounded-xl px-2 py-1 transition hover:bg-slate-100/70 focus:outline-none cursor-pointer"
                     aria-label="User profile menu"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-600 font-bold text-white text-xs shadow-xs ring-2 ring-cyan-600/20">
@@ -461,11 +474,15 @@ export default function DashboardLayout({
                       <div className="text-xs font-bold text-slate-900 leading-tight">
                         {merchantName}
                       </div>
-                      {(currentUser?.verified || currentUser?.authenticated) && (
+                      {currentUser?.isCashier ? (
+                        <div className="text-[10px] font-medium text-cyan-600 leading-tight">
+                          {language === "es" ? "Cajero" : "Cashier"}
+                        </div>
+                      ) : (currentUser?.verified || currentUser?.authenticated) ? (
                         <div className="text-[10px] font-medium text-slate-400 leading-tight">
                           {t.dashboard.authenticated}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     <ChevronDown
                       className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-150 ${
@@ -489,31 +506,35 @@ export default function DashboardLayout({
                         </p>
                       </div>
                       <div className="my-1.5 border-t border-slate-100" />
-                      <Link
-                        href="/dashboard/tools"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
-                          pathname.startsWith("/dashboard/tools")
-                            ? "bg-cyan-50 text-cyan-700"
-                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
-                      >
-                        <Wrench className={`h-4 w-4 ${pathname.startsWith("/dashboard/tools") ? "text-cyan-700" : "text-slate-500"}`} />
-                        <span>{t.dashboard.tools}</span>
-                      </Link>
-                      <Link
-                        href="/dashboard/settings"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
-                          pathname.startsWith("/dashboard/settings")
-                            ? "bg-cyan-50 text-cyan-700"
-                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
-                      >
-                        <Settings className={`h-4 w-4 ${pathname.startsWith("/dashboard/settings") ? "text-cyan-700" : "text-slate-500"}`} />
-                        <span>{t.dashboard.settings}</span>
-                      </Link>
-                      <div className="my-1.5 border-t border-slate-100" />
+                      {!currentUser?.isCashier && (
+                        <>
+                          <Link
+                            href="/dashboard/tools"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
+                              pathname.startsWith("/dashboard/tools")
+                                ? "bg-cyan-50 text-cyan-700"
+                                : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                            }`}
+                          >
+                            <Wrench className={`h-4 w-4 ${pathname.startsWith("/dashboard/tools") ? "text-cyan-700" : "text-slate-500"}`} />
+                            <span>{t.dashboard.tools}</span>
+                          </Link>
+                          <Link
+                            href="/dashboard/settings"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
+                              pathname.startsWith("/dashboard/settings")
+                                ? "bg-cyan-50 text-cyan-700"
+                                : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                            }`}
+                          >
+                            <Settings className={`h-4 w-4 ${pathname.startsWith("/dashboard/settings") ? "text-cyan-700" : "text-slate-500"}`} />
+                            <span>{t.dashboard.settings}</span>
+                          </Link>
+                          <div className="my-1.5 border-t border-slate-100" />
+                        </>
+                      )}
                       <a
                         href="/api/auth/logout"
                         className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-cyan-600 transition hover:bg-cyan-50 hover:text-cyan-700"
@@ -527,19 +548,21 @@ export default function DashboardLayout({
               );
             })()}
 
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
-              aria-label="Open navigation menu"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
+            {!currentUser?.isCashier && (
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden cursor-pointer"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      {isMobileMenuOpen ? (
+      {isMobileMenuOpen && !currentUser?.isCashier ? (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <button
             type="button"
@@ -567,11 +590,13 @@ export default function DashboardLayout({
       ) : null}
 
       <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex xl:w-72 print:hidden">
-          <SidebarContent />
-        </aside>
+        {!currentUser?.isCashier && (
+          <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex xl:w-72 print:hidden">
+            <SidebarContent />
+          </aside>
+        )}
 
-        <main className="min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10 print:bg-white print:p-0">
+        <main className={`min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10 print:bg-white print:p-0 ${currentUser?.isCashier ? "!px-3 !py-4 sm:!px-6" : ""}`}>
           <div
             className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||

@@ -170,6 +170,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  const isCashier = Boolean(request.cookies.get("prado_cashier")?.value);
+
   if (isProtectedPath(pathname) && !hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -179,7 +181,14 @@ export function middleware(request: NextRequest) {
 
   if (pathname === "/login" && hasSession) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = isCashier ? "/dashboard/orders/pos" : "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // Restrict cashiers strictly to the POS terminal surface
+  if (isCashier && pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/orders/pos")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard/orders/pos";
     return NextResponse.redirect(url);
   }
 

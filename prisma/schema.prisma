@@ -173,6 +173,7 @@ model Product {
   description String?        @db.Text
   images      String[]
   featured    Boolean        @default(false)
+  taxable     Boolean        @default(true)
   status      ProductStatus  @default(DRAFT)
   productType ProductType    @default(PHYSICAL)
 

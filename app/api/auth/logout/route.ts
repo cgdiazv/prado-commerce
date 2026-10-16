@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { CASHIER_COOKIE } from "@/lib/session";
 
 const SESSION_COOKIE = "prado_session";
 const PLAN_COOKIE = "prado_plan";
@@ -15,6 +16,15 @@ function clearSession(response: NextResponse) {
   });
   response.cookies.set({
     name: PLAN_COOKIE,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set({
+    name: CASHIER_COOKIE,
     value: "",
     httpOnly: true,
     sameSite: "lax",

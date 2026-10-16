@@ -62,6 +62,7 @@ export type InventoryItem = {
   trackingType?: string; // "NONE" | "LOT" | "SERIAL"
   category?: string | null;
   imageUrl?: string | null;
+  taxable?: boolean;
   lots?: ItemLot[];
   serials?: ItemSerial[];
 };

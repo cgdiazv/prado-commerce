@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import POSModule from "@/components/pos/POSModule";
 import { InventoryItem, Customer, SalesRep, CompanySettings, PosStoreSettings } from "@/types/dashboard";
-import { Loader2, ArrowLeft, Store, RefreshCw, AlertCircle, Settings } from "lucide-react";
+import { Loader2, ArrowLeft, Store, RefreshCw, AlertCircle, Settings, LogOut } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { offlineSync } from "@/lib/offline-sync";
+import type { CashierSessionData } from "@/lib/session";
 import {
   getLocalInventory,
   getLocalCustomers,
@@ -31,6 +32,8 @@ interface PosClientViewProps {
   initialStoreId: string | null;
   userName?: string | null;
   userEmail?: string | null;
+  isCashier?: boolean;
+  cashierData?: CashierSessionData | null;
 }
 
 export function PosClientView({
@@ -38,6 +41,8 @@ export function PosClientView({
   initialStoreId,
   userName,
   userEmail,
+  isCashier = false,
+  cashierData,
 }: PosClientViewProps) {
   const router = useRouter();
   const { language } = useLanguage();
@@ -101,6 +106,7 @@ export function PosClientView({
                 category: product.categoryName || product.category?.name || "General",
                 imageUrl: product.images?.[0] || null,
                 trackingType: "NONE",
+                taxable: product.taxable !== false,
               });
             }
           } else {
@@ -114,6 +120,7 @@ export function PosClientView({
               category: product.categoryName || product.category?.name || "General",
               imageUrl: product.images?.[0] || null,
               trackingType: "NONE",
+              taxable: product.taxable !== false,
             });
           }
         }
@@ -274,6 +281,31 @@ export function PosClientView({
     await loadData(activeStoreId);
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+    window.location.href = "/login";
+  };
+
+  useEffect(() => {
+    if (cashierData?.cashierName) {
+      try {
+        const existing = localStorage.getItem("prado_pos_active_shift");
+        const parsed = existing ? JSON.parse(existing) : {};
+        localStorage.setItem(
+          "prado_pos_active_shift",
+          JSON.stringify({
+            registerName: parsed.registerName || (isEs ? "Caja 01 - Principal" : "Register 01 - Main"),
+            cashierName: cashierData.cashierName,
+          })
+        );
+      } catch {}
+    }
+  }, [cashierData?.cashierName, isEs]);
+
   if (!stores || stores.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl shadow-sm border border-slate-200 my-8">
@@ -319,16 +351,32 @@ export function PosClientView({
       {/* Top Bar Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:px-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/dashboard/orders")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{isEs ? "Volver a Pedidos" : "Back to Orders"}</span>
-          </button>
+          {isCashier ? (
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition shadow-2xs cursor-pointer"
+              title={isEs ? "Cerrar sesión de cajero" : "Log out"}
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>{isEs ? "Cerrar Sesión" : "Log Out"}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push("/dashboard/orders")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{isEs ? "Volver a Pedidos" : "Back to Orders"}</span>
+            </button>
+          )}
 
-          {/* Store Switcher */}
-          {stores.length > 1 && (
+          {/* Store Switcher or Cashier Store Indicator */}
+          {isCashier ? (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+              <Store className="w-3.5 h-3.5 text-cyan-600" />
+              <span className="font-semibold text-slate-800">{activeStore?.name}</span>
+            </div>
+          ) : stores.length > 1 ? (
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500 hidden sm:inline">
                 {isEs ? "Tienda:" : "Store:"}
@@ -345,17 +393,19 @@ export function PosClientView({
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Link
-            href={`/dashboard/settings/pos?storeId=${activeStoreId}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-cyan-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition"
-          >
-            <Settings className="w-3.5 h-3.5 text-cyan-600" />
-            <span>{isEs ? "Configurar Cajas y Cajeros" : "POS Settings"}</span>
-          </Link>
+          {(!isCashier || cashierData?.cashierRole === "MANAGER") && (
+            <Link
+              href={`/dashboard/settings/pos?storeId=${activeStoreId}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-cyan-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition"
+            >
+              <Settings className="w-3.5 h-3.5 text-cyan-600" />
+              <span>{isEs ? "Configurar Cajas y Cajeros" : "POS Settings"}</span>
+            </Link>
+          )}
 
           {error && (
             <span className="text-xs text-amber-600 flex items-center gap-1">
@@ -368,7 +418,7 @@ export function PosClientView({
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition disabled:opacity-50 cursor-pointer"
             title={isEs ? "Recargar productos e inventario" : "Reload products and inventory"}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-cyan-600" : ""}`} />
@@ -396,8 +446,10 @@ export function PosClientView({
             })}`
           }
           onRefreshData={handleRefresh}
-          onNavigateBack={() => router.push("/dashboard/orders")}
+          onNavigateBack={isCashier ? handleLogout : () => router.push("/dashboard/orders")}
           isStandalone={false}
+          activeCashierName={cashierData?.cashierName}
+          isCashier={isCashier}
         />
       </div>
     </div>

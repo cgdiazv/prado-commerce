@@ -89,6 +89,8 @@ export interface POSModuleProps {
   storeId?: string;
   language?: "es" | "en";
   posSettings?: PosStoreSettings;
+  activeCashierName?: string;
+  isCashier?: boolean;
 }
 
 export default function POSModule({
@@ -106,6 +108,8 @@ export default function POSModule({
   storeId,
   language: propLanguage,
   posSettings,
+  activeCashierName,
+  isCashier = false,
 }: POSModuleProps) {
   const { language: contextLang } = useLanguage();
   const activeLang = propLanguage || contextLang || "en";
@@ -308,7 +312,7 @@ export default function POSModule({
         price: Number(product.price) || 0,
         selectedTier: "P1",
         quantity: 1,
-        taxRate: 0.15, // Standard 15% Tax
+        taxRate: product.taxable === false ? 0 : 0.15, // 0% if exempt/non-taxable, 15% standard ISV
         trackingType: product.trackingType,
         imageUrl: product.imageUrl,
         maxStock: product.quantity,
@@ -440,6 +444,9 @@ export default function POSModule({
   });
 
   const [selectedSalesRep, setSelectedSalesRep] = useState<string>(() => {
+    if (activeCashierName) {
+      return activeCashierName;
+    }
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("prado_pos_active_shift");
@@ -451,6 +458,12 @@ export default function POSModule({
     }
     return salesReps.length > 0 ? salesReps[0].name : (isEs ? "Cajero Principal" : "Main Cashier");
   });
+
+  useEffect(() => {
+    if (activeCashierName) {
+      setSelectedSalesRep(activeCashierName);
+    }
+  }, [activeCashierName]);
 
   // Modal to change Register & Cashier
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -772,7 +785,7 @@ export default function POSModule({
     }
 
     // Security PIN authorization if requireCashierPin is enabled in store preferences
-    if (posSettings?.requireCashierPin) {
+    if (posSettings?.requireCashierPin && (!isCashier || selectedSalesRep.toLowerCase() !== activeCashierName?.toLowerCase())) {
       const matchingCashier = posSettings?.cashiers?.find(
         (c) => c.name.toLowerCase() === selectedSalesRep.toLowerCase()
       );

@@ -1070,13 +1070,13 @@ export function PosSettingsClient({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {isEs ? "Correo Electrónico (Opcional)" : "Email Address (Optional)"}
+                  {isEs ? "Correo Electrónico (Acceso a POS desde /login con PIN)" : "Email Address (POS login from /login using PIN)"}
                 </label>
                 <input
                   type="email"
                   value={cashierForm.email}
                   onChange={(e) => setCashierForm({ ...cashierForm, email: e.target.value })}
-                  placeholder="cashier@example.com"
+                  placeholder="cajero@mitienda.com"
                   className="w-full text-xs rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-slate-800 focus:bg-white focus:border-cyan-500 focus:outline-none"
                 />
               </div>

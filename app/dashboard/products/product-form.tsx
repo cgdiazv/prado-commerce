@@ -35,6 +35,8 @@ type Product = {
   condition?: string | null;
   conditionNotes?: string | null;
   images: string[];
+  featured?: boolean;
+  taxable?: boolean;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string | null;
@@ -55,6 +57,7 @@ type ProductFormState = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string;
+  taxable: boolean;
 };
 
 type VariantFormState = {
@@ -93,6 +96,7 @@ const emptyProduct: ProductFormState = {
   status: "DRAFT",
   productType: "PHYSICAL",
   categoryId: "",
+  taxable: true,
 };
 
 async function parseUploadResponse(response: Response): Promise<{ url?: string; error?: string }> {
@@ -133,6 +137,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   const [availableCategories, setAvailableCategories] = useState<Category[]>(categories);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isCreatingNewCategoryMode, setIsCreatingNewCategoryMode] = useState(false);
   const [editingProduct] = useState(initialProduct);
   const [productForm, setProductForm] = useState<ProductFormState>(
     initialProduct
@@ -148,6 +153,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           status: initialProduct.status,
           productType: initialProduct.productType ?? "PHYSICAL",
           categoryId: initialProduct.categoryId ?? "",
+          taxable: initialProduct.taxable !== undefined ? Boolean(initialProduct.taxable) : true,
         }
       : emptyProduct,
   );
@@ -359,6 +365,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
 
       setProductForm((current) => ({ ...current, categoryId: createdCategory.id }));
       setNewCategoryName("");
+      setIsCreatingNewCategoryMode(false);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Failed to create category");
     } finally {
@@ -386,6 +393,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         status: productForm.status,
         productType: productForm.productType,
         categoryId: productForm.categoryId || null,
+        taxable: productForm.taxable,
         variants: variants
           .filter((variant) => variant.price.trim())
           .map((variant) => ({
@@ -498,43 +506,75 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               <option value="ACTIVE">{isEs ? "Publicado" : "Published"}</option>
             </select>
           </label>
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Categoría" : "Category"}</span>
-            <select
-              value={productForm.categoryId}
-              onChange={(event) => setProductForm((current) => ({ ...current, categoryId: event.target.value }))}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-            >
-              <option value="">{isEs ? "Sin categoría" : "No category"}</option>
-              {activeStoreCategories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Categoría" : "Category"}</span>
+              {isCreatingNewCategoryMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingNewCategoryMode(false);
+                      setNewCategoryName("");
+                    }}
+                    className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                  >
+                    {isEs ? "Cancelar" : "Cancel"}
+                  </button>
+                  <span className="text-xs text-slate-300">•</span>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateCategory()}
+                    disabled={isCreatingCategory || !newCategoryName.trim()}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isCreatingCategory
+                      ? (isEs ? "Guardando..." : "Saving...")
+                      : (isEs ? "Guardar nueva" : "Save new")}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingNewCategoryMode(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {isEs ? "+ Añadir nueva" : "+ Add new"}
+                </button>
+              )}
+            </div>
+
+            {isCreatingNewCategoryMode ? (
               <input
+                type="text"
+                autoFocus
                 value={newCategoryName}
                 onChange={(event) => setNewCategoryName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
                     void handleCreateCategory();
+                  } else if (event.key === "Escape") {
+                    setIsCreatingNewCategoryMode(false);
+                    setNewCategoryName("");
                   }
                 }}
-                placeholder={isEs ? "Crear nueva categoría" : "Create new category"}
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                placeholder={isEs ? "Escribe el nombre de la nueva categoría..." : "Type new category name..."}
+                className="w-full rounded-xl border border-blue-400 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
               />
-              <button
-                type="button"
-                onClick={() => void handleCreateCategory()}
-                disabled={isCreatingCategory}
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            ) : (
+              <select
+                value={productForm.categoryId}
+                onChange={(event) => setProductForm((current) => ({ ...current, categoryId: event.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                {isCreatingCategory
-                  ? isEs ? "Añadiendo..." : "Adding..."
-                  : isEs ? "Añadir" : "Add"}
-              </button>
-            </div>
-          </label>
+                <option value="">{isEs ? "Sin categoría" : "No category"}</option>
+                {activeStoreCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <label className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Descripción" : "Description"}</span>
             <textarea
@@ -702,6 +742,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
                 setActiveStoreId(event.target.value);
                 setProductForm((current) => ({ ...current, categoryId: "" }));
                 setNewCategoryName("");
+                setIsCreatingNewCategoryMode(false);
               }}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:w-auto sm:min-w-[260px]"
             >
@@ -712,6 +753,42 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold text-slate-950">
+              {isEs ? "Impuestos" : "Taxes"}
+            </h3>
+            <p className="text-sm text-slate-500">
+              {isEs
+                ? "Configura si este producto está sujeto al impuesto sobre ventas (ISV)."
+                : "Configure whether this product is subject to sales tax (ISV)."}
+            </p>
+          </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 transition hover:bg-slate-50">
+            <input
+              type="checkbox"
+              checked={productForm.taxable}
+              onChange={(event) =>
+                setProductForm((current) => ({
+                  ...current,
+                  taxable: event.target.checked,
+                }))
+              }
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div className="space-y-0.5">
+              <span className="text-sm font-semibold text-slate-900">
+                {isEs ? "Cobrar impuesto sobre este producto (Gravable)" : "Charge tax on this product (Taxable)"}
+              </span>
+              <p className="text-xs text-slate-500">
+                {isEs
+                  ? "Si se desmarca, este producto se considerará exento de impuestos (0% ISV) en las ventas de la tienda y en el POS."
+                  : "If unchecked, this product will be treated as tax-exempt (0% tax) during checkout and POS sales."}
+              </p>
+            </div>
+          </label>
         </div>
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

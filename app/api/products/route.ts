@@ -105,6 +105,7 @@ export async function GET(request: Request) {
         conditionNotes: true,
         images: true,
         featured: true,
+        taxable: true,
         status: true,
         productType: true,
         categoryId: true,
@@ -171,6 +172,7 @@ export async function POST(request: Request) {
       images,
       status,
       featured,
+      taxable,
       productType,
       categoryId,
       variants,
@@ -187,6 +189,7 @@ export async function POST(request: Request) {
       images?: string[];
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
       featured?: boolean;
+      taxable?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       variants?: unknown;
@@ -251,6 +254,7 @@ export async function POST(request: Request) {
         images: Array.isArray(images) ? images.filter((image) => typeof image === "string") : [],
         status: status ?? "DRAFT",
         featured: typeof featured === "boolean" ? featured : false,
+        taxable: typeof taxable === "boolean" ? taxable : true,
         productType: productType ?? "PHYSICAL",
         categoryId: categoryId ?? null,
         variants: parsedVariants.length

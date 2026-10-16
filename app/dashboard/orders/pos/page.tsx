@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, getCurrentCashier } from "@/lib/session";
 import { PosClientView } from "./pos-client-view";
 
 type PosPageProps = {
@@ -11,21 +11,24 @@ type PosPageProps = {
 export default async function PosPage({ searchParams }: PosPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const user = await getCurrentUser();
+  const cashier = await getCurrentCashier();
 
-  if (!user) {
+  if (!user && !cashier) {
     return (
       <PosClientView
         stores={[]}
         initialStoreId={null}
         userName={null}
         userEmail={null}
+        isCashier={false}
+        cashierData={null}
       />
     );
   }
 
   try {
     const stores = await prisma.store.findMany({
-      where: { ownerUserId: user.id },
+      where: cashier?.storeId ? { id: cashier.storeId } : (user ? { ownerUserId: user.id } : undefined),
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -39,14 +42,16 @@ export default async function PosPage({ searchParams }: PosPageProps) {
       },
     });
 
-    const selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    const selectedStoreId = cashier?.storeId ?? resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
 
     return (
       <PosClientView
         stores={stores}
         initialStoreId={selectedStoreId}
-        userName={user.name}
-        userEmail={user.email}
+        userName={cashier?.cashierName ?? user?.name ?? null}
+        userEmail={cashier?.cashierEmail ?? user?.email ?? null}
+        isCashier={Boolean(cashier)}
+        cashierData={cashier}
       />
     );
   } catch (error) {
@@ -56,8 +61,10 @@ export default async function PosPage({ searchParams }: PosPageProps) {
       <PosClientView
         stores={[]}
         initialStoreId={null}
-        userName={user.name}
-        userEmail={user.email}
+        userName={cashier?.cashierName ?? user?.name ?? null}
+        userEmail={cashier?.cashierEmail ?? user?.email ?? null}
+        isCashier={Boolean(cashier)}
+        cashierData={cashier}
       />
     );
   }

@@ -167,3 +167,39 @@ export async function getCurrentUserFromRequest(request: Request) {
     return null;
   }
 }
+
+export const CASHIER_COOKIE = "prado_cashier";
+
+export type CashierSessionData = {
+  cashierId: string;
+  cashierName: string;
+  cashierEmail: string;
+  cashierRole: "CASHIER" | "SUPERVISOR" | "MANAGER";
+  storeId: string;
+  storeName: string;
+  ownerEmail?: string | null;
+};
+
+export function parseCashierCookie(rawValue: string | undefined): CashierSessionData | null {
+  if (!rawValue) return null;
+  try {
+    const decoded = decodeURIComponent(rawValue);
+    const parsed = JSON.parse(decoded);
+    if (parsed && typeof parsed === "object" && parsed.cashierId && parsed.storeId) {
+      return parsed as CashierSessionData;
+    }
+  } catch {}
+  return null;
+}
+
+export async function getCurrentCashier(): Promise<CashierSessionData | null> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(CASHIER_COOKIE)?.value;
+  return parseCashierCookie(raw);
+}
+
+export function getCurrentCashierFromRequest(request: Request): CashierSessionData | null {
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${CASHIER_COOKIE}=([^;]+)`));
+  return parseCashierCookie(match?.[1]);
+}
