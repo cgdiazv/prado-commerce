@@ -60,6 +60,13 @@ export function SettingsView({ user }: SettingsViewProps) {
         : "Configure tax rules and recommended tax services.",
       href: "/dashboard/settings/tax",
     },
+    {
+      title: isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)",
+      detail: isEs
+        ? "Administra terminales físicas, cajas registradoras, cajeros autorizados y códigos PIN."
+        : "Manage physical registers, checkouts, cashiers, and operator PINs.",
+      href: "/dashboard/settings/pos",
+    },
   ];
 
   const securityItems = [

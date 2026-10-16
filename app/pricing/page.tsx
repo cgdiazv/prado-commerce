@@ -247,7 +247,7 @@ function PricingPageContent() {
               {billingMode === "annual" ? (
                 <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-teal-100">{tier.annualBillingLabel}</p>
               ) : null}
-              <p className="mt-1 text-sm text-slate-200/85">{tier.feeLabel}</p>
+              {tier.feeLabel ? <p className="mt-1 text-sm text-slate-200/85">{tier.feeLabel}</p> : null}
               <p className="mt-4 text-sm leading-6 text-slate-200/90">{tier.audience}</p>
 
               <dl className="mt-5 space-y-3 text-sm">

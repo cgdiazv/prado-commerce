@@ -75,7 +75,7 @@ export interface Translations {
       monthlyPriceLabel: string;
       annualPriceLabel: string;
       annualBillingLabel: string;
-      feeLabel: string;
+      feeLabel?: string;
       audience: string;
       stores: string;
       products: string;
@@ -137,6 +137,10 @@ export interface Translations {
     addProduct: string;
     categories: string;
     orders: string;
+    allOrders: string;
+    newOrder: string;
+    pointOfSale: string;
+    posSettings: string;
     procurement: string;
     procurementOverview: string;
     purchaseOrders: string;
@@ -353,7 +357,6 @@ export const translations: Record<Language, Translations> = {
       comparisonRows: [
         { label: "Facturación mensual", values: ["$0", "$49", "$199"] },
         { label: "Facturación anual", values: ["$0", "$39/mes ($468/año)", "$159/mes ($1.908/año)"] },
-        { label: "Comisión de plataforma", values: ["2%", "0.5%", "0%"] },
         { label: "Tiendas activas", values: ["1", "Hasta 5", "Ilimitadas"] },
         { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
         {
@@ -371,7 +374,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$0 / mes",
           annualPriceLabel: "$0 / año",
           annualBillingLabel: "Gratis en facturación anual",
-          feeLabel: "+ 2% de comisión de plataforma",
           audience: "Creadores independientes y pequeñas tiendas que prueban sitios personalizados.",
           stores: "1 tienda",
           products: "Hasta 50 productos",
@@ -388,7 +390,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$49 / mes",
           annualPriceLabel: "$39 / mes",
           annualBillingLabel: "Facturado anualmente como $468",
-          feeLabel: "+ 0.5% de comisión por transacción",
           audience: "Comerciantes en expansión, agencias y tiendas medianas.",
           stores: "Hasta 5 tiendas",
           products: "Productos ilimitados",
@@ -405,7 +406,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$199 / mes",
           annualPriceLabel: "$159 / mes",
           annualBillingLabel: "Facturado anualmente como $1.908",
-          feeLabel: "0% de comisión por transacción",
           audience: "Marcas de alto volumen y operaciones integradas con TPV/POS.",
           stores: "Tiendas ilimitadas",
           products: "Productos ilimitados",
@@ -467,6 +467,10 @@ export const translations: Record<Language, Translations> = {
       addProduct: "Añadir producto",
       categories: "Categorías",
       orders: "Pedidos",
+      allOrders: "Todos los pedidos",
+      newOrder: "Nuevo pedido",
+      pointOfSale: "Punto de Venta (POS)",
+      posSettings: "Configuración POS",
       procurement: "Compras",
       procurementOverview: "Resumen",
       purchaseOrders: "Órdenes de compra",
@@ -681,7 +685,6 @@ export const translations: Record<Language, Translations> = {
       comparisonRows: [
         { label: "Monthly billing", values: ["$0", "$49", "$199"] },
         { label: "Annual billing", values: ["$0", "$39/mo ($468/yr)", "$159/mo ($1,908/yr)"] },
-        { label: "Platform fee", values: ["2%", "0.5%", "0%"] },
         { label: "Active stores", values: ["1", "Up to 5", "Unlimited"] },
         { label: "Products", values: ["Up to 50", "Unlimited", "Unlimited"] },
         {
@@ -699,7 +702,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$0 / mo",
           annualPriceLabel: "$0 / yr",
           annualBillingLabel: "Free on annual billing",
-          feeLabel: "+ 2% platform transaction fee",
           audience: "Individual creators and small shops testing custom sites.",
           stores: "1 store",
           products: "Up to 50 products",
@@ -716,7 +718,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$49 / mo",
           annualPriceLabel: "$39 / mo",
           annualBillingLabel: "Billed yearly as $468",
-          feeLabel: "+ 0.5% transaction fee",
           audience: "Scaling merchants, agencies, and medium storefront teams.",
           stores: "Up to 5 stores",
           products: "Unlimited products",
@@ -733,7 +734,6 @@ export const translations: Record<Language, Translations> = {
           monthlyPriceLabel: "$199 / mo",
           annualPriceLabel: "$159 / mo",
           annualBillingLabel: "Billed yearly as $1,908",
-          feeLabel: "0% transaction fee",
           audience: "High-volume brands and POS-integrated operations.",
           stores: "Unlimited stores",
           products: "Unlimited products",
@@ -795,6 +795,10 @@ export const translations: Record<Language, Translations> = {
       addProduct: "Add Product",
       categories: "Categories",
       orders: "Orders",
+      allOrders: "All Orders",
+      newOrder: "New Order",
+      pointOfSale: "Point of Sale (POS)",
+      posSettings: "POS Settings",
       procurement: "Procurement",
       procurementOverview: "Overview",
       purchaseOrders: "Purchase Orders",

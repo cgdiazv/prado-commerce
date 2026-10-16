@@ -16,7 +16,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     allowCustomDomains: false,
     allowShipStation: false,
     apiRateLimitPerMinute: 60,
-    platformFeeRate: 0.02,
+    platformFeeRate: 0,
   },
   PRO: {
     maxStores: 5,
@@ -24,7 +24,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     allowCustomDomains: true,
     allowShipStation: false,
     apiRateLimitPerMinute: 1000,
-    platformFeeRate: 0.005,
+    platformFeeRate: 0,
   },
   ENTERPRISE: {
     maxStores: Number.POSITIVE_INFINITY,

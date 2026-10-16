@@ -92,6 +92,7 @@ model Store {
   invoiceFooterText String?
   invoicePrefix  String?    @default("INV-")
   nextInvoiceNumber Int     @default(1001)
+  posSettings    Json?
 
   apiKeys        ApiKey[]
   products       Product[]

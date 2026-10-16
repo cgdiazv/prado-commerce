@@ -334,36 +334,43 @@ export function CategoriesDashboard({
 
                     return (
                       <tr key={category.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            value={isEditing ? editingCategoryName : category.name}
-                            onChange={(event) => setEditingCategoryName(event.target.value)}
-                            disabled={!isEditing}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none disabled:bg-slate-100"
-                          />
+                        <td className="px-4 py-3 align-middle">
+                          {isEditing ? (
+                            <input
+                              value={editingCategoryName}
+                              onChange={(event) => setEditingCategoryName(event.target.value)}
+                              autoFocus
+                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                            />
+                          ) : (
+                            <span className="font-medium text-slate-900">{category.name}</span>
+                          )}
                         </td>
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            value={isEditing ? editingCategorySlug : category.slug}
-                            onChange={(event) => setEditingCategorySlug(event.target.value)}
-                            disabled={!isEditing}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none disabled:bg-slate-100"
-                          />
+                        <td className="px-4 py-3 align-middle">
+                          {isEditing ? (
+                            <input
+                              value={editingCategorySlug}
+                              onChange={(event) => setEditingCategorySlug(event.target.value)}
+                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                            />
+                          ) : (
+                            <span className="text-slate-600">{category.slug}</span>
+                          )}
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-600">
+                        <td className="px-4 py-3 align-middle text-slate-600">
                           {category.parentCategoryId
                             ? (activeStoreCategoryNameById.get(category.parentCategoryId) ?? "-")
                             : "-"}
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-600">
+                        <td className="px-4 py-3 align-middle text-slate-600">
                           {category.parentCategoryId
                             ? (activeStoreCategorySlugById.get(category.parentCategoryId) ?? "-")
                             : "-"}
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-600">
+                        <td className="px-4 py-3 align-middle text-slate-600">
                           {category.updatedAt ? new Date(category.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US") : "-"}
                         </td>
-                        <td className="px-4 py-3 align-top">
+                        <td className="px-4 py-3 align-middle">
                           <div className="flex justify-end gap-2">
                             {isEditing ? (
                               <>
@@ -373,7 +380,7 @@ export function CategoriesDashboard({
                                   disabled={!editingCategoryName.trim() || isCategorySaving}
                                   aria-label={isEs ? "Guardar categoría" : "Save category"}
                                   title={isEs ? "Guardar" : "Save"}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <Check className="h-4 w-4" />
                                 </button>
@@ -382,7 +389,7 @@ export function CategoriesDashboard({
                                   onClick={cancelEditCategory}
                                   aria-label={isEs ? "Cancelar edición" : "Cancel category edit"}
                                   title={isEs ? "Cancelar" : "Cancel"}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-white"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
@@ -393,7 +400,7 @@ export function CategoriesDashboard({
                                 onClick={() => beginEditCategory(category)}
                                 aria-label={isEs ? "Editar categoría" : "Edit category"}
                                 title={isEs ? "Editar" : "Edit"}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:bg-white"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                               >
                                 <Pencil className="h-4 w-4" />
                               </button>
@@ -404,7 +411,7 @@ export function CategoriesDashboard({
                               disabled={isCategorySaving}
                               aria-label={isEs ? "Eliminar categoría" : "Delete category"}
                               title={isEs ? "Eliminar" : "Delete"}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>

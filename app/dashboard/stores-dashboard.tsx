@@ -338,7 +338,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                                   href={`/dashboard/stores/${store.id}`}
                                   aria-label={isEs ? "Editar tienda" : "Edit store"}
                                   title={isEs ? "Editar tienda" : "Edit store"}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Link>
@@ -358,7 +358,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                                   }}
                                   aria-label={isEs ? "Eliminar tienda" : "Delete store"}
                                   title={deletingStoreId === store.id ? (isEs ? "Eliminando..." : "Deleting") : (isEs ? "Eliminar" : "Delete")}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -435,7 +435,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                               href={`/dashboard/stores/${store.id}`}
                               aria-label={isEs ? "Editar tienda" : "Edit store"}
                               title={isEs ? "Editar tienda" : "Edit store"}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                             >
                               <Pencil className="h-4 w-4" />
                             </Link>
@@ -454,7 +454,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                                 }
                               }}
                               aria-label={isEs ? "Eliminar tienda" : "Delete store"}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>

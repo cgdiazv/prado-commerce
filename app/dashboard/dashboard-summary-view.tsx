@@ -37,25 +37,21 @@ export function DashboardSummaryView({
       label: t.dashboard.totalStores,
       value: totalStores.toString(),
       icon: Store,
-      color: "cyan",
     },
     {
       label: t.dashboard.totalProducts,
       value: totalProducts.toString(),
       icon: ShoppingCart,
-      color: "blue",
     },
     {
       label: t.dashboard.totalRevenue,
       value: formatter.format(totalRevenue),
       icon: DollarSign,
-      color: "green",
     },
     {
       label: t.dashboard.totalOrders,
       value: totalOrders.toString(),
       icon: TrendingUp,
-      color: "purple",
     },
   ];
 
@@ -94,23 +90,13 @@ export function DashboardSummaryView({
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {summaryCards.map((card) => {
             const Icon = card.icon;
-            const colorClasses: Record<string, string> = {
-              cyan: "bg-cyan-50 text-cyan-700 border-cyan-200",
-              blue: "bg-blue-50 text-blue-700 border-blue-200",
-              green: "bg-green-50 text-green-700 border-green-200",
-              purple: "bg-purple-50 text-purple-700 border-purple-200",
-            };
 
             return (
               <div
                 key={card.label}
-                className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
               >
-                <div
-                  className={`inline-flex rounded-lg border p-2 ${
-                    colorClasses[card.color] || colorClasses.cyan
-                  }`}
-                >
+                <div className="inline-flex rounded border border-slate-200/80 bg-slate-50 p-2 text-slate-700 shadow-2xs">
                   <Icon className="h-5 w-5" />
                 </div>
                 <p className="mt-4 text-sm font-medium text-slate-600">

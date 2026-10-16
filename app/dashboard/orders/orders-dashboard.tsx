@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Store } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -311,6 +311,10 @@ export function OrdersDashboard({
     ? `/dashboard/orders/new?storeId=${encodeURIComponent(activeStoreId)}`
     : "/dashboard/orders/new";
 
+  const posHref = activeStoreId
+    ? `/dashboard/orders/pos?storeId=${encodeURIComponent(activeStoreId)}`
+    : "/dashboard/orders/pos";
+
   return (
     <section className="min-w-0">
       {setupError ? (
@@ -335,13 +339,23 @@ export function OrdersDashboard({
             </p>
           </div>
 
-          <Link
-            href={createHref}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Plus className="h-4 w-4" />
-            {isEs ? "Nuevo pedido" : "New order"}
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={posHref}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm"
+            >
+              <Store className="h-4 w-4 text-cyan-600" />
+              {isEs ? "Terminal Punto de Venta (POS)" : "Point of Sale (POS)"}
+            </Link>
+
+            <Link
+              href={createHref}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Plus className="h-4 w-4" />
+              {isEs ? "Nuevo pedido" : "New order"}
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">

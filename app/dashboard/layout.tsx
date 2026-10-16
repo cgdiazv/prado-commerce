@@ -55,10 +55,13 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { t, language } = useLanguage();
   const currentYear = new Date().getFullYear();
-  const [isProductsOpen, setIsProductsOpen] = useState(pathname.startsWith("/dashboard/products"));
-  const [isProcurementOpen, setIsProcurementOpen] = useState(pathname.startsWith("/dashboard/procurement"));
-  const [isStoresOpen, setIsStoresOpen] = useState(pathname.startsWith("/dashboard/stores"));
-  const [isToolsOpen, setIsToolsOpen] = useState(pathname.startsWith("/dashboard/tools"));
+  const [openSection, setOpenSection] = useState<string | null>(() => {
+    if (pathname.startsWith("/dashboard/orders")) return "/dashboard/orders";
+    if (pathname.startsWith("/dashboard/products")) return "/dashboard/products";
+    if (pathname.startsWith("/dashboard/procurement")) return "/dashboard/procurement";
+    if (pathname.startsWith("/dashboard/stores")) return "/dashboard/stores";
+    return null;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
@@ -217,7 +220,16 @@ export default function DashboardLayout({
 
   const navItems: NavItem[] = [
     { href: "/dashboard", label: t.dashboard.merchantDashboard, icon: Home },
-    { href: "/dashboard/orders", label: t.dashboard.orders, icon: ShoppingCart },
+    {
+      href: "/dashboard/orders",
+      label: t.dashboard.orders,
+      icon: ShoppingCart,
+      children: [
+        { href: "/dashboard/orders", label: t.dashboard.allOrders },
+        { href: "/dashboard/orders/new", label: t.dashboard.newOrder },
+        { href: "/dashboard/orders/pos", label: t.dashboard.pointOfSale },
+      ],
+    },
     {
       href: "/dashboard/products",
       label: t.dashboard.products,
@@ -251,16 +263,6 @@ export default function DashboardLayout({
         },
       ],
     },
-    {
-      href: "/dashboard/tools",
-      label: t.dashboard.tools,
-      icon: Wrench,
-      children: [
-        { href: "/dashboard/tools/import-tables", label: t.dashboard.importTables },
-        { href: "/dashboard/tools/export-tables", label: t.dashboard.exportTables },
-      ],
-    },
-    { href: "/dashboard/settings", label: t.dashboard.settings, icon: Settings },
   ];
 
   function isActive(href: string): boolean {
@@ -271,64 +273,25 @@ export default function DashboardLayout({
   }
 
   useEffect(() => {
-    if (pathname.startsWith("/dashboard/products")) {
-      setIsProductsOpen(true);
-    }
-
-    if (pathname.startsWith("/dashboard/procurement")) {
-      setIsProcurementOpen(true);
-    }
-
-    if (pathname.startsWith("/dashboard/stores")) {
-      setIsStoresOpen(true);
-    }
-
-    if (pathname.startsWith("/dashboard/tools")) {
-      setIsToolsOpen(true);
+    if (pathname.startsWith("/dashboard/orders")) {
+      setOpenSection("/dashboard/orders");
+    } else if (pathname.startsWith("/dashboard/products")) {
+      setOpenSection("/dashboard/products");
+    } else if (pathname.startsWith("/dashboard/procurement")) {
+      setOpenSection("/dashboard/procurement");
+    } else if (pathname.startsWith("/dashboard/stores")) {
+      setOpenSection("/dashboard/stores");
     }
 
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
   function isSectionOpen(href: string) {
-    if (href === "/dashboard/products") {
-      return isProductsOpen;
-    }
-
-    if (href === "/dashboard/procurement") {
-      return isProcurementOpen;
-    }
-
-    if (href === "/dashboard/stores") {
-      return isStoresOpen;
-    }
-
-    if (href === "/dashboard/tools") {
-      return isToolsOpen;
-    }
-
-    return false;
+    return openSection === href;
   }
 
   function toggleSection(href: string) {
-    if (href === "/dashboard/products") {
-      setIsProductsOpen((open) => !open);
-      return;
-    }
-
-    if (href === "/dashboard/procurement") {
-      setIsProcurementOpen((open) => !open);
-      return;
-    }
-
-    if (href === "/dashboard/stores") {
-      setIsStoresOpen((open) => !open);
-      return;
-    }
-
-    if (href === "/dashboard/tools") {
-      setIsToolsOpen((open) => !open);
-    }
+    setOpenSection((current) => (current === href ? null : href));
   }
 
   function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -343,24 +306,27 @@ export default function DashboardLayout({
               <div key={item.href} className="space-y-1">
                 {item.children ? (
                   <div
-                    className={`flex items-center rounded-lg px-1 py-1 text-sm font-medium transition ${
+                    className={`flex items-center rounded px-1 py-1 text-sm font-medium transition border-l-2 ${
                       active
-                        ? "bg-cyan-50 text-cyan-700"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                        : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     <Link
                       href={item.href}
-                      onClick={() => onNavigate?.()}
-                      className="flex flex-1 items-center gap-3 px-3 py-1.5"
+                      onClick={() => {
+                        setOpenSection(item.href);
+                        onNavigate?.();
+                      }}
+                      className="flex flex-1 min-w-0 items-center gap-3 px-3 py-1.5"
                     >
-                      <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
-                      <span>{item.label}</span>
+                      <Icon className="h-4 w-4 shrink-0 text-current" />
+                      <span className="truncate">{item.label}</span>
                     </Link>
                     <button
                       type="button"
                       onClick={() => toggleSection(item.href)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/80 hover:text-slate-700"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/80 hover:text-slate-700"
                       aria-label={isSectionOpen(item.href) ? "Hide submenu" : "Show submenu"}
                     >
                       {isSectionOpen(item.href) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -370,14 +336,14 @@ export default function DashboardLayout({
                   <Link
                     href={item.href}
                     onClick={() => onNavigate?.()}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                    className={`flex items-center gap-3 rounded px-4 py-2.5 text-sm font-medium transition border-l-2 ${
                       active
-                        ? "bg-cyan-50 text-cyan-700"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                        : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${active ? "text-cyan-700" : "text-cyan-600"}`} />
-                    <span>{item.label}</span>
+                    <Icon className="h-4 w-4 shrink-0 text-current" />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 )}
 
@@ -385,29 +351,35 @@ export default function DashboardLayout({
                   <div className="ml-5 space-y-1 border-l border-slate-200 pl-2">
                     {item.children.map((child) => {
                       const childActive =
-                        item.href === "/dashboard/products"
-                          ? child.href === "/dashboard/products/new"
-                            ? pathname === "/dashboard/products/new"
-                            : child.href === "/dashboard/products/categories"
-                              ? pathname === "/dashboard/products/categories"
-                              : pathname === "/dashboard/products"
-                          : item.href === "/dashboard/stores"
-                            ? child.label === "Themes"
-                              ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")
-                              : pathname === "/dashboard/stores"
-                            : item.href === "/dashboard/tools"
-                              ? pathname === child.href
-                            : pathname === child.href;
+                        item.href === "/dashboard/orders"
+                          ? child.href === "/dashboard/orders/new"
+                            ? pathname === "/dashboard/orders/new"
+                            : child.href === "/dashboard/orders/pos"
+                              ? pathname.startsWith("/dashboard/orders/pos")
+                              : pathname === "/dashboard/orders"
+                          : item.href === "/dashboard/products"
+                            ? child.href === "/dashboard/products/new"
+                              ? pathname === "/dashboard/products/new"
+                              : child.href === "/dashboard/products/categories"
+                                ? pathname === "/dashboard/products/categories"
+                                : pathname === "/dashboard/products"
+                            : item.href === "/dashboard/stores"
+                              ? child.label === "Themes"
+                                ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")
+                                : pathname === "/dashboard/stores"
+                              : item.href === "/dashboard/tools"
+                                ? pathname === child.href
+                              : pathname === child.href;
 
                       return (
                         <Link
                           key={`${child.href}:${child.label}`}
                           href={child.href}
                           onClick={() => onNavigate?.()}
-                          className={`block rounded-md px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition ${
+                          className={`block truncate rounded px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition border-l-2 ${
                             childActive
-                              ? "bg-cyan-50 text-cyan-700"
-                              : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                              ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                              : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                           }`}
                         >
                           {child.label}
@@ -425,13 +397,13 @@ export default function DashboardLayout({
             <Link
               href="/dashboard/help"
               onClick={() => onNavigate?.()}
-              className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+              className={`flex items-center gap-3 rounded px-4 py-2.5 text-sm font-medium transition border-l-2 ${
                 isHelpActive
-                  ? "bg-cyan-50 text-cyan-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                  : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <CircleHelp className={`h-4 w-4 shrink-0 ${isHelpActive ? "text-cyan-700" : "text-cyan-600"}`} />
+              <CircleHelp className="h-4 w-4 shrink-0 text-current" />
               <span>{t.dashboard.help}</span>
             </Link>
           </div>
@@ -516,7 +488,32 @@ export default function DashboardLayout({
                           {merchantSubtitle}
                         </p>
                       </div>
-                      <div className="my-2 border-t border-slate-100" />
+                      <div className="my-1.5 border-t border-slate-100" />
+                      <Link
+                        href="/dashboard/tools"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
+                          pathname.startsWith("/dashboard/tools")
+                            ? "bg-cyan-50 text-cyan-700"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <Wrench className={`h-4 w-4 ${pathname.startsWith("/dashboard/tools") ? "text-cyan-700" : "text-slate-500"}`} />
+                        <span>{t.dashboard.tools}</span>
+                      </Link>
+                      <Link
+                        href="/dashboard/settings"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition ${
+                          pathname.startsWith("/dashboard/settings")
+                            ? "bg-cyan-50 text-cyan-700"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <Settings className={`h-4 w-4 ${pathname.startsWith("/dashboard/settings") ? "text-cyan-700" : "text-slate-500"}`} />
+                        <span>{t.dashboard.settings}</span>
+                      </Link>
+                      <div className="my-1.5 border-t border-slate-100" />
                       <a
                         href="/api/auth/logout"
                         className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-cyan-600 transition hover:bg-cyan-50 hover:text-cyan-700"
@@ -550,7 +547,7 @@ export default function DashboardLayout({
             className="absolute inset-0 bg-slate-950/45"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl">
+          <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl sm:w-80">
             <div className="mb-4 flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
                 <PradoLogo theme="light" subtitle={t.dashboard.merchantDashboard} size="sm" />
@@ -570,7 +567,7 @@ export default function DashboardLayout({
       ) : null}
 
       <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex print:hidden">
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex xl:w-72 print:hidden">
           <SidebarContent />
         </aside>
 

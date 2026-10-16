@@ -63,14 +63,14 @@ export function ProcurementOverviewView({
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/procurement/vendors"
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <Building2 className="h-4 w-4" />
             {isEs ? "Proveedores" : "Vendors"}
           </Link>
           <Link
             href="/dashboard/procurement/purchase-orders/new"
-            className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-4 w-4" />
             {isEs ? "Nueva OC" : "New Purchase Order"}
@@ -80,12 +80,12 @@ export function ProcurementOverviewView({
 
       {/* Metrics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Proveedores Activos" : "Active Vendors"}
             </span>
-            <Building2 className="h-5 w-5 text-blue-600" />
+            <Building2 className="h-5 w-5 text-slate-500" />
           </div>
           <p className="text-2xl font-black text-slate-900">{vendorsCount}</p>
           <p className="text-xs text-slate-500">
@@ -93,12 +93,12 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Órdenes Abiertas" : "Open POs"}
             </span>
-            <FileText className="h-5 w-5 text-amber-600" />
+            <FileText className="h-5 w-5 text-slate-500" />
           </div>
           <p className="text-2xl font-black text-slate-900">{openPOsCount}</p>
           <p className="text-xs text-slate-500">
@@ -106,12 +106,12 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Unidades Entrantes" : "Incoming Units"}
             </span>
-            <PackageCheck className="h-5 w-5 text-emerald-600" />
+            <PackageCheck className="h-5 w-5 text-slate-500" />
           </div>
           <p className="text-2xl font-black text-slate-900">{pendingUnitsToReceive}</p>
           <p className="text-xs text-slate-500">
@@ -119,12 +119,12 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Total de Órdenes" : "Receiving Status"}
             </span>
-            <Truck className="h-5 w-5 text-purple-600" />
+            <Truck className="h-5 w-5 text-slate-500" />
           </div>
           <p className="text-2xl font-black text-slate-900">{recentPOs.length}</p>
           <p className="text-xs text-slate-500">
@@ -136,14 +136,14 @@ export function ProcurementOverviewView({
       {/* Grid Section: Recent POs & Top Vendors */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Purchase Orders Table */}
-        <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-bold text-slate-900">
               {isEs ? "Órdenes de Compra Recientes" : "Recent Purchase Orders"}
             </h2>
             <Link
               href="/dashboard/procurement/purchase-orders"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
             >
               {isEs ? "Ver todas las órdenes" : "View All POs"}
               <ArrowRight className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ export function ProcurementOverviewView({
                   {recentPOs.map((po: any) => (
                     <tr key={po.id} className="hover:bg-slate-50">
                       <td className="px-3 py-3 font-semibold text-slate-900">
-                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-blue-600">
+                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="text-cyan-600 hover:text-cyan-700 hover:underline">
                           {po.poNumber}
                         </Link>
                       </td>
@@ -191,14 +191,14 @@ export function ProcurementOverviewView({
         </div>
 
         {/* Vendors Quick Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-bold text-slate-900">
               {isEs ? "Proveedores Activos" : "Active Suppliers"}
             </h2>
             <Link
               href="/dashboard/procurement/vendors"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
             >
               {isEs ? "Administrar" : "Manage"}
             </Link>
@@ -211,12 +211,12 @@ export function ProcurementOverviewView({
           ) : (
             <div className="space-y-3">
               {recentVendors.map((vendor: any) => (
-                <div key={vendor.id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 text-xs">
+                <div key={vendor.id} className="flex items-center justify-between rounded bg-slate-50 p-3 text-xs">
                   <div>
                     <p className="font-bold text-slate-900">{vendor.name}</p>
                     <p className="text-[11px] text-slate-500">{vendor.store?.name}</p>
                   </div>
-                  <span className="rounded-full bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                  <span className="rounded bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                     {vendor._count?.purchaseOrders || 0} {isEs ? "órdenes" : "POs"}
                   </span>
                 </div>

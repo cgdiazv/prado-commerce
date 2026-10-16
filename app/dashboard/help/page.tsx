@@ -61,8 +61,8 @@ export default function DashboardHelpPage() {
               </li>
               <li>
                 {isEs
-                  ? "El plan Starter es gratuito a $0 al mes para una tienda y hasta 50 productos. Se aplica una tarifa del 2% por transacción en ventas."
-                  : "The Starter plan is free at $0 per month for one store and up to 50 products. A 2% platform transaction fee applies to sales."}
+                  ? "El plan Starter es gratuito a $0 al mes para una tienda y hasta 50 productos."
+                  : "The Starter plan is free at $0 per month for one store and up to 50 products."}
               </li>
             </ul>
           </section>
