@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, S
 import { PradoLogo } from "@/components/PradoLogo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
 type NavChild = {
   href: string;
@@ -686,6 +687,9 @@ export default function DashboardLayout({
           </button>
         </div>
       )}
+
+      {/* PWA Install Banner */}
+      <PwaInstallPrompt />
     </div>
   );
 }
