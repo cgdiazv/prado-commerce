@@ -266,12 +266,12 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
 
             <div className="space-y-3 p-5">
               {items.map((item, index) => (
-                <div key={`${index}-${item.title}`} className="grid gap-3 sm:grid-cols-12">
+                <div key={`${index}-${item.title}`} className="grid grid-cols-12 gap-3">
                   <input
                     value={item.title}
                     onChange={(event) => updateItem(index, { title: event.target.value })}
                     placeholder={isEs ? "Título del artículo" : "Item title"}
-                    className="sm:col-span-6 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                    className="col-span-12 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 sm:col-span-6"
                   />
                   <input
                     type="number"
@@ -280,7 +280,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
                     value={item.price}
                     onChange={(event) => updateItem(index, { price: event.target.value })}
                     placeholder={isEs ? "Precio" : "Price"}
-                    className="sm:col-span-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                    className="col-span-12 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:col-span-3"
                   />
                   <input
                     type="number"
@@ -289,13 +289,13 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
                     value={item.quantity}
                     onChange={(event) => updateItem(index, { quantity: event.target.value })}
                     placeholder={isEs ? "Cant." : "Qty"}
-                    className="sm:col-span-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                    className="col-span-9 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:col-span-2"
                   />
                   <button
                     type="button"
                     disabled={items.length === 1}
                     onClick={() => removeItem(index)}
-                    className="sm:col-span-1 inline-flex items-center justify-center rounded-xl border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="col-span-3 inline-flex items-center justify-center rounded-xl border border-rose-200 py-3 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1"
                     title={isEs ? "Eliminar artículo" : "Remove item"}
                     aria-label={isEs ? "Eliminar artículo" : "Remove line item"}
                   >

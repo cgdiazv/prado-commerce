@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Users, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Search, Users, Pencil, Trash2, Check, X, Store } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -43,6 +43,7 @@ export function GroupsDashboard({
   const [groups, setGroups] = useState(initialGroups);
   const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Editing State
@@ -160,7 +161,7 @@ export function GroupsDashboard({
       ) : null}
 
       {/* Header */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -180,10 +181,19 @@ export function GroupsDashboard({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+          {/* Customers secondary link (hidden on mobile, moved to mobile icon bar below) */}
+          <Link
+            href="/dashboard/customers"
+            className="hidden items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 lg:inline-flex"
+          >
+            <Users className="h-4 w-4 text-cyan-600" />
+            {isEs ? "Clientes" : "Customers"}
+          </Link>
+
           <Link
             href={`/dashboard/customers/groups/new${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800 sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             {isEs ? "Nuevo grupo de clientes" : "New Customer Group"}
@@ -191,43 +201,183 @@ export function GroupsDashboard({
         </div>
       </div>
 
-      {/* Store Selector & Search Controls */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
-          <div className="w-full sm:w-64">
-            <select
-              value={activeStoreId}
-              onChange={(e) => handleStoreChange(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 shadow-xs outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-            >
-              {stores.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.currency})
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Desktop Controls (lg+) */}
+      <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
+        <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
+          <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
+          <select
+            value={activeStoreId}
+            onChange={(e) => handleStoreChange(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          >
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.currency})
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <label className="w-full min-w-0 flex-1 flex-col gap-2">
+          <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
+          <div className="relative mt-2">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isEs ? "Buscar por nombre o descripción..." : "Search by name or description..."}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 shadow-xs outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
+        </label>
+      </div>
+
+      {/* Mobile Controls (lg:hidden) - Icon triggers that reveal options on tap */}
+      <div className="mt-4 space-y-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          {/* Store Icon Button */}
+          <button
+            type="button"
+            onClick={() => setMobileActiveFilter((prev) => (prev === "store" ? null : "store"))}
+            aria-label={isEs ? "Seleccionar tienda" : "Select store"}
+            title={isEs ? "Tienda" : "Store"}
+            className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+              mobileActiveFilter === "store"
+                ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs"
+            }`}
+          >
+            <Store className="h-5 w-5" />
+          </button>
+
+          {/* Search Icon Button */}
+          <button
+            type="button"
+            onClick={() => setMobileActiveFilter((prev) => (prev === "search" ? null : "search"))}
+            aria-label={isEs ? "Buscar grupos" : "Search groups"}
+            title={isEs ? "Buscar" : "Search"}
+            className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+              mobileActiveFilter === "search"
+                ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs"
+            }`}
+          >
+            <Search className="h-5 w-5" />
+            {searchQuery.trim().length > 0 && (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-cyan-500" />
+            )}
+          </button>
+
+          {/* Compact query pill if search is active but search panel is collapsed */}
+          {searchQuery.trim() && mobileActiveFilter !== "search" && (
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <span className="truncate">"{searchQuery}"</span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="rounded p-0.5 text-slate-400 hover:text-slate-700"
+                aria-label={isEs ? "Limpiar búsqueda" : "Clear search"}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Customers Button on the right (ml-auto) */}
+          <Link
+            href="/dashboard/customers"
+            className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 shrink-0"
+          >
+            <Users className="h-3.5 w-3.5 text-cyan-600" />
+            <span>{isEs ? "Clientes" : "Customers"}</span>
+          </Link>
         </div>
+
+        {/* Revealed Store Selector Panel */}
+        {mobileActiveFilter === "store" && (
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {isEs ? "Tienda Activa" : "Active Store"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileActiveFilter(null)}
+                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label={isEs ? "Cerrar" : "Close"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div>
+              <span className="text-xs text-slate-500">{isEs ? "Tienda" : "Store"}</span>
+              <select
+                value={activeStoreId}
+                onChange={(e) => {
+                  handleStoreChange(e.target.value);
+                  setMobileActiveFilter(null);
+                }}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-slate-400"
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.currency})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Revealed Search Panel */}
+        {mobileActiveFilter === "search" && (
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {isEs ? "Buscar Grupos" : "Search Groups"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileActiveFilter(null)}
+                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label={isEs ? "Cerrar" : "Close"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isEs ? "Buscar por nombre o descripción..." : "Search by name or description..."}
+                autoFocus
+                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-slate-400"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                  aria-label={isEs ? "Limpiar búsqueda" : "Clear search"}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {error ? (

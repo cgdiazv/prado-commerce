@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Shield } from "lucide-react";
+import { Plus, Search, Shield, Store, SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -72,6 +72,7 @@ export function CustomersDashboard({
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState<"" | "clear" | "delete">("");
   const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
+  const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | "actions" | null>(null);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const activeCustomers = useMemo(() => {
@@ -304,17 +305,17 @@ export function CustomersDashboard({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
             <Link
               href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
+              className="hidden items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 lg:inline-flex"
             >
               <Shield className="h-4 w-4 text-cyan-600" />
               {isEs ? "Grupos de clientes" : "Customer Groups"}
             </Link>
             <Link
               href={createHref}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               {isEs ? "Nuevo cliente" : "New customer"}
@@ -322,8 +323,9 @@ export function CustomersDashboard({
           </div>
         </div>
 
-        <div className="mt-6 flex w-full flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="w-full max-w-md flex-col gap-2">
+        {/* Desktop Controls (lg+) */}
+        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
+          <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={activeStoreId}
@@ -338,7 +340,7 @@ export function CustomersDashboard({
             </select>
           </div>
 
-          <label className="w-full max-w-md flex-col gap-2 lg:flex-1">
+          <label className="w-full min-w-0 flex-1 flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
             <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -356,7 +358,7 @@ export function CustomersDashboard({
           </label>
 
           {groups.length > 0 && (
-            <div className="w-full max-w-xs flex-col gap-2">
+            <div className="w-full shrink-0 flex-col gap-2 lg:w-48">
               <span className="text-sm font-medium text-slate-700">{isEs ? "Filtrar por grupo" : "Filter by group"}</span>
               <select
                 value={selectedGroupFilter}
@@ -377,7 +379,7 @@ export function CustomersDashboard({
             </div>
           )}
 
-          <div className="w-full max-w-md flex-col gap-2 lg:ml-auto lg:w-auto">
+          <div className="w-full shrink-0 flex-col gap-2 lg:ml-auto lg:w-auto">
             <div className="flex justify-end">
               <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
             </div>
@@ -405,6 +407,236 @@ export function CustomersDashboard({
               </select>
             </div>
           </div>
+        </div>
+
+        {/* Mobile Controls (lg:hidden) - Icon triggers that reveal options on tap */}
+        <div className="mt-4 space-y-3 lg:hidden">
+          <div className="flex items-center gap-2">
+            {/* Store Icon Button */}
+            <button
+              type="button"
+              onClick={() => setMobileActiveFilter((prev) => (prev === "store" ? null : "store"))}
+              aria-label={isEs ? "Seleccionar tienda" : "Select store"}
+              title={isEs ? "Tienda" : "Store"}
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+                mobileActiveFilter === "store"
+                  ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs"
+              }`}
+            >
+              <Store className="h-5 w-5" />
+            </button>
+
+            {/* Search Icon Button */}
+            <button
+              type="button"
+              onClick={() => setMobileActiveFilter((prev) => (prev === "search" ? null : "search"))}
+              aria-label={isEs ? "Buscar clientes" : "Search customers"}
+              title={isEs ? "Buscar" : "Search"}
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+                mobileActiveFilter === "search"
+                  ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs"
+              }`}
+            >
+              <Search className="h-5 w-5" />
+              {searchQuery.trim().length > 0 && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-cyan-500" />
+              )}
+            </button>
+
+            {/* Actions Icon Button */}
+            <button
+              type="button"
+              onClick={() => setMobileActiveFilter((prev) => (prev === "actions" ? null : "actions"))}
+              aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
+              title={isEs ? "Acciones" : "Actions"}
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+                mobileActiveFilter === "actions"
+                  ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs"
+              }`}
+            >
+              <SlidersHorizontal className="h-5 w-5" />
+              {validSelectedCustomerIds.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-600 px-1 text-[11px] font-bold text-white shadow-xs">
+                  {validSelectedCustomerIds.length}
+                </span>
+              )}
+            </button>
+
+            {/* Compact query pill if search is active but search panel is collapsed */}
+            {searchQuery.trim() && mobileActiveFilter !== "search" && (
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                <span className="truncate">"{searchQuery}"</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  className="rounded p-0.5 text-slate-400 hover:text-slate-700"
+                  aria-label={isEs ? "Limpiar búsqueda" : "Clear search"}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Customer Groups button on mobile */}
+            <Link
+              href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
+              className="ml-auto inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs transition hover:bg-slate-50 hover:border-slate-400"
+              title={isEs ? "Grupos de clientes" : "Customer Groups"}
+            >
+              <Shield className="h-4 w-4 text-cyan-600" />
+              <span className="hidden min-[420px]:inline">{isEs ? "Grupos de clientes" : "Customer Groups"}</span>
+              <span className="min-[420px]:hidden">{isEs ? "Grupos" : "Groups"}</span>
+            </Link>
+          </div>
+
+          {/* Revealed Store Selector */}
+          {mobileActiveFilter === "store" && (
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {isEs ? "Tienda" : "Store"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileActiveFilter(null)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  aria-label={isEs ? "Cerrar" : "Close"}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <select
+                value={activeStoreId}
+                onChange={(event) => void handleStoreChange(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-slate-400"
+              >
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name} / {store.currency}
+                  </option>
+                ))}
+              </select>
+
+              {groups.length > 0 && (
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {isEs ? "Filtrar por grupo" : "Filter by group"}
+                  </span>
+                  <select
+                    value={selectedGroupFilter}
+                    onChange={(e) => {
+                      setSelectedGroupFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-slate-400"
+                  >
+                    <option value="">{isEs ? "Todos los grupos" : "All groups"}</option>
+                    <option value="__none__">{isEs ? "Sin grupo" : "Without group"}</option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Revealed Search Input */}
+          {mobileActiveFilter === "search" && (
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {isEs ? "Buscar" : "Search"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileActiveFilter(null)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  aria-label={isEs ? "Cerrar" : "Close"}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder={isEs ? "Nombre, correo, teléfono o grupo" : "Name, email, phone, or group"}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+                    aria-label={isEs ? "Limpiar" : "Clear"}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Revealed Actions Controls */}
+          {mobileActiveFilter === "actions" && (
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {isEs ? "Acciones por lote" : "Bulk Actions"}
+                  {validSelectedCustomerIds.length > 0 && ` (${validSelectedCustomerIds.length})`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileActiveFilter(null)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  aria-label={isEs ? "Cerrar" : "Close"}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={bulkAction}
+                  onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400"
+                >
+                  <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+                  <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
+                  <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleApplyBulkAction()}
+                  disabled={
+                    isApplyingBulkAction ||
+                    !bulkAction ||
+                    (bulkAction === "delete" && validSelectedCustomerIds.length === 0)
+                  }
+                  className="shrink-0 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isEs ? "Aplicar" : "Apply"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {error ? (
