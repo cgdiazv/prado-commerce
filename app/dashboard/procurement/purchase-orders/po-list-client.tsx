@@ -50,11 +50,10 @@ type POListClientProps = {
 type POSortField =
   | "poNumber"
   | "vendor"
-  | "status"
-  | "fulfillment"
+  | "createdAt"
   | "expectedDate"
   | "total"
-  | "createdAt";
+  | "status";
 
 const statusColors: Record<string, string> = {
   DRAFT: "bg-slate-100 text-slate-700 border-slate-200",
@@ -101,7 +100,7 @@ export default function POListClient({
     } else {
       setSortField(field);
       setSortDirection(
-        field === "createdAt" || field === "total" || field === "fulfillment" ? "desc" : "asc"
+        field === "createdAt" || field === "total" ? "desc" : "asc"
       );
     }
     setCurrentPage(1);
@@ -133,19 +132,9 @@ export default function POListClient({
         case "vendor":
           comparison = a.vendor.name.localeCompare(b.vendor.name);
           break;
-        case "status":
-          comparison = a.status.localeCompare(b.status);
+        case "createdAt":
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           break;
-        case "fulfillment": {
-          const aOrd = a.items.reduce((acc, i) => acc + i.qtyOrdered, 0);
-          const aRec = a.items.reduce((acc, i) => acc + i.qtyReceived, 0);
-          const aPct = aOrd > 0 ? aRec / aOrd : 0;
-          const bOrd = b.items.reduce((acc, i) => acc + i.qtyOrdered, 0);
-          const bRec = b.items.reduce((acc, i) => acc + i.qtyReceived, 0);
-          const bPct = bOrd > 0 ? bRec / bOrd : 0;
-          comparison = aPct - bPct;
-          break;
-        }
         case "expectedDate": {
           const aTime = a.expectedDate ? new Date(a.expectedDate).getTime() : 0;
           const bTime = b.expectedDate ? new Date(b.expectedDate).getTime() : 0;
@@ -155,7 +144,9 @@ export default function POListClient({
         case "total":
           comparison = Number(a.total || 0) - Number(b.total || 0);
           break;
-        case "createdAt":
+        case "status":
+          comparison = a.status.localeCompare(b.status);
+          break;
         default: {
           const aTime = new Date(a.createdAt).getTime();
           const bTime = new Date(b.createdAt).getTime();
@@ -332,16 +323,19 @@ export default function POListClient({
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
+                  {/* 1. PO No. */}
                   <th className="px-5 py-3.5">
                     <button
                       type="button"
                       onClick={() => handleSort("poNumber")}
                       className="flex items-center gap-1 transition hover:text-slate-950 font-semibold uppercase tracking-wider"
                     >
-                      {isEs ? "N.º de orden" : "PO Number"}
+                      {isEs ? "N.º de orden" : "PO No."}
                       <SortIndicator active={sortField === "poNumber"} direction={sortDirection} />
                     </button>
                   </th>
+
+                  {/* 2. Vendor */}
                   <th className="px-5 py-3.5">
                     <button
                       type="button"
@@ -352,26 +346,20 @@ export default function POListClient({
                       <SortIndicator active={sortField === "vendor"} direction={sortDirection} />
                     </button>
                   </th>
+
+                  {/* 3. Created date */}
                   <th className="px-5 py-3.5">
                     <button
                       type="button"
-                      onClick={() => handleSort("status")}
+                      onClick={() => handleSort("createdAt")}
                       className="flex items-center gap-1 transition hover:text-slate-950 font-semibold uppercase tracking-wider"
                     >
-                      {isEs ? "Estado" : "Status"}
-                      <SortIndicator active={sortField === "status"} direction={sortDirection} />
+                      {isEs ? "Fecha creación" : "Created Date"}
+                      <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
                     </button>
                   </th>
-                  <th className="px-5 py-3.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSort("fulfillment")}
-                      className="flex items-center gap-1 transition hover:text-slate-950 font-semibold uppercase tracking-wider"
-                    >
-                      {isEs ? "Recepción" : "Fulfillment"}
-                      <SortIndicator active={sortField === "fulfillment"} direction={sortDirection} />
-                    </button>
-                  </th>
+
+                  {/* 4. Expected Date */}
                   <th className="px-5 py-3.5">
                     <button
                       type="button"
@@ -382,6 +370,8 @@ export default function POListClient({
                       <SortIndicator active={sortField === "expectedDate"} direction={sortDirection} />
                     </button>
                   </th>
+
+                  {/* 5. Total */}
                   <th className="px-5 py-3.5 text-right">
                     <button
                       type="button"
@@ -392,25 +382,25 @@ export default function POListClient({
                       <SortIndicator active={sortField === "total"} direction={sortDirection} />
                     </button>
                   </th>
-                  <th className="px-5 py-3.5 text-right">
+
+                  {/* 6. Status */}
+                  <th className="px-5 py-3.5">
                     <button
                       type="button"
-                      onClick={() => handleSort("createdAt")}
-                      className="ml-auto flex items-center gap-1 transition hover:text-slate-950 font-semibold uppercase tracking-wider"
+                      onClick={() => handleSort("status")}
+                      className="flex items-center gap-1 transition hover:text-slate-950 font-semibold uppercase tracking-wider"
                     >
-                      {isEs ? "Fecha creación" : "Created"}
-                      <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
+                      {isEs ? "Estado" : "Status"}
+                      <SortIndicator active={sortField === "status"} direction={sortDirection} />
                     </button>
                   </th>
-                  <th className="px-5 py-3.5 text-right">{isEs ? "Acción" : "Action"}</th>
+
+                  {/* 7. Actions */}
+                  <th className="px-5 py-3.5 text-right">{isEs ? "Acciones" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedPOs.map((po) => {
-                  const totalOrdered = po.items.reduce((acc, i) => acc + i.qtyOrdered, 0);
-                  const totalReceived = po.items.reduce((acc, i) => acc + i.qtyReceived, 0);
-                  const progressPct =
-                    totalOrdered > 0 ? Math.min(100, Math.round((totalReceived / totalOrdered) * 100)) : 0;
                   const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
                     style: "currency",
                     currency: po.store.currency,
@@ -426,31 +416,28 @@ export default function POListClient({
 
                   return (
                     <tr key={po.id} className="transition hover:bg-slate-50/80">
+                      {/* 1. PO No. */}
                       <td className="px-5 py-4 font-semibold text-slate-900">
                         <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-blue-600">
                           {po.poNumber}
                         </Link>
                         <p className="text-xs font-normal text-slate-500">{po.store.name}</p>
                       </td>
+
+                      {/* 2. Vendor */}
                       <td className="px-5 py-4">
                         <div className="font-medium text-slate-900">{po.vendor.name}</div>
                         {po.vendor.contactEmail && (
                           <p className="text-xs text-slate-500">{po.vendor.contactEmail}</p>
                         )}
                       </td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[po.status]}`}>
-                          {statusLabels[po.status] ?? po.status}
-                        </span>
+
+                      {/* 3. Created date */}
+                      <td className="px-5 py-4 text-xs text-slate-600">
+                        {new Date(po.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-700">
-                        <span className="font-medium">
-                          {isEs
-                            ? `${totalReceived} de ${totalOrdered} unidades`
-                            : `${totalReceived} of ${totalOrdered} units`}
-                        </span>
-                        <span className="ml-1.5 text-slate-400 font-semibold">({progressPct}%)</span>
-                      </td>
+
+                      {/* 4. Expected Date */}
                       <td className="px-5 py-4 text-xs text-slate-600">
                         {po.expectedDate
                           ? new Date(po.expectedDate).toLocaleDateString(isEs ? "es-ES" : "en-US")
@@ -458,18 +445,26 @@ export default function POListClient({
                             ? "No especificada"
                             : "Not specified"}
                       </td>
+
+                      {/* 5. Total */}
                       <td className="px-5 py-4 text-right font-bold text-slate-900">
                         {formatter.format(Number(po.total))}
                       </td>
-                      <td className="px-5 py-4 text-right text-xs text-slate-600">
-                        {new Date(po.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
+
+                      {/* 6. Status */}
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[po.status]}`}>
+                          {statusLabels[po.status] ?? po.status}
+                        </span>
                       </td>
+
+                      {/* 7. Actions */}
                       <td className="px-5 py-4 text-right">
                         <Link
                           href={`/dashboard/procurement/purchase-orders/${po.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-950"
                         >
-                          {isEs ? "Ver / Recibir" : "View / Receive"}
+                          {isEs ? "Ver orden" : "View Order"}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                       </td>
