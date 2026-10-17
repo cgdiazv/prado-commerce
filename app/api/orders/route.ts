@@ -226,45 +226,66 @@ export async function POST(request: Request) {
       select: { id: true },
     });
 
-    const createdOrder = await prisma.order.create({
-      data: {
-        storeId,
-        customerId: customer.id,
-        customerEmail,
-        status: status as "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED",
-        paymentStatus: paymentStatus as "UNPAID" | "PAID" | "REFUNDED" | "FAILED",
-        subtotal,
-        tax,
-        shipping,
-        total,
-        currency: currency.length === 3 ? currency : "USD",
-        ...(parsedItems.length
-          ? {
-              items: {
-                create: parsedItems.map((item) => ({
-                  title: item.title,
-                  price: item.price,
-                  quantity: item.quantity,
-                  variantId: item.variantId,
-                })),
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          storeId,
+          customerId: customer.id,
+          customerEmail,
+          status: status as "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED",
+          paymentStatus: paymentStatus as "UNPAID" | "PAID" | "REFUNDED" | "FAILED",
+          subtotal,
+          tax,
+          shipping,
+          total,
+          currency: currency.length === 3 ? currency : "USD",
+          ...(parsedItems.length
+            ? {
+                items: {
+                  create: parsedItems.map((item) => ({
+                    title: item.title,
+                    price: item.price,
+                    quantity: item.quantity,
+                    variantId: item.variantId,
+                  })),
+                },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          storeId: true,
+          orderNumber: true,
+          customerEmail: true,
+          status: true,
+          paymentStatus: true,
+          subtotal: true,
+          tax: true,
+          shipping: true,
+          total: true,
+          currency: true,
+          createdAt: true,
+        },
+      });
+
+      // Decrement inventory for items with variantId where stock tracking is enabled
+      for (const item of parsedItems) {
+        if (item.variantId && item.quantity > 0) {
+          await tx.productVariant.updateMany({
+            where: {
+              id: item.variantId,
+              trackInventory: true,
+            },
+            data: {
+              inventory: {
+                decrement: item.quantity,
               },
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        storeId: true,
-        orderNumber: true,
-        customerEmail: true,
-        status: true,
-        paymentStatus: true,
-        subtotal: true,
-        tax: true,
-        shipping: true,
-        total: true,
-        currency: true,
-        createdAt: true,
-      },
+            },
+          });
+        }
+      }
+
+      return order;
     });
 
     if (createdOrder.paymentStatus === "PAID") {

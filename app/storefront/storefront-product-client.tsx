@@ -10,6 +10,8 @@ type ProductVariant = {
   id: string;
   title: string;
   price: unknown;
+  inventory?: number;
+  trackInventory?: boolean;
 };
 
 type StorefrontProductDetails = {
@@ -54,6 +56,7 @@ export default function StorefrontProductClient({
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
   const primaryVariant = product.variants[0];
+  const isSoldOut = Boolean(primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0);
 
   const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
     style: "currency",
@@ -89,7 +92,12 @@ export default function StorefrontProductClient({
         </nav>
 
         <div className={`grid gap-10 rounded-3xl border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
-          <div>
+          <div className="relative">
+            {isSoldOut && (
+              <span className="absolute top-3 left-3 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                {language === "es" ? "Agotado" : "Sold Out"}
+              </span>
+            )}
             {product.images[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-2xl object-cover" />
@@ -101,9 +109,16 @@ export default function StorefrontProductClient({
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">
-              {t.storefront.productDetails}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">
+                {t.storefront.productDetails}
+              </p>
+              {isSoldOut && (
+                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                  {language === "es" ? "Agotado" : "Sold Out"}
+                </span>
+              )}
+            </div>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h1>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
 
@@ -147,7 +162,11 @@ export default function StorefrontProductClient({
             <div className={`mt-8 rounded-2xl border p-5 ${themeClasses.mutedPanel}`}>
               <div className="flex items-center justify-between">
                 {primaryVariant ? (
-                  <AddToCartWithQuantity variantId={primaryVariant.id} />
+                  <AddToCartWithQuantity
+                    variantId={primaryVariant.id}
+                    isSoldOut={isSoldOut}
+                    maxQuantity={primaryVariant.trackInventory ? primaryVariant.inventory : undefined}
+                  />
                 ) : null}
                 <div>
                   <p className="text-sm font-medium text-slate-500">{t.storefront.startingAt}</p>

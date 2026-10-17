@@ -11,6 +11,8 @@ type CategoryProduct = {
   variants: Array<{
     id: string;
     price: unknown;
+    inventory?: number;
+    trackInventory?: boolean;
   }>;
 };
 
@@ -64,8 +66,10 @@ export default function CategoryPageContent({
         {products.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => {
-              const price = product.variants[0]?.price;
-              const variantId = product.variants[0]?.id;
+              const primaryVariant = product.variants[0];
+              const isSoldOut = Boolean(primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0);
+              const price = primaryVariant?.price;
+              const variantId = primaryVariant?.id;
 
               return (
                 <article
@@ -77,6 +81,11 @@ export default function CategoryPageContent({
                     className="absolute inset-0 z-0"
                     aria-label={product.title}
                   />
+                  {isSoldOut && (
+                    <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                      {language === "es" ? "Agotado" : "Sold Out"}
+                    </span>
+                  )}
                   {product.images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={product.images[0]} alt={product.title} className="h-48 w-full object-cover" />
@@ -95,7 +104,15 @@ export default function CategoryPageContent({
                       ) : (
                         <span className="text-sm text-slate-400">{t.storefront.selectOptions}</span>
                       )}
-                      {variantId ? (
+                      {isSoldOut ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="relative z-10 rounded-full bg-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                        >
+                          {language === "es" ? "Agotado" : "Sold Out"}
+                        </button>
+                      ) : variantId ? (
                         <button
                           type="button"
                           data-prado-add={variantId}

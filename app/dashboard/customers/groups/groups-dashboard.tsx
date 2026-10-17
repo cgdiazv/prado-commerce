@@ -182,15 +182,6 @@ export function GroupsDashboard({
         </div>
 
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-          {/* Customers secondary link (hidden on mobile, moved to mobile icon bar below) */}
-          <Link
-            href="/dashboard/customers"
-            className="hidden items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 lg:inline-flex"
-          >
-            <Users className="h-4 w-4 text-cyan-600" />
-            {isEs ? "Clientes" : "Customers"}
-          </Link>
-
           <Link
             href={`/dashboard/customers/groups/new${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800 sm:w-auto"
@@ -293,14 +284,6 @@ export function GroupsDashboard({
             </div>
           )}
 
-          {/* Customers Button on the right (ml-auto) */}
-          <Link
-            href="/dashboard/customers"
-            className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 shrink-0"
-          >
-            <Users className="h-3.5 w-3.5 text-cyan-600" />
-            <span>{isEs ? "Clientes" : "Customers"}</span>
-          </Link>
         </div>
 
         {/* Revealed Store Selector Panel */}
@@ -455,15 +438,13 @@ export function GroupsDashboard({
                             autoFocus
                           />
                         ) : (
-                          <div className="flex items-center gap-2.5">
-                            <span className="inline-flex items-center rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 border border-cyan-200/80">
-                              {group.name}
-                            </span>
-                          </div>
+                          <span className="text-xs text-slate-700">
+                            {group.name}
+                          </span>
                         )}
                       </td>
 
-                      <td className="px-6 py-4 align-top text-slate-600">
+                      <td className="px-6 py-4 align-top text-xs text-slate-700">
                         {isEditing ? (
                           <input
                             type="text"
@@ -473,24 +454,23 @@ export function GroupsDashboard({
                             placeholder={isEs ? "Descripción opcional..." : "Optional description..."}
                           />
                         ) : (
-                          <span className="line-clamp-2 text-xs text-slate-600">
+                          <span className="line-clamp-2 text-xs text-slate-700">
                             {group.description || "—"}
                           </span>
                         )}
                       </td>
 
-                      <td className="px-6 py-4 align-top text-center">
+                      <td className="px-6 py-4 align-top text-center text-xs text-slate-700">
                         <Link
                           href={`/dashboard/customers?storeId=${encodeURIComponent(group.storeId)}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-cyan-50 hover:text-cyan-700 px-3 py-0.5 text-xs font-semibold text-slate-700 transition"
+                          className="hover:underline"
                           title={isEs ? "Ver clientes en Clientes" : "View customers in Customers"}
                         >
-                          <Users className="h-3 w-3 text-slate-400" />
-                          <span>{group._count?.customers ?? 0}</span>
+                          {group._count?.customers ?? 0}
                         </Link>
                       </td>
 
-                      <td className="px-6 py-4 align-top text-xs text-slate-500">
+                      <td className="px-6 py-4 align-top text-xs text-slate-700">
                         {new Date(group.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US", {
                           month: "short",
                           day: "numeric",

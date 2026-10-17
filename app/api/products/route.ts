@@ -111,9 +111,16 @@ export async function GET(request: Request) {
         status: true,
         productType: true,
         categoryId: true,
+        brandId: true,
         createdAt: true,
         updatedAt: true,
         category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        brand: {
           select: {
             id: true,
             name: true,
@@ -141,6 +148,7 @@ export async function GET(request: Request) {
       products.map((product) => ({
         ...product,
         categoryName: product.category?.name ?? null,
+        brandName: product.brand?.name ?? null,
       })),
     );
   } catch (error) {
@@ -178,6 +186,7 @@ export async function POST(request: Request) {
       taxable,
       productType,
       categoryId,
+      brandId,
       variants,
     } = body as {
       storeId?: string;
@@ -195,6 +204,7 @@ export async function POST(request: Request) {
       taxable?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
+      brandId?: string | null;
       variants?: unknown;
     };
 
@@ -260,6 +270,7 @@ export async function POST(request: Request) {
         taxable: typeof taxable === "boolean" ? taxable : true,
         productType: productType ?? "PHYSICAL",
         categoryId: categoryId ?? null,
+        brandId: brandId ?? null,
         variants: parsedVariants.length
           ? {
               create: parsedVariants.map((variant) => ({

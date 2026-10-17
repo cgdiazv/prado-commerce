@@ -26,6 +26,7 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
   let stores = [];
   let product = null;
   let categories = [];
+  let brands = [];
 
   try {
     stores = await prisma.store.findMany({
@@ -56,6 +57,12 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
     }
 
     categories = await prisma.category.findMany({
+      where: { storeId: { in: stores.map((store) => store.id) } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, storeId: true },
+    });
+
+    brands = await prisma.brand.findMany({
       where: { storeId: { in: stores.map((store) => store.id) } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, storeId: true },
@@ -92,11 +99,13 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
 
   const serializedStores = JSON.parse(JSON.stringify(stores));
   const serializedCategories = JSON.parse(JSON.stringify(categories));
+  const serializedBrands = JSON.parse(JSON.stringify(brands));
 
   return (
     <ProductForm
       stores={serializedStores}
       categories={serializedCategories}
+      brands={serializedBrands}
       initialProduct={serializedProduct}
       selectedStoreId={product.storeId}
     />

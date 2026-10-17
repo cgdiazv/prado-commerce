@@ -343,10 +343,10 @@ export function CategoriesDashboard({
                               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                             />
                           ) : (
-                            <span className="font-medium text-slate-900">{category.name}</span>
+                            <span className="text-xs text-slate-700">{category.name}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 align-middle">
+                        <td className="px-4 py-3 align-middle text-xs text-slate-700">
                           {isEditing ? (
                             <input
                               value={editingCategorySlug}
@@ -354,20 +354,20 @@ export function CategoriesDashboard({
                               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                             />
                           ) : (
-                            <span className="text-slate-600">{category.slug}</span>
+                            <span>{category.slug}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 align-middle text-slate-600">
+                        <td className="px-4 py-3 align-middle text-xs text-slate-700">
                           {category.parentCategoryId
                             ? (activeStoreCategoryNameById.get(category.parentCategoryId) ?? "-")
                             : "-"}
                         </td>
-                        <td className="px-4 py-3 align-middle text-slate-600">
+                        <td className="px-4 py-3 align-middle text-xs text-slate-700">
                           {category.parentCategoryId
                             ? (activeStoreCategorySlugById.get(category.parentCategoryId) ?? "-")
                             : "-"}
                         </td>
-                        <td className="px-4 py-3 align-middle text-slate-600">
+                        <td className="px-4 py-3 align-middle text-xs text-slate-700">
                           {category.updatedAt ? new Date(category.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US") : "-"}
                         </td>
                         <td className="px-4 py-3 align-middle">

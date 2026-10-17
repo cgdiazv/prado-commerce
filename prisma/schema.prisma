@@ -97,6 +97,7 @@ model Store {
   apiKeys        ApiKey[]
   products       Product[]
   categories     Category[]
+  brands         Brand[]
   carts          Cart[]
   orders         Order[]
   customers      Customer[]
@@ -164,6 +165,22 @@ model Category {
   @@index([parentCategoryId])
 }
 
+model Brand {
+  id          String    @id @default(cuid())
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  products    Product[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([storeId, slug])
+  @@index([storeId])
+}
+
 model Product {
   id          String         @id @default(cuid())
   storeId     String
@@ -187,6 +204,9 @@ model Product {
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  brandId     String?
+  brand       Brand?         @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
   variants    ProductVariant[]
   purchaseOrderItems PurchaseOrderItem[]
 
@@ -196,6 +216,7 @@ model Product {
   @@unique([storeId, slug])
   @@index([storeId])
   @@index([status])
+  @@index([brandId])
 }
 
 enum ProductStatus {

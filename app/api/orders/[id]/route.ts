@@ -25,6 +25,18 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         store: {
           select: { ownerUserId: true },
         },
+        items: {
+          select: {
+            variantId: true,
+            quantity: true,
+            variant: {
+              select: {
+                id: true,
+                trackInventory: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -33,10 +45,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     }
 
     const body = await req.json();
-    const { status, paymentStatus, fulfillmentStatus } = body as {
+    const { status, paymentStatus, fulfillmentStatus, restock } = body as {
       status?: string;
       paymentStatus?: string;
       fulfillmentStatus?: string;
+      restock?: boolean;
     };
 
     const updates: {
@@ -90,13 +103,36 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       }
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && !restock) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
-    const updatedOrder = await prisma.order.update({
-      where: { id },
-      data: updates,
+    let restockedCount = 0;
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      const saved = Object.keys(updates).length > 0
+        ? await tx.order.update({
+            where: { id },
+            data: updates,
+          })
+        : order;
+
+      if (restock) {
+        for (const item of order.items) {
+          if (item.variantId && item.variant?.trackInventory) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: {
+                inventory: {
+                  increment: item.quantity,
+                },
+              },
+            });
+            restockedCount += item.quantity;
+          }
+        }
+      }
+
+      return saved;
     });
 
     const becamePaid = updates.paymentStatus === "PAID" && order.paymentStatus !== "PAID";
@@ -134,6 +170,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         paymentStatus: updatedOrder.paymentStatus,
         fulfillmentStatus: updatedOrder.fulfillmentStatus,
       },
+      restocked: Boolean(restock),
+      restockedCount,
     });
   } catch (error) {
     console.error("[ORDER_PATCH_ERROR]", error);

@@ -187,6 +187,7 @@ export async function POST(request: Request) {
                   id: true,
                   title: true,
                   price: true,
+                  trackInventory: true,
                 },
               },
             },
@@ -271,6 +272,23 @@ export async function POST(request: Request) {
             currency: true,
           },
         });
+
+        // Decrement stock for variants with trackInventory enabled
+        for (const item of cart.items) {
+          if (item.variant?.id && item.quantity > 0) {
+            await tx.productVariant.updateMany({
+              where: {
+                id: item.variant.id,
+                trackInventory: true,
+              },
+              data: {
+                inventory: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
+        }
 
         await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 

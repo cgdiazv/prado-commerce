@@ -171,18 +171,16 @@ export function ProcurementOverviewView({
                 <tbody className="divide-y divide-slate-100">
                   {recentPOs.map((po: any) => (
                     <tr key={po.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-3 font-semibold text-slate-900">
-                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="text-cyan-600 hover:text-cyan-700 hover:underline">
+                      <td className="px-3 py-3 text-xs text-slate-700">
+                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-slate-900 hover:underline">
                           {po.poNumber}
                         </Link>
                       </td>
-                      <td className="px-3 py-3 text-slate-700">{po.vendor?.name}</td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusColors[po.status] || "bg-slate-100 text-slate-700"}`}>
-                          {statusLabels[po.status] ?? po.status}
-                        </span>
+                      <td className="px-3 py-3 text-xs text-slate-700">{po.vendor?.name}</td>
+                      <td className="px-3 py-3 text-xs text-slate-700">
+                        {statusLabels[po.status] ?? po.status}
                       </td>
-                      <td className="px-3 py-3 text-right font-bold text-slate-900">
+                      <td className="px-3 py-3 text-right text-xs text-slate-700">
                         {formatter.format(Number(po.total || 0))}
                       </td>
                     </tr>

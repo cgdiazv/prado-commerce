@@ -121,6 +121,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       taxable,
       productType,
       categoryId,
+      brandId,
       variants,
     } = body as {
       title?: string;
@@ -137,6 +138,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       taxable?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
+      brandId?: string | null;
       variants?: unknown;
     };
 
@@ -208,6 +210,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         ? {
             connect: {
               id: categoryId,
+            },
+          }
+        : {
+            disconnect: true,
+          };
+    }
+
+    if (brandId !== undefined) {
+      updates.brand = brandId
+        ? {
+            connect: {
+              id: brandId,
             },
           }
         : {

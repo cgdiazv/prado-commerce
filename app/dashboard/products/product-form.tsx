@@ -41,6 +41,8 @@ type Product = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string | null;
+  brandId?: string | null;
+  brand?: { id: string; name: string } | null;
   variants: ProductVariant[];
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -58,6 +60,7 @@ type ProductFormState = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string;
+  brandId: string;
   taxable: boolean;
 };
 
@@ -99,6 +102,7 @@ const emptyProduct: ProductFormState = {
   status: "DRAFT",
   productType: "PHYSICAL",
   categoryId: "",
+  brandId: "",
   taxable: true,
 };
 
@@ -125,14 +129,21 @@ type Category = {
   storeId: string;
 };
 
+type Brand = {
+  id: string;
+  name: string;
+  storeId: string;
+};
+
 type ProductFormProps = {
   stores: Store[];
   categories?: Category[];
+  brands?: Brand[];
   initialProduct?: Product | null;
   selectedStoreId?: string | null;
 };
 
-export function ProductForm({ stores, categories = [], initialProduct = null, selectedStoreId = null }: ProductFormProps) {
+export function ProductForm({ stores, categories = [], brands = [], initialProduct = null, selectedStoreId = null }: ProductFormProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
@@ -141,6 +152,12 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isCreatingNewCategoryMode, setIsCreatingNewCategoryMode] = useState(false);
+
+  const [availableBrands, setAvailableBrands] = useState<Brand[]>(brands);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
+  const [isCreatingNewBrandMode, setIsCreatingNewBrandMode] = useState(false);
+
   const [editingProduct] = useState(initialProduct);
   const [productForm, setProductForm] = useState<ProductFormState>(
     initialProduct
@@ -156,6 +173,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
           status: initialProduct.status,
           productType: initialProduct.productType ?? "PHYSICAL",
           categoryId: initialProduct.categoryId ?? "",
+          brandId: initialProduct.brandId ?? "",
           taxable: initialProduct.taxable !== undefined ? Boolean(initialProduct.taxable) : true,
         }
       : emptyProduct,
@@ -190,6 +208,9 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
   const activeStore = stores.find((store) => store.id === activeStoreId) ?? null;
   const activeStoreCategories = availableCategories
     .filter((category) => category.storeId === activeStoreId)
+    .sort((left, right) => left.name.localeCompare(right.name));
+  const activeStoreBrands = availableBrands
+    .filter((brand) => brand.storeId === activeStoreId)
     .sort((left, right) => left.name.localeCompare(right.name));
   const isNonPhysicalProduct = productForm.productType !== "PHYSICAL";
 
@@ -377,6 +398,72 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
     }
   }
 
+  async function handleCreateBrand() {
+    const trimmedName = newBrandName.trim();
+
+    if (!activeStoreId) {
+      setError(isEs ? "Selecciona una tienda antes de crear una marca." : "Select a store before creating a brand.");
+      return;
+    }
+
+    if (!trimmedName) {
+      setError(isEs ? "Ingresa un nombre para la marca." : "Enter a brand name.");
+      return;
+    }
+
+    if (isCreatingBrand) {
+      return;
+    }
+
+    setIsCreatingBrand(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/brands", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storeId: activeStoreId,
+          name: trimmedName,
+        }),
+      });
+
+      const result = (await response.json()) as { id?: string; name?: string; storeId?: string; error?: string };
+
+      if (!response.ok || !result.id || !result.name || !result.storeId) {
+        throw new Error(result.error ?? "Failed to create brand");
+      }
+
+      const createdBrand: Brand = {
+        id: result.id,
+        name: result.name,
+        storeId: result.storeId,
+      };
+
+      setAvailableBrands((current) => {
+        if (current.some((brand) => brand.id === createdBrand.id)) {
+          return current;
+        }
+
+        return [...current, createdBrand];
+      });
+
+      setProductForm((current) => ({
+        ...current,
+        brandId: createdBrand.id,
+        manufacturer: current.manufacturer || createdBrand.name,
+      }));
+      setNewBrandName("");
+      setIsCreatingNewBrandMode(false);
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "Failed to create brand");
+    } finally {
+      setIsCreatingBrand(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
@@ -397,6 +484,7 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
         status: productForm.status,
         productType: productForm.productType,
         categoryId: productForm.categoryId || null,
+        brandId: productForm.brandId || null,
         taxable: productForm.taxable,
         variants: variants
           .filter((variant) => variant.price.trim())
@@ -578,6 +666,89 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               </select>
             )}
           </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Marca" : "Brand"}</span>
+              {isCreatingNewBrandMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingNewBrandMode(false);
+                      setNewBrandName("");
+                    }}
+                    className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                  >
+                    {isEs ? "Cancelar" : "Cancel"}
+                  </button>
+                  <span className="text-xs text-slate-300">•</span>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateBrand()}
+                    disabled={isCreatingBrand || !newBrandName.trim()}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isCreatingBrand
+                      ? (isEs ? "Guardando..." : "Saving...")
+                      : (isEs ? "Guardar nueva" : "Save new")}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingNewBrandMode(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {isEs ? "+ Añadir nueva" : "+ Add new"}
+                </button>
+              )}
+            </div>
+
+            {isCreatingNewBrandMode ? (
+              <input
+                type="text"
+                autoFocus
+                value={newBrandName}
+                onChange={(event) => setNewBrandName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleCreateBrand();
+                  } else if (event.key === "Escape") {
+                    setIsCreatingNewBrandMode(false);
+                    setNewBrandName("");
+                  }
+                }}
+                placeholder={isEs ? "Escribe el nombre de la nueva marca..." : "Type new brand name..."}
+                className="w-full rounded-xl border border-blue-400 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              />
+            ) : (
+              <select
+                value={productForm.brandId}
+                onChange={(event) => {
+                  const selectedId = event.target.value;
+                  const selectedBrand = activeStoreBrands.find((b) => b.id === selectedId);
+                  setProductForm((current) => ({
+                    ...current,
+                    brandId: selectedId,
+                    manufacturer: selectedBrand && !current.manufacturer ? selectedBrand.name : current.manufacturer,
+                  }));
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">{isEs ? "Sin marca" : "No brand"}</option>
+                {activeStoreBrands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <Field
+            label={isEs ? "Fabricante" : "Manufacturer"}
+            value={productForm.manufacturer}
+            onChange={(value) => setProductForm((current) => ({ ...current, manufacturer: value }))}
+            placeholder="Acme Corp"
+          />
           <label className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Descripción" : "Description"}</span>
             <textarea
@@ -588,12 +759,6 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
-          <Field
-            label={isEs ? "Fabricante" : "Manufacturer"}
-            value={productForm.manufacturer}
-            onChange={(value) => setProductForm((current) => ({ ...current, manufacturer: value }))}
-            placeholder="Acme Corp"
-          />
           <Field
             label={isEs ? "Dimensiones" : "Dimensions"}
             hint="LxWxH (Length x Width x Height)"

@@ -142,6 +142,7 @@ export interface Translations {
     allProducts: string;
     addProduct: string;
     categories: string;
+    brands: string;
     orders: string;
     allOrders: string;
     newOrder: string;
@@ -151,6 +152,10 @@ export interface Translations {
     procurementOverview: string;
     purchaseOrders: string;
     vendors: string;
+    receivingHistory: string;
+    reports: string;
+    salesByCustomer: string;
+    salesByBrand: string;
     customers: string;
     allCustomers: string;
     addCustomer: string;
@@ -482,6 +487,7 @@ export const translations: Record<Language, Translations> = {
       allProducts: "Todos los productos",
       addProduct: "Añadir producto",
       categories: "Categorías",
+      brands: "Marcas",
       orders: "Pedidos",
       allOrders: "Todos los pedidos",
       newOrder: "Nuevo pedido",
@@ -491,6 +497,10 @@ export const translations: Record<Language, Translations> = {
       procurementOverview: "Resumen",
       purchaseOrders: "Órdenes de compra",
       vendors: "Proveedores",
+      receivingHistory: "Historial de ingresos",
+      reports: "Reportes",
+      salesByCustomer: "Ventas por cliente",
+      salesByBrand: "Ventas por marca",
       customers: "Clientes",
       allCustomers: "Todos los clientes",
       addCustomer: "Nuevo cliente",
@@ -820,6 +830,7 @@ export const translations: Record<Language, Translations> = {
       allProducts: "All Products",
       addProduct: "Add Product",
       categories: "Categories",
+      brands: "Brands",
       orders: "Orders",
       allOrders: "All Orders",
       newOrder: "New Order",
@@ -829,6 +840,10 @@ export const translations: Record<Language, Translations> = {
       procurementOverview: "Overview",
       purchaseOrders: "Purchase Orders",
       vendors: "Vendors",
+      receivingHistory: "Receiving History",
+      reports: "Reports",
+      salesByCustomer: "Sales by Customer",
+      salesByBrand: "Sales by Brand",
       customers: "Customers",
       allCustomers: "All Customers",
       addCustomer: "New Customer",

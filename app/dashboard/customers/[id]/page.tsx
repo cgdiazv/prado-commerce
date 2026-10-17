@@ -48,6 +48,28 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
           ownerUserId: user.id,
         },
       },
+      include: {
+        orders: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            orderNumber: true,
+            total: true,
+            currency: true,
+            status: true,
+            paymentStatus: true,
+            createdAt: true,
+            items: {
+              select: {
+                id: true,
+                title: true,
+                quantity: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!customer) {
@@ -73,6 +95,21 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
           groupId: customer.groupId,
           shippingAddress: customer.shippingAddress,
           billingAddress: customer.billingAddress,
+          orders: customer.orders.map((o) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            total: Number(o.total),
+            currency: o.currency,
+            status: o.status,
+            paymentStatus: o.paymentStatus,
+            createdAt: o.createdAt.toISOString(),
+            items: o.items.map((it) => ({
+              id: it.id,
+              title: it.title,
+              quantity: it.quantity,
+              price: Number(it.price),
+            })),
+          })),
         })
       );
 

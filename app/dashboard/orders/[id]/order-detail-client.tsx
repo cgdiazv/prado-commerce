@@ -110,6 +110,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [restockInventory, setRestockInventory] = useState(false);
 
   const getStatusLabel = (s: string) => {
     if (!isEs) return s;
@@ -158,6 +159,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           status,
           paymentStatus,
           fulfillmentStatus,
+          restock: restockInventory,
         }),
       });
 
@@ -173,7 +175,16 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         fulfillmentStatus: payload.order.fulfillmentStatus,
       }));
       setFulfillmentStatus(payload.order.fulfillmentStatus);
-      setSaveStatus(isEs ? "¡Cambios guardados con éxito!" : "Changes saved successfully!");
+      if (payload.restocked) {
+        setSaveStatus(
+          isEs
+            ? `¡Cambios guardados y ${payload.restockedCount ?? ""} unidades reingresadas al inventario!`
+            : `Changes saved and ${payload.restockedCount ?? ""} units restocked to inventory!`
+        );
+      } else {
+        setSaveStatus(isEs ? "¡Cambios guardados con éxito!" : "Changes saved successfully!");
+      }
+      setRestockInventory(false);
       router.refresh();
     } catch (error) {
       setSaveStatus(
@@ -408,6 +419,9 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                     if (newStatus === "COMPLETED" && fulfillmentStatus === "UNFULFILLED") {
                       setFulfillmentStatus("SHIPPED");
                     }
+                    if (newStatus === "CANCELLED" && order.status !== "CANCELLED") {
+                      setRestockInventory(true);
+                    }
                   }}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
@@ -424,7 +438,13 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 </label>
                 <select
                   value={paymentStatus}
-                  onChange={(event) => setPaymentStatus(event.target.value as Order["paymentStatus"])}
+                  onChange={(event) => {
+                    const newPaymentStatus = event.target.value as Order["paymentStatus"];
+                    setPaymentStatus(newPaymentStatus);
+                    if (newPaymentStatus === "REFUNDED" && order.paymentStatus !== "REFUNDED") {
+                      setRestockInventory(true);
+                    }
+                  }}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="UNPAID">{isEs ? "No pagado" : "Unpaid"}</option>
@@ -447,6 +467,29 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                   <option value="SHIPPED">{isEs ? "Enviado" : "Shipped"}</option>
                 </select>
               </div>
+
+              {(status === "CANCELLED" || paymentStatus === "REFUNDED" || order.status === "CANCELLED" || order.paymentStatus === "REFUNDED") && (
+                <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={restockInventory}
+                      onChange={(e) => setRestockInventory(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {isEs ? "Reingresar artículos al inventario" : "Restock items to inventory"}
+                      </span>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {isEs
+                          ? "Devolverá automáticamente las unidades de esta orden al inventario disponible de cada variante."
+                          : "Automatically returns item quantities in this order back into available inventory."}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               <button
                 type="button"

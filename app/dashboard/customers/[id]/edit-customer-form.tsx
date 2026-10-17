@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ShoppingBag, Calendar, ArrowUpRight, DollarSign, Package } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
@@ -34,6 +35,24 @@ type AddressRecord = {
   country?: string | null;
 };
 
+export type CustomerOrderItem = {
+  id: string;
+  title: string;
+  quantity: number;
+  price: number;
+};
+
+export type CustomerOrder = {
+  id: string;
+  orderNumber: number;
+  total: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+  createdAt: string;
+  items: CustomerOrderItem[];
+};
+
 type Customer = {
   id: string;
   storeId: string;
@@ -44,6 +63,7 @@ type Customer = {
   groupId?: string | null;
   shippingAddress: AddressRecord | null;
   billingAddress: AddressRecord | null;
+  orders?: CustomerOrder[];
 };
 
 type EditCustomerFormProps = {
@@ -147,6 +167,24 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
       setIsSaving(false);
     }
   }
+
+  const orders = customer.orders || [];
+  const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
+  const avgOrder = orders.length > 0 ? totalSpent / orders.length : 0;
+  const currencySymbol = activeStore?.currency || "USD";
+
+  const annualSalesMap: Record<number, { count: number; total: number }> = {};
+  for (const ord of orders) {
+    const yr = new Date(ord.createdAt).getFullYear();
+    if (!annualSalesMap[yr]) {
+      annualSalesMap[yr] = { count: 0, total: 0 };
+    }
+    annualSalesMap[yr].count += 1;
+    annualSalesMap[yr].total += ord.total;
+  }
+  const annualSalesList = Object.entries(annualSalesMap)
+    .map(([year, data]) => ({ year: Number(year), ...data }))
+    .sort((a, b) => b.year - a.year);
 
   return (
     <section className="min-w-0 space-y-6">
@@ -424,6 +462,135 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           </button>
         </div>
       </form>
+
+      {/* Amber POS: Historial de Compras por Producto y Ventas Anuales */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-cyan-600" />
+            {isEs ? "Historial de Compras y Ventas Anuales" : "Purchase & Annual Sales History"}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {isEs
+              ? "Registro de facturas emitidas, pedidos y desglose anual de compras del cliente."
+              : "Invoices, orders placed, and annual purchase breakdown for this customer."}
+          </p>
+        </div>
+
+        {/* Top KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-medium text-slate-500">{isEs ? "Gasto Total Histórico" : "Lifetime Total Spend"}</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">
+              ${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="text-xs font-normal text-slate-500 ml-1">{currencySymbol}</span>
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-medium text-slate-500">{isEs ? "Total de Facturas / Pedidos" : "Total Orders / Invoices"}</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{orders.length}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-medium text-slate-500">{isEs ? "Ticket Promedio" : "Average Order Value"}</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">
+              ${avgOrder.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="text-xs font-normal text-slate-500 ml-1">{currencySymbol}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Resumen Anual */}
+        {annualSalesList.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-cyan-600" />
+              {isEs ? "Desglose de Ventas por Año" : "Sales Breakdown by Year"}
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {annualSalesList.map((an) => (
+                <div key={an.year} className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-3">
+                  <div className="flex items-center justify-between text-xs font-medium text-cyan-700">
+                    <span>{an.year}</span>
+                    <span>{an.count} {isEs ? (an.count === 1 ? "pedido" : "pedidos") : (an.count === 1 ? "order" : "orders")}</span>
+                  </div>
+                  <div className="text-base font-bold text-slate-900 mt-1">
+                    ${an.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* List of Orders and Purchased Products */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Package className="w-4 h-4 text-cyan-600" />
+            {isEs ? "Facturas y Productos Comprados por Fecha" : "Invoices & Products Purchased by Date"}
+          </h3>
+
+          {orders.length === 0 ? (
+            <div className="text-center py-8 rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
+              {isEs ? "Este cliente aún no registra facturas ni pedidos." : "This customer has no orders or invoices yet."}
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+              {orders.map((ord) => (
+                <div key={ord.id} className="p-4 bg-white hover:bg-slate-50/70 transition space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/dashboard/orders/${ord.id}`}
+                        className="font-semibold text-cyan-700 hover:text-cyan-800 hover:underline text-sm"
+                      >
+                        #{ord.orderNumber}
+                      </Link>
+                      <span className="text-xs text-slate-500">
+                        {new Date(ord.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          ord.paymentStatus === "PAID"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        {ord.paymentStatus}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-slate-900">
+                      ${ord.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                      <span className="text-xs font-normal text-slate-500">{ord.currency}</span>
+                    </div>
+                  </div>
+
+                  {/* Purchased items list */}
+                  {ord.items && ord.items.length > 0 && (
+                    <div className="mt-2 pl-3 border-l-2 border-cyan-100 space-y-1">
+                      {ord.items.map((it) => (
+                        <div key={it.id} className="flex items-center justify-between text-xs text-slate-600">
+                          <span className="truncate pr-2">
+                            • {it.quantity}x {it.title}
+                          </span>
+                          <span className="font-medium shrink-0">
+                            ${(it.quantity * it.price).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

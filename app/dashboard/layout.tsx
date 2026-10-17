@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3 } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -60,6 +60,7 @@ export default function DashboardLayout({
     if (pathname.startsWith("/dashboard/orders")) return "/dashboard/orders";
     if (pathname.startsWith("/dashboard/products")) return "/dashboard/products";
     if (pathname.startsWith("/dashboard/procurement")) return "/dashboard/procurement";
+    if (pathname.startsWith("/dashboard/reports")) return "/dashboard/reports";
     if (pathname.startsWith("/dashboard/customers")) return "/dashboard/customers";
     if (pathname.startsWith("/dashboard/stores")) return "/dashboard/stores";
     return null;
@@ -249,6 +250,7 @@ export default function DashboardLayout({
         { href: "/dashboard/products", label: t.dashboard.allProducts },
         { href: "/dashboard/products/new", label: t.dashboard.addProduct },
         { href: "/dashboard/products/categories", label: t.dashboard.categories },
+        { href: "/dashboard/products/brands", label: t.dashboard.brands },
       ],
     },
     {
@@ -258,6 +260,7 @@ export default function DashboardLayout({
       children: [
         { href: "/dashboard/procurement", label: t.dashboard.procurementOverview },
         { href: "/dashboard/procurement/purchase-orders", label: t.dashboard.purchaseOrders },
+        { href: "/dashboard/procurement/receipts", label: t.dashboard.receivingHistory },
         { href: "/dashboard/procurement/vendors", label: t.dashboard.vendors },
       ],
     },
@@ -284,6 +287,15 @@ export default function DashboardLayout({
         },
       ],
     },
+    {
+      href: "/dashboard/reports",
+      label: t.dashboard.reports,
+      icon: BarChart3,
+      children: [
+        { href: "/dashboard/reports?tab=customers", label: t.dashboard.salesByCustomer },
+        { href: "/dashboard/reports?tab=brands", label: t.dashboard.salesByBrand },
+      ],
+    },
   ];
 
   function isActive(href: string): boolean {
@@ -300,6 +312,8 @@ export default function DashboardLayout({
       setOpenSection("/dashboard/products");
     } else if (pathname.startsWith("/dashboard/procurement")) {
       setOpenSection("/dashboard/procurement");
+    } else if (pathname.startsWith("/dashboard/reports")) {
+      setOpenSection("/dashboard/reports");
     } else if (pathname.startsWith("/dashboard/customers")) {
       setOpenSection("/dashboard/customers");
     } else if (pathname.startsWith("/dashboard/stores")) {
@@ -385,7 +399,9 @@ export default function DashboardLayout({
                               ? pathname === "/dashboard/products/new"
                               : child.href === "/dashboard/products/categories"
                                 ? pathname === "/dashboard/products/categories"
-                                : pathname === "/dashboard/products"
+                                : child.href === "/dashboard/products/brands"
+                                  ? pathname === "/dashboard/products/brands"
+                                  : pathname === "/dashboard/products"
                             : item.href === "/dashboard/customers"
                               ? child.href === "/dashboard/customers/groups/new"
                                 ? pathname === "/dashboard/customers/groups/new"
@@ -629,6 +645,8 @@ export default function DashboardLayout({
               pathname.startsWith("/dashboard/stores") ||
               pathname.startsWith("/dashboard/products") ||
               pathname.startsWith("/dashboard/orders") ||
+              pathname.startsWith("/dashboard/procurement") ||
+              pathname.startsWith("/dashboard/reports") ||
               pathname.startsWith("/dashboard/customers") ||
               pathname.startsWith("/dashboard/help")
                 ? ""

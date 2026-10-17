@@ -188,6 +188,8 @@ async function getVariantForStore(variantId: string, storeId: string) {
       title: true,
       price: true,
       productId: true,
+      inventory: true,
+      trackInventory: true,
     },
   });
 }
@@ -319,6 +321,10 @@ export async function POST(request: Request) {
       return corsJson({ error: "Variant not found" }, { status: 404 });
     }
 
+    if (variant.trackInventory && variant.inventory <= 0) {
+      return corsJson({ error: "Product is out of stock / Producto agotado" }, { status: 400 });
+    }
+
     const numericQuantity = Math.floor(quantity ?? 1);
     const usesLegacyTokenMode = Boolean(cartToken && !cartId);
 
@@ -340,6 +346,16 @@ export async function POST(request: Request) {
       });
 
       finalQuantity = (existing?.quantity ?? 0) + requestedDelta;
+    }
+
+    if (variant.trackInventory && finalQuantity > variant.inventory) {
+      return corsJson(
+        {
+          error: `Only ${variant.inventory} item(s) in stock / Solo quedan ${variant.inventory} unidad(es) disponible(s)`,
+          availableInventory: variant.inventory,
+        },
+        { status: 400 },
+      );
     }
 
     const cartItem = await applyItemQuantity({
@@ -399,6 +415,16 @@ export async function PATCH(request: Request) {
     }
 
     const finalQuantity = Math.max(0, Math.floor(quantity ?? 1));
+
+    if (finalQuantity > 0 && variant.trackInventory && finalQuantity > variant.inventory) {
+      return corsJson(
+        {
+          error: `Only ${variant.inventory} item(s) in stock / Solo quedan ${variant.inventory} unidad(es) disponible(s)`,
+          availableInventory: variant.inventory,
+        },
+        { status: 400 },
+      );
+    }
     await applyItemQuantity({
       cart,
       variantId: variant.id,

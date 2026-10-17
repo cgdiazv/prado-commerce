@@ -191,7 +191,7 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
   };
 
   return (
-    <section className="min-w-0 max-w-5xl space-y-6">
+    <section className="min-w-0 space-y-6">
       {/* Top Header & Breadcrumbs */}
       <div>
         <Link

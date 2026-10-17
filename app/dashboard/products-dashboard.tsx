@@ -790,9 +790,9 @@ export function ProductsDashboard({
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3 align-top">
-                            <p className="block font-semibold text-slate-900">{product.title}</p>
-                            <p className="text-xs text-slate-500">/{product.slug}</p>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">
+                            <p className="text-slate-900">{product.title}</p>
+                            <p className="text-slate-500">/{product.slug}</p>
                           </td>
                           <td className="px-4 py-3 align-top">
                             <button
@@ -815,11 +815,11 @@ export function ProductsDashboard({
                               <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
                             </button>
                           </td>
-                          <td className="px-4 py-3 align-top text-slate-700">{firstSku}</td>
-                          <td className="px-4 py-3 align-top text-slate-700">{inventoryTotal}</td>
-                          <td className="px-4 py-3 align-top text-slate-700">{firstPrice}</td>
-                          <td className="px-4 py-3 align-top text-slate-700">{categoryLabel}</td>
-                          <td className="px-4 py-3 align-top text-slate-600">
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">{firstSku}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">{inventoryTotal}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">{firstPrice}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">{categoryLabel}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">
                             {new Date(product.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                           </td>
                         </tr>

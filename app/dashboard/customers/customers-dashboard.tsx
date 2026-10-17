@@ -772,21 +772,15 @@ export function CustomersDashboard({
                             className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                           />
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-900">
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">
                           {fullName || "-"}
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-700">{customer.email}</td>
-                        <td className="px-4 py-3 align-top text-slate-700">{customer.phone || "-"}</td>
-                        <td className="px-4 py-3 align-top">
-                          {customer.group?.name ? (
-                            <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700 border border-cyan-200/80">
-                              {customer.group.name}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 text-xs">—</span>
-                          )}
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">{customer.email}</td>
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">{customer.phone || "-"}</td>
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">
+                          {customer.group?.name || "—"}
                         </td>
-                        <td className="px-4 py-3 align-top text-slate-600">
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">
                           {new Date(customer.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                         </td>
                       </tr>

@@ -303,33 +303,33 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
 
                         return (
                           <tr key={store.id} className="hover:bg-slate-50/70">
-                            <td className="px-4 py-3 align-top">
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">
                               <Link
                                 href={`/dashboard/stores/${store.id}`}
-                                className="group text-left"
+                                className="hover:text-slate-900 hover:underline"
                               >
-                                <p className="font-semibold text-slate-900 transition group-hover:text-cyan-700">{store.name}</p>
-                                <p className="text-xs text-slate-500">/{store.slug}</p>
+                                <div>{store.name}</div>
+                                <div className="text-slate-500">/{store.slug}</div>
                               </Link>
                             </td>
-                            <td className="px-4 py-3 align-top">
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">
                               <a
                                 href={`https://${domainLabel}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-medium text-cyan-700 transition hover:text-cyan-800"
+                                className="hover:text-slate-900 hover:underline"
                               >
-                                {domainLabel} ↗
+                                {domainLabel}
                               </a>
                             </td>
-                            <td className="px-4 py-3 align-top text-slate-700">{store.currency}</td>
-                            <td className="px-4 py-3 align-top text-slate-700">{store.timezone}</td>
-                            <td className="px-4 py-3 align-top text-slate-600">
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">{store.currency}</td>
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">{store.timezone}</td>
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">
                               {store.allowedDomains.length > 0
                                 ? store.allowedDomains.join(", ")
                                 : (isEs ? "Ninguno" : "None")}
                             </td>
-                            <td className="px-4 py-3 align-top text-slate-600">
+                            <td className="px-4 py-3 align-top text-xs text-slate-700">
                               {new Date(store.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                             </td>
                             <td className="px-4 py-3 align-top">

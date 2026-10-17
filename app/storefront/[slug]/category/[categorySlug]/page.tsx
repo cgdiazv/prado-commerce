@@ -76,7 +76,7 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
       title: true,
       images: true,
       variants: {
-        select: { id: true, price: true },
+        select: { id: true, price: true, inventory: true, trackInventory: true },
         take: 1,
         orderBy: { price: "asc" },
       },

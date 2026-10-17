@@ -415,28 +415,28 @@ export default function POListClient({
                   return (
                     <tr key={po.id} className="transition hover:bg-slate-50/80">
                       {/* 1. PO No. */}
-                      <td className="px-5 py-4 font-semibold text-slate-900">
-                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-blue-600">
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-slate-900 hover:underline">
                           {po.poNumber}
                         </Link>
-                        <p className="text-xs font-normal text-slate-500">{po.store.name}</p>
+                        <p className="text-slate-500">{po.store.name}</p>
                       </td>
 
                       {/* 2. Vendor */}
-                      <td className="px-5 py-4">
-                        <div className="font-medium text-slate-900">{po.vendor.name}</div>
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        <div>{po.vendor.name}</div>
                         {po.vendor.contactEmail && (
-                          <p className="text-xs text-slate-500">{po.vendor.contactEmail}</p>
+                          <p className="text-slate-500">{po.vendor.contactEmail}</p>
                         )}
                       </td>
 
                       {/* 3. Created date */}
-                      <td className="px-5 py-4 text-xs text-slate-600">
+                      <td className="px-5 py-4 text-xs text-slate-700">
                         {new Date(po.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                       </td>
 
                       {/* 4. Expected Date */}
-                      <td className="px-5 py-4 text-xs text-slate-600">
+                      <td className="px-5 py-4 text-xs text-slate-700">
                         {po.expectedDate
                           ? new Date(po.expectedDate).toLocaleDateString(isEs ? "es-ES" : "en-US")
                           : isEs
@@ -445,15 +445,13 @@ export default function POListClient({
                       </td>
 
                       {/* 5. Total */}
-                      <td className="px-5 py-4 text-right font-bold text-slate-900">
+                      <td className="px-5 py-4 text-right text-xs text-slate-700">
                         {formatter.format(Number(po.total))}
                       </td>
 
                       {/* 6. Status */}
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[po.status]}`}>
-                          {statusLabels[po.status] ?? po.status}
-                        </span>
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        {statusLabels[po.status] ?? po.status}
                       </td>
 
                     </tr>

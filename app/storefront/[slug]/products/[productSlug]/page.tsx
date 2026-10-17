@@ -59,6 +59,8 @@ export default async function StorefrontProductPage({ params }: PageProps) {
           id: true,
           title: true,
           price: true,
+          inventory: true,
+          trackInventory: true,
         },
         orderBy: { price: "asc" },
       },

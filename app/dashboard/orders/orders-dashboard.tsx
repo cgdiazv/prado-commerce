@@ -69,8 +69,10 @@ export function OrdersDashboard({
     | "status_processing"
     | "status_completed"
     | "status_cancelled"
+    | "status_cancelled_restock"
     | "payment_paid"
     | "payment_refunded"
+    | "payment_refunded_restock"
   >("");
   const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
   const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | "actions" | null>(null);
@@ -230,7 +232,7 @@ export function OrdersDashboard({
       return;
     }
 
-    let patchPayload: { status?: Order["status"]; paymentStatus?: Order["paymentStatus"] } = {};
+    let patchPayload: { status?: Order["status"]; paymentStatus?: Order["paymentStatus"]; restock?: boolean } = {};
 
     if (bulkAction === "status_processing") {
       patchPayload = { status: "PROCESSING" };
@@ -248,6 +250,18 @@ export function OrdersDashboard({
       patchPayload = { status: "COMPLETED" };
     } else if (bulkAction === "status_cancelled") {
       patchPayload = { status: "CANCELLED" };
+    } else if (bulkAction === "status_cancelled_restock") {
+      const confirmed = window.confirm(
+        isEs
+          ? "¿Cancelar los pedidos seleccionados y reingresar los artículos al inventario?"
+          : "Cancel selected orders and restock items to inventory?",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      patchPayload = { status: "CANCELLED", restock: true };
     } else if (bulkAction === "payment_paid") {
       const confirmed = window.confirm(
         isEs
@@ -262,6 +276,18 @@ export function OrdersDashboard({
       patchPayload = { paymentStatus: "PAID" };
     } else if (bulkAction === "payment_refunded") {
       patchPayload = { paymentStatus: "REFUNDED" };
+    } else if (bulkAction === "payment_refunded_restock") {
+      const confirmed = window.confirm(
+        isEs
+          ? "¿Reembolsar los pedidos seleccionados y reingresar los artículos al inventario?"
+          : "Refund selected orders and restock items to inventory?",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      patchPayload = { paymentStatus: "REFUNDED", restock: true };
     }
 
     if (!patchPayload.status && !patchPayload.paymentStatus) {
@@ -419,8 +445,10 @@ export function OrdersDashboard({
                 <option value="status_processing">{isEs ? "Marcar en proceso" : "Mark as processing"}</option>
                 <option value="status_completed">{isEs ? "Marcar como completado" : "Mark as completed"}</option>
                 <option value="status_cancelled">{isEs ? "Marcar como cancelado" : "Mark as cancelled"}</option>
+                <option value="status_cancelled_restock">{isEs ? "Cancelar y devolver al inventario" : "Cancel & restock inventory"}</option>
                 <option value="payment_paid">{isEs ? "Marcar como pagado" : "Mark as paid"}</option>
                 <option value="payment_refunded">{isEs ? "Marcar como reembolsado" : "Mark as refunded"}</option>
+                <option value="payment_refunded_restock">{isEs ? "Reembolsar y devolver al inventario" : "Refund & restock inventory"}</option>
                 <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
               </select>
             </div>
@@ -616,8 +644,10 @@ export function OrdersDashboard({
                   <option value="status_processing">{isEs ? "Marcar en proceso" : "Mark as processing"}</option>
                   <option value="status_completed">{isEs ? "Marcar como completado" : "Mark as completed"}</option>
                   <option value="status_cancelled">{isEs ? "Marcar como cancelado" : "Mark as cancelled"}</option>
+                  <option value="status_cancelled_restock">{isEs ? "Cancelar y devolver al inventario" : "Cancel & restock inventory"}</option>
                   <option value="payment_paid">{isEs ? "Marcar como pagado" : "Mark as paid"}</option>
                   <option value="payment_refunded">{isEs ? "Marcar como reembolsado" : "Mark as refunded"}</option>
+                  <option value="payment_refunded_restock">{isEs ? "Reembolsar y devolver al inventario" : "Refund & restock inventory"}</option>
                   <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
                 </select>
                 <button
@@ -797,20 +827,16 @@ export function OrdersDashboard({
                           className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                         />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top font-semibold text-slate-900">#{order.orderNumber}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{order.customerEmail}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                          {statusLabels[order.status] ?? order.status}
-                        </span>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">#{order.orderNumber}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">{order.customerEmail}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
+                        {statusLabels[order.status] ?? order.status}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                          {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
-                        </span>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
+                        {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-700">{formatter.format(Number(order.total))}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-slate-600">
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">{formatter.format(Number(order.total))}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
                         {new Date(order.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
                       </td>
                     </tr>

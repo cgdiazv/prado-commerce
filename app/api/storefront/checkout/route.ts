@@ -62,6 +62,8 @@ type FinalizeOrderInput = {
       id: string;
       title: string;
       price: unknown;
+      inventory?: number;
+      trackInventory?: boolean;
     };
   }>;
 };
@@ -146,6 +148,19 @@ async function finalizeOrder({
         createdAt: true,
       },
     });
+
+    for (const item of items) {
+      if (item.variant.trackInventory) {
+        await tx.productVariant.update({
+          where: { id: item.variant.id },
+          data: {
+            inventory: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+    }
 
     await tx.cartItem.deleteMany({
       where: { cartId },
@@ -249,6 +264,8 @@ export async function POST(request: Request) {
           id: string;
           title: string;
           price: unknown;
+          inventory: number;
+          trackInventory: boolean;
         };
       }[];
     } | null = null;
@@ -292,6 +309,8 @@ export async function POST(request: Request) {
                   id: true,
                   title: true,
                   price: true,
+                  inventory: true,
+                  trackInventory: true,
                 },
               },
             },
@@ -326,6 +345,8 @@ export async function POST(request: Request) {
                     id: true,
                     title: true,
                     price: true,
+                    inventory: true,
+                    trackInventory: true,
                   },
                 },
               },
@@ -359,6 +380,18 @@ export async function POST(request: Request) {
 
     if (cart.items.length === 0) {
       return NextResponse.json({ error: "Your cart is empty" }, { status: 400 });
+    }
+
+    const outOfStockItem = cart.items.find(
+      (item) => item.variant.trackInventory && item.variant.inventory < item.quantity,
+    );
+    if (outOfStockItem) {
+      return NextResponse.json(
+        {
+          error: `"${outOfStockItem.variant.title}" is out of stock or does not have enough inventory (${outOfStockItem.variant.inventory} available) / No hay suficiente inventario disponible.`,
+        },
+        { status: 400 },
+      );
     }
 
     const subtotal = toDecimal(

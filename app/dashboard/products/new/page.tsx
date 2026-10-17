@@ -33,7 +33,13 @@ export default async function NewProductPage() {
       select: { id: true, name: true, storeId: true },
     });
 
-    return <ProductForm stores={stores} categories={categories} />;
+    const brands = await prisma.brand.findMany({
+      where: { storeId: { in: stores.map((s) => s.id) } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, storeId: true },
+    });
+
+    return <ProductForm stores={stores} categories={categories} brands={brands} />;
   } catch (error) {
     console.error("[NEW_PRODUCT_PAGE_DB_ERROR]", error);
     return (
