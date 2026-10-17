@@ -19,7 +19,12 @@ const PUBLIC_FOOTER_PREFIXES = [
 ];
 
 function shouldRenderPublicFooter(pathname: string): boolean {
-  if (pathname === "/") {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/pricing") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms")
+  ) {
     return false;
   }
 
