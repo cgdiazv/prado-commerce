@@ -3,6 +3,7 @@
 import React from "react";
 import { DollarSign, ShoppingCart, TrendingUp, Store } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { DashboardMonthlyChart, MonthlyDataPoint } from "./dashboard-monthly-chart";
 
 interface DashboardSummaryViewProps {
   totalStores: number;
@@ -13,6 +14,8 @@ interface DashboardSummaryViewProps {
   currentPlan: string;
   isStarter: boolean;
   dashboardError: string | null;
+  monthlySales?: MonthlyDataPoint[];
+  year?: number;
 }
 
 export function DashboardSummaryView({
@@ -24,8 +27,11 @@ export function DashboardSummaryView({
   currentPlan,
   isStarter,
   dashboardError,
+  monthlySales = [],
+  year = new Date().getFullYear(),
 }: DashboardSummaryViewProps) {
   const { t, language } = useLanguage();
+  const isEs = language === "es";
 
   const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
     style: "currency",
@@ -36,21 +42,25 @@ export function DashboardSummaryView({
     {
       label: t.dashboard.totalStores,
       value: totalStores.toString(),
+      subtext: isEs ? "Tiendas activas" : "Active stores",
       icon: Store,
     },
     {
       label: t.dashboard.totalProducts,
       value: totalProducts.toString(),
+      subtext: isEs ? "Productos en catálogo" : "Catalog products",
       icon: ShoppingCart,
     },
     {
       label: t.dashboard.totalRevenue,
       value: formatter.format(totalRevenue),
+      subtext: isEs ? "Ingresos generados" : "Total generated revenue",
       icon: DollarSign,
     },
     {
       label: t.dashboard.totalOrders,
       value: totalOrders.toString(),
+      subtext: isEs ? "Órdenes procesadas" : "Completed order transactions",
       icon: TrendingUp,
     },
   ];
@@ -87,27 +97,39 @@ export function DashboardSummaryView({
           </div>
         ) : null}
 
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {summaryCards.map((card) => {
             const Icon = card.icon;
 
             return (
               <div
                 key={card.label}
-                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6"
+                className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs"
               >
-                <div className="inline-flex rounded border border-slate-200/80 bg-slate-50 p-1.5 text-slate-700 shadow-2xs sm:p-2">
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className="flex items-center justify-between text-slate-500">
+                  <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
+                    {card.label}
+                  </span>
+                  <Icon className="h-4 w-4 shrink-0 text-slate-400" />
                 </div>
-                <p className="mt-3 text-xs font-medium text-slate-600 sm:mt-4 sm:text-sm">
-                  {card.label}
-                </p>
-                <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl">
+                <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900 truncate">
                   {card.value}
+                </p>
+                <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">
+                  {card.subtext}
                 </p>
               </div>
             );
           })}
+        </div>
+
+        {/* Monthly Sales (YTD) Chart */}
+        <div className="mt-8">
+          <DashboardMonthlyChart
+            data={monthlySales}
+            baseCurrency={baseCurrency}
+            year={year}
+          />
         </div>
       </div>
     </section>
