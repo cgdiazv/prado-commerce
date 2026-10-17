@@ -198,7 +198,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
               {isEs ? "Procesar Pedido" : "Process Order"}
             </p>
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-1 flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
                 {isEs ? "Pedido #" : "Order #"}{(order.store.invoicePrefix || "INV-").trim()}{order.orderNumber}
               </h1>

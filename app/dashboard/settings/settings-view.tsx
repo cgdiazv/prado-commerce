@@ -93,10 +93,10 @@ export function SettingsView({ user }: SettingsViewProps) {
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             {isEs ? "Configuración" : "Settings"}
           </p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Configuración de la Cuenta" : "Account Settings"}
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
               ? "Administra tu perfil, seguridad, monedas y preferencias de la tienda."
               : "Manage your profile, security, and notification preferences."}

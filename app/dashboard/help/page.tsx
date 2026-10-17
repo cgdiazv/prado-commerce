@@ -9,17 +9,17 @@ export default function DashboardHelpPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-3">
-        <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+      <header>
+        <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
           {isEs ? "Ayuda" : "Help"}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
           {isEs ? "Centro de Ayuda del Panel" : "Dashboard Help Center"}
         </h1>
-        <p className="text-xs font-medium tracking-[0.02em] text-slate-500">
+        <p className="mt-2 text-xs font-medium tracking-[0.02em] text-slate-500">
           {isEs ? "Última actualización: 7 de agosto de 2026" : "Last updated: August 7, 2026"}
         </p>
-        <p className="max-w-3xl text-sm leading-6 text-slate-600">
+        <p className="mt-1 max-w-3xl text-sm text-slate-500">
           {isEs
             ? "Encuentra orientación práctica para gestionar productos, pedidos, clientes, tiendas, pagos y la seguridad de tu cuenta en Prado Commerce."
             : "Find practical guidance for managing products, orders, customers, stores, payments, and account security in Prado Commerce."}

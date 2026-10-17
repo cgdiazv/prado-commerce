@@ -13,10 +13,10 @@ export default function ToolsPage() {
         <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
           {isEs ? "Herramientas" : "Tools"}
         </p>
-        <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+        <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
           {isEs ? "Herramientas de datos" : "Data tools"}
         </h1>
-        <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
+        <p className="mt-1 max-w-xl text-sm text-slate-500">
           {isEs
             ? "Importa y exporta los datos de tus tablas para migraciones, copias de seguridad y actualizaciones masivas."
             : "Import and export your table data for migrations, backups, and bulk updates."}

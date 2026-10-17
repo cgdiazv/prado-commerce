@@ -206,16 +206,16 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
         </div>
       ) : null}
       <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl space-y-4">
+        <div className="max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Mis Tiendas" : "My Storefronts"}
+              {isEs ? "Tiendas" : "Stores"}
             </p>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Tus tiendas, productos y configuración en un solo lugar." : "Your stores, products, and settings in one place."}
           </h1>
-          <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs ? "Crea y administra tus tiendas virtuales, y configura dominios y monedas." : "Create and manage your storefronts, and configure domains and currencies."}
           </p>
             </div>

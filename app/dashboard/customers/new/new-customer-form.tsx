@@ -141,7 +141,7 @@ export function NewCustomerForm({
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">
             {isEs ? "Crear perfil de cliente" : "Create customer profile"}
           </h2>
-          <p className="mt-2 max-w-xl text-sm text-slate-600">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs ? "Añade un cliente manualmente a los registros de tu tienda." : "Add a customer manually to your store records."}
           </p>
         </div>

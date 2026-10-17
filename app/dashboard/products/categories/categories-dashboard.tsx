@@ -255,24 +255,24 @@ export function CategoriesDashboard({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl space-y-4">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
             <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Categorías de Productos" : "Product Categories"}
+              {isEs ? "Productos" : "Products"}
             </p>
-            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs
                 ? "Organiza tu catálogo con grupos claros de categorías."
                 : "Organize your catalog with clean category groups."}
             </h1>
-            <p className="max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mt-1 text-sm text-slate-500">
               {isEs
                 ? "Crea, edita y elimina categorías por tienda para estructurar la navegación de productos."
                 : "Create, edit, and remove categories per store to keep product browsing structured."}
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={openCreateCategoryModal}

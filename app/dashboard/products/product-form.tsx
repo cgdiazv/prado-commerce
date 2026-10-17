@@ -450,10 +450,8 @@ export function ProductForm({ stores, categories = [], initialProduct = null, se
     <section className="min-w-0 space-y-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {editingProduct
-              ? isEs ? "Editar producto" : "Edit product"
-              : isEs ? "Nuevo producto" : "New product"}
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+            {isEs ? "Productos" : "Products"}
           </p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">
             {editingProduct

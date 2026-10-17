@@ -51,7 +51,10 @@ export function ProcurementOverviewView({
       {/* Page Title & Quick Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+            {isEs ? "Compras" : "Procurement"}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
             {isEs ? "Centro de Compras" : "Procurement & ERP Center"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">

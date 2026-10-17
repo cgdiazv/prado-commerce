@@ -81,7 +81,7 @@ export default function ChangePasswordPage() {
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             {isEs ? "Configuración" : "Settings"}
           </p>
-          <div className="mt-4 flex items-start justify-between gap-4">
+          <div className="mt-1 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Cambiar contraseña" : "Change password"}
             </h1>
@@ -93,7 +93,7 @@ export default function ChangePasswordPage() {
               {isEs ? "← Volver a configuración" : "← Back to settings"}
             </Link>
           </div>
-          <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
               ? "Actualiza tu contraseña. Esto cerrará la sesión en todos los demás dispositivos activos."
               : "Update your password. This will sign out all other active devices."}

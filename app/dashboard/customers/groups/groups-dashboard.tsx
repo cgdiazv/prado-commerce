@@ -170,10 +170,10 @@ export function GroupsDashboard({
               {isEs ? "Clientes" : "Customers"}
             </Link>
           </div>
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Grupos de Clientes" : "Customer Groups"}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
               ? "Organiza a tus clientes en grupos o segmentos (VIP, Mayoristas, Minoristas) para precios especiales o promociones personalizadas."
               : "Organize your customers into groups or tiers (VIP, Wholesale, Retail) for special pricing and targeted marketing."}

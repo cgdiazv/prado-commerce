@@ -110,10 +110,10 @@ export function NewCustomerGroupForm({
               {isEs ? "Clientes" : "Customers"}
             </Link>
           </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Crear Grupo de Clientes" : "Create Customer Group"}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
               ? "Crea un nuevo grupo para clasificar a tus clientes. Este grupo aparecerá como columna en la tabla de clientes y podrás asignarlo a cualquier cliente."
               : "Create a new group to categorize your customers. This group will appear as a column in the customers table and can be assigned to any customer."}

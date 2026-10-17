@@ -174,7 +174,7 @@ export default function EmailSettingsPage() {
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             {isEs ? "Configuración" : "Settings"}
           </p>
-          <div className="mt-4 flex items-start justify-between gap-4">
+          <div className="mt-1 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Correos Electrónicos" : "Emails"}
             </h1>
@@ -186,7 +186,7 @@ export default function EmailSettingsPage() {
               {isEs ? "← Volver a configuración" : "← Back to settings"}
             </Link>
           </div>
-          <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-2xl sm:text-lg">
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
             {isEs
               ? "Configura correos de bienvenida, confirmaciones de compra y recibos de facturación para tus clientes."
               : "Configure buyer welcome emails, order confirmations, and invoice emails for your storefront."}

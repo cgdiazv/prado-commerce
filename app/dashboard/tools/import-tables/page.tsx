@@ -328,7 +328,7 @@ export default function ImportTablesPage() {
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             {isEs ? "Herramientas" : "Tools"}
           </p>
-          <div className="mt-4 flex items-start justify-between gap-4">
+          <div className="mt-1 flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Importar tablas" : "Import tables"}
             </h1>
@@ -340,7 +340,7 @@ export default function ImportTablesPage() {
               {isEs ? "← Volver a herramientas" : "← Back to tools"}
             </Link>
           </div>
-          <p className="mt-4 text-base leading-7 text-slate-600 sm:max-w-xl sm:text-lg">
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
               ? "Importa categorías, productos o clientes desde archivos CSV o JSON."
               : "Import categories, products, or customers from CSV or JSON files."}

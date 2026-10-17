@@ -363,12 +363,12 @@ export function PosSettingsClient({
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             {isEs ? "Configuración" : "Settings"}
           </p>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
                 {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
               </h1>
-              <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+              <p className="mt-1 max-w-xl text-sm text-slate-500">
                 {isEs
                   ? "Administra las terminales físicas, cajas registradoras, cajeros autorizados y códigos PIN de seguridad."
                   : "Manage physical registers, checkouts, authorized cashiers, and security PINs."}
