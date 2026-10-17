@@ -192,7 +192,7 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                   <th className="px-5 py-3.5">{isEs ? "N.º de orden" : "PO Number"}</th>
                   <th className="px-5 py-3.5">{isEs ? "Proveedor" : "Vendor"}</th>
                   <th className="px-5 py-3.5">{isEs ? "Estado" : "Status"}</th>
-                  <th className="px-5 py-3.5">{isEs ? "Progreso de recepción" : "Fulfillment Progress"}</th>
+                  <th className="px-5 py-3.5">{isEs ? "Recepción" : "Fulfillment"}</th>
                   <th className="px-5 py-3.5">{isEs ? "Fecha estimada" : "Expected Date"}</th>
                   <th className="px-5 py-3.5 text-right">{isEs ? "Total" : "Total"}</th>
                   <th className="px-5 py-3.5 text-right">{isEs ? "Acción" : "Action"}</th>
@@ -232,21 +232,13 @@ export default function POListClient({ initialStores, initialVendors, initialPur
                           {statusLabels[po.status] ?? po.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 min-w-[160px]">
-                        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                          <span>
-                            {isEs
-                              ? `${totalReceived} de ${totalOrdered} unidades`
-                              : `${totalReceived} of ${totalOrdered} units`}
-                          </span>
-                          <span className="font-semibold">{progressPct}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                          <div
-                            className={`h-full transition-all ${progressPct === 100 ? "bg-emerald-500" : progressPct > 0 ? "bg-amber-500" : "bg-slate-300"}`}
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        <span className="font-medium">
+                          {isEs
+                            ? `${totalReceived} de ${totalOrdered} unidades`
+                            : `${totalReceived} of ${totalOrdered} units`}
+                        </span>
+                        <span className="ml-1.5 text-slate-400 font-semibold">({progressPct}%)</span>
                       </td>
                       <td className="px-5 py-4 text-xs text-slate-600">
                         {po.expectedDate ? new Date(po.expectedDate).toLocaleDateString(isEs ? "es-ES" : "en-US") : isEs ? "No especificada" : "Not specified"}

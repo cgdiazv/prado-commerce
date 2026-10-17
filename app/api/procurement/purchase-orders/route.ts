@@ -184,7 +184,7 @@ export async function POST(request: Request) {
       },
       include: {
         store: { select: { id: true, name: true, currency: true } },
-        vendor: { select: { id: true, name: true } },
+        vendor: { select: { id: true, name: true, contactEmail: true } },
         items: true,
       },
     });

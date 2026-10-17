@@ -74,12 +74,12 @@ function displayName(firstName?: string | null) {
   return firstName?.trim() || "there";
 }
 
-function getFromHeader(store: StoreEmailConfig) {
+function getFromHeader(store: { name: string; senderName?: string | null }) {
   const fromName = store.senderName?.trim() || store.name;
   return `${fromName} <${SENDER_FROM_EMAIL}>`;
 }
 
-function getReplyTo(store: StoreEmailConfig) {
+function getReplyTo(store: { senderEmail?: string | null; replyToEmail?: string | null }) {
   const explicitReplyTo = store.replyToEmail?.trim().toLowerCase();
   if (explicitReplyTo) return explicitReplyTo;
 
@@ -372,3 +372,247 @@ export async function sendMerchantSubscriptionWelcomeEmail(input: MerchantSubscr
     html,
   });
 }
+
+export type PurchaseOrderItemEmail = {
+  title: string;
+  sku?: string | null;
+  qtyOrdered: number;
+  unitCost: number;
+  totalCost: number;
+};
+
+export type PurchaseOrderVendorEmailInput = {
+  store: {
+    id: string;
+    name: string;
+    slug?: string | null;
+    mainColor?: string | null;
+    currency?: string;
+    senderName?: string | null;
+    senderEmail?: string | null;
+    replyToEmail?: string | null;
+    logoUrl?: string | null;
+    shippingOrigin?: {
+      address?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+    } | null;
+  };
+  to: string;
+  vendorName: string;
+  vendorContactName?: string | null;
+  vendorAddress?: string | null;
+  vendorPhone?: string | null;
+  poNumber: string;
+  issueDate?: string | Date | null;
+  expectedDate?: string | Date | null;
+  notes?: string | null;
+  currency: string;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  total: number;
+  items: PurchaseOrderItemEmail[];
+};
+
+export async function sendPurchaseOrderVendorEmail(input: PurchaseOrderVendorEmailInput) {
+  if (!resend) {
+    console.warn("[PO_VENDOR_EMAIL_DISABLED] RESEND_API_KEY is not configured.");
+    return { ok: true, simulated: true };
+  }
+
+  const from = getFromHeader(input.store);
+  const replyTo = getReplyTo(input.store);
+  const greetingName = input.vendorContactName?.trim() || input.vendorName;
+
+  const issueDateFormatted = input.issueDate
+    ? new Date(input.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    : new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+
+  const expectedDateFormatted = input.expectedDate
+    ? new Date(input.expectedDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    : null;
+
+  const destinationParts = [
+    input.store.shippingOrigin?.address,
+    input.store.shippingOrigin?.city,
+    input.store.shippingOrigin?.state,
+    input.store.shippingOrigin?.postalCode,
+    input.store.shippingOrigin?.country,
+  ].filter(Boolean);
+
+  const destinationAddress = destinationParts.length > 0 ? destinationParts.join(", ") : null;
+
+  const itemsRows = input.items
+    .map(
+      (item) => `
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:12px 10px;font-size:14px;color:#0f172a;vertical-align:top;">
+            <strong>${item.title}</strong>
+            ${item.sku ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">SKU: ${item.sku}</div>` : ""}
+          </td>
+          <td style="padding:12px 10px;font-size:14px;text-align:center;color:#334155;vertical-align:top;">${item.qtyOrdered}</td>
+          <td style="padding:12px 10px;font-size:14px;text-align:right;color:#334155;vertical-align:top;">${formatMoney(input.currency, item.unitCost)}</td>
+          <td style="padding:12px 10px;font-size:14px;text-align:right;font-weight:600;color:#0f172a;vertical-align:top;">${formatMoney(input.currency, item.totalCost)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const html = `
+    <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" style="max-width:680px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <!-- Header -->
+        <tr>
+          <td style="padding:28px 28px 20px 28px;border-bottom:1px solid #f1f5f9;">
+            <table role="presentation" style="width:100%;">
+              <tr>
+                <td style="vertical-align:top;">
+                  ${
+                    input.store.logoUrl
+                      ? `<img src="${input.store.logoUrl}" alt="${input.store.name}" style="height:38px;max-width:180px;object-fit:contain;margin-bottom:8px;" />`
+                      : `<h2 style="margin:0 0 4px 0;font-size:20px;font-weight:bold;color:#0f172a;">${input.store.name}</h2>`
+                  }
+                  <p style="margin:0;font-size:12px;color:#64748b;">${input.store.senderEmail || ""}</p>
+                </td>
+                <td style="vertical-align:top;text-align:right;">
+                  <span style="display:inline-block;padding:4px 10px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border-radius:9999px;">Purchase Order</span>
+                  <h1 style="margin:6px 0 2px 0;font-size:22px;color:#0f172a;font-family:monospace;">#${input.poNumber}</h1>
+                  <p style="margin:0;font-size:12px;color:#64748b;">Date: ${issueDateFormatted}</p>
+                  ${expectedDateFormatted ? `<p style="margin:2px 0 0 0;font-size:12px;color:#2563eb;font-weight:600;">Expected: ${expectedDateFormatted}</p>` : ""}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Greeting & Info Blocks -->
+        <tr>
+          <td style="padding:20px 28px 12px 28px;font-size:14px;color:#334155;">
+            <p style="margin:0 0 16px 0;">Dear <strong>${greetingName}</strong>,</p>
+            <p style="margin:0 0 16px 0;">Please find below the official purchase order / invoice details from <strong>${input.store.name}</strong>. Please confirm receipt and estimated dispatch date at your earliest convenience.</p>
+
+            <table role="presentation" style="width:100%;margin:16px 0;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;padding:14px;">
+              <tr>
+                <td style="width:50%;vertical-align:top;padding:4px 12px;">
+                  <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Vendor</p>
+                  <p style="margin:0;font-weight:700;color:#0f172a;font-size:13px;">${input.vendorName}</p>
+                  ${input.vendorContactName ? `<p style="margin:2px 0 0 0;font-size:12px;color:#475569;">${input.vendorContactName}</p>` : ""}
+                  ${input.vendorAddress ? `<p style="margin:2px 0 0 0;font-size:12px;color:#475569;">${input.vendorAddress}</p>` : ""}
+                  ${input.vendorPhone ? `<p style="margin:2px 0 0 0;font-size:12px;color:#475569;">${input.vendorPhone}</p>` : ""}
+                </td>
+                <td style="width:50%;vertical-align:top;padding:4px 12px;border-left:1px solid #e2e8f0;">
+                  <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Ship / Deliver To</p>
+                  <p style="margin:0;font-weight:700;color:#0f172a;font-size:13px;">${input.store.name}</p>
+                  ${destinationAddress ? `<p style="margin:2px 0 0 0;font-size:12px;color:#475569;">${destinationAddress}</p>` : `<p style="margin:2px 0 0 0;font-size:12px;color:#94a3b8;font-style:italic;">Main Delivery Dock</p>`}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Line Items Table -->
+        <tr>
+          <td style="padding:12px 28px;">
+            <table role="presentation" style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
+                  <th style="padding:10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#475569;">Item / Description</th>
+                  <th style="padding:10px;text-align:center;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#475569;width:60px;">Qty</th>
+                  <th style="padding:10px;text-align:right;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#475569;width:110px;">Unit Cost</th>
+                  <th style="padding:10px;text-align:right;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#475569;width:120px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsRows}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Totals & Notes -->
+        <tr>
+          <td style="padding:16px 28px 24px 28px;">
+            <table role="presentation" style="width:100%;">
+              <tr>
+                <td style="vertical-align:top;width:55%;padding-right:20px;">
+                  ${
+                    input.notes
+                      ? `
+                        <div style="background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                          <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Special Instructions / Notes</p>
+                          <p style="margin:0;font-size:12px;color:#334155;line-height:1.5;">${input.notes}</p>
+                        </div>
+                      `
+                      : ""
+                  }
+                </td>
+                <td style="vertical-align:top;width:45%;">
+                  <table role="presentation" style="width:100%;font-size:13px;">
+                    <tr>
+                      <td style="padding:4px 0;color:#64748b;">Subtotal:</td>
+                      <td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${formatMoney(input.currency, input.subtotal)}</td>
+                    </tr>
+                    ${
+                      input.tax > 0
+                        ? `
+                          <tr>
+                            <td style="padding:4px 0;color:#64748b;">Tax:</td>
+                            <td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${formatMoney(input.currency, input.tax)}</td>
+                          </tr>
+                        `
+                        : ""
+                    }
+                    ${
+                      input.shipping > 0
+                        ? `
+                          <tr>
+                            <td style="padding:4px 0;color:#64748b;">Shipping / Freight:</td>
+                            <td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${formatMoney(input.currency, input.shipping)}</td>
+                          </tr>
+                        `
+                        : ""
+                    }
+                    <tr style="border-top:2px solid #0f172a;">
+                      <td style="padding:10px 0 0 0;font-size:15px;font-weight:800;color:#0f172a;">Total:</td>
+                      <td style="padding:10px 0 0 0;font-size:16px;font-weight:800;text-align:right;color:#0f172a;">${formatMoney(input.currency, input.total)}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">
+            <p style="margin:0 0 4px 0;">This purchase order was generated by <strong>${input.store.name}</strong>.</p>
+            ${
+              replyTo
+                ? `<p style="margin:0;">For any questions, reply to this email or write to <a href="mailto:${replyTo}" style="color:#2563eb;text-decoration:none;">${replyTo}</a>.</p>`
+                : ""
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  const payload: any = {
+    from,
+    to: input.to,
+    subject: `Purchase Order #${input.poNumber} from ${input.store.name}`,
+    html,
+  };
+
+  if (replyTo) {
+    payload.replyTo = replyTo;
+    payload.reply_to = replyTo;
+  }
+
+  return await resend.emails.send(payload);
+}
+

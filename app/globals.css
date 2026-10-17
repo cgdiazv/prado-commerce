@@ -75,6 +75,10 @@ body {
 }
 
 @media print {
+  @page {
+    margin: 0;
+  }
+
   /* POS thermal receipt printing: only hide surrounding content when printing a POS receipt */
   body:has(#pos-thermal-receipt) * {
     visibility: hidden;

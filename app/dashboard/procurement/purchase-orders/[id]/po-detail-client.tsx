@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, PackageCheck, Clock, Send } from "lucide-react";
+import { ArrowLeft, Printer, PackageCheck, Clock, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type POVariantInfo = {
@@ -99,7 +99,6 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
 
   const [po, setPo] = useState<PurchaseOrder>(initialPO);
   const [isReceivingModalOpen, setIsReceivingModalOpen] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Receiving Modal Form State
   const [receivedBy, setReceivedBy] = useState(currentUser.name || currentUser.email || "");
@@ -113,9 +112,7 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
     currency: po.store?.currency || "USD",
   });
 
-  const totalOrdered = po.items?.reduce((sum, item) => sum + item.qtyOrdered, 0) || 0;
-  const totalReceived = po.items?.reduce((sum, item) => sum + item.qtyReceived, 0) || 0;
-  const progressPct = totalOrdered > 0 ? Math.min(100, Math.round((totalReceived / totalOrdered) * 100)) : 0;
+
 
   const openReceivingModal = () => {
     const initialQtyState: Record<string, number> = {};
@@ -128,25 +125,90 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
     setIsReceivingModalOpen(true);
   };
 
-  const handleUpdateStatus = async (newStatus: "SENT" | "CANCELLED") => {
-    setIsUpdatingStatus(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailNotification, setEmailNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const originalTitle = document.title;
+    const handleBeforePrint = () => {
+      document.title = "";
+    };
+    const handleAfterPrint = () => {
+      document.title = originalTitle;
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+      document.title = originalTitle;
+    };
+  }, []);
+
+  const handlePrint = () => {
+    const originalTitle = document.title;
+    document.title = "";
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
+  const handleSendEmailToVendor = async () => {
+    const vendorEmail = po.vendor?.contactEmail?.trim();
+    if (!vendorEmail) {
+      setEmailNotification({
+        type: "error",
+        message: isEs
+          ? "El proveedor no tiene un correo de contacto configurado. Agrega un correo en Proveedores para enviar la orden."
+          : "The vendor does not have a contact email configured. Please add an email address in Vendors before sending.",
+      });
+      return;
+    }
+
+    const confirmMsg = isEs
+      ? `¿Enviar la orden de compra #${po.poNumber} por correo a ${vendorEmail}?`
+      : `Send purchase order / invoice #${po.poNumber} by email to ${vendorEmail}?`;
+
+    if (!window.confirm(confirmMsg)) {
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailNotification(null);
+
     try {
-      const response = await fetch(`/api/procurement/purchase-orders/${po.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+      const response = await fetch(`/api/procurement/purchase-orders/${po.id}/send-email`, {
+        method: "POST",
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || (isEs ? "Error al actualizar el estado de la OC" : "Failed to update PO status"));
+        throw new Error(data.error || (isEs ? "Error al enviar la orden por correo." : "Failed to send purchase order email."));
       }
 
-      setPo((prev) => ({ ...prev, status: data.purchaseOrder.status }));
+      setEmailNotification({
+        type: "success",
+        message: isEs
+          ? `Factura/orden de compra enviada con éxito a ${vendorEmail}.`
+          : `Purchase order invoice successfully sent to ${vendorEmail}.`,
+      });
+
+      if (data.status) {
+        setPo((prev) => ({ ...prev, status: data.status }));
+      }
     } catch (err) {
-      alert(err instanceof Error ? err.message : isEs ? "Error al actualizar el estado" : "Failed to update status");
+      setEmailNotification({
+        type: "error",
+        message: err instanceof Error ? err.message : isEs ? "Error al enviar el correo." : "Failed to send email.",
+      });
     } finally {
-      setIsUpdatingStatus(false);
+      setIsSendingEmail(false);
     }
   };
 
@@ -228,17 +290,36 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {po.status === "DRAFT" && (
-            <button
-              type="button"
-              disabled={isUpdatingStatus}
-              onClick={() => handleUpdateStatus("SENT")}
-              className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-            >
-              <Send className="h-3.5 w-3.5" />
-              {isEs ? "Marcar como enviada" : "Mark as Sent"}
-            </button>
-          )}
+          {/* Email PO to Vendor Button */}
+          <button
+            type="button"
+            disabled={isSendingEmail}
+            onClick={handleSendEmailToVendor}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition ${
+              po.vendor?.contactEmail
+                ? "bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-50"
+                : "border border-slate-300 bg-white text-slate-500 hover:bg-slate-50"
+            }`}
+            title={
+              po.vendor?.contactEmail
+                ? (isEs ? `Enviar a ${po.vendor.contactEmail}` : `Send to ${po.vendor.contactEmail}`)
+                : (isEs ? "El proveedor no tiene correo configurado" : "Vendor has no email configured")
+            }
+          >
+            {isSendingEmail ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {isEs ? "Enviando factura..." : "Sending email..."}
+              </>
+            ) : (
+              <>
+                <Mail className="h-3.5 w-3.5" />
+                {isEs ? "Enviar factura al proveedor" : "Email PO Invoice to Vendor"}
+              </>
+            )}
+          </button>
+
+
 
           {po.status !== "RECEIVED" && po.status !== "CANCELLED" && (
             <button
@@ -253,7 +334,7 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
 
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
           >
             <Printer className="h-3.5 w-3.5" />
@@ -262,30 +343,37 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
         </div>
       </div>
 
-      {/* Progress & Summary Banner */}
-      <div className="print:hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between text-xs font-medium text-slate-600">
-          <span>
-            {isEs
-              ? `Cumplimiento general de inventario: ${totalReceived} de ${totalOrdered} unidades recibidas`
-              : `Overall Inventory Fulfillment: ${totalReceived} of ${totalOrdered} units received`}
-          </span>
-          <span className="font-bold text-slate-900">
-            {progressPct}% {isEs ? "Completado" : "Complete"}
-          </span>
+      {/* Email Notification Alert Banner */}
+      {emailNotification && (
+        <div
+          className={`print:hidden flex items-start justify-between rounded-xl p-4 text-xs font-medium border ${
+            emailNotification.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-rose-200 bg-rose-50 text-rose-800"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {emailNotification.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+            )}
+            <span>{emailNotification.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEmailNotification(null)}
+            className="text-slate-400 hover:text-slate-600 font-bold ml-4"
+          >
+            ✕
+          </button>
         </div>
-        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className={`h-full transition-all duration-500 ${
-              progressPct === 100 ? "bg-emerald-500" : progressPct > 0 ? "bg-amber-500" : "bg-slate-300"
-            }`}
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
+      )}
+
+
 
       {/* Main PO Document (Visible on screen and on print) */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm space-y-8 print:border-none print:p-0 print:shadow-none">
+      <div id="po-document" className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm space-y-8 print:border-none print:p-0 print:shadow-none">
         {/* Document Header */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100 pb-6">
           <div className="space-y-2">
@@ -318,12 +406,35 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
         {/* Vendor & Delivery Address Grid */}
         <div className="grid gap-6 sm:grid-cols-2 text-xs">
           <div className="rounded-xl bg-slate-50 p-4 space-y-1.5 border border-slate-100">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] text-slate-500">
-              {isEs ? "Proveedor / Fabricante" : "Vendor / Supplier"}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] text-slate-500">
+                {isEs ? "Proveedor / Fabricante" : "Vendor / Supplier"}
+              </h3>
+              {po.vendor?.contactEmail ? (
+                <span className="inline-flex items-center gap-1 rounded bg-cyan-100 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-800">
+                  <Mail className="h-2.5 w-2.5" />
+                  {isEs ? "Email configurado" : "Email ready"}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                  {isEs ? "Sin email" : "No email"}
+                </span>
+              )}
+            </div>
             <p className="text-sm font-bold text-slate-950">{po.vendor?.name}</p>
             {po.vendor?.contactName && <p>{isEs ? "A la atención de: " : "Attn: "}{po.vendor.contactName}</p>}
-            {po.vendor?.contactEmail && <p>{isEs ? "Correo: " : "Email: "}{po.vendor.contactEmail}</p>}
+            {po.vendor?.contactEmail ? (
+              <p className="text-slate-700 font-medium flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5 text-cyan-600 shrink-0" />
+                <a href={`mailto:${po.vendor.contactEmail}`} className="hover:underline text-cyan-700">
+                  {po.vendor.contactEmail}
+                </a>
+              </p>
+            ) : (
+              <p className="text-amber-600 italic">
+                {isEs ? "Sin correo electrónico (agrégalo en Proveedores)" : "No contact email (add it in Vendors)"}
+              </p>
+            )}
             {po.vendor?.contactPhone && <p>{isEs ? "Teléfono: " : "Phone: "}{po.vendor.contactPhone}</p>}
             {po.vendor?.address && <p className="whitespace-pre-line text-slate-600">{po.vendor.address}</p>}
           </div>
@@ -617,6 +728,37 @@ export default function PODetailClient({ initialPO, currentUser }: PODetailClien
           </div>
         </div>
       )}
+
+      {/* Embedded CSS for clean PDF export / print without headers or footers */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @media print {
+          @page {
+            size: auto;
+            margin: 0 !important;
+          }
+          html, body {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #po-document {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 15mm 18mm !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+        }
+      `,
+        }}
+      />
     </section>
   );
 }
