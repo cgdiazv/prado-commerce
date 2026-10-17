@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, FileText, ChevronRight } from "lucide-react";
+import { Plus, Search, FileText } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Store = {
@@ -395,8 +395,6 @@ export default function POListClient({
                     </button>
                   </th>
 
-                  {/* 7. Actions */}
-                  <th className="px-5 py-3.5 text-right">{isEs ? "Acciones" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -458,16 +456,6 @@ export default function POListClient({
                         </span>
                       </td>
 
-                      {/* 7. Actions */}
-                      <td className="px-5 py-4 text-right">
-                        <Link
-                          href={`/dashboard/procurement/purchase-orders/${po.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-950"
-                        >
-                          {isEs ? "Ver orden" : "View Order"}
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </td>
                     </tr>
                   );
                 })}
