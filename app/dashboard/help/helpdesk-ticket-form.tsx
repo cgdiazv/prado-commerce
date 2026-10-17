@@ -143,6 +143,8 @@ export function HelpdeskTicketForm() {
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="General Support">{isEs ? "Soporte General" : "General Support"}</option>
+              <option value="Point of Sale (POS)">{isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}</option>
+              <option value="Procurement & Inventory">{isEs ? "Compras e Inventario" : "Procurement & Inventory"}</option>
               <option value="Technical Issue">{isEs ? "Problema Técnico" : "Technical Issue"}</option>
               <option value="Orders & Shipping">{isEs ? "Pedidos y Envíos" : "Orders & Shipping"}</option>
               <option value="Payments & Billing">{isEs ? "Pagos y Facturación" : "Payments & Billing"}</option>
