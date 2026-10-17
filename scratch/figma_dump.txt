@@ -1,0 +1,401 @@
+
+========================================
+SECTION 0: Navegación (2:3442)
+========================================
+Navegación [FRAME] (2:3442) layout=HORIZONTAL pad=[undefined,64,undefined,64] fills=[#ffffff] strokes=[#d8dcd6] weight=1
+  Prado Commerce [FRAME] (2:3443) layout=HORIZONTAL gap=10 fills=[#ffffff]
+    Logo lockup [FRAME] (2:3867) radius=5 layout=HORIZONTAL fills=[#ffffff]
+      Prado symbol [RECTANGLE] (2:3863) fills=[IMAGE]
+    Wordmarks [FRAME] (2:3868) layout=VERTICAL gap=1
+      Wordmark [TEXT] (2:3445) text="Prado Commerce" fills=[#030618] font=Inter 600 17px/21px
+      Commerce [TEXT] (2:3446) text="UNIFIED E-COMMERCE" fills=[#030618] font=Inter 400 10px/12px
+  Navigation links [FRAME] (2:3447) layout=HORIZONTAL gap=36
+    Product link [TEXT] (2:3448) text="Plataforma" fills=[#030618] font=Inter 400 15px/18px
+    Business link [TEXT] (2:3449) text="Para tu negocio" fills=[#030618] font=Inter 400 15px/18px
+    Pricing link [TEXT] (2:3450) text="Precios" fills=[#030618] font=Inter 400 15px/18px
+  Account and language [FRAME] (2:3451) layout=HORIZONTAL gap=24
+    Language selector [FRAME] (2:3452) layout=HORIZONTAL gap=6
+      Selected language [TEXT] (2:3453) text="ES" fills=[#030618] font=Inter 600 13px/16px
+      Language separator [TEXT] (2:3454) text="/" fills=[#626763] font=Inter 400 13px/16px
+      Alternative language [TEXT] (2:3455) text="EN" fills=[#626763] font=Inter 400 13px/16px
+    Separator [RECTANGLE] (2:3456) fills=[#d8dcd6]
+    Dashboard link [TEXT] (2:3457) text="Panel" fills=[#030618] font=Inter 400 15px/18px
+    Action [FRAME] (2:3458) radius=5 layout=HORIZONTAL gap=20 pad=[undefined,24,undefined,24] fills=[#030618] strokes=[#ffffff] weight=1
+      Label [TEXT] (2:3459) text="Comenzar gratis" fills=[#ffffff] font=Inter 600 15px/18px
+
+========================================
+SECTION 1: Tu negocio, sin el caos (2:3460)
+========================================
+Tu negocio, sin el caos [FRAME] (2:3460) layout=VERTICAL gap=36 pad=[64,64,32,64]
+  Section label [FRAME] (2:3461) layout=HORIZONTAL gap=10
+    Brand accent [RECTANGLE] (2:3462) fills=[#0bb7dc]
+    Label [TEXT] (2:3463) text="Comercio electrónico unificado" fills=[#171919] font=Inter 600 12px/15px
+  Hero introduction [FRAME] (2:3464) layout=HORIZONTAL gap=64
+    Headline [TEXT] (2:3465) text="Tu negocio,\nsin el caos." fills=[#030618] font=Inter 400 108px/107px
+    Introduction and actions [FRAME] (2:3466) layout=VERTICAL gap=26
+      Description [TEXT] (2:3467) text="Crea tiendas veloces sin el caos de plataformas. Un único panel para tus tiendas, productos y flujos de compra. Más foco en lo que haces mejor." fills=[#626763] font=Inter 400 18px/28px
+      Hero actions [FRAME] (2:3468) layout=HORIZONTAL gap=12
+        Action [FRAME] (2:3469) radius=5 layout=HORIZONTAL gap=20 pad=[undefined,24,undefined,24] fills=[#030618] strokes=[#ffffff] weight=1
+          Label [TEXT] (2:3470) text="Comenzar gratis" fills=[#ffffff] font=Inter 600 15px/18px
+          arrow-up-right [FRAME] (2:3765) 
+            Vector [VECTOR] (2:3766) strokes=[#ffffff] weight=1.600000023841858
+        Action [FRAME] (2:3472) radius=5 layout=HORIZONTAL gap=20 pad=[undefined,24,undefined,24] fills=[#ffffff] strokes=[#030618] weight=1
+          Label [TEXT] (2:3473) text="Ver precios" fills=[#030618] font=Inter 600 15px/18px
+      Free plan note [TEXT] (2:3474) text="Plan Inicial Gratuito · $0/mes" fills=[#626763] font=Inter 400 13px/16px
+  Commerce in real life [FRAME] (2:3475) layout=VERTICAL
+    Merchant welcoming a customer [RECTANGLE] (2:3476) fills=[IMAGE]
+    Commerce promise [FRAME] (2:3477) radius=8 layout=VERTICAL gap=24 pad=[24,24,24,24] fills=[#ffffff]
+      Promise label [FRAME] (2:3478) layout=HORIZONTAL
+        Label [TEXT] (2:3479) text="HECHO PARA TU NEGOCIO" fills=[#626763] font=Inter 600 11px/13px
+        arrow-up-right [FRAME] (2:3768) 
+          Vector [VECTOR] (2:3769) strokes=[#0bb7dc] weight=1.600000023841858
+      Promise [TEXT] (2:3481) text="De tu primera idea a tu próxima tienda." fills=[#030618] font=Inter 500 27px/30px
+      Supported offers [TEXT] (2:3482) text="Productos físicos, digitales y servicios." fills=[#626763] font=Inter 400 13px/16px
+  Image caption [FRAME] (2:3483) layout=HORIZONTAL
+    Editorial caption [TEXT] (2:3484) text="DE TU MOSTRADOR AL MUNDO" fills=[#030618] font=Inter 600 11px/13px
+    Supporting caption [TEXT] (2:3485) text="Tu negocio es real. Tu plataforma debe estar a la altura." fills=[#626763] font=Inter 400 12px/15px
+
+========================================
+SECTION 2: Menos fricción, más negocio (2:3486)
+========================================
+Menos fricción, más negocio [FRAME] (2:3486) layout=VERTICAL gap=56 pad=[104,64,104,64]
+  Section introduction [FRAME] (2:3487) layout=HORIZONTAL gap=80
+    Section label [FRAME] (2:3488) layout=VERTICAL
+      Section label [FRAME] (2:3489) layout=HORIZONTAL gap=10
+        Brand accent [RECTANGLE] (2:3490) fills=[#0bb7dc]
+        Label [TEXT] (2:3491) text="Tu ambición, sin los obstáculos" fills=[#171919] font=Inter 600 12px/15px
+    Section heading [FRAME] (2:3492) layout=VERTICAL
+      Heading [TEXT] (2:3493) text="Que crezca tu negocio. No la complejidad." fills=[#030618] font=Inter 400 54px/57px
+  Benefits [FRAME] (2:3494) layout=HORIZONTAL gap=40
+    Benefit [FRAME] (2:3495) layout=VERTICAL gap=20
+      Divider [RECTANGLE] (2:3496) fills=[#d8dcd6]
+      Sequence [TEXT] (2:3497) text="01" fills=[#0bb7dc] font=Inter 600 12px/15px
+      Title [TEXT] (2:3498) text="Menos herramientas sueltas." fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3499) text="Reúne productos, precios y flujos de compra. Deja atrás la operación repartida entre herramientas que no se hablan." fills=[#626763] font=Inter 400 16px/25px
+    Benefit [FRAME] (2:3500) layout=VERTICAL gap=20
+      Divider [RECTANGLE] (2:3501) fills=[#d8dcd6]
+      Sequence [TEXT] (2:3502) text="02" fills=[#0bb7dc] font=Inter 600 12px/15px
+      Title [TEXT] (2:3503) text="Más confianza al vender." fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3504) text="Las campañas traen oportunidades, no deberían traer problemas al checkout. Ofrece una compra ágil con pagos más seguros." fills=[#626763] font=Inter 400 16px/25px
+    Benefit [FRAME] (2:3505) layout=VERTICAL gap=20
+      Divider [RECTANGLE] (2:3506) fills=[#d8dcd6]
+      Sequence [TEXT] (2:3507) text="03" fills=[#0bb7dc] font=Inter 600 12px/15px
+      Title [TEXT] (2:3508) text="Espacio para lo que viene." fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3509) text="Lanza funciones más rápido y crece sin reconstruir tu infraestructura cada vez que tu negocio da un paso." fills=[#626763] font=Inter 400 16px/25px
+
+========================================
+SECTION 3: Un solo panel (2:3510)
+========================================
+Un solo panel [FRAME] (2:3510) layout=HORIZONTAL gap=64 pad=[104,64,104,64] fills=[#e7ffff]
+  Product story [FRAME] (2:3511) layout=VERTICAL gap=30
+    Section label [FRAME] (2:3512) layout=HORIZONTAL gap=10
+      Brand accent [RECTANGLE] (2:3513) fills=[#0bb7dc]
+      Label [TEXT] (2:3514) text="La plataforma" fills=[#171919] font=Inter 600 12px/15px
+    Heading [TEXT] (2:3515) text="Todo conectado.\nTodo bajo\ncontrol." fills=[#030618] font=Inter 400 55px/58px
+    Description [TEXT] (2:3516) text="Tiendas, productos y flujos de compra integrables en un único panel. Una forma más clara de operar, para que tu equipo lance más rápido y venda con inteligencia." fills=[#626763] font=Inter 400 18px/28px
+    Text link [FRAME] (2:3517) layout=HORIZONTAL gap=12
+      Label [TEXT] (2:3518) text="Conoce tu nuevo panel" fills=[#0bb7dc] font=Inter 600 15px/18px
+      arrow-right [FRAME] (2:3771) 
+        Vector [VECTOR] (2:3772) strokes=[#0bb7dc] weight=1.600000023841858
+  Panel illustration [FRAME] (2:3520) layout=VERTICAL gap=16
+    Product management preview [FRAME] (2:3521) radius=8 layout=VERTICAL fills=[#ffffff]
+      Application header [FRAME] (2:3522) layout=HORIZONTAL pad=[undefined,22,undefined,22] strokes=[#d8dcd6] weight=1
+        Brand [TEXT] (2:3523) text="prado" fills=[#030618] font=Inter 400 21px/25px
+        Account [FRAME] (2:3524) layout=HORIZONTAL gap=10
+          Account label [TEXT] (2:3525) text="Mi espacio de trabajo" fills=[#626763] font=Inter 400 11px/13px
+          Avatar [FRAME] (2:3526) radius=20 layout=HORIZONTAL fills=[#e8ecdd]
+            Initials [TEXT] (2:3527) text="AT" fills=[#030618] font=Inter 600 10px/12px
+      Application body [FRAME] (2:3528) layout=HORIZONTAL
+        Panel sidebar [FRAME] (2:3529) layout=VERTICAL gap=6 pad=[22,12,18,12] fills=[#f5f5f1]
+          Store label [TEXT] (2:3530) text="MI TIENDA" fills=[#626763] font=Inter 600 10px/12px
+          Panel navigation item [FRAME] (2:3531) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] fills=[#ffffff]
+            layout-dashboard [FRAME] (2:3774) 
+              Vector [VECTOR] (2:3775) strokes=[#626763] weight=1.600000023841858
+            Label [TEXT] (2:3533) text="Inicio" fills=[#626763] font=Inter 400 12px/15px
+          Panel navigation item [FRAME] (2:3534) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] fills=[#ffffff]
+            store [FRAME] (2:3777) 
+              Vector [VECTOR] (2:3778) strokes=[#626763] weight=1.600000023841858
+            Label [TEXT] (2:3536) text="Tiendas" fills=[#626763] font=Inter 400 12px/15px
+          Panel navigation item [FRAME] (2:3537) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] fills=[#e8f7fb]
+            package [FRAME] (2:3780) 
+              Vector [VECTOR] (2:3781) strokes=[#0bb7dc] weight=1.600000023841858
+            Label [TEXT] (2:3539) text="Productos" fills=[#0bb7dc] font=Inter 600 12px/15px
+          Panel navigation item [FRAME] (2:3540) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] fills=[#ffffff]
+            shopping-bag [FRAME] (2:3783) 
+              Vector [VECTOR] (2:3784) strokes=[#626763] weight=1.600000023841858
+            Label [TEXT] (2:3542) text="Flujos de compra" fills=[#626763] font=Inter 400 12px/15px
+          Navigation spacer [RECTANGLE] (2:3543) fills=[#ffffff]
+          Panel navigation item [FRAME] (2:3544) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] fills=[#ffffff]
+            settings-2 [FRAME] (2:3786) 
+              Vector [VECTOR] (2:3787) strokes=[#626763] weight=1.600000023841858
+            Label [TEXT] (2:3546) text="Configuración" fills=[#626763] font=Inter 400 12px/15px
+        Catalog workspace [FRAME] (2:3547) layout=VERTICAL gap=22 pad=[26,26,26,26]
+          Page header [FRAME] (2:3548) layout=HORIZONTAL
+            Catalog heading [FRAME] (2:3549) layout=VERTICAL gap=7
+              Page title [TEXT] (2:3550) text="Productos" fills=[#030618] font=Inter 400 25px/30px
+              Page description [TEXT] (2:3551) text="Tu catálogo, en un solo lugar." fills=[#626763] font=Inter 400 11px/13px
+            Add product [FRAME] (2:3552) radius=4 layout=HORIZONTAL gap=6 pad=[undefined,12,undefined,12] fills=[#030618]
+              plus [FRAME] (2:3789) 
+                Vector [VECTOR] (2:3790) strokes=[#ffffff] weight=1.600000023841858
+              Label [TEXT] (2:3554) text="Añadir producto" fills=[#ffffff] font=Inter 500 11px/13px
+          Product filter [FRAME] (2:3555) layout=HORIZONTAL gap=24 strokes=[#d8dcd6] weight=1
+            Selected tab [TEXT] (2:3556) text="Todos los productos" fills=[#0bb7dc] font=Inter 600 12px/15px
+            Draft tab [TEXT] (2:3557) text="Borradores" fills=[#626763] font=Inter 400 12px/15px
+          Search catalog [FRAME] (2:3558) radius=4 layout=HORIZONTAL gap=10 pad=[undefined,12,undefined,12] strokes=[#d8dcd6] weight=1
+            search [FRAME] (2:3792) 
+              Vector [VECTOR] (2:3793) strokes=[#626763] weight=1.600000023841858
+            Search placeholder [TEXT] (2:3560) text="Buscar en tu catálogo" fills=[#626763] font=Inter 400 11px/13px
+          Product list [FRAME] (2:3561) layout=VERTICAL
+            Catalog product [FRAME] (2:3562) layout=HORIZONTAL gap=12 strokes=[#d8dcd6] weight=1
+              Product illustration [FRAME] (2:3563) radius=5 layout=HORIZONTAL fills=[#e9ddce]
+                coffee [FRAME] (2:3795) 
+                  Vector [VECTOR] (2:3796) strokes=[#171919] weight=1.600000023841858
+              Product details [FRAME] (2:3565) layout=VERTICAL gap=6
+                Product name [TEXT] (2:3566) text="Taza de cerámica Nube" fills=[#030618] font=Inter 400 13px/16px
+                Product type [TEXT] (2:3567) text="Producto físico" fills=[#626763] font=Inter 400 11px/13px
+              Status [FRAME] (2:3568) layout=HORIZONTAL gap=5
+                Status indicator [ELLIPSE] (2:3569) fills=[#0bb7dc]
+                Status label [TEXT] (2:3570) text="Publicado" fills=[#030618] font=Inter 400 11px/13px
+              ellipsis [FRAME] (2:3798) 
+                Vector [VECTOR] (2:3799) strokes=[#626763] weight=1.600000023841858
+            Catalog product [FRAME] (2:3572) layout=HORIZONTAL gap=12 strokes=[#d8dcd6] weight=1
+              Product illustration [FRAME] (2:3573) radius=5 layout=HORIZONTAL fills=[#e8edff]
+                book-open [FRAME] (2:3801) 
+                  Vector [VECTOR] (2:3802) strokes=[#171919] weight=1.600000023841858
+              Product details [FRAME] (2:3575) layout=VERTICAL gap=6
+                Product name [TEXT] (2:3576) text="Guía de cuidado de cerámica" fills=[#030618] font=Inter 400 13px/16px
+                Product type [TEXT] (2:3577) text="Producto digital" fills=[#626763] font=Inter 400 11px/13px
+              Status [FRAME] (2:3578) layout=HORIZONTAL gap=5
+                Status indicator [ELLIPSE] (2:3579) fills=[#0bb7dc]
+                Status label [TEXT] (2:3580) text="Publicado" fills=[#030618] font=Inter 400 11px/13px
+              ellipsis [FRAME] (2:3804) 
+                Vector [VECTOR] (2:3805) strokes=[#626763] weight=1.600000023841858
+            Catalog product [FRAME] (2:3582) layout=HORIZONTAL gap=12 strokes=[#d8dcd6] weight=1
+              Product illustration [FRAME] (2:3583) radius=5 layout=HORIZONTAL fills=[#e8ecdd]
+                calendar-days [FRAME] (2:3807) 
+                  Vector [VECTOR] (2:3808) strokes=[#171919] weight=1.600000023841858
+              Product details [FRAME] (2:3585) layout=VERTICAL gap=6
+                Product name [TEXT] (2:3586) text="Taller de torno · iniciación" fills=[#030618] font=Inter 400 13px/16px
+                Product type [TEXT] (2:3587) text="Servicio" fills=[#626763] font=Inter 400 11px/13px
+              Status [FRAME] (2:3588) layout=HORIZONTAL gap=5
+                Status indicator [ELLIPSE] (2:3589) fills=[#0bb7dc]
+                Status label [TEXT] (2:3590) text="Publicado" fills=[#030618] font=Inter 400 11px/13px
+              ellipsis [FRAME] (2:3810) 
+                Vector [VECTOR] (2:3811) strokes=[#626763] weight=1.600000023841858
+    Illustration caption [TEXT] (2:3592) text="Vista ilustrativa · Productos y tienda de ejemplo" fills=[#626763] font=Inter 400 11px/13px
+
+========================================
+SECTION 4: De la tienda al mundo (2:3593)
+========================================
+De la tienda al mundo [FRAME] (2:3593) layout=HORIZONTAL gap=96 pad=[104,64,80,64]
+  Independent merchant story [FRAME] (2:3594) layout=VERTICAL gap=16
+    Independent storefront owner [RECTANGLE] (2:3595) fills=[IMAGE]
+    Photo caption [TEXT] (2:3596) text="NEGOCIOS LOCALES. POSIBILIDADES GLOBALES." fills=[#626763] font=Inter 500 11px/13px
+  Merchant copy [FRAME] (2:3597) layout=VERTICAL gap=30
+    Section label [FRAME] (2:3598) layout=HORIZONTAL gap=10
+      Brand accent [RECTANGLE] (2:3599) fills=[#0bb7dc]
+      Label [TEXT] (2:3600) text="Tu esencia, también online" fills=[#171919] font=Inter 600 12px/15px
+    Heading [TEXT] (2:3601) text="Tu tienda tiene\nalgo único.\nLlévalo online." fills=[#030618] font=Inter 400 58px/61px
+    Description [TEXT] (2:3602) text="Ese cuidado que pones en cada detalle merece llegar más lejos. Fortalece tu presencia online y conecta tus productos con personas que aún no te conocen." fills=[#626763] font=Inter 400 18px/28px
+    Merchant benefits [FRAME] (2:3603) layout=VERTICAL gap=16
+      Benefit [FRAME] (2:3604) layout=HORIZONTAL gap=12
+        check [FRAME] (2:3813) 
+          Vector [VECTOR] (2:3814) strokes=[#0bb7dc] weight=1.600000023841858
+        Benefit label [TEXT] (2:3606) text="Un catálogo para mostrar lo que haces." fills=[#030618] font=Inter 400 15px/18px
+      Benefit [FRAME] (2:3607) layout=HORIZONTAL gap=12
+        check [FRAME] (2:3816) 
+          Vector [VECTOR] (2:3817) strokes=[#0bb7dc] weight=1.600000023841858
+        Benefit label [TEXT] (2:3609) text="Una operación más simple para tu equipo." fills=[#030618] font=Inter 400 15px/18px
+      Benefit [FRAME] (2:3610) layout=HORIZONTAL gap=12
+        check [FRAME] (2:3819) 
+          Vector [VECTOR] (2:3820) strokes=[#0bb7dc] weight=1.600000023841858
+        Benefit label [TEXT] (2:3612) text="Una base preparada para crecer contigo." fills=[#030618] font=Inter 400 15px/18px
+    Text link [FRAME] (2:3613) layout=HORIZONTAL gap=12
+      Label [TEXT] (2:3614) text="Da el siguiente paso" fills=[#0bb7dc] font=Inter 600 15px/18px
+      arrow-right [FRAME] (2:3822) 
+        Vector [VECTOR] (2:3823) strokes=[#0bb7dc] weight=1.600000023841858
+
+========================================
+SECTION 5: Una compra que fluye (2:3616)
+========================================
+Una compra que fluye [FRAME] (2:3616) layout=HORIZONTAL gap=96 pad=[72,64,104,64]
+  Online shopping copy [FRAME] (2:3617) layout=VERTICAL gap=30
+    Section label [FRAME] (2:3618) layout=HORIZONTAL gap=10
+      Brand accent [RECTANGLE] (2:3619) fills=[#0bb7dc]
+      Label [TEXT] (2:3620) text="Del interés a la compra" fills=[#171919] font=Inter 600 12px/15px
+    Heading [TEXT] (2:3621) text="Una gran compra\nempieza con\ncero fricción." fills=[#030618] font=Inter 400 58px/61px
+    Description [TEXT] (2:3622) text="Tu próxima venta puede empezar en el sofá de alguien. Haz que siga su curso con tiendas veloces, flujos de compra integrables y pagos más seguros." fills=[#626763] font=Inter 400 18px/28px
+    Divider [RECTANGLE] (2:3623) fills=[#d8dcd6]
+    Checkout benefit [FRAME] (2:3624) layout=HORIZONTAL gap=18
+      shield-check [FRAME] (2:3825) 
+        Vector [VECTOR] (2:3826) strokes=[#0bb7dc] weight=1.600000023841858
+      Checkout explanation [FRAME] (2:3626) layout=VERTICAL gap=8
+        Benefit title [TEXT] (2:3627) text="Menos pasos entre querer y comprar." fills=[#030618] font=Inter 400 18px/22px
+        Description [TEXT] (2:3628) text="Una experiencia conectada, desde tu catálogo hasta el checkout." fills=[#626763] font=Inter 400 15px/23px
+    Text link [FRAME] (2:3629) layout=HORIZONTAL gap=12
+      Label [TEXT] (2:3630) text="Empieza a vender online" fills=[#0bb7dc] font=Inter 600 15px/18px
+      arrow-right [FRAME] (2:3828) 
+        Vector [VECTOR] (2:3829) strokes=[#0bb7dc] weight=1.600000023841858
+  Online buyer story [FRAME] (2:3632) layout=VERTICAL
+    Customer shopping online at home [RECTANGLE] (2:3633) fills=[IMAGE]
+    Connected shopping card [FRAME] (2:3634) radius=8 layout=HORIZONTAL gap=16 pad=[20,20,20,20] fills=[#ffffff]
+      Shopping symbol [FRAME] (2:3635) radius=22 layout=HORIZONTAL fills=[#e8f7fb]
+        shopping-bag [FRAME] (2:3831) 
+          Vector [VECTOR] (2:3832) strokes=[#0bb7dc] weight=1.600000023841858
+      Shopping message [FRAME] (2:3637) layout=VERTICAL gap=5
+        Title [TEXT] (2:3638) text="Cerca, incluso a distancia." fills=[#171919] font=Inter 600 14px/17px
+        Subtitle [TEXT] (2:3639) text="Tu tienda, donde están tus clientes." fills=[#626763] font=Inter 400 12px/15px
+
+========================================
+SECTION 6: Para cada forma de emprender (2:3640)
+========================================
+Para cada forma de emprender [FRAME] (2:3640) layout=VERTICAL gap=56 pad=[104,64,104,64] fills=[#171919]
+  Section introduction [FRAME] (2:3641) layout=HORIZONTAL gap=80
+    Section heading [FRAME] (2:3642) layout=VERTICAL gap=28
+      Section label [FRAME] (2:3643) layout=HORIZONTAL gap=10
+        Brand accent [RECTANGLE] (2:3644) fills=[#0bb7dc]
+        Label [TEXT] (2:3645) text="Tu negocio tiene un lugar aquí" fills=[#ffffff] font=Inter 600 12px/15px
+      Heading [TEXT] (2:3646) text="No hay una sola forma de emprender." fills=[#ffffff] font=Inter 400 58px/61px
+    Supporting introduction [FRAME] (2:3647) layout=VERTICAL
+      Description [TEXT] (2:3648) text="Productos físicos, digitales o servicios. Prado conecta lo que vendes con todo lo que puedes llegar a ser." fills=[#aeb5b1] font=Inter 400 18px/28px
+  Business types [FRAME] (2:3649) layout=HORIZONTAL gap=32
+    Business type [FRAME] (2:3650) layout=VERTICAL gap=22
+      People behind the business [RECTANGLE] (2:3651) fills=[IMAGE]
+      Card heading [FRAME] (2:3652) layout=HORIZONTAL gap=12
+        Business name [TEXT] (2:3653) text="Creadores independientes" fills=[#ffffff] font=Inter 500 25px/30px
+        arrow-up-right [FRAME] (2:3834) 
+          Vector [VECTOR] (2:3835) strokes=[#ffffff] weight=1.600000023841858
+      Description [TEXT] (2:3655) text="Convierte lo que sabes y lo que creas en tu próximo proyecto de venta." fills=[#aeb5b1] font=Inter 400 16px/25px
+    Business type [FRAME] (2:3656) layout=VERTICAL gap=22
+      People behind the business [RECTANGLE] (2:3657) fills=[IMAGE]
+      Card heading [FRAME] (2:3658) layout=HORIZONTAL gap=12
+        Business name [TEXT] (2:3659) text="Tiendas locales" fills=[#ffffff] font=Inter 500 25px/30px
+        arrow-up-right [FRAME] (2:3837) 
+          Vector [VECTOR] (2:3838) strokes=[#ffffff] weight=1.600000023841858
+      Description [TEXT] (2:3661) text="Lleva la personalidad de tu negocio a una tienda que llegue más lejos." fills=[#aeb5b1] font=Inter 400 16px/25px
+    Business type [FRAME] (2:3662) layout=VERTICAL gap=22
+      People behind the business [RECTANGLE] (2:3663) fills=[IMAGE]
+      Card heading [FRAME] (2:3664) layout=HORIZONTAL gap=12
+        Business name [TEXT] (2:3665) text="Marcas en crecimiento" fills=[#ffffff] font=Inter 500 25px/30px
+        arrow-up-right [FRAME] (2:3840) 
+          Vector [VECTOR] (2:3841) strokes=[#ffffff] weight=1.600000023841858
+      Description [TEXT] (2:3667) text="Dale a tu equipo una base unificada para lanzar, operar y escalar." fills=[#aeb5b1] font=Inter 400 16px/25px
+
+========================================
+SECTION 7: Empieza a tu ritmo (2:3668)
+========================================
+Empieza a tu ritmo [FRAME] (2:3668) layout=VERTICAL gap=56 pad=[104,64,104,64]
+  Section introduction [FRAME] (2:3669) layout=HORIZONTAL
+    Section heading [FRAME] (2:3670) layout=VERTICAL gap=26
+      Section label [FRAME] (2:3671) layout=HORIZONTAL gap=10
+        Brand accent [RECTANGLE] (2:3672) fills=[#0bb7dc]
+        Label [TEXT] (2:3673) text="El siguiente paso" fills=[#171919] font=Inter 600 12px/15px
+      Heading [TEXT] (2:3674) text="De la idea a tu tienda." fills=[#030618] font=Inter 400 58px/61px
+    Text link [FRAME] (2:3675) layout=HORIZONTAL gap=12
+      Label [TEXT] (2:3676) text="Comenzar gratis" fills=[#0bb7dc] font=Inter 600 15px/18px
+      arrow-right [FRAME] (2:3843) 
+        Vector [VECTOR] (2:3844) strokes=[#0bb7dc] weight=1.600000023841858
+  Getting started steps [FRAME] (2:3678) layout=HORIZONTAL gap=48
+    Getting started step [FRAME] (2:3679) layout=VERTICAL gap=24
+      Step sequence [FRAME] (2:3680) layout=HORIZONTAL gap=20
+        Step marker [FRAME] (2:3681) radius=23 layout=HORIZONTAL strokes=[#171919] weight=1
+          Step number [TEXT] (2:3682) text="01" fills=[#171919] font=Inter 500 15px/18px
+        Step connector [RECTANGLE] (2:3683) fills=[#d8dcd6]
+      Title [TEXT] (2:3684) text="Crea tu espacio" fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3685) text="Empieza con el Plan Inicial Gratuito y da forma al lugar desde el que gestionarás tu negocio." fills=[#626763] font=Inter 400 16px/25px
+    Getting started step [FRAME] (2:3686) layout=VERTICAL gap=24
+      Step sequence [FRAME] (2:3687) layout=HORIZONTAL gap=20
+        Step marker [FRAME] (2:3688) radius=23 layout=HORIZONTAL strokes=[#171919] weight=1
+          Step number [TEXT] (2:3689) text="02" fills=[#171919] font=Inter 500 15px/18px
+        Step connector [RECTANGLE] (2:3690) fills=[#d8dcd6]
+      Title [TEXT] (2:3691) text="Conecta tu catálogo" fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3692) text="Reúne tus productos físicos, digitales o servicios y organiza tu propuesta en un único panel." fills=[#626763] font=Inter 400 16px/25px
+    Getting started step [FRAME] (2:3693) layout=VERTICAL gap=24
+      Step sequence [FRAME] (2:3694) layout=HORIZONTAL gap=20
+        Step marker [FRAME] (2:3695) radius=23 layout=HORIZONTAL strokes=[#171919] weight=1
+          Step number [TEXT] (2:3696) text="03" fills=[#171919] font=Inter 500 15px/18px
+        Step connector [RECTANGLE] (2:3697) fills=[#d8dcd6]
+      Title [TEXT] (2:3698) text="Lanza. Aprende. Crece." fills=[#030618] font=Inter 500 26px/31px
+      Description [TEXT] (2:3699) text="Pon tu tienda en marcha, integra tus flujos de compra y sigue construyendo sobre la misma base." fills=[#626763] font=Inter 400 16px/25px
+
+========================================
+SECTION 8: Plan Inicial Gratuito (2:3700)
+========================================
+Plan Inicial Gratuito [FRAME] (2:3700) layout=HORIZONTAL gap=112 pad=[96,64,96,64] fills=[#e7ffff]
+  Pricing introduction [FRAME] (2:3701) layout=VERTICAL gap=30
+    Section label [FRAME] (2:3702) layout=HORIZONTAL gap=10
+      Brand accent [RECTANGLE] (2:3703) fills=[#0bb7dc]
+      Label [TEXT] (2:3704) text="Un buen comienzo" fills=[#171919] font=Inter 600 12px/15px
+    Heading [TEXT] (2:3705) text="Tu próximo\ncapítulo\nempieza gratis." fills=[#030618] font=Inter 400 62px/66px
+    Description [TEXT] (2:3706) text="Empieza a construir tu presencia online con Prado. Conoce la plataforma y encuentra una forma más simple de hacer crecer tu negocio." fills=[#626763] font=Inter 400 18px/28px
+    Text link [FRAME] (2:3707) layout=HORIZONTAL gap=12
+      Label [TEXT] (2:3708) text="Ver precios y detalles del plan" fills=[#0bb7dc] font=Inter 600 15px/18px
+      arrow-right [FRAME] (2:3846) 
+        Vector [VECTOR] (2:3847) strokes=[#0bb7dc] weight=1.600000023841858
+  Free plan card [FRAME] (2:3710) radius=8 layout=VERTICAL gap=28 pad=[40,40,40,40] fills=[#ffffff]
+    Plan name [TEXT] (2:3711) text="Plan Inicial Gratuito" fills=[#030618] font=Inter 500 24px/29px
+    Monthly price [FRAME] (2:3712) layout=HORIZONTAL gap=8
+      Price [TEXT] (2:3713) text="$0" fills=[#030618] font=Inter 400 100px/100px
+      Billing period [TEXT] (2:3714) text="/mes" fills=[#626763] font=Inter 400 20px/24px
+    Divider [RECTANGLE] (2:3715) fills=[#d8dcd6]
+    Description [TEXT] (2:3716) text="Tu punto de partida para explorar el comercio electrónico unificado. El siguiente paso lo marcas tú." fills=[#626763] font=Inter 400 16px/25px
+    Action [FRAME] (2:3717) radius=5 layout=HORIZONTAL gap=20 pad=[undefined,24,undefined,24] fills=[#030618] strokes=[#ffffff] weight=1
+      Label [TEXT] (2:3718) text="Comenzar gratis" fills=[#ffffff] font=Inter 600 15px/18px
+      arrow-up-right [FRAME] (2:3849) 
+        Vector [VECTOR] (2:3850) strokes=[#ffffff] weight=1.600000023841858
+    Plan details note [TEXT] (2:3720) text="Consulta los detalles y las condiciones del plan en Precios." fills=[#626763] font=Inter 400 12px/18px
+
+========================================
+SECTION 9: Crece con Prado Commerce (2:3721)
+========================================
+Crece con Prado Commerce [FRAME] (2:3721) layout=VERTICAL gap=40 pad=[88,64,88,64] fills=[#0bb7dc]
+  Section label [FRAME] (2:3722) layout=HORIZONTAL gap=10
+    Brand accent [RECTANGLE] (2:3723) fills=[#0bb7dc]
+    Label [TEXT] (2:3724) text="Lo que viene, lo construyes tú" fills=[#ffffff] font=Inter 600 12px/15px
+  Closing invitation [FRAME] (2:3725) layout=HORIZONTAL gap=80
+    Closing headline [TEXT] (2:3726) text="¿Listo para crecer\ncon Prado Commerce?" fills=[#ffffff] font=Inter 500 74px/78px
+    Closing action [FRAME] (2:3727) layout=VERTICAL gap=28
+      Closing description [TEXT] (2:3728) text="Tu idea. Tu negocio. Una plataforma para llevarlos más lejos." fills=[#ffffff] font=Inter 400 18px/27px
+      Action [FRAME] (2:3729) radius=5 layout=HORIZONTAL gap=20 pad=[undefined,24,undefined,24] fills=[#030618] strokes=[#ffffff] weight=1
+        Label [TEXT] (2:3730) text="Comenzar gratis" fills=[#ffffff] font=Inter 600 15px/18px
+        arrow-up-right [FRAME] (2:3852) 
+          Vector [VECTOR] (2:3853) strokes=[#ffffff] weight=1.600000023841858
+
+========================================
+SECTION 10: Pie de página (2:3732)
+========================================
+Pie de página [FRAME] (2:3732) layout=VERTICAL gap=60 pad=[64,64,32,64] fills=[#f5f5f1]
+  Brand and navigation [FRAME] (2:3733) layout=HORIZONTAL
+    Brand statement [FRAME] (2:3734) layout=VERTICAL gap=24
+      Prado Commerce [FRAME] (2:3735) layout=HORIZONTAL gap=10 fills=[#ffffff]
+        Logo lockup [FRAME] (2:3869) radius=5 layout=HORIZONTAL fills=[#ffffff]
+          Prado symbol [RECTANGLE] (2:3864) fills=[IMAGE]
+        Wordmarks [FRAME] (2:3870) layout=VERTICAL gap=1
+          Wordmark [TEXT] (2:3737) text="Prado Commerce" fills=[#030618] font=Inter 600 17px/21px
+          Commerce [TEXT] (2:3738) text="UNIFIED E-COMMERCE" fills=[#030618] font=Inter 400 10px/12px
+      Descriptor [TEXT] (2:3739) text="Comercio Electrónico Unificado." fills=[#030618] font=Inter 400 18px/22px
+      Brand purpose [TEXT] (2:3740) text="Menos complejidad detrás de cada venta. Más posibilidades para tu negocio." fills=[#626763] font=Inter 400 15px/23px
+    Footer links [FRAME] (2:3741) layout=HORIZONTAL gap=52
+      Footer navigation group [FRAME] (2:3742) layout=VERTICAL gap=20
+        Group title [TEXT] (2:3743) text="PRADO COMMERCE" fills=[#626763] font=Inter 600 12px/15px
+        Footer link [TEXT] (2:3744) text="Plataforma" fills=[#030618] font=Inter 400 15px/18px
+        Footer link [TEXT] (2:3745) text="Para tu negocio" fills=[#030618] font=Inter 400 15px/18px
+        Footer link [TEXT] (2:3746) text="Precios" fills=[#030618] font=Inter 400 15px/18px
+      Footer navigation group [FRAME] (2:3747) layout=VERTICAL gap=20
+        Group title [TEXT] (2:3748) text="TU ESPACIO" fills=[#626763] font=Inter 600 12px/15px
+        Footer link [TEXT] (2:3749) text="Panel" fills=[#030618] font=Inter 400 15px/18px
+        Footer link [TEXT] (2:3750) text="Comenzar gratis" fills=[#030618] font=Inter 400 15px/18px
+      Language preference [FRAME] (2:3751) layout=VERTICAL gap=20
+        Group title [TEXT] (2:3752) text="IDIOMA" fills=[#626763] font=Inter 600 12px/15px
+        Selected language [FRAME] (2:3753) layout=HORIZONTAL gap=8
+          globe [FRAME] (2:3855) 
+            Vector [VECTOR] (2:3856) strokes=[#171919] weight=1.600000023841858
+          Language [TEXT] (2:3755) text="ES / EN" fills=[#030618] font=Inter 400 14px/17px
+  Legal [FRAME] (2:3756) layout=VERTICAL gap=24
+    Divider [RECTANGLE] (2:3757) fills=[#d8dcd6]
+    Legal links [FRAME] (2:3758) layout=HORIZONTAL
+      Copyright [TEXT] (2:3759) text="Copyright © 2026 Prado Commerce." fills=[#626763] font=Inter 400 12px/15px
+      Policies [FRAME] (2:3760) layout=HORIZONTAL gap=32
+        Privacy [TEXT] (2:3761) text="Privacidad" fills=[#030618] font=Inter 400 12px/15px
+        Terms [TEXT] (2:3762) text="Términos" fills=[#030618] font=Inter 400 12px/15px
+        Website [TEXT] (2:3763) text="pradocommerce.com" fills=[#626763] font=Inter 400 12px/15px

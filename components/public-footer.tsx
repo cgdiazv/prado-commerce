@@ -20,7 +20,7 @@ const PUBLIC_FOOTER_PREFIXES = [
 
 function shouldRenderPublicFooter(pathname: string): boolean {
   if (pathname === "/") {
-    return true;
+    return false;
   }
 
   return PUBLIC_FOOTER_PREFIXES.some((prefix) => pathname.startsWith(prefix));
