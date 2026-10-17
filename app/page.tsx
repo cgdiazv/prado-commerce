@@ -52,9 +52,9 @@ export default function Home() {
               <PradoLogo theme="dark" subtitle={t.common.logoSubtitle} size="md" />
             </Link>
 
-            {/* Language toggle placed to the left of the menu items / hamburger button */}
+            {/* Language toggle placed to the left of the menu items on desktop; hidden on mobile navbar */}
             <div className="flex items-center gap-2 sm:gap-4">
-              <LanguageToggle variant="dark" />
+              <LanguageToggle variant="dark" className="hidden sm:inline-flex" />
 
               <button
                 type="button"
