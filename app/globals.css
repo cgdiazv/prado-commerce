@@ -75,14 +75,15 @@ body {
 }
 
 @media print {
-  body * {
+  /* POS thermal receipt printing: only hide surrounding content when printing a POS receipt */
+  body:has(#pos-thermal-receipt) * {
     visibility: hidden;
   }
-  #pos-thermal-receipt,
-  #pos-thermal-receipt * {
+  body:has(#pos-thermal-receipt) #pos-thermal-receipt,
+  body:has(#pos-thermal-receipt) #pos-thermal-receipt * {
     visibility: visible;
   }
-  #pos-thermal-receipt {
+  body:has(#pos-thermal-receipt) #pos-thermal-receipt {
     position: absolute;
     left: 0;
     top: 0;

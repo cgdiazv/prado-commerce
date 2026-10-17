@@ -454,6 +454,10 @@ export default function DashboardLayout({
     );
   }
 
+  if (pathname.endsWith("/invoice")) {
+    return <>{children}</>;
+  }
+
   return (
     <div
       data-route-kind="dashboard"

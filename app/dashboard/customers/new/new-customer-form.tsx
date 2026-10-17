@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/language-context";
 
@@ -131,9 +132,12 @@ export function NewCustomerForm({
 
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {isEs ? "Nuevo cliente" : "New customer"}
-          </p>
+          <Link
+            href="/dashboard/customers"
+            className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            {isEs ? "Clientes" : "Customers"}
+          </Link>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">
             {isEs ? "Crear perfil de cliente" : "Create customer profile"}
           </h2>

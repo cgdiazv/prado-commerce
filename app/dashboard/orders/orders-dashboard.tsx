@@ -35,6 +35,15 @@ type OrdersDashboardProps = {
   setupError?: string | null;
 };
 
+function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
+  return (
+    <span className="ml-1 flex flex-col leading-none text-[9px]">
+      <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+      <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+    </span>
+  );
+}
+
 export function OrdersDashboard({
   initialStores,
   initialOrders,
@@ -142,15 +151,6 @@ export function OrdersDashboard({
 
     setCurrentPage(1);
   };
-
-  function SortIndicator({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
-    return (
-      <span className="ml-1 flex flex-col leading-none text-[9px]">
-        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
-        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
-      </span>
-    );
-  }
 
   async function refreshOrders(storeId: string) {
     const response = await fetch(`/api/orders?storeId=${encodeURIComponent(storeId)}`, {
@@ -345,7 +345,7 @@ export function OrdersDashboard({
               className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm"
             >
               <Store className="h-4 w-4 text-cyan-600" />
-              {isEs ? "Terminal Punto de Venta (POS)" : "Point of Sale (POS)"}
+              {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
             </Link>
 
             <Link

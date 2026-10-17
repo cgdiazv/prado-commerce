@@ -189,7 +189,6 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   }
 
   const storeContact = parseOriginContact(order.store.shippingOrigin);
-  const storeDomainLabel = order.store.customDomain || (order.store.slug ? `${order.store.slug}.pradocommerce.com` : "");
 
   return (
     <>
@@ -219,8 +218,8 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
             <button
               type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={() => window.open(`/dashboard/orders/${order.id}/invoice?autoPrint=true`, "_blank")}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
             >
               <Printer className="h-4 w-4 text-slate-600" />
               {isEs ? "Imprimir Factura" : "Print Invoice"}
@@ -505,20 +504,11 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           {storeContact.address && <p className="text-xs text-slate-600 whitespace-pre-line mt-1">{storeContact.address}</p>}
           {order.store.senderEmail && <p className="text-xs text-slate-600 mt-0.5">Email: {order.store.senderEmail}</p>}
           {storeContact.phone && <p className="text-xs text-slate-600 mt-0.5">Phone: {storeContact.phone}</p>}
-          {storeDomainLabel && <p className="text-xs text-slate-500 mt-0.5">https://{storeDomainLabel}</p>}
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-extrabold tracking-wider uppercase text-slate-900">INVOICE</h2>
           <p className="mt-1 text-sm font-semibold text-slate-700">#{(order.store.invoicePrefix || "INV-").trim()}{order.orderNumber}</p>
           <p className="mt-1 text-xs text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
-          <div className="mt-2 flex flex-col items-end gap-1 text-xs font-semibold">
-            <span className="inline-block rounded bg-slate-100 px-2 py-0.5 border border-slate-300">
-              Payment: {order.paymentStatus}
-            </span>
-            <span className="inline-block rounded bg-slate-100 px-2 py-0.5 border border-slate-300">
-              Fulfillment: {order.fulfillmentStatus}
-            </span>
-          </div>
         </div>
       </div>
 

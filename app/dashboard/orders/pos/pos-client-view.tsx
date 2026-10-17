@@ -336,7 +336,7 @@ export function PosClientView({
       <div className="min-h-[500px] flex flex-col items-center justify-center text-slate-600 p-8">
         <Loader2 className="w-10 h-10 animate-spin text-cyan-600 mb-4" />
         <h2 className="font-bold text-lg text-slate-800">
-          {isEs ? "Iniciando Terminal Punto de Venta..." : "Starting Point of Sale Terminal..."}
+          {isEs ? "Iniciando Punto de Venta..." : "Starting Point of Sale..."}
         </h2>
         <p className="text-xs text-slate-500 mt-1">
           {isEs

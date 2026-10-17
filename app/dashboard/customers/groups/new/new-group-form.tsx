@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, FolderPlus, Sparkles, Shield, HelpCircle } from "lucide-react";
+import { FolderPlus, Sparkles, HelpCircle } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -93,17 +93,6 @@ export function NewCustomerGroupForm({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {/* Back button */}
-      <div>
-        <Link
-          href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-cyan-700 transition"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {isEs ? "Volver a Grupos de Clientes" : "Back to Customer Groups"}
-        </Link>
-      </div>
-
       {setupError ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {setupError}
@@ -111,20 +100,31 @@ export function NewCustomerGroupForm({
       ) : null}
 
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">
-            {isEs ? "Nuevo Segmento" : "New Segment"}
-          </span>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/dashboard/customers"
+              className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              {isEs ? "Clientes" : "Customers"}
+            </Link>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+            {isEs ? "Crear Grupo de Clientes" : "Create Customer Group"}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+            {isEs
+              ? "Crea un nuevo grupo para clasificar a tus clientes. Este grupo aparecerá como columna en la tabla de clientes y podrás asignarlo a cualquier cliente."
+              : "Create a new group to categorize your customers. This group will appear as a column in the customers table and can be assigned to any customer."}
+          </p>
         </div>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-          {isEs ? "Crear Grupo de Clientes" : "Create Customer Group"}
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
-          {isEs
-            ? "Crea un nuevo grupo para clasificar a tus clientes. Este grupo aparecerá como columna en la tabla de clientes y podrás asignarlo a cualquier cliente."
-            : "Create a new group to categorize your customers. This group will appear as a column in the customers table and can be assigned to any customer."}
-        </p>
+        <Link
+          href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
+          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 shrink-0"
+        >
+          {isEs ? "Volver" : "Back"}
+        </Link>
       </div>
 
       {error ? (
@@ -206,87 +206,10 @@ export function NewCustomerGroupForm({
               </button>
             </div>
           </form>
-
-          {/* Quick presets */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
-              <Sparkles className="h-4 w-4 text-cyan-600" />
-              <span>{isEs ? "Plantillas sugeridas" : "Suggested Presets"}</span>
-            </div>
-            <p className="text-xs text-slate-500 mb-4">
-              {isEs
-                ? "Haz clic en una plantilla para autocompletar el nombre y la descripción sugerida:"
-                : "Click on any preset to quickly autofill the name and description:"}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {presets.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => {
-                    setName(preset.name);
-                    setDescription(preset.desc);
-                  }}
-                  className="text-left rounded-xl border border-slate-200/90 bg-slate-50/60 p-3.5 transition hover:border-cyan-400 hover:bg-cyan-50/30 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">{preset.name}</span>
-                    <span className="text-[10px] text-cyan-600 font-semibold">{isEs ? "Usar" : "Use"}</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                    {preset.desc}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Sidebar Preview & Tips (1 col) */}
+        {/* Sidebar (1 col) */}
         <div className="space-y-6">
-          {/* Live Preview Card */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 mb-4">
-              <Shield className="h-4 w-4 text-cyan-600" />
-              <span>{isEs ? "Vista previa en la tabla" : "Table Preview"}</span>
-            </div>
-
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <span className="text-[11px] font-semibold text-slate-500 block mb-2">
-                {isEs ? "Columna en la tabla de clientes:" : "Column in Customers table:"}
-              </span>
-              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <table className="min-w-full text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">{isEs ? "Cliente" : "Customer"}</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">{isEs ? "Grupo" : "Group"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="px-3 py-2.5 text-slate-800 font-medium">Jane Doe</td>
-                      <td className="px-3 py-2.5">
-                        <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11px] font-bold text-cyan-700 border border-cyan-200/80">
-                          {name.trim() || (isEs ? "Nombre del grupo" : "Group Name")}
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed">
-              <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>
-                {isEs
-                  ? "Este distintivo se muestra automáticamente para los clientes que pertenezcan a este grupo."
-                  : "This badge will automatically display for customers assigned to this group."}
-              </span>
-            </div>
-          </div>
-
           {/* Tips Card */}
           <div className="rounded-2xl border border-cyan-100 bg-cyan-50/40 p-6 shadow-xs">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-900 mb-3">
@@ -307,6 +230,40 @@ export function NewCustomerGroupForm({
                 <span>{isEs ? "Filtra y busca fácilmente en la tabla principal de clientes por grupo." : "Easily search and filter in the main customers table by group."}</span>
               </li>
             </ul>
+          </div>
+
+          {/* Quick presets */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
+              <Sparkles className="h-4 w-4 text-cyan-600" />
+              <span>{isEs ? "Plantillas sugeridas" : "Suggested Presets"}</span>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              {isEs
+                ? "Haz clic en una plantilla para autocompletar el nombre y la descripción:"
+                : "Click on any preset to quickly autofill the name and description:"}
+            </p>
+            <div className="grid grid-cols-1 gap-2.5">
+              {presets.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    setName(preset.name);
+                    setDescription(preset.desc);
+                  }}
+                  className="text-left rounded-xl border border-slate-200/90 bg-slate-50/60 p-3 transition hover:border-cyan-400 hover:bg-cyan-50/30 cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">{preset.name}</span>
+                    <span className="text-[10px] text-cyan-600 font-semibold">{isEs ? "Usar" : "Use"}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                    {preset.desc}
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
