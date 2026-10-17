@@ -87,22 +87,22 @@ export function DashboardSummaryView({
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 lg:grid-cols-4">
           {summaryCards.map((card) => {
             const Icon = card.icon;
 
             return (
               <div
                 key={card.label}
-                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6"
               >
-                <div className="inline-flex rounded border border-slate-200/80 bg-slate-50 p-2 text-slate-700 shadow-2xs">
-                  <Icon className="h-5 w-5" />
+                <div className="inline-flex rounded border border-slate-200/80 bg-slate-50 p-1.5 text-slate-700 shadow-2xs sm:p-2">
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <p className="mt-4 text-sm font-medium text-slate-600">
+                <p className="mt-3 text-xs font-medium text-slate-600 sm:mt-4 sm:text-sm">
                   {card.label}
                 </p>
-                <p className="mt-2 text-3xl font-semibold text-slate-950">
+                <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:mt-2 sm:text-3xl">
                   {card.value}
                 </p>
               </div>

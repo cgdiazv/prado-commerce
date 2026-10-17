@@ -82,54 +82,54 @@ export function ProcurementOverviewView({
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Proveedores Activos" : "Active Vendors"}
             </span>
-            <Building2 className="h-5 w-5 text-slate-500" />
+            <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{vendorsCount}</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900">{vendorsCount}</p>
           <p className="text-xs text-slate-500">
             {isEs ? "Perfiles de proveedores registrados" : "Registered supplier profiles"}
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Órdenes Abiertas" : "Open POs"}
             </span>
-            <FileText className="h-5 w-5 text-slate-500" />
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{openPOsCount}</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900">{openPOsCount}</p>
           <p className="text-xs text-slate-500">
             {isEs ? "Borradores, enviadas y parciales" : "Draft, sent & partial orders"}
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Unidades Entrantes" : "Incoming Units"}
             </span>
-            <PackageCheck className="h-5 w-5 text-slate-500" />
+            <PackageCheck className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{pendingUnitsToReceive}</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900">{pendingUnitsToReceive}</p>
           <p className="text-xs text-slate-500">
             {isEs ? "Unidades pendientes por recibir" : "Outstanding units to receive"}
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Total de Órdenes" : "Receiving Status"}
             </span>
-            <Truck className="h-5 w-5 text-slate-500" />
+            <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{recentPOs.length}</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900">{recentPOs.length}</p>
           <p className="text-xs text-slate-500">
             {isEs ? "Órdenes de compra registradas" : "Total recorded POs"}
           </p>

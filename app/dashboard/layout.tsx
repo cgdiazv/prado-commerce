@@ -465,7 +465,7 @@ export default function DashboardLayout({
       style={{ colorScheme: "light" }}
     >
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-14 w-full items-center justify-between px-6">
+        <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
           <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="flex items-center gap-2">
             <PradoLogo theme="light" subtitle={currentUser?.isCashier ? (language === "es" ? "Punto de Venta" : "Point of Sale") : t.dashboard.merchantDashboard} size="sm" />
           </Link>
@@ -621,7 +621,7 @@ export default function DashboardLayout({
           </aside>
         )}
 
-        <main className={`min-w-0 flex-1 bg-[#f8fafc] px-6 py-10 lg:px-10 print:bg-white print:p-0 ${currentUser?.isCashier ? "!px-3 !py-4 sm:!px-6" : ""}`}>
+        <main className={`min-w-0 flex-1 bg-[#f8fafc] px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 print:bg-white print:p-0 ${currentUser?.isCashier ? "!px-3 !py-4 sm:!px-6" : ""}`}>
           <div
             className={`flex min-w-0 w-full flex-col ${
               pathname === "/dashboard" ||
