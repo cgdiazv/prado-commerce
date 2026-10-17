@@ -3,6 +3,7 @@ import { headers, cookies } from "next/headers";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { PublicFooter } from "@/components/public-footer";
+import { CookieBanner } from "@/components/CookieBanner";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import type { Language } from "@/lib/i18n/translations";
 
@@ -42,6 +43,7 @@ export default async function RootLayout({
         <LanguageProvider initialLanguage={initialLanguage}>
           {children}
           <PublicFooter forceHidden={isStorefrontRequest} />
+          <CookieBanner />
         </LanguageProvider>
       </body>
     </html>

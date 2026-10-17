@@ -94,6 +94,12 @@ export interface Translations {
     privacy: string;
     terms: string;
   };
+  cookies: {
+    message: string;
+    privacyPolicy: string;
+    accept: string;
+    dismiss: string;
+  };
   login: {
     title: string;
     subtitle: string;
@@ -427,6 +433,12 @@ export const translations: Record<Language, Translations> = {
       privacy: "Privacidad",
       terms: "Términos",
     },
+    cookies: {
+      message: "Utilizamos cookies esenciales para mejorar tu experiencia y garantizar el funcionamiento de la plataforma.",
+      privacyPolicy: "Política de Privacidad",
+      accept: "Aceptar",
+      dismiss: "Cerrar",
+    },
     login: {
       title: "Iniciar sesión en el Panel",
       subtitle: "Usa tu correo y contraseña de comerciante para acceder a tus tiendas y estadísticas.",
@@ -758,6 +770,12 @@ export const translations: Record<Language, Translations> = {
       copyright: "Copyright © {year} Prado Commerce. All rights reserved.",
       privacy: "Privacy",
       terms: "Terms",
+    },
+    cookies: {
+      message: "We use essential cookies to ensure platform functionality and improve your browsing experience.",
+      privacyPolicy: "Privacy Policy",
+      accept: "Accept",
+      dismiss: "Dismiss",
     },
     login: {
       title: "Sign in to Dashboard",
