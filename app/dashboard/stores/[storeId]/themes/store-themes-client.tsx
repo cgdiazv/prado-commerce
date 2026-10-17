@@ -66,7 +66,7 @@ export function StoreThemesClient({ store, activeTheme }: StoreThemesClientProps
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            {isEs ? "Tema de la Tienda" : "Store Theme"}
+            {isEs ? "Tiendas" : "Stores"}
           </p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Elige el Tema de tu Tienda" : "Choose Your Storefront Theme"}

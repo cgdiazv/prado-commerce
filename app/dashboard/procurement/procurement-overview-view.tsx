@@ -66,14 +66,14 @@ export function ProcurementOverviewView({
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/procurement/vendors"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
             <Building2 className="h-4 w-4" />
             {isEs ? "Proveedores" : "Vendors"}
           </Link>
           <Link
             href="/dashboard/procurement/purchase-orders/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-4 w-4" />
             {isEs ? "Nueva OC" : "New Purchase Order"}

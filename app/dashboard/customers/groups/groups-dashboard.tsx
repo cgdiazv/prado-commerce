@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Users, Pencil, Trash2, Check, X, FolderPlus } from "lucide-react";
+import { Plus, Search, Users, Pencil, Trash2, Check, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -183,9 +183,9 @@ export function GroupsDashboard({
         <div className="flex items-center gap-3">
           <Link
             href={`/dashboard/customers/groups/new${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-cyan-700 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
-            <FolderPlus className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             {isEs ? "Nuevo grupo de clientes" : "New Customer Group"}
           </Link>
         </div>
@@ -257,7 +257,7 @@ export function GroupsDashboard({
               <div className="mt-5 flex justify-center gap-3">
                 <Link
                   href={`/dashboard/customers/groups/new${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-cyan-700"
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
                   <Plus className="h-4 w-4" />
                   {isEs ? "Crear primer grupo" : "Create first group"}

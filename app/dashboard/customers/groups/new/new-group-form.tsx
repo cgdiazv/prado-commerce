@@ -192,14 +192,14 @@ export function NewCustomerGroupForm({
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <Link
                 href={`/dashboard/customers/groups${activeStoreId ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-                className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 {isEs ? "Cancelar" : "Cancel"}
               </Link>
               <button
                 type="submit"
                 disabled={isSaving || !name.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-cyan-700 transition disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 <FolderPlus className="h-4 w-4" />
                 {isSaving ? (isEs ? "Guardando..." : "Saving...") : (isEs ? "Crear grupo" : "Create Group")}
