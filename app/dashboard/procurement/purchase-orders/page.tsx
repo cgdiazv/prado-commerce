@@ -2,6 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import POListClient from "./po-list-client";
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return withRetry(fn, retries - 1, delayMs * 2);
+  }
+}
+
 export default async function PurchaseOrdersPage() {
   const user = await getCurrentUser();
 
@@ -16,43 +26,55 @@ export default async function PurchaseOrdersPage() {
   }
 
   try {
-    const stores = await prisma.store.findMany({
-      where: {
-        OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
-      },
-      select: { id: true, name: true, currency: true },
-      orderBy: { createdAt: "asc" },
-    });
+    const stores = await withRetry(() =>
+      prisma.store.findMany({
+        where: {
+          OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
+        },
+        select: { id: true, name: true, currency: true },
+        orderBy: { createdAt: "asc" },
+      })
+    );
 
     const storeIds = stores.map((s) => s.id);
 
     const vendors = storeIds.length && (prisma as any).vendor
-      ? await (prisma as any).vendor.findMany({
-          where: { storeId: { in: storeIds } },
-          select: { id: true, name: true, storeId: true },
-          orderBy: { name: "asc" },
-        })
+      ? await (prisma as any).vendor
+          .findMany({
+            where: { storeId: { in: storeIds } },
+            select: { id: true, name: true, storeId: true },
+            orderBy: { name: "asc" },
+          })
+          .catch((err: unknown) => {
+            console.error("[PO_VENDORS_QUERY_ERROR]", err);
+            return [];
+          })
       : [];
 
     const purchaseOrders = storeIds.length && (prisma as any).purchaseOrder
-      ? await (prisma as any).purchaseOrder.findMany({
-          where: { storeId: { in: storeIds } },
-          include: {
-            store: { select: { id: true, name: true, currency: true } },
-            vendor: { select: { id: true, name: true, contactEmail: true } },
-            items: {
-              select: {
-                id: true,
-                qtyOrdered: true,
-                qtyReceived: true,
-                unitCost: true,
-                totalCost: true,
+      ? await (prisma as any).purchaseOrder
+          .findMany({
+            where: { storeId: { in: storeIds } },
+            include: {
+              store: { select: { id: true, name: true, currency: true } },
+              vendor: { select: { id: true, name: true, contactEmail: true } },
+              items: {
+                select: {
+                  id: true,
+                  qtyOrdered: true,
+                  qtyReceived: true,
+                  unitCost: true,
+                  totalCost: true,
+                },
               },
+              _count: { select: { receipts: true } },
             },
-            _count: { select: { receipts: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        })
+            orderBy: { createdAt: "desc" },
+          })
+          .catch((err: unknown) => {
+            console.error("[PO_PURCHASE_ORDERS_QUERY_ERROR]", err);
+            return [];
+          })
       : [];
 
     const serializedStores = JSON.parse(JSON.stringify(stores));

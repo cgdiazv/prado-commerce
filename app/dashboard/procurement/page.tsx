@@ -4,6 +4,16 @@ import { getCurrentUser } from "@/lib/session";
 import { Building2 } from "lucide-react";
 import { ProcurementOverviewView } from "./procurement-overview-view";
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return withRetry(fn, retries - 1, delayMs * 2);
+  }
+}
+
 export default async function ProcurementOverviewPage() {
   const user = await getCurrentUser();
 
@@ -18,12 +28,14 @@ export default async function ProcurementOverviewPage() {
   }
 
   try {
-    const rawStores = await prisma.store.findMany({
-      where: {
-        OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
-      },
-      select: { id: true, name: true, currency: true },
-    });
+    const rawStores = await withRetry(() =>
+      prisma.store.findMany({
+        where: {
+          OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
+        },
+        select: { id: true, name: true, currency: true },
+      })
+    );
 
     const stores = JSON.parse(JSON.stringify(rawStores));
     const storeIds = stores.map((s: any) => s.id);
@@ -42,55 +54,80 @@ export default async function ProcurementOverviewPage() {
     }
 
     const vendorsCount = (prisma as any).vendor
-      ? await (prisma as any).vendor.count({
-          where: { storeId: { in: storeIds } },
-        })
+      ? await (prisma as any).vendor
+          .count({
+            where: { storeId: { in: storeIds } },
+          })
+          .catch((err: unknown) => {
+            console.error("[PROCUREMENT_VENDORS_COUNT_ERROR]", err);
+            return 0;
+          })
       : 0;
 
     const openPOsCount = (prisma as any).purchaseOrder
-      ? await (prisma as any).purchaseOrder.count({
-          where: {
-            storeId: { in: storeIds },
-            status: { in: ["DRAFT", "SENT", "PARTIAL"] },
-          },
-        })
+      ? await (prisma as any).purchaseOrder
+          .count({
+            where: {
+              storeId: { in: storeIds },
+              status: { in: ["DRAFT", "SENT", "PARTIAL"] },
+            },
+          })
+          .catch((err: unknown) => {
+            console.error("[PROCUREMENT_OPEN_POS_COUNT_ERROR]", err);
+            return 0;
+          })
       : 0;
 
     const rawRecentPOs = (prisma as any).purchaseOrder
-      ? await (prisma as any).purchaseOrder.findMany({
-          where: { storeId: { in: storeIds } },
-          include: {
-            store: { select: { id: true, name: true, currency: true } },
-            vendor: { select: { id: true, name: true } },
-            items: { select: { qtyOrdered: true, qtyReceived: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 5,
-        })
+      ? await (prisma as any).purchaseOrder
+          .findMany({
+            where: { storeId: { in: storeIds } },
+            include: {
+              store: { select: { id: true, name: true, currency: true } },
+              vendor: { select: { id: true, name: true } },
+              items: { select: { qtyOrdered: true, qtyReceived: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          })
+          .catch((err: unknown) => {
+            console.error("[PROCUREMENT_RECENT_POS_ERROR]", err);
+            return [];
+          })
       : [];
 
     const rawRecentVendors = (prisma as any).vendor
-      ? await (prisma as any).vendor.findMany({
-          where: { storeId: { in: storeIds } },
-          include: {
-            store: { select: { id: true, name: true } },
-            _count: { select: { purchaseOrders: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 4,
-        })
+      ? await (prisma as any).vendor
+          .findMany({
+            where: { storeId: { in: storeIds } },
+            include: {
+              store: { select: { id: true, name: true } },
+              _count: { select: { purchaseOrders: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 4,
+          })
+          .catch((err: unknown) => {
+            console.error("[PROCUREMENT_RECENT_VENDORS_ERROR]", err);
+            return [];
+          })
       : [];
 
     const rawAllOpenPOs = (prisma as any).purchaseOrder
-      ? await (prisma as any).purchaseOrder.findMany({
-          where: {
-            storeId: { in: storeIds },
-            status: { in: ["SENT", "PARTIAL"] },
-          },
-          include: {
-            items: { select: { qtyOrdered: true, qtyReceived: true } },
-          },
-        })
+      ? await (prisma as any).purchaseOrder
+          .findMany({
+            where: {
+              storeId: { in: storeIds },
+              status: { in: ["SENT", "PARTIAL"] },
+            },
+            include: {
+              items: { select: { qtyOrdered: true, qtyReceived: true } },
+            },
+          })
+          .catch((err: unknown) => {
+            console.error("[PROCUREMENT_OPEN_POS_ERROR]", err);
+            return [];
+          })
       : [];
 
     // Clean JSON serialization to strip Prisma Decimal and Date objects for Turbopack RSC streaming
@@ -119,8 +156,19 @@ export default async function ProcurementOverviewPage() {
     console.error("[PROCUREMENT_OVERVIEW_ERROR]", error);
     return (
       <section className="min-w-0 space-y-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Failed to load procurement overview. Please refresh the page.
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-semibold">Failed to load procurement overview. Please refresh the page.</span>
+            <Link
+              href="/dashboard/procurement"
+              className="inline-flex items-center justify-center rounded-full bg-red-700 px-3.5 py-1 text-xs font-semibold text-white transition hover:bg-red-800 w-fit"
+            >
+              Refresh Page / Actualizar
+            </Link>
+          </div>
+          {process.env.NODE_ENV === "development" && error instanceof Error && (
+            <p className="font-mono text-xs text-red-600 bg-red-100/50 p-2 rounded">{error.message}</p>
+          )}
         </div>
       </section>
     );

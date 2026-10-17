@@ -2,6 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import VendorsClient from "./vendors-client";
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return withRetry(fn, retries - 1, delayMs * 2);
+  }
+}
+
 export default async function VendorsPage() {
   const user = await getCurrentUser();
 
@@ -16,25 +26,32 @@ export default async function VendorsPage() {
   }
 
   try {
-    const stores = await prisma.store.findMany({
-      where: {
-        OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
-      },
-      select: { id: true, name: true, currency: true },
-      orderBy: { createdAt: "asc" },
-    });
+    const stores = await withRetry(() =>
+      prisma.store.findMany({
+        where: {
+          OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
+        },
+        select: { id: true, name: true, currency: true },
+        orderBy: { createdAt: "asc" },
+      })
+    );
 
     const storeIds = stores.map((s) => s.id);
 
     const vendors = storeIds.length && (prisma as any).vendor
-      ? await (prisma as any).vendor.findMany({
-          where: { storeId: { in: storeIds } },
-          include: {
-            store: { select: { id: true, name: true } },
-            _count: { select: { purchaseOrders: true } },
-          },
-          orderBy: { name: "asc" },
-        })
+      ? await (prisma as any).vendor
+          .findMany({
+            where: { storeId: { in: storeIds } },
+            include: {
+              store: { select: { id: true, name: true } },
+              _count: { select: { purchaseOrders: true } },
+            },
+            orderBy: { name: "asc" },
+          })
+          .catch((err: unknown) => {
+            console.error("[VENDORS_QUERY_ERROR]", err);
+            return [];
+          })
       : [];
 
     const serializedStores = JSON.parse(JSON.stringify(stores));
