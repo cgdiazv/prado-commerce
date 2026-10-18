@@ -567,8 +567,8 @@ function PricingPageContent() {
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
-                      ? "Stripe Connect incluido con 0% de comisión"
-                      : "Stripe Connect with 0% platform fee"}
+                      ? "Stripe Connect incluido para cobros"
+                      : "Stripe Connect included for payouts"}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -695,8 +695,8 @@ function PricingPageContent() {
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
-                      ? "Stripe Connect + pasarelas avanzadas (0% fee)"
-                      : "Stripe Connect + advanced gateways (0% fee)"}
+                      ? "Stripe Connect + pasarelas avanzadas"
+                      : "Stripe Connect + advanced gateways"}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -902,13 +902,13 @@ function PricingPageContent() {
                     Stripe Connect
                   </td>
                   <td className="px-6 py-5 text-[#030618]">
-                    {isEs ? "Incluido (tarifa 2%)" : "Included (2% fee)"}
+                    {isEs ? "Incluido" : "Included"}
                   </td>
                   <td className="px-6 py-5 text-[#030618]">
-                    {isEs ? "Incluido (0% tarifa)" : "Included (0% fee)"}
+                    {isEs ? "Incluido" : "Included"}
                   </td>
                   <td className="px-6 py-5 text-[#030618]">
-                    {isEs ? "Incluido (0% tarifa)" : "Included (0% fee)"}
+                    {isEs ? "Incluido (+ pasarelas avanzadas)" : "Included (+ advanced gateways)"}
                   </td>
                 </tr>
 
