@@ -74,7 +74,7 @@ export default function CategoryPageContent({
               return (
                 <article
                   key={product.id}
-                  className={`relative overflow-hidden rounded-2xl border transition ${themeClasses.productCard}`}
+                  className={`relative overflow-hidden rounded-lg border transition ${themeClasses.productCard}`}
                 >
                   <Link
                     href={`${basePath}/products/${product.id}`}

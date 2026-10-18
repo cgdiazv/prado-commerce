@@ -100,9 +100,9 @@ export default function StorefrontProductClient({
             )}
             {product.images[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-2xl object-cover" />
+              <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-lg object-cover" />
             ) : (
-              <div className="flex h-80 items-center justify-center rounded-2xl bg-slate-100 text-sm text-slate-400">
+              <div className="flex h-80 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-400">
                 {t.storefront.noImageAvailable}
               </div>
             )}

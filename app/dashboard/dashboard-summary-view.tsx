@@ -123,7 +123,7 @@ export function DashboardSummaryView({
         </div>
 
         {/* Monthly Sales (YTD) Chart */}
-        <div className="mt-8">
+        <div className="mt-8 w-full min-w-0">
           <DashboardMonthlyChart
             data={monthlySales}
             baseCurrency={baseCurrency}

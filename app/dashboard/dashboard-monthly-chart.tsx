@@ -81,21 +81,21 @@ export function DashboardMonthlyChart({
   ];
 
   return (
-    <div className="rounded-[8px] border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+    <div className="w-full max-w-full overflow-hidden rounded-[8px] border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-800">
               <Calendar className="h-3 w-3" />
               {isEs ? `YTD ${year}` : `${year} YTD`}
             </span>
             <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-500 font-medium truncate">
               {totalYtdOrders} {isEs ? (totalYtdOrders === 1 ? "pedido" : "pedidos") : (totalYtdOrders === 1 ? "order" : "orders")}
             </span>
           </div>
-          <h2 className="mt-1.5 text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-slate-900">
             {isEs ? "Ventas Mensuales (YTD)" : "Monthly Sales (YTD)"}
           </h2>
           <p className="text-xs text-slate-500">
@@ -106,12 +106,12 @@ export function DashboardMonthlyChart({
         </div>
 
         {/* Total YTD badge */}
-        <div className="flex items-baseline gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-2.5 sm:text-right">
+        <div className="flex items-baseline gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 sm:px-4 sm:py-2.5 sm:text-right self-start sm:self-auto">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               {isEs ? "Total Facturado YTD" : "Total YTD Revenue"}
             </p>
-            <p className="text-xl font-bold tracking-tight text-cyan-900">
+            <p className="text-lg sm:text-xl font-bold tracking-tight text-cyan-900">
               {formatter.format(totalYtdRevenue)}
             </p>
           </div>
@@ -119,9 +119,9 @@ export function DashboardMonthlyChart({
       </div>
 
       {/* Chart Visual Area */}
-      <div className="mt-6">
-        <div className="relative flex">
-          {/* Y-Axis scale labels */}
+      <div className="mt-5 sm:mt-6 w-full min-w-0">
+        <div className="relative flex w-full min-w-0">
+          {/* Y-Axis scale labels (visible on sm+) */}
           <div className="hidden sm:flex flex-col justify-between pr-3 text-right text-[11px] font-medium text-slate-400 select-none h-60 shrink-0 w-16">
             {yTicks.map((tick, idx) => (
               <span key={idx} className="leading-none">
@@ -131,9 +131,9 @@ export function DashboardMonthlyChart({
           </div>
 
           {/* Chart Bars Canvas */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0 w-full">
             {/* Background horizontal grid lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none h-60">
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none h-60 w-full">
               {yTicks.map((_, idx) => (
                 <div
                   key={idx}
@@ -142,10 +142,10 @@ export function DashboardMonthlyChart({
               ))}
             </div>
 
-            {/* Scrollable Container for Bars (Scrollbar hidden) */}
-            <div className="relative overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
+            {/* Container for Bars */}
+            <div className="relative w-full min-w-0 pb-1">
               <div
-                className="flex items-end justify-start sm:justify-around gap-[5px] h-60 px-2 min-w-max"
+                className="flex items-end justify-between sm:justify-around gap-1 sm:gap-2 h-60 w-full px-0.5 sm:px-2"
                 style={{ paddingBottom: "1px" }}
               >
                 {data.map((item) => {
@@ -160,23 +160,32 @@ export function DashboardMonthlyChart({
                     ? `max(6px, ${heightPercent.toFixed(1)}%)`
                     : "2px";
 
+                  // Keep tooltip inside screen bounds for first and last bars
+                  const tooltipAlignClass =
+                    item.monthIndex <= 1
+                      ? "left-0 translate-x-0"
+                      : item.monthIndex >= 10
+                      ? "right-0 left-auto translate-x-0"
+                      : "left-1/2 -translate-x-1/2";
+
                   return (
                     <div
                       key={item.monthIndex}
-                      className="group relative flex flex-col items-center justify-end h-full cursor-pointer"
+                      className="group relative flex flex-1 min-w-0 max-w-[40px] flex-col items-center justify-end h-full cursor-pointer"
+                      onClick={() => setHoveredMonth((prev) => (prev === item.monthIndex ? null : item.monthIndex))}
                       onMouseEnter={() => setHoveredMonth(item.monthIndex)}
                       onMouseLeave={() => setHoveredMonth(null)}
                     >
-                      {/* Tooltip on Hover */}
+                      {/* Tooltip on Hover / Touch */}
                       <div
-                        className={`absolute -top-14 z-20 pointer-events-none transition-all duration-150 transform -translate-x-1/2 left-1/2 ${
+                        className={`absolute -top-14 z-20 transition-all duration-150 transform ${tooltipAlignClass} ${
                           isHovered
-                            ? "opacity-100 scale-100 translate-y-0"
-                            : "opacity-0 scale-95 translate-y-1"
+                            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+                            : "opacity-0 scale-95 translate-y-1 pointer-events-none"
                         }`}
                       >
-                        <div className="rounded-lg bg-slate-900 px-3 py-1.5 text-center text-white shadow-xl whitespace-nowrap">
-                          <p className="text-[11px] font-semibold text-cyan-300">
+                        <div className="rounded-lg bg-slate-900 px-2.5 py-1.5 sm:px-3 text-center text-white shadow-xl whitespace-nowrap">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-cyan-300">
                             {monthNameFull} {year}
                           </p>
                           <p className="text-xs font-bold">
@@ -188,7 +197,7 @@ export function DashboardMonthlyChart({
                         </div>
                       </div>
 
-                      {/* Value label on top of bar if active or high */}
+                      {/* Value label on top of bar if active */}
                       {item.revenue > 0 && (
                         <span className="mb-1 hidden text-[10px] font-semibold text-slate-500 group-hover:block whitespace-nowrap">
                           {formatShortCurrency(item.revenue, baseCurrency, isEs)}
@@ -198,7 +207,7 @@ export function DashboardMonthlyChart({
                       {/* The Vertical Bar */}
                       <div
                         style={{ height: barHeightStyle }}
-                        className={`w-[32px] min-w-[30px] rounded-none transition-all duration-200 ${
+                        className={`w-full max-w-[18px] sm:max-w-[28px] md:max-w-[32px] min-w-[6px] rounded-t-xs sm:rounded-none transition-all duration-200 ${
                           item.revenue > 0
                             ? isHovered
                               ? "bg-cyan-500 shadow-sm"
@@ -209,9 +218,9 @@ export function DashboardMonthlyChart({
                       />
 
                       {/* Month label below */}
-                      <div className="mt-2 text-center select-none">
+                      <div className="mt-2 text-center select-none w-full">
                         <span
-                          className={`block text-xs font-semibold ${
+                          className={`block text-[10px] sm:text-xs font-semibold truncate ${
                             isCurrent
                               ? "text-cyan-700 font-bold"
                               : isHovered
@@ -222,9 +231,12 @@ export function DashboardMonthlyChart({
                           {monthNameShort}
                         </span>
                         {isCurrent && (
-                          <span className="block text-[9px] font-medium uppercase tracking-tighter text-cyan-600">
-                            {isEs ? "Actual" : "Now"}
-                          </span>
+                          <>
+                            <span className="hidden sm:block text-[9px] font-medium uppercase tracking-tighter text-cyan-600">
+                              {isEs ? "Actual" : "Now"}
+                            </span>
+                            <span className="sm:hidden mx-auto mt-0.5 block h-1 w-1 rounded-full bg-cyan-600" />
+                          </>
                         )}
                       </div>
                     </div>
@@ -239,13 +251,18 @@ export function DashboardMonthlyChart({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-none bg-cyan-600 inline-block" />
+              <span className="h-3 w-3 bg-cyan-600 inline-block" />
               <span>{isEs ? "Ventas realizadas" : "Sales revenue"}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-none bg-slate-200 inline-block" />
+              <span className="h-3 w-3 bg-slate-200 inline-block" />
               <span>{isEs ? "Sin ventas" : "Zero sales"}</span>
             </div>
+          </div>
+          {/* Mobile reference ceiling indicator */}
+          <div className="sm:hidden text-[11px] text-slate-400">
+            <span>{isEs ? "Máx: " : "Max: "}</span>
+            <span className="font-semibold text-slate-600">{formatShortCurrency(ceiling, baseCurrency, isEs)}</span>
           </div>
         </div>
       </div>

@@ -272,17 +272,17 @@ export default function StorefrontHomeClient({
               <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
                 <Link
                   href={`${base}/products/${featuredProducts[0].id}`}
-                  className={`rounded-2xl border p-4 transition ${themeClasses.productCard}`}
+                  className={`rounded-lg border p-4 transition ${themeClasses.productCard}`}
                 >
                   {featuredProducts[0].images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={featuredProducts[0].images[0]}
                       alt={featuredProducts[0].title}
-                      className="h-48 w-full rounded-xl object-cover"
+                      className="h-48 w-full rounded-md object-cover"
                     />
                   ) : (
-                    <div className="flex h-48 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                    <div className="flex h-48 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
                       {t.storefront.noImage}
                     </div>
                   )}
@@ -302,17 +302,17 @@ export default function StorefrontHomeClient({
                       <Link
                         key={product.id}
                         href={`${base}/products/${product.id}`}
-                        className={`rounded-2xl border p-3 transition ${themeClasses.productCard}`}
+                        className={`rounded-lg border p-3 transition ${themeClasses.productCard}`}
                       >
                         {product.images[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={product.images[0]}
                             alt={product.title}
-                            className="h-24 w-full rounded-xl object-cover"
+                            className="h-24 w-full rounded-md object-cover"
                           />
                         ) : (
-                          <div className="flex h-24 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                          <div className="flex h-24 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
                             {t.storefront.noImage}
                           </div>
                         )}
@@ -337,17 +337,17 @@ export default function StorefrontHomeClient({
                     <Link
                       key={product.id}
                       href={`${base}/products/${product.id}`}
-                      className={`grid items-center gap-4 rounded-2xl border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
+                      className={`grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
                     >
                       {product.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={product.images[0]}
                           alt={product.title}
-                          className="h-20 w-full rounded-xl object-cover"
+                          className="h-20 w-full rounded-md object-cover"
                         />
                       ) : (
-                        <div className="flex h-20 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                        <div className="flex h-20 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
                           {t.storefront.noImage}
                         </div>
                       )}
@@ -376,17 +376,17 @@ export default function StorefrontHomeClient({
                     <Link
                       key={product.id}
                       href={`${base}/products/${product.id}`}
-                      className={`rounded-2xl border p-3 transition ${themeClasses.productCard}`}
+                      className={`rounded-lg border p-3 transition ${themeClasses.productCard}`}
                     >
                       {product.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={product.images[0]}
                           alt={product.title}
-                          className="h-28 w-full rounded-xl object-cover"
+                          className="h-28 w-full rounded-md object-cover"
                         />
                       ) : (
-                        <div className="flex h-28 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                        <div className="flex h-28 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
                           {t.storefront.noImage}
                         </div>
                       )}
@@ -437,7 +437,7 @@ export default function StorefrontHomeClient({
                       return (
                         <div
                           key={product.id}
-                          className={`relative overflow-hidden rounded-2xl border transition ${themeClasses.productCard}`}
+                          className={`relative overflow-hidden rounded-lg border transition ${themeClasses.productCard}`}
                         >
                           <Link
                             href={`${base}/products/${product.id}`}
