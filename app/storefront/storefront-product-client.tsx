@@ -91,7 +91,7 @@ export default function StorefrontProductClient({
           </span>
         </nav>
 
-        <div className={`grid gap-10 rounded-3xl border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
+        <div className={`grid gap-10 rounded-lg border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
           <div className="relative">
             {isSoldOut && (
               <span className="absolute top-3 left-3 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white shadow-sm">
@@ -100,9 +100,9 @@ export default function StorefrontProductClient({
             )}
             {product.images[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-lg object-cover" />
+              <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-md object-cover" />
             ) : (
-              <div className="flex h-80 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-400">
+              <div className="flex h-80 items-center justify-center rounded-md bg-slate-100 text-sm text-slate-400">
                 {t.storefront.noImageAvailable}
               </div>
             )}
@@ -151,7 +151,7 @@ export default function StorefrontProductClient({
                   ) : null}
                 </div>
                 {product.conditionNotes ? (
-                  <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 mt-1">
+                  <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-md border border-slate-200/60 mt-1">
                     <span className="font-semibold text-slate-700">{t.storefront.conditionNotes}: </span>
                     {product.conditionNotes}
                   </div>
@@ -159,7 +159,7 @@ export default function StorefrontProductClient({
               </div>
             ) : null}
 
-            <div className={`mt-8 rounded-2xl border p-5 ${themeClasses.mutedPanel}`}>
+            <div className={`mt-8 rounded-lg border p-5 ${themeClasses.mutedPanel}`}>
               <div className="flex items-center justify-between">
                 {primaryVariant ? (
                   <AddToCartWithQuantity
