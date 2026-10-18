@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getCurrentCashierFromRequest } from "@/lib/session";
 
 type RouteContext = {
   params: Promise<{
@@ -14,6 +15,7 @@ type ProductVariantInput = {
   price: string | number;
   compareAtPrice?: string | number | null;
   price3?: string | number | null;
+  costPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
   options?: unknown;
@@ -64,6 +66,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       price: candidate.price,
       compareAtPrice: candidate.compareAtPrice ?? null,
       price3: candidate.price3 ?? null,
+      costPrice: candidate.costPrice ?? null,
       inventory: candidate.inventory ?? 0,
       trackInventory: candidate.trackInventory ?? true,
       options: candidate.options ?? null,
@@ -90,6 +93,14 @@ export async function GET(_request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const cashier = getCurrentCashierFromRequest(_request);
+    if (cashier && product.storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You are not authorized to access products from another store." },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(product);
   } catch (error) {
     console.error("[PRODUCT_GET_ERROR]", error);
@@ -104,6 +115,23 @@ export async function GET(_request: Request, { params }: RouteContext) {
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
+    const cashier = getCurrentCashierFromRequest(request);
+
+    if (cashier) {
+      const existingProduct = await prisma.product.findUnique({
+        where: { id },
+        select: { storeId: true },
+      });
+      if (!existingProduct) {
+        return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      }
+      if (existingProduct.storeId !== cashier.storeId) {
+        return NextResponse.json(
+          { error: "Forbidden: You can only edit products in your assigned store." },
+          { status: 403 },
+        );
+      }
+    }
 
     const body = await request.json();
     const {
@@ -240,6 +268,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           price: toDecimal(variant.price, 0) ?? new Prisma.Decimal("0"),
           compareAtPrice: toDecimal(variant.compareAtPrice, null),
           price3: toDecimal(variant.price3, null),
+          costPrice: toDecimal(variant.costPrice, null),
           inventory: variant.inventory ?? 0,
           trackInventory: variant.trackInventory ?? true,
           ...(variant.options === null || variant.options === undefined
@@ -291,6 +320,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
+    const cashier = getCurrentCashierFromRequest(_request);
+    if (cashier) {
+      return NextResponse.json(
+        { error: "Forbidden: Cashiers cannot delete catalog products." },
+        { status: 403 },
+      );
+    }
 
     await prisma.product.delete({
       where: {

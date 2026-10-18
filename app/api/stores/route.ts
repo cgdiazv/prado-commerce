@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { normalizeMainColor } from "@/lib/branding";
 import { isReservedStoreSlug, normalizeStoreSlug } from "@/lib/store-slug";
@@ -8,16 +8,21 @@ import { isReservedStoreSlug, normalizeStoreSlug } from "@/lib/store-slug";
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUserFromRequest(request);
+    const cashier = getCurrentCashierFromRequest(request);
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const storeWhere = cashier
+      ? { id: cashier.storeId }
+      : { ownerUserId: user!.id };
 
     let stores;
 
     try {
       stores = await prisma.store.findMany({
-        where: { ownerUserId: user.id },
+        where: storeWhere,
         orderBy: {
           createdAt: "desc",
         },
@@ -69,7 +74,7 @@ export async function GET(request: Request) {
         error.code === "P2022"
       ) {
         stores = await prisma.store.findMany({
-          where: { ownerUserId: user.id },
+          where: storeWhere,
           orderBy: {
             createdAt: "desc",
           },
@@ -154,6 +159,14 @@ export async function GET(request: Request) {
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUserFromRequest(req);
+    const cashier = getCurrentCashierFromRequest(req);
+
+    if (cashier) {
+      return NextResponse.json(
+        { error: "Forbidden: Cashiers and store clerks cannot create new store branches." },
+        { status: 403 },
+      );
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

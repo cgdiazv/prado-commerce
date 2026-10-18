@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, getCurrentCashier, getCurrentCashierFromRequest } from "@/lib/session";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
-  if (!user) {
+  const cashier = (await getCurrentCashier()) ?? getCurrentCashierFromRequest(request);
+
+  if (!user && !cashier) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -15,11 +17,20 @@ export async function GET(request: Request) {
   const fromDateParam = searchParams.get("fromDate");
   const toDateParam = searchParams.get("toDate");
 
+  if (cashier && storeIdParam && storeIdParam !== cashier.storeId) {
+    return NextResponse.json(
+      { error: "Forbidden: You are not authorized to view reports for other stores." },
+      { status: 403 },
+    );
+  }
+
   try {
     const userStores = await prisma.store.findMany({
-      where: {
-        OR: [{ ownerUserId: user.id }, { ownerId: user.id }],
-      },
+      where: cashier
+        ? { id: cashier.storeId }
+        : {
+            OR: [{ ownerUserId: user!.id }, { ownerId: user!.id }],
+          },
       select: { id: true, name: true, currency: true },
       orderBy: { createdAt: "asc" },
     });
@@ -34,7 +45,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const targetStoreIds = storeIdParam && storeIds.includes(storeIdParam) ? [storeIdParam] : storeIds;
+    const targetStoreIds = cashier
+      ? [cashier.storeId]
+      : storeIdParam && storeIds.includes(storeIdParam)
+        ? [storeIdParam]
+        : storeIds;
 
     const dateFilter: { gte?: Date; lte?: Date } = {};
     if (yearParam && yearParam !== "ALL") {

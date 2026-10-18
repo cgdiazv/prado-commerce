@@ -49,7 +49,7 @@ export function PosClientView({
   const isEs = language === "es";
 
   const [activeStoreId, setActiveStoreId] = useState<string>(
-    initialStoreId || stores[0]?.id || ""
+    (isCashier && cashierData?.storeId) ? cashierData.storeId : (initialStoreId || stores[0]?.id || "")
   );
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);

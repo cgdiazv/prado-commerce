@@ -36,6 +36,9 @@ export default async function ReportsPage() {
         initialBrands={[]}
         initialSummary={{
           totalRevenue: 0,
+          totalCost: 0,
+          totalProfit: 0,
+          profitMargin: 0,
           totalOrdersCount: 0,
           averageOrderValue: 0,
           uniqueCustomers: 0,
@@ -69,6 +72,7 @@ export default async function ReportsPage() {
           variant: {
             select: {
               id: true,
+              costPrice: true,
               productId: true,
               product: {
                 select: {
@@ -85,8 +89,14 @@ export default async function ReportsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  // 1. Customer Sales Breakdown (Anual por cliente)
+  // 1. Customer Sales Breakdown (Anual por cliente) + Product Purchase Aggregation
   const customerMap = new Map<string, CustomerReportItem>();
+  const customerPurchasedProductsMap = new Map<
+    string,
+    Map<string, { productId: string; productTitle: string; totalUnits: number; totalSpent: number; lastPurchasedDate: string }>
+  >();
+
+  let grandTotalCost = 0;
 
   for (const order of rawOrders) {
     const email = order.customerEmail.toLowerCase().trim();
@@ -107,10 +117,13 @@ export default async function ReportsPage() {
         customerPhone: order.customer?.phone || null,
         storeName: order.store.name,
         totalSpent: 0,
+        totalCost: 0,
+        totalProfit: 0,
         totalOrders: 0,
         firstOrderDate: orderDateStr,
         lastOrderDate: orderDateStr,
         annualSales: {},
+        purchasedProducts: [],
         orders: [],
       };
       customerMap.set(email, record);
@@ -118,6 +131,45 @@ export default async function ReportsPage() {
 
     record.totalSpent = Number((record.totalSpent + orderTotal).toFixed(2));
     record.totalOrders += 1;
+
+    let orderItemsCost = 0;
+    for (const item of order.items) {
+      const unitCost = Number(item.costPrice ?? item.variant?.costPrice ?? 0);
+      const itemCost = unitCost * item.quantity;
+      orderItemsCost += itemCost;
+      grandTotalCost += itemCost;
+
+      // Track product purchase breakdown per customer
+      const prodTitle = item.variant?.product?.title || item.title || "Producto";
+      const prodId = item.variant?.product?.id || item.variantId || item.id;
+
+      let userProds = customerPurchasedProductsMap.get(email);
+      if (!userProds) {
+        userProds = new Map();
+        customerPurchasedProductsMap.set(email, userProds);
+      }
+
+      let pEntry = userProds.get(prodTitle);
+      if (!pEntry) {
+        pEntry = {
+          productId: prodId,
+          productTitle: prodTitle,
+          totalUnits: 0,
+          totalSpent: 0,
+          lastPurchasedDate: orderDateStr,
+        };
+        userProds.set(prodTitle, pEntry);
+      }
+
+      pEntry.totalUnits += item.quantity;
+      pEntry.totalSpent = Number((pEntry.totalSpent + (Number(item.price) * item.quantity)).toFixed(2));
+      if (new Date(orderDateStr) > new Date(pEntry.lastPurchasedDate)) {
+        pEntry.lastPurchasedDate = orderDateStr;
+      }
+    }
+
+    record.totalCost = Number(((record.totalCost || 0) + orderItemsCost).toFixed(2));
+    record.totalProfit = Number((record.totalSpent - (record.totalCost || 0)).toFixed(2));
 
     if (new Date(orderDateStr) > new Date(record.lastOrderDate)) {
       record.lastOrderDate = orderDateStr;
@@ -144,6 +196,16 @@ export default async function ReportsPage() {
       fulfillmentStatus: order.fulfillmentStatus,
       itemsCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
     });
+  }
+
+  // Attach sorted purchased products to each customer record
+  for (const [email, record] of customerMap.entries()) {
+    const userProds = customerPurchasedProductsMap.get(email);
+    if (userProds) {
+      record.purchasedProducts = Array.from(userProds.values()).sort(
+        (a, b) => b.totalUnits - a.totalUnits,
+      );
+    }
   }
 
   const customersResult = Array.from(customerMap.values()).sort(
@@ -222,30 +284,48 @@ export default async function ReportsPage() {
     })
     .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
-  // 3. Summary metrics
+  // 3. Summary metrics and Monthly Cost & Profit Breakdown
   const totalRevenue = Number(
     rawOrders.reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)
   );
+  const totalCost = Number(grandTotalCost.toFixed(2));
+  const totalProfit = Number((totalRevenue - totalCost).toFixed(2));
+  const profitMargin = totalRevenue > 0 ? Number(((totalProfit / totalRevenue) * 100).toFixed(1)) : 0;
   const totalOrdersCount = rawOrders.length;
   const averageOrderValue = totalOrdersCount > 0
     ? Number((totalRevenue / totalOrdersCount).toFixed(2))
     : 0;
 
-  const monthlyMap = new Map<string, { month: string; revenue: number; orders: number }>();
+  const monthlyMap = new Map<
+    string,
+    { month: string; revenue: number; cost: number; profit: number; margin: number; orders: number }
+  >();
+
   for (const order of rawOrders) {
     const d = new Date(order.createdAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     let m = monthlyMap.get(key);
     if (!m) {
-      m = { month: key, revenue: 0, orders: 0 };
+      m = { month: key, revenue: 0, cost: 0, profit: 0, margin: 0, orders: 0 };
       monthlyMap.set(key, m);
     }
-    m.revenue = Number((m.revenue + Number(order.total)).toFixed(2));
+
+    const orderRev = Number(order.total);
+    let orderCost = 0;
+    for (const item of order.items) {
+      const unitCost = Number(item.costPrice ?? item.variant?.costPrice ?? 0);
+      orderCost += unitCost * item.quantity;
+    }
+
+    m.revenue = Number((m.revenue + orderRev).toFixed(2));
+    m.cost = Number((m.cost + orderCost).toFixed(2));
+    m.profit = Number((m.revenue - m.cost).toFixed(2));
+    m.margin = m.revenue > 0 ? Number(((m.profit / m.revenue) * 100).toFixed(1)) : 0;
     m.orders += 1;
   }
 
   const monthlyBreakdown = Array.from(monthlyMap.values()).sort((a, b) =>
-    a.month.localeCompare(b.month)
+    b.month.localeCompare(a.month)
   );
 
   const availableYearsSet = new Set<string>();
@@ -258,6 +338,9 @@ export default async function ReportsPage() {
 
   const summary: ReportSummary = {
     totalRevenue,
+    totalCost,
+    totalProfit,
+    profitMargin,
     totalOrdersCount,
     averageOrderValue,
     uniqueCustomers: customerMap.size,

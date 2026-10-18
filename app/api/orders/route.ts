@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
 function parseAmount(value: unknown): number {
@@ -101,20 +101,32 @@ function serializeOrder(order: {
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUserFromRequest(request);
+    const cashier = getCurrentCashierFromRequest(request);
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
 
-    if (!storeId) {
+    if (cashier && storeId && storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You are only authorized to view orders for your assigned store." },
+        { status: 403 },
+      );
+    }
+
+    const targetStoreId = cashier?.storeId || storeId;
+
+    if (!targetStoreId) {
       return NextResponse.json({ error: "storeId is required" }, { status: 400 });
     }
 
     const ownedStore = await prisma.store.findFirst({
-      where: { id: storeId, ownerUserId: user.id },
+      where: cashier
+        ? { id: cashier.storeId }
+        : { id: targetStoreId, ownerUserId: user!.id },
       select: { id: true },
     });
 
@@ -123,7 +135,7 @@ export async function GET(request: Request) {
     }
 
     const orders = await prisma.order.findMany({
-      where: { storeId },
+      where: { storeId: targetStoreId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -157,14 +169,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUserFromRequest(request);
+    const cashier = getCurrentCashierFromRequest(request);
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
 
     const storeId = String(body?.storeId || "").trim();
+    if (cashier && storeId && storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: Cashiers can only create orders in their assigned store." },
+        { status: 403 },
+      );
+    }
+
     const customerEmail = String(body?.customerEmail || "").trim().toLowerCase();
     const currency = String(body?.currency || "USD").trim().toUpperCase();
     const status = String(body?.status || "PENDING").trim().toUpperCase();
@@ -203,7 +223,9 @@ export async function POST(request: Request) {
     }
 
     const ownedStore = await prisma.store.findFirst({
-      where: { id: storeId, ownerUserId: user.id },
+      where: cashier
+        ? { id: cashier.storeId }
+        : { id: storeId, ownerUserId: user!.id },
       select: { id: true },
     });
 
@@ -226,6 +248,19 @@ export async function POST(request: Request) {
       select: { id: true },
     });
 
+    const variantIds = parsedItems
+      .map((item) => item.variantId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+    const variants = variantIds.length > 0
+      ? await prisma.productVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, costPrice: true },
+        })
+      : [];
+
+    const variantCostMap = new Map(variants.map((v) => [v.id, v.costPrice]));
+
     const createdOrder = await prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
@@ -247,6 +282,7 @@ export async function POST(request: Request) {
                     price: item.price,
                     quantity: item.quantity,
                     variantId: item.variantId,
+                    costPrice: item.variantId ? (variantCostMap.get(item.variantId) ?? null) : null,
                   })),
                 },
               }

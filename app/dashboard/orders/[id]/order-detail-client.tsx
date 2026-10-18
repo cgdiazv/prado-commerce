@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Address = {
@@ -199,6 +199,60 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
     }
   }
 
+  async function handleQuickRefundAndRestock() {
+    const totalUnits = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    const confirmed = window.confirm(
+      isEs
+        ? `¿Confirmas reembolsar este pedido y reingresar automáticamente ${totalUnits} unidades al stock del inventario?`
+        : `Are you sure you want to refund this order and automatically restock ${totalUnits} units back into inventory?`
+    );
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setSaveStatus(null);
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          paymentStatus: "REFUNDED",
+          status: "CANCELLED",
+          restock: true,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || (isEs ? "Error al procesar la devolución" : "Failed to process refund"));
+      }
+
+      setOrder((current) => ({
+        ...current,
+        status: payload.order?.status ?? "CANCELLED",
+        paymentStatus: payload.order?.paymentStatus ?? "REFUNDED",
+      }));
+      setStatus((payload.order?.status as Order["status"]) ?? "CANCELLED");
+      setPaymentStatus("REFUNDED");
+      setRestockInventory(false);
+      setSaveStatus(
+        isEs
+          ? `¡Pedido reembolsado con éxito! Se reingresaron ${payload.restockedCount ?? totalUnits} unidades al inventario.`
+          : `Order successfully refunded! ${payload.restockedCount ?? totalUnits} units were restocked into inventory.`
+      );
+      router.refresh();
+    } catch (error) {
+      setSaveStatus(
+        error instanceof Error
+          ? error.message
+          : isEs
+            ? "Error al procesar la devolución"
+            : "Failed to process refund"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   const storeContact = parseOriginContact(order.store.shippingOrigin);
 
   return (
@@ -224,6 +278,23 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+            {order.paymentStatus !== "REFUNDED" ? (
+              <button
+                type="button"
+                onClick={handleQuickRefundAndRestock}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 rounded-full border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 shadow-sm disabled:opacity-50"
+                title={isEs ? "Reembolsar y Reingresar Unidades al Stock en 1 clic" : "Refund and restock inventory in 1-click"}
+              >
+                <RotateCcw className="h-4 w-4 text-purple-600" />
+                {isEs ? "Reembolsar y Devolver al Stock" : "Refund & Restock Units"}
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700">
+                <RotateCcw className="h-3.5 w-3.5 text-purple-600" />
+                {isEs ? "Reembolsado y Restituido" : "Refunded & Restocked"}
+              </span>
+            )}
             <button
               type="button"
               onClick={() => window.open(`/dashboard/orders/${order.id}/invoice?autoPrint=true`, "_blank")}
@@ -487,6 +558,36 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                   </label>
                 </div>
               )}
+
+              {/* 1-Click Refund & Restock Action Card */}
+              <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-purple-100 p-2 text-purple-700">
+                    <RotateCcw className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-purple-950">
+                      {isEs ? "Devolución con Retorno al Stock" : "Refund & Restock Inventory"}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-purple-800">
+                      {isEs
+                        ? "1 clic para marcar la orden como reembolsada y reingresar automáticamente todas las unidades al inventario disponible."
+                        : "1-click action to mark this order as refunded and return all purchased units directly back into available inventory."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleQuickRefundAndRestock}
+                      disabled={isSaving || order.paymentStatus === "REFUNDED"}
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-300"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      {order.paymentStatus === "REFUNDED"
+                        ? (isEs ? "Ya reembolsado y reingresado" : "Already refunded & restocked")
+                        : (isEs ? "Reembolsar y Reingresar Unidades al Stock" : "Refund & Restock Units to Stock")}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <button
                 type="button"

@@ -15,8 +15,19 @@ import {
   UserCheck,
   Users,
   X,
+  Package,
+  DollarSign,
+  Layers,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+export type CustomerProductPurchase = {
+  productId: string;
+  productTitle: string;
+  totalUnits: number;
+  totalSpent: number;
+  lastPurchasedDate: string;
+};
 
 export type CustomerReportItem = {
   customerId: string;
@@ -25,10 +36,13 @@ export type CustomerReportItem = {
   customerPhone: string | null;
   storeName: string;
   totalSpent: number;
+  totalCost?: number;
+  totalProfit?: number;
   totalOrders: number;
   firstOrderDate: string;
   lastOrderDate: string;
   annualSales: Record<string, { totalSpent: number; orderCount: number }>;
+  purchasedProducts?: CustomerProductPurchase[];
   orders: Array<{
     id: string;
     orderNumber: string;
@@ -54,17 +68,25 @@ export type BrandReportItem = {
   }>;
 };
 
+export type MonthlyBreakdownItem = {
+  month: string;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number;
+  orders: number;
+};
+
 export type ReportSummary = {
   totalRevenue: number;
+  totalCost?: number;
+  totalProfit?: number;
+  profitMargin?: number;
   totalOrdersCount: number;
   averageOrderValue: number;
   uniqueCustomers: number;
   uniqueBrands: number;
-  monthlyBreakdown?: Array<{
-    month: string;
-    revenue: number;
-    orders: number;
-  }>;
+  monthlyBreakdown?: MonthlyBreakdownItem[];
 };
 
 type ReportsDashboardClientProps = {
@@ -85,7 +107,7 @@ export default function ReportsDashboardClient({
   const { language } = useLanguage();
   const isEs = language === "es";
 
-  const [activeTab, setActiveTab] = useState<"customers" | "brands">("customers");
+  const [activeTab, setActiveTab] = useState<"customers" | "brands" | "profit">("customers");
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,11 +165,16 @@ export default function ReportsDashboardClient({
       "Primera Compra",
       "Última Compra",
       "Ventas por Año",
+      "Productos Comprados",
     ];
 
     const rows = filteredCustomers.map((c) => {
       const annualStr = Object.entries(c.annualSales)
         .map(([yr, data]) => `${yr}: $${data.totalSpent} (${data.orderCount} pedidos)`)
+        .join(" | ");
+
+      const productsStr = (c.purchasedProducts || [])
+        .map((p) => `${p.productTitle} (${p.totalUnits} uds)`)
         .join(" | ");
 
       return [
@@ -159,6 +186,7 @@ export default function ReportsDashboardClient({
         `"${new Date(c.firstOrderDate).toLocaleDateString(isEs ? "es-ES" : "en-US")}"`,
         `"${new Date(c.lastOrderDate).toLocaleDateString(isEs ? "es-ES" : "en-US")}"`,
         `"${annualStr}"`,
+        `"${productsStr.replace(/"/g, '""')}"`,
       ];
     });
 
@@ -178,6 +206,31 @@ export default function ReportsDashboardClient({
     downloadCsv(`reporte-ventas-marcas-${new Date().toISOString().slice(0, 10)}.csv`, [headers.join(","), ...rows.map((r) => r.join(","))].join("\n"));
   }
 
+  function exportProfitCsv() {
+    const headers = [
+      "Mes",
+      "Ventas / Ingresos ($)",
+      "Costo de Mercancía ($)",
+      "Ganancia Neta / Profit ($)",
+      "Margen (%)",
+      "Pedidos",
+    ];
+
+    const rows = (initialSummary.monthlyBreakdown || []).map((m) => [
+      `"${m.month}"`,
+      m.revenue.toString(),
+      m.cost.toString(),
+      m.profit.toString(),
+      `${m.margin}%`,
+      m.orders.toString(),
+    ]);
+
+    downloadCsv(
+      `reporte-ventas-costo-profit-${new Date().toISOString().slice(0, 10)}.csv`,
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n"),
+    );
+  }
+
   function downloadCsv(filename: string, content: string) {
     const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -195,12 +248,12 @@ export default function ReportsDashboardClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {isEs ? "Reportes de Ventas" : "Sales Reports"}
+            {isEs ? "Reportes de Ventas y Finanzas" : "Sales & Finance Reports"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {isEs
-              ? "Consulta ventas anuales por cliente, compras por fecha y rendimiento por marca."
-              : "Analyze annual customer sales, purchase timeline, and sales breakdown by brand."}
+              ? "Consulta ventas, ganancia neta (profit = venta - costo), compras por cliente y rendimiento por marca."
+              : "Analyze sales, net profit (profit = price - cost), customer purchase history, and brand performance."}
           </p>
         </div>
 
@@ -214,6 +267,18 @@ export default function ReportsDashboardClient({
             >
               <Download className="h-4 w-4 text-slate-500" />
               {isEs ? "Exportar Clientes CSV" : "Export Customers CSV"}
+            </button>
+          )}
+
+          {activeTab === "profit" && (
+            <button
+              type="button"
+              onClick={exportProfitCsv}
+              disabled={!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4 text-slate-500" />
+              {isEs ? "Exportar Profit CSV" : "Export Profit CSV"}
             </button>
           )}
 
@@ -232,64 +297,94 @@ export default function ReportsDashboardClient({
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Ventas Totales" : "Total Revenue"}
             </span>
             <TrendingUp className="h-4 w-4 shrink-0 text-slate-400" />
           </div>
-          <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900 truncate">
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
             {formatter.format(initialSummary.totalRevenue)}
           </p>
-          <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">
+          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
             {isEs ? "Ingresos generados" : "Total generated revenue"}
           </p>
         </div>
 
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
-              {isEs ? "Pedidos Realizados" : "Orders Count"}
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Costo Total" : "Total Cost"}
+            </span>
+            <DollarSign className="h-4 w-4 shrink-0 text-slate-400" />
+          </div>
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
+            {formatter.format(initialSummary.totalCost || 0)}
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+            {isEs ? "Costo de mercancía" : "Cost of goods sold"}
+          </p>
+        </div>
+
+        <div className="rounded-[8px] border border-emerald-200 bg-emerald-50/50 p-3 sm:p-4 shadow-xs">
+          <div className="flex items-center justify-between text-emerald-800">
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Ganancia (Profit)" : "Net Profit"}
+            </span>
+            <TrendingUp className="h-4 w-4 shrink-0 text-emerald-600" />
+          </div>
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-emerald-950 truncate">
+            {formatter.format(initialSummary.totalProfit || 0)}
+          </p>
+          <p className="mt-0.5 text-[11px] font-medium text-emerald-700 truncate">
+            {isEs ? `Margen: ${initialSummary.profitMargin || 0}%` : `Margin: ${initialSummary.profitMargin || 0}%`}
+          </p>
+        </div>
+
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Pedidos" : "Orders Count"}
             </span>
             <FileText className="h-4 w-4 shrink-0 text-slate-400" />
           </div>
-          <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900 truncate">
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
             {initialSummary.totalOrdersCount}
           </p>
-          <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">
-            {isEs ? "Órdenes procesadas" : "Completed order transactions"}
+          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+            {isEs ? "Órdenes procesadas" : "Completed orders"}
           </p>
         </div>
 
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
-              {isEs ? "Ticket Promedio" : "Average Order Value"}
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Ticket Promedio" : "Avg Order"}
             </span>
             <TrendingUp className="h-4 w-4 shrink-0 text-slate-400" />
           </div>
-          <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900 truncate">
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
             {formatter.format(initialSummary.averageOrderValue)}
           </p>
-          <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">
-            {isEs ? "Monto promedio por pedido" : "Average spend per order"}
+          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+            {isEs ? "Promedio por pedido" : "Average spend"}
           </p>
         </div>
 
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
-              {isEs ? "Clientes con Compras" : "Active Customers"}
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Clientes" : "Customers"}
             </span>
             <UserCheck className="h-4 w-4 shrink-0 text-slate-400" />
           </div>
-          <p className="mt-1.5 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900 truncate">
+          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
             {initialSummary.uniqueCustomers}
           </p>
-          <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">
-            {isEs ? "Clientes compradores únicos" : "Unique purchasing customers"}
+          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+            {isEs ? "Compradores únicos" : "Unique buyers"}
           </p>
         </div>
       </div>
@@ -329,7 +424,23 @@ export default function ReportsDashboardClient({
             }`}
           >
             <Users className="h-3.5 w-3.5" />
-            {isEs ? "Ventas Anuales por Cliente" : "Sales by Customer"}
+            {isEs ? "Ventas y Productos por Cliente" : "Sales by Customer"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("profit");
+              setSearchQuery("");
+            }}
+            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+              activeTab === "profit"
+                ? "bg-slate-900 text-white shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            {isEs ? "Ventas, Costo y Profit Mensual" : "Monthly Profit & Cost"}
           </button>
 
           <button
@@ -470,6 +581,22 @@ export default function ReportsDashboardClient({
             >
               <Users className="h-3.5 w-3.5" />
               <span>{isEs ? "Clientes" : "Customers"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("profit");
+                setSearchQuery("");
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition ${
+                activeTab === "profit"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>{isEs ? "Profit" : "Profit"}</span>
             </button>
 
             <button
@@ -726,53 +853,110 @@ export default function ReportsDashboardClient({
                           </td>
                         </tr>
 
-                        {/* Expanded Orders History per Date */}
+                        {/* Expanded Orders and Products History */}
                         {isExpanded && (
                           <tr className="bg-slate-50/80">
                             <td colSpan={6} className="px-6 py-4">
-                              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-                                  {isEs
-                                    ? `Historial de compras x fecha — ${customer.customerName}`
-                                    : `Purchase History by Date — ${customer.customerName}`}
-                                </h4>
-                                <div className="divide-y divide-slate-100">
-                                  {customer.orders.map((ord) => (
-                                    <div
-                                      key={ord.id}
-                                      className="flex items-center justify-between py-2.5 text-xs text-slate-700 hover:bg-slate-50 px-2 rounded-lg"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <Link
-                                          href={`/dashboard/orders/${ord.id}`}
-                                          className="font-bold text-cyan-700 hover:underline inline-flex items-center gap-1"
-                                        >
-                                          <FileText className="h-3 w-3" /> #{ord.orderNumber}
-                                        </Link>
-                                        <span className="text-slate-500">
-                                          {new Date(ord.date).toLocaleString(isEs ? "es-ES" : "en-US", {
-                                            year: "numeric",
-                                            month: "short",
-                                            day: "numeric",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                        </span>
-                                      </div>
+                              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-5">
+                                {/* Aggregated Purchased Products by Customer */}
+                                <div>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                      <Package className="h-4 w-4 text-cyan-700" />
+                                      {isEs
+                                        ? `Productos Comprados — ${customer.customerName}`
+                                        : `Products Purchased — ${customer.customerName}`}
+                                    </h4>
+                                    <span className="text-xs font-medium text-slate-500">
+                                      {customer.purchasedProducts?.length || 0} {isEs ? "artículos diferentes adquiridos" : "distinct products bought"}
+                                    </span>
+                                  </div>
 
-                                      <div className="flex items-center gap-4">
-                                        <span className="text-slate-500">
-                                          {ord.itemsCount} {isEs ? "artículos" : "items"}
-                                        </span>
-                                        <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700">
-                                          {formatter.format(ord.total)}
-                                        </span>
-                                        <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                                          {ord.paymentStatus}
-                                        </span>
-                                      </div>
+                                  {customer.purchasedProducts && customer.purchasedProducts.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                      {customer.purchasedProducts.map((prod) => (
+                                        <div
+                                          key={prod.productTitle}
+                                          className="flex items-center justify-between rounded-xl border border-slate-200/90 bg-slate-50/60 p-3 text-xs transition hover:bg-slate-50 hover:border-slate-300"
+                                        >
+                                          <div className="min-w-0 pr-2">
+                                            <p className="font-semibold text-slate-900 truncate" title={prod.productTitle}>
+                                              {prod.productTitle}
+                                            </p>
+                                            <p className="mt-0.5 text-[11px] text-slate-400">
+                                              {isEs ? "Última compra: " : "Last bought: "}
+                                              {new Date(prod.lastPurchasedDate).toLocaleDateString(isEs ? "es-ES" : "en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric",
+                                              })}
+                                            </p>
+                                          </div>
+                                          <div className="text-right shrink-0">
+                                            <span className="inline-flex items-center rounded-md bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-950">
+                                              {prod.totalUnits} {isEs ? "uds" : "units"}
+                                            </span>
+                                            <p className="mt-1 text-[11px] font-semibold text-slate-700">
+                                              {formatter.format(prod.totalSpent)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
+                                  ) : (
+                                    <p className="text-xs text-slate-400 italic">
+                                      {isEs
+                                        ? "No hay productos individuales registrados en las órdenes de este cliente."
+                                        : "No individual product items recorded in orders."}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Orders History per Date */}
+                                <div className="border-t border-slate-100 pt-4">
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                                    {isEs
+                                      ? `Historial de Pedidos x Fecha — ${customer.customerName}`
+                                      : `Order History by Date — ${customer.customerName}`}
+                                  </h4>
+                                  <div className="divide-y divide-slate-100">
+                                    {customer.orders.map((ord) => (
+                                      <div
+                                        key={ord.id}
+                                        className="flex items-center justify-between py-2.5 text-xs text-slate-700 hover:bg-slate-50 px-2 rounded-lg"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <Link
+                                            href={`/dashboard/orders/${ord.id}`}
+                                            className="font-bold text-cyan-700 hover:underline inline-flex items-center gap-1"
+                                          >
+                                            <FileText className="h-3 w-3" /> #{ord.orderNumber}
+                                          </Link>
+                                          <span className="text-slate-500">
+                                            {new Date(ord.date).toLocaleString(isEs ? "es-ES" : "en-US", {
+                                              year: "numeric",
+                                              month: "short",
+                                              day: "numeric",
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-4">
+                                          <span className="text-slate-500">
+                                            {ord.itemsCount} {isEs ? "artículos" : "items"}
+                                          </span>
+                                          <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700">
+                                            {formatter.format(ord.total)}
+                                          </span>
+                                          <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                            {ord.paymentStatus}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -860,6 +1044,104 @@ export default function ReportsDashboardClient({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 3: MONTHLY COST, REVENUE & PROFIT REPORT */}
+      {activeTab === "profit" && (
+        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
+          <div className="border-b border-slate-200 bg-slate-50/70 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                {isEs ? "Desglose Mensual: Ventas, Costos y Ganancia Neta (Profit)" : "Monthly Breakdown: Sales, Cost & Net Profit"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isEs
+                  ? "Cálculo en vivo: Ganancia Neta (Profit) = Precio de Venta - Costo Unitario de variantes."
+                  : "Live calculation: Net Profit = Sale Price - Unit Cost of sold variants."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={exportProfitCsv}
+              disabled={!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 self-start sm:self-auto"
+            >
+              <Download className="h-3.5 w-3.5 text-slate-500" />
+              {isEs ? "Exportar Profit CSV" : "Export Profit CSV"}
+            </button>
+          </div>
+
+          {(!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0) ? (
+            <div className="p-12 text-center">
+              <TrendingUp className="mx-auto h-12 w-12 text-slate-300" />
+              <h3 className="mt-3 text-base font-semibold text-slate-900">
+                {isEs ? "Sin datos de ventas mensuales" : "No monthly sales data"}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {isEs ? "Las ventas y métricas de profit aparecerán cuando se completen órdenes." : "Sales and profit metrics will appear here as orders complete."}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th className="px-5 py-3.5">{isEs ? "Mes" : "Month"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Pedidos" : "Orders"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Ingresos (Ventas)" : "Revenue"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Costo Mercancía" : "Cost of Goods"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Ganancia Neta (Profit)" : "Net Profit"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Margen (%)" : "Margin (%)"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Ticket Prom." : "Avg Order"}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {initialSummary.monthlyBreakdown.map((row) => {
+                    const avg = row.orders > 0 ? row.revenue / row.orders : 0;
+                    const isProfitable = row.profit >= 0;
+                    return (
+                      <tr key={row.month} className="hover:bg-slate-50/60 transition">
+                        <td className="px-5 py-4 font-semibold text-slate-900 text-xs">
+                          {row.month}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700">
+                          {row.orders} {isEs ? "pedidos" : "orders"}
+                        </td>
+                        <td className="px-5 py-4 text-xs font-semibold text-slate-900">
+                          {formatter.format(row.revenue)}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-600">
+                          {formatter.format(row.cost)}
+                        </td>
+                        <td className="px-5 py-4 text-xs font-bold">
+                          <span className={isProfitable ? "text-emerald-700" : "text-rose-700"}>
+                            {formatter.format(row.profit)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs">
+                          <span
+                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ${
+                              row.margin >= 30
+                                ? "bg-emerald-100 text-emerald-800"
+                                : row.margin > 0
+                                ? "bg-cyan-100 text-cyan-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}
+                          >
+                            {row.margin}%
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700">
+                          {formatter.format(avg)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </section>

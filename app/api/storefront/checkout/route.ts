@@ -137,6 +137,9 @@ async function finalizeOrder({
             price: Number(item.variant.price),
             quantity: item.quantity,
             variantId: item.variant.id,
+            costPrice: (item.variant as { costPrice?: unknown }).costPrice
+              ? Number((item.variant as { costPrice?: unknown }).costPrice)
+              : null,
           })),
         },
       },
@@ -309,6 +312,7 @@ export async function POST(request: Request) {
                   id: true,
                   title: true,
                   price: true,
+                  costPrice: true,
                   inventory: true,
                   trackInventory: true,
                 },
@@ -345,6 +349,7 @@ export async function POST(request: Request) {
                     id: true,
                     title: true,
                     price: true,
+                    costPrice: true,
                     inventory: true,
                     trackInventory: true,
                   },

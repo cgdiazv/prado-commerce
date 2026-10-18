@@ -20,6 +20,7 @@ type ProductVariant = {
   price: string;
   compareAtPrice: string | null;
   price3?: string | null;
+  costPrice?: string | null;
   inventory: number;
   trackInventory: boolean;
   options: unknown;
@@ -70,6 +71,7 @@ type VariantFormState = {
   price: string;
   compareAtPrice: string;
   price3: string;
+  costPrice: string;
   inventory: string;
   trackInventory: boolean;
   options: string;
@@ -85,6 +87,7 @@ const emptyVariant: VariantFormState = {
   price: "",
   compareAtPrice: "",
   price3: "",
+  costPrice: "",
   inventory: "0",
   trackInventory: true,
   options: "",
@@ -186,6 +189,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           price: variant.price,
           compareAtPrice: variant.compareAtPrice ?? "",
           price3: variant.price3 ?? "",
+          costPrice: variant.costPrice ?? "",
           inventory: String(variant.inventory),
           trackInventory: variant.trackInventory,
           options: typeof variant.options === "string" ? variant.options : JSON.stringify(variant.options ?? {}, null, 2),
@@ -494,6 +498,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             price: variant.price,
             compareAtPrice: variant.compareAtPrice.trim() || null,
             price3: variant.price3.trim() || null,
+            costPrice: variant.costPrice.trim() || null,
             inventory: isNonPhysicalProduct ? 0 : Number.parseInt(variant.inventory, 10) || 0,
             trackInventory: isNonPhysicalProduct ? false : variant.trackInventory,
             options: variant.options.trim() ? JSON.parse(variant.options) : null,
@@ -1064,6 +1069,13 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                     type="number"
                   />
                   <Field
+                    label={isEs ? "Costo unitario (Costo)" : "Unit cost (Cost)"}
+                    value={variant.costPrice}
+                    onChange={(value) => updateVariant(index, { costPrice: value })}
+                    placeholder="45.00"
+                    type="number"
+                  />
+                  <Field
                     label={isEs ? "Precio 2 / Oferta (P2)" : "Price 2 / Sale (P2)"}
                     value={variant.compareAtPrice}
                     onChange={(value) => updateVariant(index, { compareAtPrice: value })}
@@ -1077,6 +1089,25 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                     placeholder="59.00"
                     type="number"
                   />
+                  {variant.price && variant.costPrice ? (() => {
+                    const priceNum = Number.parseFloat(variant.price);
+                    const costNum = Number.parseFloat(variant.costPrice);
+                    if (!Number.isNaN(priceNum) && !Number.isNaN(costNum)) {
+                      const profit = priceNum - costNum;
+                      const margin = priceNum > 0 ? (profit / priceNum) * 100 : 0;
+                      return (
+                        <div className="col-span-full rounded-md border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 text-xs flex items-center justify-between">
+                          <span className="text-emerald-800 font-medium">
+                            {isEs ? "Ganancia unitaria estimada (Profit):" : "Estimated unit profit:"}
+                          </span>
+                          <span className={`font-bold ${profit >= 0 ? "text-emerald-900" : "text-rose-700"}`}>
+                            {activeStore?.currency || "USD"} {profit.toFixed(2)} ({margin.toFixed(1)}% {isEs ? "margen" : "margin"})
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })() : null}
                   <label className="flex flex-col gap-2">
                     <span className="text-sm font-medium text-slate-700">
                       {isEs ? "Rastrear inventario" : "Track inventory"}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUser, getCurrentUserFromRequest, getCurrentCashier, getCurrentCashierFromRequest } from "@/lib/session";
 import { resolvePosSettings } from "@/lib/pos/settings";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import type { PosStoreSettings, PosTerminal, PosCashier } from "@/types/dashboard";
@@ -8,14 +8,22 @@ import type { PosStoreSettings, PosTerminal, PosCashier } from "@/types/dashboar
 export async function GET(request: Request) {
   try {
     const user = (await getCurrentUser()) ?? (await getCurrentUserFromRequest(request));
+    const cashier = (await getCurrentCashier()) ?? getCurrentCashierFromRequest(request);
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const limits = getPlanLimits(getPlanOrDefault(user.plan));
+    if (cashier && storeId && storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You are only authorized to view POS settings for your assigned store." },
+        { status: 403 },
+      );
+    }
+
+    const limits = getPlanLimits(getPlanOrDefault(user?.plan));
     if (!limits.allowPos) {
       return NextResponse.json(
         { error: "Point of Sale (POS) requires a Prado Commerce Pro or Enterprise subscription." },
@@ -23,8 +31,8 @@ export async function GET(request: Request) {
       );
     }
 
-    let targetStoreId = storeId;
-    if (!targetStoreId) {
+    let targetStoreId = cashier ? cashier.storeId : storeId;
+    if (!targetStoreId && user) {
       const firstStore = await prisma.store.findFirst({
         where: { ownerUserId: user.id },
         select: { id: true },
@@ -37,10 +45,12 @@ export async function GET(request: Request) {
     }
 
     const store = await prisma.store.findFirst({
-      where: {
-        id: targetStoreId,
-        ownerUserId: user.id,
-      },
+      where: cashier
+        ? { id: cashier.storeId }
+        : {
+            id: targetStoreId,
+            ownerUserId: user!.id,
+          },
       select: {
         id: true,
         name: true,
@@ -52,7 +62,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const finalSettings = resolvePosSettings(store.posSettings, user);
+    const finalSettings = resolvePosSettings(store.posSettings, user ?? undefined);
 
     return NextResponse.json({
       success: true,
@@ -69,11 +79,20 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = (await getCurrentUser()) ?? (await getCurrentUserFromRequest(request));
-    if (!user) {
+    const cashier = (await getCurrentCashier()) ?? getCurrentCashierFromRequest(request);
+
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const limits = getPlanLimits(getPlanOrDefault(user.plan));
+    if (cashier && cashier.cashierRole !== "MANAGER") {
+      return NextResponse.json(
+        { error: "Forbidden: Only store managers or store owners can modify POS settings." },
+        { status: 403 },
+      );
+    }
+
+    const limits = getPlanLimits(getPlanOrDefault(user?.plan));
     if (!limits.allowPos) {
       return NextResponse.json(
         { error: "Point of Sale (POS) requires a Prado Commerce Pro or Enterprise subscription." },
@@ -88,12 +107,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing storeId" }, { status: 400 });
     }
 
-    // Verify ownership
+    if (cashier && storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only modify POS settings for your assigned store." },
+        { status: 403 },
+      );
+    }
+
+    // Verify ownership or cashier store assignment
     const store = await prisma.store.findFirst({
-      where: {
-        id: storeId,
-        ownerUserId: user.id,
-      },
+      where: cashier
+        ? { id: cashier.storeId }
+        : {
+            id: storeId,
+            ownerUserId: user!.id,
+          },
       select: { id: true },
     });
 

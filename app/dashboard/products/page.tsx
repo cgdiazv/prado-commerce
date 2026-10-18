@@ -72,6 +72,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             price: variant.price.toString(),
             compareAtPrice: variant.compareAtPrice?.toString() ?? null,
             price3: variant.price3?.toString() ?? null,
+            costPrice: variant.costPrice?.toString() ?? null,
             createdAt: variant.createdAt.toISOString(),
             updatedAt: variant.updatedAt.toISOString(),
           })),

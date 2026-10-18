@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Calendar, ArrowUpRight, DollarSign, Package } from "lucide-react";
@@ -185,6 +185,23 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
   const annualSalesList = Object.entries(annualSalesMap)
     .map(([year, data]) => ({ year: Number(year), ...data }))
     .sort((a, b) => b.year - a.year);
+
+  const aggregatedProducts = useMemo(() => {
+    const map = new Map<string, { title: string; totalUnits: number; totalSpent: number; lastDate: string }>();
+    for (const ord of orders) {
+      for (const it of ord.items || []) {
+        const title = it.title || "Producto";
+        const entry = map.get(title) || { title, totalUnits: 0, totalSpent: 0, lastDate: ord.createdAt };
+        entry.totalUnits += it.quantity;
+        entry.totalSpent += it.price * it.quantity;
+        if (new Date(ord.createdAt) > new Date(entry.lastDate)) {
+          entry.lastDate = ord.createdAt;
+        }
+        map.set(title, entry);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.totalUnits - a.totalUnits);
+  }, [orders]);
 
   return (
     <section className="min-w-0 space-y-6">
@@ -516,11 +533,61 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           </div>
         )}
 
+        {/* Vista Agregada: Historial de Compras por Producto */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <Package className="w-4 h-4 text-cyan-600" />
+              {isEs ? "Productos Comprados (Vista Agregada)" : "Products Purchased (Aggregated View)"}
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">
+              {aggregatedProducts.length} {isEs ? "artículos diferentes" : "distinct items"}
+            </span>
+          </div>
+
+          {aggregatedProducts.length === 0 ? (
+            <div className="text-center py-6 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+              {isEs ? "Sin productos individuales registrados." : "No product purchases recorded."}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {aggregatedProducts.map((p) => (
+                <div
+                  key={p.title}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs"
+                >
+                  <div className="min-w-0 pr-2">
+                    <p className="font-semibold text-slate-900 truncate" title={p.title}>
+                      {p.title}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {isEs ? "Última compra: " : "Last bought: "}
+                      {new Date(p.lastDate).toLocaleDateString(isEs ? "es-ES" : "en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="inline-flex items-center rounded-md bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-900">
+                      {p.totalUnits} {isEs ? "uds" : "units"}
+                    </span>
+                    <p className="mt-1 text-[11px] font-semibold text-slate-700">
+                      ${p.totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* List of Orders and Purchased Products */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Package className="w-4 h-4 text-cyan-600" />
-            {isEs ? "Facturas y Productos Comprados por Fecha" : "Invoices & Products Purchased by Date"}
+            <ShoppingBag className="w-4 h-4 text-cyan-600" />
+            {isEs ? "Facturas y Pedidos por Fecha" : "Invoices & Orders by Date"}
           </h3>
 
           {orders.length === 0 ? (

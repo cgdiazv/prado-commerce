@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type ProductVariantInput = {
@@ -10,6 +10,7 @@ type ProductVariantInput = {
   price: string | number;
   compareAtPrice?: string | number | null;
   price3?: string | number | null;
+  costPrice?: string | number | null;
   inventory?: number;
   trackInventory?: boolean;
   options?: unknown;
@@ -60,6 +61,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       price: candidate.price,
       compareAtPrice: candidate.compareAtPrice ?? null,
       price3: candidate.price3 ?? null,
+      costPrice: candidate.costPrice ?? null,
       inventory: candidate.inventory ?? 0,
       trackInventory: candidate.trackInventory ?? true,
       options: candidate.options ?? null,
@@ -73,13 +75,24 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
+    const cashier = getCurrentCashierFromRequest(request);
+
+    if (cashier && storeId && storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You are only authorized to view products for your assigned store." },
+        { status: 403 },
+      );
+    }
+
+    const targetStoreId = cashier?.storeId || storeId;
+
     const categoryId = searchParams.get("categoryId");
     const status = searchParams.get("status");
     const validStatus = status === "DRAFT" || status === "ACTIVE" || status === "ARCHIVED"
       ? status
       : null;
 
-    if (!storeId) {
+    if (!targetStoreId) {
       return NextResponse.json(
         { error: "storeId is required" },
         { status: 400 },
@@ -88,7 +101,7 @@ export async function GET(request: Request) {
 
     const products = await prisma.product.findMany({
       where: {
-        storeId,
+        storeId: targetStoreId,
         ...(categoryId ? { categoryId } : {}),
         ...(validStatus ? { status: validStatus } : {}),
       },
@@ -134,6 +147,7 @@ export async function GET(request: Request) {
             price: true,
             compareAtPrice: true,
             price3: true,
+            costPrice: true,
             inventory: true,
             trackInventory: true,
             options: true,
@@ -164,8 +178,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUserFromRequest(request);
+    const cashier = getCurrentCashierFromRequest(request);
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -208,6 +223,13 @@ export async function POST(request: Request) {
       variants?: unknown;
     };
 
+    if (cashier && (!storeId || cashier.storeId !== storeId)) {
+      return NextResponse.json(
+        { error: "Forbidden: Cashiers can only manage products in their assigned store." },
+        { status: 403 },
+      );
+    }
+
     if (!storeId || !title || !slug) {
       return NextResponse.json(
         { error: "storeId, title, and slug are required" },
@@ -218,10 +240,12 @@ export async function POST(request: Request) {
     const parsedVariants = parseVariants(variants);
 
     const ownedStore = await prisma.store.findFirst({
-      where: {
-        id: storeId,
-        ownerUserId: user.id,
-      },
+      where: cashier
+        ? { id: cashier.storeId }
+        : {
+            id: storeId,
+            ownerUserId: user!.id,
+          },
       select: {
         id: true,
         ownerUser: {
@@ -279,6 +303,7 @@ export async function POST(request: Request) {
                 price: toDecimal(variant.price, 0) ?? new Prisma.Decimal("0"),
                 compareAtPrice: toDecimal(variant.compareAtPrice, null),
                 price3: toDecimal(variant.price3, null),
+                costPrice: toDecimal(variant.costPrice, null),
                 inventory: variant.inventory ?? 0,
                 trackInventory: variant.trackInventory ?? true,
                 ...(variant.options === null || variant.options === undefined

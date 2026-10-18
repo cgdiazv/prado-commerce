@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Star, Store, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -20,6 +20,7 @@ type ProductVariant = {
   price: string;
   compareAtPrice: string | null;
   price3?: string | null;
+  costPrice?: string | null;
   inventory: number;
   trackInventory: boolean;
   options: unknown;
@@ -140,6 +141,57 @@ export function ProductsDashboard({
 
     return rows;
   }, [filteredProducts, sortDirection, sortKey]);
+
+  const activeStore = useMemo(() => {
+    return stores.find((s) => s.id === activeStoreId) ?? stores[0];
+  }, [stores, activeStoreId]);
+
+  const currencyCode = activeStore?.currency || "USD";
+  const currencyFormatter = useMemo(() => {
+    return new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
+      style: "currency",
+      currency: currencyCode,
+    });
+  }, [isEs, currencyCode]);
+
+  const inventoryStats = useMemo(() => {
+    let totalUnits = 0;
+    let totalCostValue = 0;
+    let totalRetailValue = 0;
+    let productsWithCost = 0;
+
+    for (const p of products) {
+      let productHasCost = false;
+      for (const v of p.variants) {
+        const qty = Number(v.inventory) || 0;
+        const cost = Number(v.costPrice) || 0;
+        const price = Number(v.price) || 0;
+        if (qty > 0) {
+          totalUnits += qty;
+          totalCostValue += qty * cost;
+          totalRetailValue += qty * price;
+        }
+        if (cost > 0) {
+          productHasCost = true;
+        }
+      }
+      if (productHasCost) {
+        productsWithCost++;
+      }
+    }
+
+    const potentialProfit = Math.max(0, totalRetailValue - totalCostValue);
+    const potentialMargin = totalRetailValue > 0 ? (potentialProfit / totalRetailValue) * 100 : 0;
+
+    return {
+      totalUnits,
+      totalCostValue,
+      totalRetailValue,
+      potentialProfit,
+      potentialMargin,
+      productsWithCost,
+    };
+  }, [products]);
 
   const totalProducts = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
@@ -382,6 +434,82 @@ export function ProductsDashboard({
             {planNotice}
           </div>
         ) : null}
+
+        {/* Inventory Value & Metrics KPI Bar */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {isEs ? "Catálogo" : "Catalog"}
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                <Layers className="h-4 w-4" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+              {products.length} <span className="text-sm font-normal text-slate-500">{isEs ? "productos" : "products"}</span>
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {inventoryStats.productsWithCost} {isEs ? "con costo registrado" : "with cost recorded"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {isEs ? "Unidades en Stock" : "Units in Stock"}
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                <Boxes className="h-4 w-4" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+              {inventoryStats.totalUnits.toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {isEs ? "Total físico disponible" : "Total available physical units"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
+                {isEs ? "Inventario al Costo" : "Inventory at Cost"}
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                <DollarSign className="h-4 w-4" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-950">
+              {currencyFormatter.format(inventoryStats.totalCostValue)}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700">
+              {isEs ? "Valor total invertido (Stock × Costo)" : "Capital invested (Stock × Cost)"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-cyan-200/80 bg-gradient-to-br from-cyan-50/50 via-white to-cyan-50/30 p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
+                {isEs ? "Valor Venta / Ganancia Est." : "Retail Value / Est. Profit"}
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-cyan-950">
+              {currencyFormatter.format(inventoryStats.totalRetailValue)}
+            </p>
+            <p className="mt-1 text-xs font-medium text-cyan-700">
+              {isEs ? "Ganancia pot.: " : "Pot. profit: "}
+              <span className="font-semibold text-emerald-700">
+                +{currencyFormatter.format(inventoryStats.potentialProfit)}
+              </span>
+              {" "}
+              ({inventoryStats.potentialMargin.toFixed(0)}%)
+            </p>
+          </div>
+        </div>
 
         {/* Desktop Controls (lg+) */}
         <div className="mt-8 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
@@ -721,6 +849,8 @@ export function ProductsDashboard({
                           <SortIndicator active={sortKey === "price"} direction={sortDirection} />
                         </button>
                       </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Costo" : "Cost"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Valor Stock" : "Stock Value"}</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("category")} className="flex items-center gap-1 transition hover:text-slate-950">
                           {isEs ? "Categoría" : "Category"}
@@ -742,14 +872,10 @@ export function ProductsDashboard({
                       const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                       const firstSku = firstVariant?.sku ?? "—";
                       
-                      const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
-                      const currencyCode = activeStore?.currency || "USD";
-                      const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
-                        style: "currency",
-                        currency: currencyCode,
-                      });
-                      
-                      const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
+                      const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
+                      const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
+                      const totalStockVal = product.variants.reduce((acc, v) => acc + (v.inventory * (Number(v.costPrice) || 0)), 0);
+                      const formattedStockVal = totalStockVal > 0 ? currencyFormatter.format(totalStockVal) : "—";
                       const categoryLabel = product.categoryName ?? (product.categoryId ? (isEs ? "Asignada" : "Assigned") : (isEs ? "Sin categoría" : "Uncategorized"));
 
                       return (
@@ -813,6 +939,8 @@ export function ProductsDashboard({
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{firstSku}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{inventoryTotal}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{firstPrice}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">{firstCost}</td>
+                          <td className="px-4 py-3 align-top text-xs font-semibold text-emerald-700">{formattedStockVal}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{categoryLabel}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">
                             {new Date(product.updatedAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
@@ -831,14 +959,10 @@ export function ProductsDashboard({
                   const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                   const firstSku = firstVariant?.sku ?? "—";
                   
-                  const activeStore = stores.find((s) => s.id === activeStoreId) ?? stores[0];
-                  const currencyCode = activeStore?.currency || "USD";
-                  const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
-                    style: "currency",
-                    currency: currencyCode,
-                  });
-                  
-                  const firstPrice = firstVariant ? formatter.format(Number(firstVariant.price)) : "—";
+                  const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
+                  const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
+                  const totalStockVal = product.variants.reduce((acc, v) => acc + (v.inventory * (Number(v.costPrice) || 0)), 0);
+                  const formattedStockVal = totalStockVal > 0 ? currencyFormatter.format(totalStockVal) : "—";
                   const categoryLabel = product.categoryName ?? (product.categoryId ? (isEs ? "Asignada" : "Assigned") : (isEs ? "Sin categoría" : "Uncategorized"));
 
                   return (
@@ -902,6 +1026,14 @@ export function ProductsDashboard({
                         <div>
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Precio" : "Price"}</p>
                           <p className="mt-1 font-medium text-slate-700">{firstPrice}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Costo" : "Cost"}</p>
+                          <p className="mt-1 font-medium text-slate-700">{firstCost}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Valor Stock" : "Stock Value"}</p>
+                          <p className="mt-1 font-semibold text-emerald-700">{formattedStockVal}</p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Categoría" : "Category"}</p>

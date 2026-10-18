@@ -272,8 +272,13 @@ export default function StorefrontHomeClient({
               <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
                 <Link
                   href={`${base}/products/${featuredProducts[0].id}`}
-                  className={`rounded-lg border p-4 transition ${themeClasses.productCard}`}
+                  className={`relative rounded-lg border p-4 transition ${themeClasses.productCard}`}
                 >
+                  {Boolean(featuredProducts[0].variants[0]?.trackInventory && (featuredProducts[0].variants[0]?.inventory ?? 0) <= 0) && (
+                    <span className="absolute top-3 left-3 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                      {language === "es" ? "Agotado" : "Sold Out"}
+                    </span>
+                  )}
                   {featuredProducts[0].images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -298,12 +303,18 @@ export default function StorefrontHomeClient({
                 <div className="grid gap-4 sm:grid-cols-2">
                   {featuredProducts.slice(1).map((product) => {
                     const featuredPrice = product.variants[0]?.price;
+                    const isSoldOut = Boolean(product.variants[0]?.trackInventory && (product.variants[0]?.inventory ?? 0) <= 0);
                     return (
                       <Link
                         key={product.id}
                         href={`${base}/products/${product.id}`}
-                        className={`rounded-lg border p-3 transition ${themeClasses.productCard}`}
+                        className={`relative rounded-lg border p-3 transition ${themeClasses.productCard}`}
                       >
+                        {isSoldOut && (
+                          <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                            {language === "es" ? "Agotado" : "Sold Out"}
+                          </span>
+                        )}
                         {product.images[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -333,12 +344,18 @@ export default function StorefrontHomeClient({
               <div className="grid gap-3">
                 {featuredProducts.map((product, index) => {
                   const featuredPrice = product.variants[0]?.price;
+                  const isSoldOut = Boolean(product.variants[0]?.trackInventory && (product.variants[0]?.inventory ?? 0) <= 0);
                   return (
                     <Link
                       key={product.id}
                       href={`${base}/products/${product.id}`}
-                      className={`grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
+                      className={`relative grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
                     >
+                      {isSoldOut && (
+                        <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                          {language === "es" ? "Agotado" : "Sold Out"}
+                        </span>
+                      )}
                       {product.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -372,12 +389,18 @@ export default function StorefrontHomeClient({
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredProducts.map((product) => {
                   const featuredPrice = product.variants[0]?.price;
+                  const isSoldOut = Boolean(product.variants[0]?.trackInventory && (product.variants[0]?.inventory ?? 0) <= 0);
                   return (
                     <Link
                       key={product.id}
                       href={`${base}/products/${product.id}`}
-                      className={`rounded-lg border p-3 transition ${themeClasses.productCard}`}
+                      className={`relative rounded-lg border p-3 transition ${themeClasses.productCard}`}
                     >
+                      {isSoldOut && (
+                        <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                          {language === "es" ? "Agotado" : "Sold Out"}
+                        </span>
+                      )}
                       {product.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img

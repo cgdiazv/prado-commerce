@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { getStoreEmailConfig, sendInvoiceEmail } from "@/lib/email-notifications";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 
@@ -14,8 +14,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
     const user = await getCurrentUserFromRequest(req);
+    const cashier = getCurrentCashierFromRequest(req);
 
-    if (!user) {
+    if (!user && !cashier) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +24,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       where: { id },
       include: {
         store: {
-          select: { ownerUserId: true },
+          select: { id: true, ownerUserId: true },
         },
         items: {
           select: {
@@ -40,7 +41,18 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       },
     });
 
-    if (!order || order.store.ownerUserId !== user.id) {
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    if (cashier && order.storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You are not authorized to modify orders from another store." },
+        { status: 403 },
+      );
+    }
+
+    if (!cashier && user && order.store.ownerUserId !== user.id) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 

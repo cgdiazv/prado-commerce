@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromRequest } from "@/lib/session";
+import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
 import { hashSecret } from "@/lib/credentials";
 
@@ -52,6 +52,15 @@ async function getAuthenticatedStoreId(
   bodyOrParamStoreId?: string,
 ): Promise<{ storeId: string; authMethod: string } | null> {
   const storeIdInput = bodyOrParamStoreId?.trim() || request.headers.get("x-store-id")?.trim() || null;
+
+  // 0. If cashier session exists, strictly lock to assigned cashier store
+  const cashier = getCurrentCashierFromRequest(request);
+  if (cashier) {
+    if (storeIdInput && storeIdInput !== cashier.storeId) {
+      return null;
+    }
+    return { storeId: cashier.storeId, authMethod: "CASHIER_SESSION" };
+  }
 
   // 1. Check Authorization Bearer header or X-Secret-Key / X-API-Key header
   const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
