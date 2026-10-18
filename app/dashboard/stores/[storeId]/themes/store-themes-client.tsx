@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { activateStoreTheme } from "./actions";
 import HeroImageManager from "./hero-image-manager";
 import HeroTextForm from "./hero-text-form";
+import CustomCssEditor from "./custom-css-editor";
 
 type ThemeId = "minimal" | "bold" | "classic";
 
@@ -18,14 +20,19 @@ type StoreData = {
   heroTitle: string | null;
   heroSubtitle: string | null;
   heroButtonText: string | null;
+  customCss?: string | null;
 };
 
 interface StoreThemesClientProps {
   store: StoreData;
   activeTheme: ThemeId;
+  userPlan?: "STARTER" | "PRO" | "ENTERPRISE";
 }
 
-export function StoreThemesClient({ store, activeTheme }: StoreThemesClientProps) {
+export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: StoreThemesClientProps) {
+  const plan = getPlanOrDefault(userPlan);
+  const limits = getPlanLimits(plan);
+  const isLocked = !limits.allowCustomCss;
   const { language } = useLanguage();
   const isEs = language === "es";
 
@@ -161,6 +168,14 @@ export function StoreThemesClient({ store, activeTheme }: StoreThemesClientProps
           heroButtonText={store.heroButtonText}
         />
       </article>
+
+      <CustomCssEditor
+        storeId={store.id}
+        storeName={store.name}
+        initialCustomCss={store.customCss ?? null}
+        isLocked={isLocked}
+        userPlan={plan}
+      />
     </section>
   );
 }

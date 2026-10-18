@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, getCurrentCashier } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { PosLockedView } from "@/components/pos/PosLockedView";
 import { PosClientView } from "./pos-client-view";
 
 type PosPageProps = {
@@ -24,6 +26,24 @@ export default async function PosPage({ searchParams }: PosPageProps) {
         cashierData={null}
       />
     );
+  }
+
+  // Check plan permission for user or cashier's store owner
+  let allowPos = false;
+  if (user) {
+    const limits = getPlanLimits(getPlanOrDefault(user.plan));
+    allowPos = limits.allowPos;
+  } else if (cashier?.storeId) {
+    const store = await prisma.store.findUnique({
+      where: { id: cashier.storeId },
+      select: { ownerUser: { select: { plan: true } } },
+    });
+    const limits = getPlanLimits(getPlanOrDefault(store?.ownerUser?.plan));
+    allowPos = limits.allowPos;
+  }
+
+  if (!allowPos) {
+    return <PosLockedView returnHref="/dashboard/orders" />;
   }
 
   try {

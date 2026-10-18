@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { resolvePosSettings, getDefaultPosSettings } from "@/lib/pos/settings";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { PosLockedView } from "@/components/pos/PosLockedView";
 import { PosSettingsClient } from "./pos-settings-client";
 
 type PosSettingsPageProps = {
@@ -16,6 +18,11 @@ export default async function SettingsPosPage({ searchParams }: PosSettingsPageP
 
   if (!user) {
     redirect("/login");
+  }
+
+  const limits = getPlanLimits(getPlanOrDefault(user.plan));
+  if (!limits.allowPos) {
+    return <PosLockedView returnHref="/dashboard/settings" />;
   }
 
   try {

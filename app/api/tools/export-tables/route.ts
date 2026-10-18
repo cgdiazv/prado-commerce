@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type SupportedTable = "categories" | "products" | "customers";
 type ExportFormat = "csv" | "json";
@@ -212,6 +213,16 @@ export async function GET(request: Request) {
 
     if (!isSupportedFormat(format)) {
       return NextResponse.json({ error: "Unsupported format" }, { status: 400 });
+    }
+
+    const ownerPlan = getPlanOrDefault(user.plan);
+    const limits = getPlanLimits(ownerPlan);
+
+    if (!limits.allowCsvExport) {
+      return NextResponse.json(
+        { error: "CSV and table exports require a Prado Commerce Pro or Enterprise subscription." },
+        { status: 403 },
+      );
     }
 
     const ownedStore = await prisma.store.findFirst({

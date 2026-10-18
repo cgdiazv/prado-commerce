@@ -39,6 +39,7 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
         heroTitle: true,
         heroSubtitle: true,
         heroButtonText: true,
+        customCss: true,
       },
     });
   } catch (error) {
@@ -56,5 +57,5 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
 
   const activeTheme = normalizeStorefrontTheme(store.activeTheme);
 
-  return <StoreThemesClient store={store} activeTheme={activeTheme} />;
+  return <StoreThemesClient store={store} activeTheme={activeTheme} userPlan={user.plan} />;
 }

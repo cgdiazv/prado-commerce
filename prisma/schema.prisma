@@ -93,6 +93,7 @@ model Store {
   invoicePrefix  String?    @default("INV-")
   nextInvoiceNumber Int     @default(1001)
   posSettings    Json?
+  customCss      String?
 
   apiKeys        ApiKey[]
   products       Product[]

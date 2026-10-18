@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { toStorefrontThemeEnum } from "@/lib/storefront-theme";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type ThemeId = "minimal" | "bold" | "classic";
 
@@ -111,5 +112,68 @@ export async function saveStoreHeroContent(
   return {
     error: null,
     message: "Hero text saved.",
+  };
+}
+
+export type CustomCssActionState = {
+  error: string | null;
+  message: string | null;
+};
+
+export async function saveStoreCustomCss(
+  _previousState: CustomCssActionState,
+  formData: FormData,
+): Promise<CustomCssActionState> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return { error: "Unauthorized", message: null };
+  }
+
+  const storeId = String(formData.get("storeId") ?? "").trim();
+  const customCss = String(formData.get("customCss") ?? "").trim();
+
+  if (!storeId) {
+    return { error: "storeId is required", message: null };
+  }
+
+  const plan = getPlanOrDefault(user.plan);
+  const limits = getPlanLimits(plan);
+
+  if (customCss && !limits.allowCustomCss) {
+    return {
+      error: "Custom CSS styling requires a Prado Commerce Pro or Enterprise subscription.",
+      message: null,
+    };
+  }
+
+  const store = await prisma.store.findFirst({
+    where: {
+      id: storeId,
+      ownerUserId: user.id,
+    },
+    select: {
+      id: true,
+      slug: true,
+    },
+  });
+
+  if (!store) {
+    return { error: "Store not found", message: null };
+  }
+
+  await prisma.store.update({
+    where: { id: store.id },
+    data: {
+      customCss: customCss || null,
+    },
+  });
+
+  revalidatePath(`/dashboard/stores/${storeId}/themes`);
+  revalidatePath(`/storefront/${store.slug}`);
+
+  return {
+    error: null,
+    message: "Custom CSS saved successfully.",
   };
 }

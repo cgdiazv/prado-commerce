@@ -417,11 +417,19 @@ function PricingPageContent() {
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <Minus className="mt-1 h-4 w-4 shrink-0 text-[#626763]" />
-                  <span className="text-[#626763]">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
                     {isEs
-                      ? "Dominios personalizados no incluidos (solo subdominios de Prado Commerce)"
-                      : "Custom domains not included (Prado Commerce subdomains only)"}
+                      ? "2% de tarifa de plataforma en transacciones"
+                      : "2% platform fee on transactions"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Stripe Connect incluido para cobros"
+                      : "Stripe Connect included for payouts"}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -441,8 +449,36 @@ function PricingPageContent() {
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
-                  <span>{isEs ? "Webhooks básicos" : "Basic webhooks"}</span>
+                  <Minus className="mt-1 h-4 w-4 shrink-0 text-[#626763]" />
+                  <span className="text-[#626763]">
+                    {isEs
+                      ? "Punto de venta (POS) no incluido"
+                      : "POS register not included"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Minus className="mt-1 h-4 w-4 shrink-0 text-[#626763]" />
+                  <span className="text-[#626763]">
+                    {isEs
+                      ? "Exportación a CSV no incluida"
+                      : "CSV export not included"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Minus className="mt-1 h-4 w-4 shrink-0 text-[#626763]" />
+                  <span className="text-[#626763]">
+                    {isEs
+                      ? "Inyector de CSS personalizado no incluido"
+                      : "Custom CSS injector not included"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Minus className="mt-1 h-4 w-4 shrink-0 text-[#626763]" />
+                  <span className="text-[#626763]">
+                    {isEs
+                      ? "Dominios personalizados no incluidos (solo subdominios)"
+                      : "Custom domains not included (subdomains only)"}
+                  </span>
                 </li>
               </ul>
             </div>
@@ -523,16 +559,48 @@ function PricingPageContent() {
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
-                      ? "Dominios personalizados incluidos (ej. checkout.tumarca.com)"
-                      : "Custom domains included (e.g. checkout.yourbrand.com)"}
+                      ? "0% tarifa de plataforma (sin comisión adicional)"
+                      : "0% transaction platform fee"}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
-                      ? "Checkout integrable + estilos CSS personalizados"
-                      : "Embeddable checkout + custom CSS styling"}
+                      ? "Stripe Connect incluido con 0% de comisión"
+                      : "Stripe Connect with 0% platform fee"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Punto de venta (POS) y PINs de cajeros"
+                      : "POS register with cashier PINs"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Exportación de tablas a CSV"
+                      : "CSV data table exports"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Inyector de CSS personalizado (tienda y checkout)"
+                      : "Custom CSS styling injector (storefront & checkout)"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Dominios personalizados incluidos"
+                      : "Custom domains included"}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -541,14 +609,6 @@ function PricingPageContent() {
                     {isEs
                       ? "1.000 solicitudes / minuto"
                       : "1,000 requests / minute"}
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
-                  <span>
-                    {isEs
-                      ? "Stripe Connect, webhooks, sincronización CSV"
-                      : "Stripe Connect, webhooks, CSV synchronization"}
                   </span>
                 </li>
               </ul>
@@ -627,6 +687,46 @@ function PricingPageContent() {
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
+                      ? "0% tarifa de plataforma"
+                      : "0% transaction platform fee"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Stripe Connect + pasarelas avanzadas (0% fee)"
+                      : "Stripe Connect + advanced gateways (0% fee)"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "POS avanzado + transportistas"
+                      : "Advanced POS register + carriers"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Exportación completa a CSV"
+                      : "Full CSV data exports"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
+                      ? "Inyector CSS + checkout headless y marca blanca"
+                      : "Custom CSS injector + headless & white-label checkout"}
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
+                  <span>
+                    {isEs
                       ? "Múltiples dominios personalizados"
                       : "Multiple custom domains"}
                   </span>
@@ -635,24 +735,8 @@ function PricingPageContent() {
                   <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
                   <span>
                     {isEs
-                      ? "Flujos de checkout headless y de marca blanca"
-                      : "Headless & white-label checkout flows"}
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
-                  <span>
-                    {isEs
                       ? "Rendimiento edge dedicado"
-                      : "Dedicated edge performance"}
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-[#0bb7dc]" />
-                  <span>
-                    {isEs
-                      ? "Pagos, TPV/POS y Transportistas"
-                      : "Payments, POS & Carriers"}
+                      : "Dedicated edge throughput"}
                   </span>
                 </li>
               </ul>
@@ -801,6 +885,80 @@ function PricingPageContent() {
                     {isEs ? "Rendimiento dedicado" : "Dedicated throughput"}
                   </td>
                 </tr>
+
+                {/* Row 7: Platform fee */}
+                <tr>
+                  <td className="py-5 pr-6 font-medium text-[#030618]">
+                    {isEs ? "Tarifa de plataforma" : "Platform fee"}
+                  </td>
+                  <td className="px-6 py-5 font-semibold text-[#030618]">2%</td>
+                  <td className="px-6 py-5 font-semibold text-emerald-700">0%</td>
+                  <td className="px-6 py-5 font-semibold text-emerald-700">0%</td>
+                </tr>
+
+                {/* Row 8: Stripe Connect */}
+                <tr>
+                  <td className="py-5 pr-6 font-medium text-[#030618]">
+                    Stripe Connect
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (tarifa 2%)" : "Included (2% fee)"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (0% tarifa)" : "Included (0% fee)"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (0% tarifa)" : "Included (0% fee)"}
+                  </td>
+                </tr>
+
+                {/* Row 9: POS System */}
+                <tr>
+                  <td className="py-5 pr-6 font-medium text-[#030618]">
+                    {isEs ? "Punto de Venta (POS) y cajeros" : "POS Register & Cashier PINs"}
+                  </td>
+                  <td className="px-6 py-5 text-[#626763]">
+                    {isEs ? "No incluido" : "Not included"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (caja y PINs)" : "Included (register & PINs)"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (avanzado)" : "Included (advanced)"}
+                  </td>
+                </tr>
+
+                {/* Row 10: CSV Export */}
+                <tr>
+                  <td className="py-5 pr-6 font-medium text-[#030618]">
+                    {isEs ? "Exportación de datos a CSV" : "CSV Data Export"}
+                  </td>
+                  <td className="px-6 py-5 text-[#626763]">
+                    {isEs ? "No incluida" : "Not included"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluida" : "Included"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluida" : "Included"}
+                  </td>
+                </tr>
+
+                {/* Row 11: Custom CSS Injector */}
+                <tr>
+                  <td className="py-5 pr-6 font-medium text-[#030618]">
+                    {isEs ? "Inyector de CSS personalizado" : "Custom CSS Injector"}
+                  </td>
+                  <td className="px-6 py-5 text-[#626763]">
+                    {isEs ? "No incluido" : "Not included"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (tienda y checkout)" : "Included (storefront & checkout)"}
+                  </td>
+                  <td className="px-6 py-5 text-[#030618]">
+                    {isEs ? "Incluido (tienda y checkout)" : "Included (storefront & checkout)"}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -829,8 +987,8 @@ function PricingPageContent() {
           <div className="flex flex-col gap-4 lg:max-w-md">
             <p className="text-[16px] leading-[24px] text-[#626763]">
               {isEs
-                ? "Empieza con Starter: 1 tienda y hasta 50 productos por $0 al mes."
-                : "Start with Starter: 1 store and up to 50 products for $0 a month."}
+                ? "Empieza con Starter: 1 tienda, hasta 50 productos y 2% de tarifa de plataforma por $0 al mes."
+                : "Start with Starter: 1 store, up to 50 products, and 2% platform fee for $0 a month."}
             </p>
 
             <div>

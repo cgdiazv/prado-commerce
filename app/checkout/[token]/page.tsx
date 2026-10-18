@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import CheckoutExperience from "./checkout-experience";
 import StorefrontNavbar from "../../storefront/storefront-navbar";
 import StorefrontFooter from "../../storefront/storefront-footer";
@@ -71,6 +72,12 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
         select: {
           name: true,
           slug: true,
+          customCss: true,
+          ownerUser: {
+            select: {
+              plan: true,
+            },
+          },
           offlinePaymentsEnabled: true,
           stripeChargesEnabled: true,
           stripePayoutsEnabled: true,
@@ -132,8 +139,18 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
       ? "authorize_net"
       : null;
 
+  const ownerPlan = getPlanOrDefault(cart.store.ownerUser?.plan);
+  const limits = getPlanLimits(ownerPlan);
+  const canInjectCss = limits.allowCustomCss && Boolean(cart.store.customCss);
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      {canInjectCss ? (
+        <style
+          id="prado-checkout-custom-css"
+          dangerouslySetInnerHTML={{ __html: cart.store.customCss! }}
+        />
+      ) : null}
       <StorefrontNavbar
         storeName={cart.store.name}
         basePath={base}

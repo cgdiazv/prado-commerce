@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifySecret } from "@/lib/credentials";
 import { buildSessionCookieValue, CASHIER_COOKIE, CashierSessionData } from "@/lib/session";
 import { resolvePosSettings } from "@/lib/pos/settings";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import type { PosCashier } from "@/types/dashboard";
 
 const SESSION_COOKIE = "prado_session";
@@ -167,7 +168,15 @@ export async function POST(request: Request) {
       const ownerUser = matchedStore.ownerUser;
       const ownerEmail = ownerUser?.email || email;
       const ownerSessionVersion = ownerUser?.sessionVersion ?? 0;
-      const ownerPlan = ownerUser?.plan || "STARTER";
+      const ownerPlan = getPlanOrDefault(ownerUser?.plan);
+      const limits = getPlanLimits(ownerPlan);
+
+      if (!limits.allowPos) {
+        return NextResponse.json(
+          { error: "Point of Sale (POS) requires a Prado Commerce Pro or Enterprise subscription." },
+          { status: 403 },
+        );
+      }
 
       const cashierSession: CashierSessionData = {
         cashierId: matchedCashier.id,

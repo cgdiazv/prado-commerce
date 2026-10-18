@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import StorefrontShell from "../storefront-shell";
 
 type StorefrontSlugLayoutProps = {
@@ -18,6 +19,12 @@ export default async function StorefrontSlugLayout({ children, params }: Storefr
       logoUrl: true,
       activeTheme: true,
       mainColor: true,
+      customCss: true,
+      ownerUser: {
+        select: {
+          plan: true,
+        },
+      },
       categories: {
         orderBy: { name: "asc" },
         select: { id: true, name: true, slug: true },
@@ -31,9 +38,16 @@ export default async function StorefrontSlugLayout({ children, params }: Storefr
 
   const hdrs = await headers();
   const basePath = hdrs.get("x-storefront-subdomain") === "1" ? "" : `/storefront/${slug}`;
+  const ownerPlan = getPlanOrDefault(store.ownerUser?.plan);
+  const limits = getPlanLimits(ownerPlan);
 
   return (
-    <StorefrontShell store={store} categories={store.categories} basePath={basePath}>
+    <StorefrontShell
+      store={store}
+      categories={store.categories}
+      basePath={basePath}
+      allowCustomCss={limits.allowCustomCss}
+    >
       {children}
     </StorefrontShell>
   );

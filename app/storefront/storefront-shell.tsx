@@ -13,12 +13,20 @@ type StorefrontShellProps = {
     logoUrl: string | null;
     activeTheme: StorefrontTheme;
     mainColor: string;
+    customCss?: string | null;
   };
   categories: StorefrontCategory[];
   basePath?: string;
+  allowCustomCss?: boolean;
 };
 
-export default function StorefrontShell({ children, store, categories, basePath = "" }: StorefrontShellProps) {
+export default function StorefrontShell({
+  children,
+  store,
+  categories,
+  basePath = "",
+  allowCustomCss = false,
+}: StorefrontShellProps) {
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
 
@@ -27,6 +35,12 @@ export default function StorefrontShell({ children, store, categories, basePath 
       style={getStoreBrandingCssVars(store.mainColor) as CSSProperties}
       className={`flex min-h-screen flex-col ${themeClasses.shell}`}
     >
+      {allowCustomCss && store.customCss ? (
+        <style
+          id="prado-storefront-custom-css"
+          dangerouslySetInnerHTML={{ __html: store.customCss }}
+        />
+      ) : null}
       <StorefrontNavbar
         storeName={store.name}
         logoUrl={store.logoUrl}

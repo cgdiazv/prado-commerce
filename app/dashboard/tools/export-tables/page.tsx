@@ -23,24 +23,38 @@ export default function ExportTablesPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadStores() {
-      try {
-        const response = await fetch("/api/stores", { cache: "no-store" });
-        const payload = await response.json() as Array<{ id: string; name: string }>;
+  const [userPlan, setUserPlan] = useState<string>("STARTER");
 
-        if (!response.ok) {
-          throw new Error("Could not load stores");
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [storesRes, userRes] = await Promise.all([
+          fetch("/api/stores", { cache: "no-store" }),
+          fetch("/api/auth/me", { cache: "no-store" }),
+        ]);
+
+        const payload = (await storesRes.json()) as Array<{ id: string; name: string }>;
+        if (storesRes.ok) {
+          setStores(payload);
+          setSelectedStoreId(payload[0]?.id ?? "");
         }
 
-        setStores(payload);
-        setSelectedStoreId(payload[0]?.id ?? "");
+        if (userRes.ok) {
+          const userData = (await userRes.json()) as { user?: { plan?: string } };
+          if (userData?.user?.plan) {
+            setUserPlan(userData.user.plan);
+          }
+        }
       } catch {
-        setError(isEs ? "No se pudieron cargar las tiendas. Actualiza e inténtalo de nuevo." : "Could not load stores. Refresh and try again.");
+        setError(
+          isEs
+            ? "No se pudieron cargar las tiendas. Actualiza e inténtalo de nuevo."
+            : "Could not load stores. Refresh and try again."
+        );
       }
     }
 
-    void loadStores();
+    void loadData();
   }, [isEs]);
 
   async function handleExport(event: React.FormEvent<HTMLFormElement>) {
@@ -125,6 +139,29 @@ export default function ExportTablesPage() {
           </p>
         </div>
       </div>
+
+      {userPlan === "STARTER" ? (
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-cyan-950">
+                {isEs ? "Exportación CSV/JSON exclusiva de Pro & Enterprise" : "CSV/JSON Export is a Pro & Enterprise feature"}
+              </p>
+              <p className="mt-1 text-xs text-cyan-800 leading-relaxed">
+                {isEs
+                  ? "Estás en el plan Starter. La descarga y sincronización de catálogos y clientes en CSV/JSON está reservada para comerciantes Pro y Enterprise."
+                  : "You are on the Starter plan. Downloading and synchronizing catalogs and customers in CSV/JSON is reserved for Pro and Enterprise merchants."}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/settings/manage-plan-panel"
+              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              {isEs ? "Actualizar a Pro" : "Upgrade to Pro"}
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={handleExport} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-3">

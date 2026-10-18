@@ -82,6 +82,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
           heroButtonText: true,
           activeTheme: true,
           customDomain: true,
+          customCss: true,
           stripeConnectAccountId: true,
           stripeChargesEnabled: true,
           stripePayoutsEnabled: true,
@@ -278,6 +279,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       invoiceFooterText,
       invoicePrefix,
       nextInvoiceNumber,
+      customCss,
     } = body as {
       name?: string;
       slug?: string;
@@ -309,6 +311,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       invoiceFooterText?: string | null;
       invoicePrefix?: string | null;
       nextInvoiceNumber?: number;
+      customCss?: string | null;
     };
 
     const updates: {
@@ -322,6 +325,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       heroButtonText?: string | null;
       activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
       customDomain?: string | null;
+      customCss?: string | null;
       mainColor?: string;
       currency?: string;
       timezone?: string;
@@ -408,6 +412,22 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           { status: 403 },
         );
       }
+    }
+
+    if (customCss !== undefined) {
+      const cssValue = typeof customCss === "string" ? customCss.trim() : null;
+      if (cssValue) {
+        const ownerPlan = getPlanOrDefault(owned.ownerUser?.plan);
+        const limits = getPlanLimits(ownerPlan);
+
+        if (!limits.allowCustomCss) {
+          return NextResponse.json(
+            { error: "Custom CSS styling requires a Prado Commerce Pro or Enterprise subscription." },
+            { status: 403 },
+          );
+        }
+      }
+      updates.customCss = cssValue || null;
     }
 
     if (typeof currency === "string" && currency.trim()) {
@@ -567,6 +587,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         heroButtonText: true,
         activeTheme: true,
         customDomain: true,
+        customCss: true,
         stripeConnectAccountId: true,
         stripeChargesEnabled: true,
         stripePayoutsEnabled: true,

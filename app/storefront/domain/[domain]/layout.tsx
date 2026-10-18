@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import StorefrontShell from "../../storefront-shell";
 
 type CustomDomainLayoutProps = {
@@ -22,6 +23,12 @@ export default async function CustomDomainLayout({ children, params }: CustomDom
       logoUrl: true,
       activeTheme: true,
       mainColor: true,
+      customCss: true,
+      ownerUser: {
+        select: {
+          plan: true,
+        },
+      },
       categories: {
         orderBy: { name: "asc" },
         select: { id: true, name: true, slug: true },
@@ -33,8 +40,15 @@ export default async function CustomDomainLayout({ children, params }: CustomDom
     notFound();
   }
 
+  const ownerPlan = getPlanOrDefault(store.ownerUser?.plan);
+  const limits = getPlanLimits(ownerPlan);
+
   return (
-    <StorefrontShell store={store} categories={store.categories}>
+    <StorefrontShell
+      store={store}
+      categories={store.categories}
+      allowCustomCss={limits.allowCustomCss}
+    >
       {children}
     </StorefrontShell>
   );

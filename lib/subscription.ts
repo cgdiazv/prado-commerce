@@ -5,6 +5,9 @@ type PlanLimits = {
   maxProductsPerStore: number;
   allowCustomDomains: boolean;
   allowShipStation: boolean;
+  allowPos: boolean;
+  allowCsvExport: boolean;
+  allowCustomCss: boolean;
   apiRateLimitPerMinute: number;
   platformFeeRate: number;
 };
@@ -15,14 +18,20 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     maxProductsPerStore: 50,
     allowCustomDomains: false,
     allowShipStation: false,
+    allowPos: false,
+    allowCsvExport: false,
+    allowCustomCss: false,
     apiRateLimitPerMinute: 60,
-    platformFeeRate: 0,
+    platformFeeRate: 0.02, // 2% platform transaction fee on Free/Starter tier
   },
   PRO: {
     maxStores: 5,
     maxProductsPerStore: Number.POSITIVE_INFINITY,
     allowCustomDomains: true,
     allowShipStation: false,
+    allowPos: true,
+    allowCsvExport: true,
+    allowCustomCss: true,
     apiRateLimitPerMinute: 1000,
     platformFeeRate: 0,
   },
@@ -31,6 +40,9 @@ const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     maxProductsPerStore: Number.POSITIVE_INFINITY,
     allowCustomDomains: true,
     allowShipStation: true,
+    allowPos: true,
+    allowCsvExport: true,
+    allowCustomCss: true,
     apiRateLimitPerMinute: Number.POSITIVE_INFINITY,
     platformFeeRate: 0,
   },

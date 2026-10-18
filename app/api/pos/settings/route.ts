@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, getCurrentUserFromRequest } from "@/lib/session";
 import { resolvePosSettings } from "@/lib/pos/settings";
+import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import type { PosStoreSettings, PosTerminal, PosCashier } from "@/types/dashboard";
 
 export async function GET(request: Request) {
@@ -12,6 +13,14 @@ export async function GET(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limits = getPlanLimits(getPlanOrDefault(user.plan));
+    if (!limits.allowPos) {
+      return NextResponse.json(
+        { error: "Point of Sale (POS) requires a Prado Commerce Pro or Enterprise subscription." },
+        { status: 403 },
+      );
     }
 
     let targetStoreId = storeId;
@@ -62,6 +71,14 @@ export async function POST(request: Request) {
     const user = (await getCurrentUser()) ?? (await getCurrentUserFromRequest(request));
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limits = getPlanLimits(getPlanOrDefault(user.plan));
+    if (!limits.allowPos) {
+      return NextResponse.json(
+        { error: "Point of Sale (POS) requires a Prado Commerce Pro or Enterprise subscription." },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
