@@ -168,7 +168,7 @@ function SignupQuestionnaireWizardContent() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <section className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+      <section className="relative w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-6 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
           <Link href="/" className="inline-block transition hover:opacity-85">
             <PradoLogo theme="light" />
@@ -194,7 +194,7 @@ function SignupQuestionnaireWizardContent() {
         </div>
 
         {status === "success" && onboardUrl ? (
-          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-8 text-center backdrop-blur-md animate-in fade-in zoom-in-95">
+          <div className="mt-8 rounded-lg border border-emerald-200 bg-emerald-50/80 p-8 text-center backdrop-blur-md animate-in fade-in zoom-in-95">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300 mb-4 shadow-sm">
               <CheckCircle2 className="h-8 w-8" />
             </div>
@@ -205,7 +205,7 @@ function SignupQuestionnaireWizardContent() {
             <div className="mt-6">
               <a
                 href={onboardUrl}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-cyan-700 shadow-md shadow-cyan-600/25"
+                className="inline-flex items-center gap-2 rounded-md bg-cyan-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-cyan-700 shadow-md shadow-cyan-600/25"
               >
                 Set Your Password & Enter Dashboard <ChevronRight className="h-4 w-4" />
               </a>
@@ -218,7 +218,7 @@ function SignupQuestionnaireWizardContent() {
               <div className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
                 <div>
                   {selectedPlan && selectedPlan !== "Starter" && (
-                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
                       <ShieldCheck className="h-3.5 w-3.5 text-cyan-600" />
                       Selected Plan: <span className="font-bold text-cyan-900">{selectedPlan}</span> ({intervalParam === "year" ? "Annual" : "Monthly"})
                     </div>
@@ -240,7 +240,7 @@ function SignupQuestionnaireWizardContent() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Jane Merchant"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                      className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
 
@@ -254,7 +254,7 @@ function SignupQuestionnaireWizardContent() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="jane@yourbrand.com"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                      className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
 
@@ -267,7 +267,7 @@ function SignupQuestionnaireWizardContent() {
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
                       placeholder="e.g. Acme Goods"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                      className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                     />
                   </label>
                 </div>
@@ -298,13 +298,13 @@ function SignupQuestionnaireWizardContent() {
                           key={cat.id}
                           type="button"
                           onClick={() => setBusinessCategory(cat.id)}
-                          className={`flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
+                          className={`flex flex-col items-start p-3.5 rounded-md border text-left transition-all ${
                             selected
                               ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
                               : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
                           }`}
                         >
-                          <div className={`p-2 rounded-lg mb-2 ${selected ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                          <div className={`p-2 rounded mb-2 ${selected ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                             <Icon className="h-4 w-4" />
                           </div>
                           <span className="text-xs font-bold text-slate-900">{cat.label}</span>
@@ -328,7 +328,7 @@ function SignupQuestionnaireWizardContent() {
                           key={size.id}
                           type="button"
                           onClick={() => setCatalogSize(size.id)}
-                          className={`p-3.5 rounded-xl border text-left transition-all ${
+                          className={`p-3.5 rounded-md border text-left transition-all ${
                             selected
                               ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
                               : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
@@ -359,13 +359,13 @@ function SignupQuestionnaireWizardContent() {
                           key={ch.id}
                           type="button"
                           onClick={() => toggleChannel(ch.id)}
-                          className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${
+                          className={`flex items-center gap-3 p-3.5 rounded-md border text-left transition-all ${
                             isChecked
                               ? "border-cyan-600 bg-cyan-50/80 ring-1 ring-cyan-600/40 shadow-xs"
                               : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"
                           }`}
                         >
-                          <div className={`p-2 rounded-lg ${isChecked ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                          <div className={`p-2 rounded ${isChecked ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -406,7 +406,7 @@ function SignupQuestionnaireWizardContent() {
                           key={t.id}
                           type="button"
                           onClick={() => setPreferredTheme(t.id)}
-                          className={`relative p-4 rounded-xl border bg-gradient-to-b text-left transition-all ${
+                          className={`relative p-4 rounded-md border bg-gradient-to-b text-left transition-all ${
                             t.colorClass
                           } ${
                             selected
@@ -435,7 +435,7 @@ function SignupQuestionnaireWizardContent() {
                   <select
                     value={primaryCurrency}
                     onChange={(e) => setPrimaryCurrency(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                    className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                   >
                     <option value="USD">USD ($) - US Dollar</option>
                     <option value="HNL">HNL (L) - Honduran Lempira</option>
@@ -448,7 +448,7 @@ function SignupQuestionnaireWizardContent() {
                   </select>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 leading-relaxed flex items-center gap-2">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 leading-relaxed flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-cyan-600 shrink-0" />
                   <div>
                     <span className="text-slate-900 font-semibold">Pro-tip:</span> You can create multiple storefronts and customize custom domains, Stripe connected payments, and inventory suppliers after completing account activation.
@@ -459,7 +459,7 @@ function SignupQuestionnaireWizardContent() {
 
             {/* Error Message Display */}
             {message && (
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="mt-4 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {message}
               </div>
             )}
@@ -470,7 +470,7 @@ function SignupQuestionnaireWizardContent() {
                 <button
                   type="button"
                   onClick={() => setStep((current) => (current - 1) as 1 | 2)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   <ChevronLeft className="h-4 w-4" /> Back
                 </button>
@@ -481,7 +481,7 @@ function SignupQuestionnaireWizardContent() {
               <button
                 type="submit"
                 disabled={status === "saving"}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:opacity-60 shadow-md shadow-cyan-600/20"
+                className="inline-flex items-center gap-2 rounded-md bg-cyan-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:opacity-60 shadow-md shadow-cyan-600/20"
               >
                 {status === "saving" ? (
                   "Saving Profile..."

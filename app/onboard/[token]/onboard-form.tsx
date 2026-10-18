@@ -64,7 +64,7 @@ export function OnboardForm({ token }: { token: string }) {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <section className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+      <section className="relative w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
         <Link href="/" className="inline-block transition hover:opacity-85">
           <PradoLogo theme="light" />
         </Link>
@@ -83,7 +83,7 @@ export function OnboardForm({ token }: { token: string }) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Create a secure password"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
               />
               <button
                 type="button"
@@ -105,7 +105,7 @@ export function OnboardForm({ token }: { token: string }) {
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Repeat your password"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                className="w-full rounded-md border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
               />
               <button
                 type="button"
@@ -119,7 +119,7 @@ export function OnboardForm({ token }: { token: string }) {
           </label>
 
           {error ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+            <p className="rounded-md border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700">
               {error}
             </p>
           ) : null}
@@ -127,7 +127,7 @@ export function OnboardForm({ token }: { token: string }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex w-full items-center justify-center rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-cyan-600/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center rounded-md bg-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-cyan-600/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Saving password..." : "Create password"}
           </button>
