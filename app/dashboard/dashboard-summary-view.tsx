@@ -75,18 +75,17 @@ export function DashboardSummaryView({
 
       <div className="space-y-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {t.dashboard.overviewBadge}
-            </p>
-            <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
-              {currentPlan}
-            </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+              {t.dashboard.consoleTitle}
+            </h1>
+            {currentPlan ? (
+              <span className="inline-flex items-center rounded-md bg-[#e6f7fa] px-2 py-0.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#0891b2]">
+                {currentPlan}
+              </span>
+            ) : null}
           </div>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-            {t.dashboard.consoleTitle}
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-500">
+          <p className="mt-1.5 max-w-2xl text-sm text-slate-500">
             {t.dashboard.consoleSubtitle}
           </p>
         </div>
@@ -104,7 +103,7 @@ export function DashboardSummaryView({
             return (
               <div
                 key={card.label}
-                className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs"
+                className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs"
               >
                 <div className="flex items-center justify-between text-slate-500">
                   <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">

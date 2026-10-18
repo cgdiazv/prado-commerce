@@ -167,12 +167,7 @@ export default function ReceiptsClient({ initialReceipts, stores }: ReceiptsClie
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Compras" : "Procurement"}
-            </span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {isEs ? "Historial de Ingresos de Mercancía" : "Goods Receiving History"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -284,7 +279,7 @@ export default function ReceiptsClient({ initialReceipts, stores }: ReceiptsClie
         </div>
 
       {/* Receipts List Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+      <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
         {filteredReceipts.length === 0 ? (
           <div className="p-12 text-center">
             <PackageCheck className="mx-auto h-12 w-12 text-slate-300" />

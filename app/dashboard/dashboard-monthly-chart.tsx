@@ -81,7 +81,7 @@ export function DashboardMonthlyChart({
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+    <div className="rounded-[8px] border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
         <div>

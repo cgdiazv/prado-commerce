@@ -98,3 +98,50 @@ body {
     border: none !important;
   }
 }
+
+/* Dashboard containers and fields corner radius harmonization (8px, matching home page) */
+[data-route-kind="dashboard"] .rounded-3xl,
+[data-route-kind="dashboard"] .rounded-2xl,
+[data-route-kind="dashboard"] .rounded-xl,
+[data-route-kind="dashboard"] .rounded-lg {
+  border-radius: 8px !important;
+}
+
+[data-route-kind="dashboard"] .rounded-t-3xl,
+[data-route-kind="dashboard"] .rounded-t-2xl,
+[data-route-kind="dashboard"] .rounded-t-xl,
+[data-route-kind="dashboard"] .rounded-t-lg {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+[data-route-kind="dashboard"] .rounded-b-3xl,
+[data-route-kind="dashboard"] .rounded-b-2xl,
+[data-route-kind="dashboard"] .rounded-b-xl,
+[data-route-kind="dashboard"] .rounded-b-lg {
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+[data-route-kind="dashboard"] .rounded-l-3xl,
+[data-route-kind="dashboard"] .rounded-l-2xl,
+[data-route-kind="dashboard"] .rounded-l-xl,
+[data-route-kind="dashboard"] .rounded-l-lg {
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+}
+
+[data-route-kind="dashboard"] .rounded-r-3xl,
+[data-route-kind="dashboard"] .rounded-r-2xl,
+[data-route-kind="dashboard"] .rounded-r-xl,
+[data-route-kind="dashboard"] .rounded-r-lg {
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+[data-route-kind="dashboard"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-route-kind="dashboard"] select,
+[data-route-kind="dashboard"] textarea {
+  border-radius: 8px !important;
+}
+

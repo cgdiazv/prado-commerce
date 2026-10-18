@@ -206,10 +206,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
       <section className="min-w-0 space-y-6 print:hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
           <div>
-            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Procesar Pedido" : "Process Order"}
-            </p>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
                 {isEs ? "Pedido #" : "Order #"}{(order.store.invoicePrefix || "INV-").trim()}{order.orderNumber}
               </h1>

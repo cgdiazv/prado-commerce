@@ -215,10 +215,7 @@ export function NewStoreForm({ currentPlan, initialStoreCount, setupError = null
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {isEs ? "Nueva tienda" : "New store"}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-950">
+          <h1 className="text-2xl font-semibold text-slate-950">
             {isEs ? "Crear una nueva tienda" : "Create a new storefront"}
           </h1>
         </div>

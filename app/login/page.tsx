@@ -60,7 +60,7 @@ function LoginPageContent() {
 
       <section className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
         <Link href="/" className="inline-block transition hover:opacity-85">
-          <PradoLogo theme="light" subtitle={t.common.logoSubtitle} size="md" />
+          <PradoLogo theme="light" />
         </Link>
 
         <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t.login.title}</h1>

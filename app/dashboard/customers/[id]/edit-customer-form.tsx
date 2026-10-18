@@ -190,13 +190,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
     <section className="min-w-0 space-y-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <Link
-            href="/dashboard/customers"
-            className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-          >
-            {isEs ? "Clientes" : "Customers"}
-          </Link>
-          <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+          <h2 className="text-2xl font-semibold text-slate-950">
             {isEs ? "Actualizar perfil de cliente" : "Update customer profile"}
           </h2>
         </div>

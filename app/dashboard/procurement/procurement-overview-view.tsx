@@ -51,10 +51,7 @@ export function ProcurementOverviewView({
       {/* Page Title & Quick Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            {isEs ? "Compras" : "Procurement"}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
             {isEs ? "Centro de Compras" : "Procurement & ERP Center"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -83,7 +80,7 @@ export function ProcurementOverviewView({
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Proveedores Activos" : "Active Vendors"}
@@ -96,7 +93,7 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Órdenes Abiertas" : "Open POs"}
@@ -109,7 +106,7 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Unidades Entrantes" : "Incoming Units"}
@@ -122,7 +119,7 @@ export function ProcurementOverviewView({
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Total de Órdenes" : "Receiving Status"}
@@ -139,7 +136,7 @@ export function ProcurementOverviewView({
       {/* Grid Section: Recent POs & Top Vendors */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Purchase Orders Table */}
-        <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="lg:col-span-2 rounded-[8px] border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-bold text-slate-900">
               {isEs ? "Órdenes de Compra Recientes" : "Recent Purchase Orders"}

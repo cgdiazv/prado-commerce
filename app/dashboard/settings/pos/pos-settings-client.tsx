@@ -360,10 +360,7 @@ export function PosSettingsClient({
       {/* Header */}
       <div className="w-full">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            {isEs ? "Configuración" : "Settings"}
-          </p>
-          <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
                 {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
@@ -427,7 +424,7 @@ export function PosSettingsClient({
       )}
 
       {/* Main Tabs Container */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-[8px] border border-slate-200 bg-white shadow-xs overflow-hidden">
         {/* Navigation Tabs Header */}
         <div className="flex border-b border-slate-200 bg-slate-50/70 px-4 pt-2">
           <button

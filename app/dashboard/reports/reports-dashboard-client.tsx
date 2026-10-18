@@ -194,12 +194,7 @@ export default function ReportsDashboardClient({
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Reportes" : "Reports"}
-            </span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {isEs ? "Reportes de Ventas" : "Sales Reports"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -238,7 +233,7 @@ export default function ReportsDashboardClient({
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Ventas Totales" : "Total Revenue"}
@@ -253,7 +248,7 @@ export default function ReportsDashboardClient({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Pedidos Realizados" : "Orders Count"}
@@ -268,7 +263,7 @@ export default function ReportsDashboardClient({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Ticket Promedio" : "Average Order Value"}
@@ -283,7 +278,7 @@ export default function ReportsDashboardClient({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
+        <div className="rounded-[8px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Clientes con Compras" : "Active Customers"}
@@ -633,7 +628,7 @@ export default function ReportsDashboardClient({
 
       {/* TAB 1: CUSTOMERS SALES REPORT */}
       {activeTab === "customers" && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
           {filteredCustomers.length === 0 ? (
             <div className="p-12 text-center">
               <Users className="mx-auto h-12 w-12 text-slate-300" />
@@ -797,7 +792,7 @@ export default function ReportsDashboardClient({
       {activeTab === "brands" && (
         <div className="space-y-6">
           {/* Brands Table */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+          <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
             {filteredBrands.length === 0 ? (
               <div className="p-12 text-center">
                 <Tag className="mx-auto h-12 w-12 text-slate-300" />

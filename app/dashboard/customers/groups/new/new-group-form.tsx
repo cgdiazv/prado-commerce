@@ -102,15 +102,7 @@ export function NewCustomerGroupForm({
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/dashboard/customers"
-              className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              {isEs ? "Clientes" : "Customers"}
-            </Link>
-          </div>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Crear Grupo de Clientes" : "Create Customer Group"}
           </h1>
           <p className="mt-1 max-w-xl text-sm text-slate-500">

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { ShoppingBag, ShoppingCart, Store, Package, Layers, Sparkles, LayoutGrid, Boxes } from 'lucide-react';
 
 export type PradoCommerceIconType =
   | 'shopping-bag'
@@ -28,91 +27,43 @@ export interface PradoLogoProps {
 export function PradoLogo({
   theme = 'light',
   title = 'Prado Commerce',
-  subtitle = 'Unified E-Commerce',
+  subtitle = 'UNIFIED E-COMMERCE',
   badgeText,
   size = 'md',
-  iconType = 'shopping-bag',
   className = '',
-  accentColor = 'cyan',
   hideSubtitle = false,
 }: PradoLogoProps) {
   const isDark = theme === 'dark';
 
-  const badgeSizeClasses = {
-    sm: 'p-1.5 rounded-lg',
-    md: 'p-2 rounded-xl',
-    lg: 'p-2.5 rounded-xl',
-  }[size];
-
-  const iconPxSize = {
-    sm: 16,
-    md: 20,
-    lg: 24,
-  }[size];
-
-  const titleSizeClasses = {
-    sm: 'text-base',
-    md: 'text-xl',
-    lg: 'text-2xl',
-  }[size];
-
-  const accentClasses = {
-    cyan: 'bg-cyan-500 text-white shadow-cyan-500/30',
-    teal: 'bg-teal-500 text-white shadow-teal-500/30',
-    emerald: 'bg-emerald-500 text-white shadow-emerald-500/30',
-    amber: 'bg-amber-400 text-white shadow-amber-200/80',
-  }[accentColor];
-
-  const subtitleColor = {
-    cyan: isDark ? 'text-cyan-400/90' : 'text-slate-500',
-    teal: isDark ? 'text-teal-400/90' : 'text-slate-500',
-    emerald: isDark ? 'text-emerald-400/90' : 'text-slate-500',
-    amber: isDark ? 'text-amber-400/90' : 'text-slate-500',
-  }[accentColor];
-
-  const renderIcon = () => {
-    switch (iconType) {
-      case 'shopping-cart':
-        return <ShoppingCart size={iconPxSize} className="shrink-0 text-white" />;
-      case 'store':
-        return <Store size={iconPxSize} className="shrink-0 text-white" />;
-      case 'package':
-        return <Package size={iconPxSize} className="shrink-0 text-white" />;
-      case 'layers':
-        return <Layers size={iconPxSize} className="shrink-0 text-white" />;
-      case 'sparkles':
-        return <Sparkles size={iconPxSize} className="shrink-0 text-white" />;
-      case 'grid':
-        return <LayoutGrid size={iconPxSize} className="shrink-0 text-white" />;
-      case 'boxes':
-        return <Boxes size={iconPxSize} className="shrink-0 text-white" />;
-      case 'shopping-bag':
-      default:
-        return <ShoppingBag size={iconPxSize} className="shrink-0 text-white" />;
-    }
-  };
+  const imgSizeClass = {
+    sm: 'h-8 w-8',
+    md: 'h-8 w-8',
+    lg: 'h-9 w-9',
+  }[size] || 'h-8 w-8';
 
   return (
-    <div className={`group flex items-center gap-2.5 select-none ${className}`}>
-      {/* Icon container styled matching Prado Fleet & ERP rounded badge */}
-      <div
-        className={`${badgeSizeClasses} ${accentClasses} shadow-sm transition-transform group-hover:scale-105 shrink-0 flex items-center justify-center`}
-      >
-        {renderIcon()}
-      </div>
-
-      {/* Brand Text Stack */}
-      <div className="flex flex-col justify-center">
+    <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/figma/logo-symbol.png"
+        alt="Prado Commerce Logo"
+        className={`${imgSizeClass} object-contain shrink-0`}
+      />
+      <div className="flex flex-col">
         <div className="flex items-center gap-1.5 leading-none">
-          <span className={`font-sans ${titleSizeClasses} font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <span
+            className={`text-[17px] font-semibold leading-[21px] tracking-tight ${
+              isDark ? 'text-white' : 'text-[#030618]'
+            }`}
+          >
             {title}
           </span>
           {badgeText ? (
             <span
-              className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded border ${
+              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md tracking-wider ${
                 isDark
-                  ? 'bg-white/10 text-slate-200 border-white/20'
-                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                  ? 'bg-cyan-950/60 text-cyan-400'
+                  : 'bg-[#e6f7fa] text-[#0891b2]'
               }`}
             >
               {badgeText}
@@ -120,9 +71,13 @@ export function PradoLogo({
           ) : null}
         </div>
         {!hideSubtitle && subtitle ? (
-          <p className={`mt-0.5 text-[10px] font-medium uppercase tracking-widest ${subtitleColor}`}>
+          <span
+            className={`text-[10px] font-normal leading-[12px] tracking-widest uppercase ${
+              isDark ? 'text-slate-300' : 'text-[#030618]'
+            }`}
+          >
             {subtitle}
-          </p>
+          </span>
         ) : null}
       </div>
     </div>

@@ -269,10 +269,7 @@ export function BrandsDashboard({
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Productos" : "Products"}
-            </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Marcas y Fabricantes" : "Brands & Manufacturers"}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -339,7 +336,7 @@ export function BrandsDashboard({
         ) : null}
 
         {/* Brands Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
           {filteredBrands.length === 0 ? (
             <div className="p-10 text-center text-slate-500">
               <Tag className="mx-auto h-10 w-10 text-slate-300 mb-2" />

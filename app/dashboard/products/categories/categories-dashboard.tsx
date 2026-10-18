@@ -257,10 +257,7 @@ export function CategoriesDashboard({
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {isEs ? "Productos" : "Products"}
-            </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs
                 ? "Organiza tu catálogo con grupos claros de categorías."
                 : "Organize your catalog with clean category groups."}
@@ -308,7 +305,7 @@ export function CategoriesDashboard({
           </div>
         ) : null}
 
-        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-8 overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
           {activeStoreCategories.length === 0 ? (
             <div className="p-10 text-center text-slate-500">
               {activeStore

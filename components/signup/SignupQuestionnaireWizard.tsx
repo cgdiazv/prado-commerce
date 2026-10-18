@@ -171,7 +171,7 @@ function SignupQuestionnaireWizardContent() {
       <section className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
           <Link href="/" className="inline-block transition hover:opacity-85">
-            <PradoLogo theme="light" subtitle="Merchant Onboarding" size="md" />
+            <PradoLogo theme="light" />
           </Link>
           <div className="flex items-center gap-2">
             {[1, 2, 3].map((i) => (

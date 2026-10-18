@@ -66,7 +66,7 @@ export function OnboardForm({ token }: { token: string }) {
 
       <section className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
         <Link href="/" className="inline-block transition hover:opacity-85">
-          <PradoLogo theme="light" subtitle="Unified E-Commerce" size="md" />
+          <PradoLogo theme="light" />
         </Link>
         <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Set your password</h1>
         <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">

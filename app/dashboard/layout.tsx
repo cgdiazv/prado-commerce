@@ -483,8 +483,8 @@ export default function DashboardLayout({
     >
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
-          <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="flex items-center gap-2">
-            <PradoLogo theme="light" subtitle={currentUser?.isCashier ? (language === "es" ? "Punto de Venta" : "Point of Sale") : t.dashboard.merchantDashboard} size="sm" />
+          <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="inline-flex items-center gap-2.5 transition hover:opacity-85">
+            <PradoLogo theme="light" />
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
@@ -614,8 +614,8 @@ export default function DashboardLayout({
           />
           <aside className="relative flex h-full w-72 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 shadow-2xl backdrop-blur-xl sm:w-80">
             <div className="mb-4 flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                <PradoLogo theme="light" subtitle={t.dashboard.merchantDashboard} size="sm" />
+              <Link href="/dashboard" className="inline-flex items-center gap-2.5 transition hover:opacity-85" onClick={() => setIsMobileMenuOpen(false)}>
+                <PradoLogo theme="light" />
               </Link>
               <button
                 type="button"

@@ -333,12 +333,7 @@ export function ProductsDashboard({
         ) : null}
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                {isEs ? "Productos" : "Products"}
-              </p>
-            </div>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs
                 ? "Crea productos, variantes y precios para tus tiendas."
                 : "Create products, variants, and storefront pricing."}
@@ -652,7 +647,7 @@ export function ProductsDashboard({
           </div>
         ) : null}
 
-        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-8 overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
           {totalProducts === 0 ? (
             <div className="p-10 text-center text-slate-500">
               {isEs ? "Aún no hay productos para esta tienda." : "No products yet for this store."}

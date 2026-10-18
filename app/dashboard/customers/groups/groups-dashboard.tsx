@@ -163,15 +163,7 @@ export function GroupsDashboard({
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/dashboard/customers"
-              className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              {isEs ? "Clientes" : "Customers"}
-            </Link>
-          </div>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {isEs ? "Grupos de Clientes" : "Customer Groups"}
           </h1>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
@@ -370,7 +362,7 @@ export function GroupsDashboard({
       ) : null}
 
       {/* Groups List Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+      <div className="overflow-hidden rounded-[8px] border border-slate-200/80 bg-white shadow-xs">
         {activeGroups.length === 0 ? (
           <div className="p-12 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 mb-4">

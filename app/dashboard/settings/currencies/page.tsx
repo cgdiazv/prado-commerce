@@ -129,10 +129,7 @@ export default function CurrenciesPage() {
     <section className="space-y-4">
       <div className="w-full">
         <div>
-          <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            {isEs ? "Configuración" : "Settings"}
-          </p>
-          <div className="mt-1 flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Monedas e Internacionalización" : "Currencies"}
             </h1>

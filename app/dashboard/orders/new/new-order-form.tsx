@@ -162,10 +162,7 @@ export function NewOrderForm({ stores, selectedStoreId, setupError = null }: New
       ) : null}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {isEs ? "Pedidos" : "Orders"}
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            <h2 className="text-2xl font-semibold text-slate-950">
               {isEs ? "Crear pedido manual" : "Create manual order"}
             </h2>
           </div>

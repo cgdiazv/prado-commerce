@@ -290,7 +290,7 @@ export default function POListClient({
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
           {/* Top Pagination / Rows Per Page Bar */}
           <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-medium text-slate-600">
