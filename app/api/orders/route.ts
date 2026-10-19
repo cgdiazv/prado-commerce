@@ -123,6 +123,45 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "storeId is required" }, { status: 400 });
     }
 
+    if (targetStoreId === "ALL") {
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const ownedStores = await prisma.store.findMany({
+        where: { ownerUserId: user.id },
+        select: { id: true },
+      });
+      const storeIds = ownedStores.map((s) => s.id);
+
+      const orders = await prisma.order.findMany({
+        where: { storeId: { in: storeIds } },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          storeId: true,
+          orderNumber: true,
+          customerEmail: true,
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          status: true,
+          paymentStatus: true,
+          subtotal: true,
+          tax: true,
+          shipping: true,
+          total: true,
+          currency: true,
+          createdAt: true,
+        },
+      });
+
+      return NextResponse.json(orders.map(serializeOrder));
+    }
+
     const ownedStore = await prisma.store.findFirst({
       where: cashier
         ? { id: cashier.storeId }

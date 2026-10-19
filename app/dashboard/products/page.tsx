@@ -38,28 +38,46 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       },
     });
 
-    const selectedStoreId =
-      resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    const selectedStoreId = resolvedSearchParams?.storeId ?? "ALL";
 
-    const products = selectedStoreId
-      ? await prisma.product.findMany({
-          where: {
-            storeId: selectedStoreId,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          include: {
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
+    const products =
+      selectedStoreId === "ALL"
+        ? await prisma.product.findMany({
+            where: {
+              storeId: { in: stores.map((s) => s.id) },
             },
-            variants: true,
-          },
-        })
-      : [];
+            orderBy: {
+              createdAt: "desc",
+            },
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              variants: true,
+            },
+          })
+        : selectedStoreId
+          ? await prisma.product.findMany({
+              where: {
+                storeId: selectedStoreId,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              include: {
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                variants: true,
+              },
+            })
+          : [];
 
     const serializedProducts = JSON.parse(
       JSON.stringify(

@@ -99,9 +99,23 @@ export async function GET(request: Request) {
       );
     }
 
+    let storeCondition: { in: string[] } | string = targetStoreId;
+    if (targetStoreId === "ALL") {
+      const user = await getCurrentUserFromRequest(request);
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const ownedStores = await prisma.store.findMany({
+        where: { ownerUserId: user.id },
+        select: { id: true },
+      });
+      storeCondition = { in: ownedStores.map((s) => s.id) };
+    }
+
     const products = await prisma.product.findMany({
       where: {
-        storeId: targetStoreId,
+        storeId: storeCondition,
         ...(categoryId ? { categoryId } : {}),
         ...(validStatus ? { status: validStatus } : {}),
       },
@@ -110,6 +124,7 @@ export async function GET(request: Request) {
       },
       select: {
         id: true,
+        storeId: true,
         title: true,
         slug: true,
         description: true,

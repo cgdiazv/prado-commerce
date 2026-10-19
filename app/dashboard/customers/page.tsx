@@ -60,12 +60,19 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       },
     });
 
-    selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    selectedStoreId = resolvedSearchParams?.storeId ?? "ALL";
+
+    const storeIds =
+      selectedStoreId === "ALL"
+        ? stores.map((s) => s.id)
+        : selectedStoreId
+          ? [selectedStoreId]
+          : [];
 
     const [customers, customerGroups] = await Promise.all([
-      selectedStoreId
+      storeIds.length > 0
         ? prisma.customer.findMany({
-            where: { storeId: selectedStoreId },
+            where: { storeId: { in: storeIds } },
             orderBy: { createdAt: "desc" },
             select: {
               id: true,
@@ -103,9 +110,9 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
             },
           })
         : Promise.resolve([]),
-      selectedStoreId
+      storeIds.length > 0
         ? prisma.customerGroup.findMany({
-            where: { storeId: selectedStoreId },
+            where: { storeId: { in: storeIds } },
             orderBy: { name: "asc" },
             select: {
               id: true,

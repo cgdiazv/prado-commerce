@@ -29,6 +29,25 @@ export async function GET(request: Request) {
       return corsJson({ error: "storeId is required" }, { status: 400 });
     }
 
+    if (storeId === "ALL") {
+      const ownedStores = await prisma.store.findMany({
+        where: { ownerUserId: user.id },
+        select: { id: true },
+      });
+      const storeIds = ownedStores.map((s) => s.id);
+      const groups = await prisma.customerGroup.findMany({
+        where: { storeId: { in: storeIds } },
+        orderBy: { name: "asc" },
+        include: {
+          _count: {
+            select: { customers: true },
+          },
+        },
+      });
+
+      return corsJson(groups);
+    }
+
     const ownedStore = await prisma.store.findFirst({
       where: { id: storeId, ownerUserId: user.id },
       select: { id: true },

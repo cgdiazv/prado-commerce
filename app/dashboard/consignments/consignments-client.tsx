@@ -22,6 +22,8 @@ import {
   FileText,
   AlertCircle,
   TrendingUp,
+  Store,
+  ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -89,7 +91,7 @@ export function ConsignmentsClient({
   const isEs = language === "es";
 
   const [consignments, setConsignments] = useState<ConsignmentData[]>(initialConsignments);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>(stores[0]?.id || "");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<"ALL" | "RECEIVED" | "GIVEN">("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -151,7 +153,7 @@ export function ConsignmentsClient({
   // Filtered consignments
   const filteredConsignments = useMemo(() => {
     return consignments.filter((c) => {
-      if (selectedStoreId && c.storeId !== selectedStoreId) return false;
+      if (selectedStoreId && selectedStoreId !== "ALL" && c.storeId !== selectedStoreId) return false;
       if (activeTab !== "ALL" && c.type !== activeTab) return false;
       if (statusFilter !== "ALL" && c.status !== statusFilter) return false;
       if (searchTerm) {
@@ -358,22 +360,27 @@ export function ConsignmentsClient({
 
         <div className="flex items-center gap-3">
           {stores.length > 1 && (
-            <select
-              value={selectedStoreId}
-              onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-violet-500 focus:outline-none"
-            >
-              {stores.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative shrink-0">
+              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                value={selectedStoreId}
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-9 text-sm font-medium text-slate-700 shadow-sm focus:border-violet-500 focus:outline-none cursor-pointer hover:bg-slate-50 transition"
+              >
+                <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
           )}
 
           <button
             onClick={() => {
-              setNewStoreId(selectedStoreId || stores[0]?.id || "");
+              setNewStoreId(selectedStoreId !== "ALL" ? selectedStoreId : stores[0]?.id || "");
               setIsNewModalOpen(true);
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.98] transition-all"

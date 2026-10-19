@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Store, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Plus, Search, Store, SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -55,7 +55,7 @@ export function OrdersDashboard({
   const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [orders, setOrders] = useState(initialOrders);
-  const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
+  const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? "ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof Order | "paymentStatus">("createdAt");
@@ -81,7 +81,7 @@ export function OrdersDashboard({
   const visibleOrders = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filtered = orders.filter((order) => {
-      if (order.storeId !== activeStoreId) {
+      if (activeStoreId !== "ALL" && order.storeId !== activeStoreId) {
         return false;
       }
 
@@ -165,10 +165,14 @@ export function OrdersDashboard({
     }
 
     const data = (await response.json()) as Order[];
-    setOrders((current) => [
-      ...current.filter((order) => order.storeId !== storeId),
-      ...data,
-    ]);
+    if (storeId === "ALL") {
+      setOrders(data);
+    } else {
+      setOrders((current) => [
+        ...current.filter((order) => order.storeId !== storeId),
+        ...data,
+      ]);
+    }
   }
 
   async function handleStoreChange(storeId: string) {
@@ -334,12 +338,13 @@ export function OrdersDashboard({
     }
   }
 
-  const createHref = activeStoreId
-    ? `/dashboard/orders/new?storeId=${encodeURIComponent(activeStoreId)}`
+  const targetStoreId = activeStoreId !== "ALL" ? activeStoreId : stores[0]?.id;
+  const createHref = targetStoreId
+    ? `/dashboard/orders/new?storeId=${encodeURIComponent(targetStoreId)}`
     : "/dashboard/orders/new";
 
-  const posHref = activeStoreId
-    ? `/dashboard/orders/pos?storeId=${encodeURIComponent(activeStoreId)}`
+  const posHref = targetStoreId
+    ? `/dashboard/orders/pos?storeId=${encodeURIComponent(targetStoreId)}`
     : "/dashboard/orders/pos";
 
   return (
@@ -386,17 +391,22 @@ export function OrdersDashboard({
         <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
           <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
-            <select
-              value={activeStoreId}
-              onChange={(event) => void handleStoreChange(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-            >
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name} / {store.currency}
-                </option>
-              ))}
-            </select>
+            <div className="relative mt-2">
+              <Store className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                value={activeStoreId}
+                onChange={(event) => void handleStoreChange(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
+              >
+                <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name} {store.currency ? `(${store.currency})` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
           </div>
 
           <label className="w-full min-w-0 flex-1 flex-col gap-2">
@@ -554,17 +564,22 @@ export function OrdersDashboard({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <select
-                value={activeStoreId}
-                onChange={(event) => void handleStoreChange(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-slate-400"
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} / {store.currency}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={activeStoreId}
+                  onChange={(event) => void handleStoreChange(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm outline-none transition focus:border-slate-400 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name} {store.currency ? `(${store.currency})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              </div>
             </div>
           )}
 
@@ -824,7 +839,14 @@ export function OrdersDashboard({
                           className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                         />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">#{order.orderNumber}</td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
+                        <div className="font-semibold text-slate-900">#{order.orderNumber}</div>
+                        {activeStoreId === "ALL" && stores.length > 1 && (
+                          <div className="text-[11px] text-slate-400 font-normal">
+                            {stores.find((s) => s.id === order.storeId)?.name}
+                          </div>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">{order.customerEmail}</td>
                       <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
                         {statusLabels[order.status] ?? order.status}

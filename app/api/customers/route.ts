@@ -146,6 +146,9 @@ async function getAuthenticatedStoreId(
   // 3. Check Merchant Admin User session cookie
   const user = await getCurrentUserFromRequest(request);
   if (user) {
+    if (storeIdInput === "ALL") {
+      return { storeId: "ALL", authMethod: "MERCHANT_SESSION" };
+    }
     if (storeIdInput) {
       const ownedStore = await prisma.store.findFirst({
         where: { id: storeIdInput, ownerUserId: user.id },
@@ -190,8 +193,18 @@ export async function GET(request: Request) {
       return corsJson({ error: "Unauthorized" }, { status: 401 });
     }
 
+    let storeCondition: { in: string[] } | string = auth.storeId;
+    if (auth.storeId === "ALL") {
+      const user = await getCurrentUserFromRequest(request);
+      const ownedStores = await prisma.store.findMany({
+        where: { ownerUserId: user!.id },
+        select: { id: true },
+      });
+      storeCondition = { in: ownedStores.map((s) => s.id) };
+    }
+
     const customers = await prisma.customer.findMany({
-      where: { storeId: auth.storeId },
+      where: { storeId: storeCondition },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers } from "lucide-react";
+import { ChevronDown, Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Store = {
@@ -28,6 +28,7 @@ type ProductVariant = {
 
 type Product = {
   id: string;
+  storeId?: string;
   title: string;
   slug: string;
   description: string | null;
@@ -69,7 +70,7 @@ export function ProductsDashboard({
   const isEs = language === "es";
   const [stores] = useState(initialStores);
   const [products, setProducts] = useState(initialProducts);
-  const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? initialStores[0]?.id ?? "");
+  const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? "ALL");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("updated");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -89,18 +90,22 @@ export function ProductsDashboard({
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    if (!normalizedQuery) {
-      return products;
-    }
-
     return products.filter((product) => {
+      if (activeStoreId !== "ALL" && product.storeId && product.storeId !== activeStoreId) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
       return (
         product.title.toLowerCase().includes(normalizedQuery) ||
         product.slug.toLowerCase().includes(normalizedQuery) ||
         product.status.toLowerCase().includes(normalizedQuery)
       );
     });
-  }, [products, query]);
+  }, [products, query, activeStoreId]);
 
   const sortedProducts = useMemo(() => {
     const rows = [...filteredProducts];
@@ -399,7 +404,7 @@ export function ProductsDashboard({
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/dashboard/products/new"
+              href={`/dashboard/products/new${activeStoreId && activeStoreId !== "ALL" ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
               onClick={(event) => {
                 if (hasReachedProductLimit) {
                   event.preventDefault();
@@ -513,20 +518,25 @@ export function ProductsDashboard({
 
         {/* Desktop Controls (lg+) */}
         <div className="mt-8 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
-          <label className="flex w-full shrink-0 flex-col gap-2 lg:w-56">
+          <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
-            <select
-              value={activeStoreId}
-              onChange={(event) => void handleStoreChange(event.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-            >
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name} / {store.currency}
-                </option>
-              ))}
-            </select>
-          </label>
+            <div className="relative mt-2">
+              <Store className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                value={activeStoreId}
+                onChange={(event) => void handleStoreChange(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
+              >
+                <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name} {store.currency ? `(${store.currency})` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
+          </div>
           <label className="flex w-full min-w-0 flex-1 flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar productos" : "Search products"}</span>
             <div className="relative">
@@ -665,17 +675,22 @@ export function ProductsDashboard({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <select
-                value={activeStoreId}
-                onChange={(event) => void handleStoreChange(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-slate-400"
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} / {store.currency}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={activeStoreId}
+                  onChange={(event) => void handleStoreChange(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm outline-none transition focus:border-slate-400 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name} {store.currency ? `(${store.currency})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              </div>
             </div>
           )}
 
@@ -912,8 +927,15 @@ export function ProductsDashboard({
                             )}
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">
-                            <p className="text-slate-900">{product.title}</p>
-                            <p className="text-slate-500">/{product.slug}</p>
+                            <p className="font-medium text-slate-900">{product.title}</p>
+                            <p className="text-slate-500">
+                              /{product.slug}
+                              {activeStoreId === "ALL" && stores.length > 1 && product.storeId && (
+                                <span className="ml-1 text-slate-400">
+                                  • {stores.find((s) => s.id === product.storeId)?.name}
+                                </span>
+                              )}
+                            </p>
                           </td>
                           <td className="px-4 py-3 align-top">
                             <button

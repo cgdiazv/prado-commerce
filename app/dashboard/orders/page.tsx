@@ -50,34 +50,60 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       },
     });
 
-    const selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    const selectedStoreId = resolvedSearchParams?.storeId ?? "ALL";
 
-    const orders = selectedStoreId
-      ? await prisma.order.findMany({
-          where: { storeId: selectedStoreId },
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            storeId: true,
-            orderNumber: true,
-            customerEmail: true,
-            customer: {
-              select: {
-                firstName: true,
-                lastName: true,
+    const orders =
+      selectedStoreId === "ALL"
+        ? await prisma.order.findMany({
+            where: { storeId: { in: stores.map((s) => s.id) } },
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              storeId: true,
+              orderNumber: true,
+              customerEmail: true,
+              customer: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
               },
+              status: true,
+              paymentStatus: true,
+              subtotal: true,
+              tax: true,
+              shipping: true,
+              total: true,
+              currency: true,
+              createdAt: true,
             },
-            status: true,
-            paymentStatus: true,
-            subtotal: true,
-            tax: true,
-            shipping: true,
-            total: true,
-            currency: true,
-            createdAt: true,
-          },
-        })
-      : [];
+          })
+        : selectedStoreId
+          ? await prisma.order.findMany({
+              where: { storeId: selectedStoreId },
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                storeId: true,
+                orderNumber: true,
+                customerEmail: true,
+                customer: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                status: true,
+                paymentStatus: true,
+                subtotal: true,
+                tax: true,
+                shipping: true,
+                total: true,
+                currency: true,
+                createdAt: true,
+              },
+            })
+          : [];
 
     const serializedOrders = JSON.parse(
       JSON.stringify(
