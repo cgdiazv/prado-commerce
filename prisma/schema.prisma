@@ -69,6 +69,11 @@ model Store {
   authNetClientKey String?
   authNetTransKeyEncrypted String?
   authNetEnv     String     @default("sandbox")
+  pixelpayKey    String?
+  pixelpayAppId  String?
+  pixelpaySecretEncrypted String?
+  pixelpayEnv    String     @default("sandbox")
+  pixelpayEndpoint String?
   shipStationApiKeyEncrypted String?
   shipStationApiSecretEncrypted String?
   shipStationWebhookId String?

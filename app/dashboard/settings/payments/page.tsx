@@ -29,6 +29,11 @@ type StoreSummary = {
   authNetClientKey?: string | null;
   authNetEnv?: "sandbox" | "production" | string;
   authNetConfigured?: boolean;
+  pixelpayKey?: string | null;
+  pixelpayAppId?: string | null;
+  pixelpayEnv?: "sandbox" | "production" | string;
+  pixelpayEndpoint?: string | null;
+  pixelpayConfigured?: boolean;
 };
 
 export default function PaymentsPage() {
@@ -61,6 +66,14 @@ export default function PaymentsPage() {
   const [isAuthorizeNetExpanded, setIsAuthorizeNetExpanded] = useState(false);
   const [isDisconnectingAuthNet, setIsDisconnectingAuthNet] = useState(false);
   const [isSavingAuthNet, setIsSavingAuthNet] = useState(false);
+  const [pixelpayKey, setPixelpayKey] = useState("");
+  const [pixelpayAppId, setPixelpayAppId] = useState("");
+  const [pixelpaySecret, setPixelpaySecret] = useState("");
+  const [pixelpayEnv, setPixelpayEnv] = useState<"sandbox" | "production">("sandbox");
+  const [pixelpayEndpoint, setPixelpayEndpoint] = useState("");
+  const [isPixelpayExpanded, setIsPixelpayExpanded] = useState(false);
+  const [isDisconnectingPixelpay, setIsDisconnectingPixelpay] = useState(false);
+  const [isSavingPixelpay, setIsSavingPixelpay] = useState(false);
   const [isSavingOfflinePayments, setIsSavingOfflinePayments] = useState(false);
 
   async function refreshStripeStatus(storeId: string) {
@@ -94,6 +107,11 @@ export default function PaymentsPage() {
     setAuthNetClientKey(selected.authNetClientKey ?? "");
     setAuthNetTransKey("");
     setAuthNetEnv(selected.authNetEnv === "production" ? "production" : "sandbox");
+    setPixelpayKey(selected.pixelpayKey ?? "");
+    setPixelpayAppId(selected.pixelpayAppId ?? "");
+    setPixelpaySecret("");
+    setPixelpayEnv(selected.pixelpayEnv === "production" ? "production" : "sandbox");
+    setPixelpayEndpoint(selected.pixelpayEndpoint ?? "");
 
     if (selected.stripeConnectAccountId) {
       await refreshStripeStatus(selected.id);
@@ -167,13 +185,27 @@ export default function PaymentsPage() {
 
       try {
         const response = await fetch("/api/stores", { cache: "no-store" });
-        const fetchedStores = (await response.json()) as StoreSummary[];
+        const payload = await response.json();
 
         if (!response.ok) {
-          throw new Error(isEs ? "No se pudieron cargar las tiendas." : "Unable to load stores.");
+          if (response.status === 401) {
+            if (typeof window !== "undefined") {
+              window.location.href = "/login";
+            }
+            return;
+          }
+
+          const apiError =
+            typeof payload === "object" && payload !== null && "error" in payload
+              ? (payload as { error?: string }).error
+              : null;
+
+          throw new Error(
+            apiError || (isEs ? "No se pudieron cargar las tiendas." : "Unable to load stores.")
+          );
         }
 
-        const validStores = Array.isArray(fetchedStores) ? fetchedStores : [];
+        const validStores = Array.isArray(payload) ? (payload as StoreSummary[]) : [];
         setStores(validStores);
 
         if (validStores.length === 0) {
@@ -400,6 +432,118 @@ export default function PaymentsPage() {
       );
     } finally {
       setIsDisconnectingAuthNet(false);
+    }
+  }
+
+  async function handleSavePixelpay() {
+    setIsSavingPixelpay(true);
+
+    try {
+      await patchStorePaymentsSettings({
+        pixelpayKey,
+        pixelpayAppId,
+        pixelpaySecret: pixelpaySecret || undefined,
+        pixelpayEnv,
+        pixelpayEndpoint: pixelpayEndpoint || undefined,
+      });
+
+      const hasCredentials = Boolean(pixelpayKey.trim() && pixelpayAppId.trim());
+      const hasSecretInput = Boolean(pixelpaySecret.trim());
+
+      setStore((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          pixelpayKey: pixelpayKey.trim() || null,
+          pixelpayAppId: pixelpayAppId.trim() || null,
+          pixelpayEnv,
+          pixelpayEndpoint: pixelpayEndpoint.trim() || null,
+          pixelpayConfigured:
+            hasCredentials && (hasSecretInput || Boolean(current.pixelpayConfigured)),
+        };
+      });
+
+      setPixelpaySecret("");
+      alert(
+        isEs
+          ? "Configuración de Pixelpay guardada."
+          : "Pixelpay settings saved."
+      );
+    } catch (error) {
+      console.error("[PAYMENTS_PIXELPAY_SAVE_ERROR]", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : isEs
+          ? "No se pudo guardar la configuración de Pixelpay."
+          : "Unable to save Pixelpay settings."
+      );
+    } finally {
+      setIsSavingPixelpay(false);
+    }
+  }
+
+  async function handleDisconnectPixelpay() {
+    if (!store?.id) {
+      alert(isEs ? "Tienda no encontrada" : "Store not found");
+      return;
+    }
+
+    setIsDisconnectingPixelpay(true);
+
+    try {
+      const response = await fetch(`/api/stores/${store.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pixelpayKey: null,
+          pixelpayAppId: null,
+          pixelpaySecret: null,
+          pixelpayEnv: "sandbox",
+          pixelpayEndpoint: null,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ||
+            (isEs ? "No se pudo desconectar Pixelpay." : "Unable to disconnect Pixelpay.")
+        );
+      }
+
+      setPixelpayKey("");
+      setPixelpayAppId("");
+      setPixelpaySecret("");
+      setPixelpayEnv("sandbox");
+      setPixelpayEndpoint("");
+      setStore((current) =>
+        current
+          ? {
+              ...current,
+              pixelpayConfigured: false,
+              pixelpayKey: null,
+              pixelpayAppId: null,
+              pixelpayEnv: "sandbox",
+              pixelpayEndpoint: null,
+            }
+          : current
+      );
+    } catch (error) {
+      console.error("[PAYMENTS_PIXELPAY_DISCONNECT_ERROR]", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : isEs
+          ? "No se pudo desconectar Pixelpay."
+          : "Unable to disconnect Pixelpay."
+      );
+    } finally {
+      setIsDisconnectingPixelpay(false);
     }
   }
 
@@ -777,6 +921,199 @@ export default function PaymentsPage() {
                       className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isEs ? "Desconectar Authorize.net" : "Disconnect Authorize.net"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+
+            <article
+              className={`rounded-xl border p-5 shadow-sm ${
+                store?.pixelpayConfigured ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-950">Pixelpay</h2>
+                    <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-800 uppercase tracking-wider">
+                      Centroamérica &amp; LATAM
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    {isEs
+                      ? "Pasarela de pagos líder en Honduras y Centroamérica para procesar tarjetas Visa y Mastercard de forma segura."
+                      : "Leading payment gateway in Honduras and Central America for processing Visa and Mastercard payments."}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <span
+                    className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
+                      store?.pixelpayConfigured
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {store?.pixelpayConfigured
+                      ? isEs
+                        ? "Configurado"
+                        : "Configured"
+                      : isEs
+                      ? "No conectado"
+                      : "Not connected"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isPixelpayExpanded}
+                    aria-controls="pixelpay-settings"
+                    onClick={() => setIsPixelpayExpanded((current) => !current)}
+                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {isPixelpayExpanded
+                      ? isEs
+                        ? "Listo"
+                        : "Done"
+                      : isEs
+                      ? "Gestionar"
+                      : "Manage"}
+                  </button>
+                </div>
+              </div>
+
+              {isPixelpayExpanded ? (
+                <div id="pixelpay-settings">
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">API Key / Auth Key</span>
+                      <input
+                        value={pixelpayKey}
+                        onChange={(event) => setPixelpayKey(event.target.value)}
+                        placeholder="ej. px_live_..."
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">App ID</span>
+                      <input
+                        value={pixelpayAppId}
+                        onChange={(event) => setPixelpayAppId(event.target.value)}
+                        placeholder="ej. 123456789"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        {isEs ? "Secret Hash / Clave Secreta" : "Secret Hash / Secret Key"}
+                      </span>
+                      <input
+                        type="password"
+                        value={pixelpaySecret}
+                        onChange={(event) => setPixelpaySecret(event.target.value)}
+                        placeholder={
+                          store?.pixelpayConfigured
+                            ? isEs
+                              ? "Dejar en blanco para mantener el hash actual"
+                              : "Leave blank to keep the current secret hash"
+                            : isEs
+                            ? "Ingresar secret hash de Pixelpay"
+                            : "Enter Pixelpay secret hash"
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        {isEs ? "Entorno" : "Environment"}
+                      </span>
+                      <select
+                        value={pixelpayEnv}
+                        onChange={(event) =>
+                          setPixelpayEnv(
+                            event.target.value === "production" ? "production" : "sandbox"
+                          )
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      >
+                        <option value="sandbox">
+                          {isEs ? "Sandbox (Pruebas)" : "Sandbox (testing)"}
+                        </option>
+                        <option value="production">
+                          {isEs ? "Producción (En vivo)" : "Production (live)"}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        {isEs ? "Endpoint Personalizado (Opcional)" : "Custom Endpoint (Optional)"}
+                      </span>
+                      <input
+                        value={pixelpayEndpoint}
+                        onChange={(event) => setPixelpayEndpoint(event.target.value)}
+                        placeholder="https://pixelpay.app"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-900">
+                      {isEs ? "Cómo funciona" : "How this works"}
+                    </p>
+                    <ul className="mt-2 space-y-2 leading-6">
+                      <li>
+                        {isEs
+                          ? "• Integración con PixelPay Core SDK para pagos en Lempiras (HNL) o Dólares (USD)."
+                          : "• PixelPay Core SDK integration for payments in Lempiras (HNL) or US Dollars (USD)."}
+                      </li>
+                      <li>
+                        {isEs
+                          ? "• Tus credenciales y secret hash se almacenan cifrados con AES-256-GCM para máxima seguridad."
+                          : "• Your credentials and secret hash are stored encrypted with AES-256-GCM for maximum security."}
+                      </li>
+                      <li>
+                        {isEs
+                          ? "• Compatible con tarjetas Visa, MasterCard y redes bancarias locales de Honduras y Centroamérica."
+                          : "• Compatible with Visa, MasterCard, and Central American local banking networks."}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={!store || isSavingPixelpay}
+                      onClick={() => void handleSavePixelpay()}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingPixelpay
+                        ? isEs
+                          ? "Guardando..."
+                          : "Saving..."
+                        : isEs
+                        ? "Guardar Pixelpay"
+                        : "Save Pixelpay"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!store?.pixelpayConfigured || isDisconnectingPixelpay}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            isEs
+                              ? "¿Desconectar Pixelpay de esta tienda?"
+                              : "Disconnect Pixelpay from this store?"
+                          )
+                        ) {
+                          void handleDisconnectPixelpay();
+                        }
+                      }}
+                      className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isEs ? "Desconectar Pixelpay" : "Disconnect Pixelpay"}
                     </button>
                   </div>
                 </div>

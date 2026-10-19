@@ -42,6 +42,11 @@ export async function GET(request: Request) {
           authNetClientKey: true,
           authNetTransKeyEncrypted: true,
           authNetEnv: true,
+          pixelpayKey: true,
+          pixelpayAppId: true,
+          pixelpaySecretEncrypted: true,
+          pixelpayEnv: true,
+          pixelpayEndpoint: true,
           mainColor: true,
           currency: true,
           timezone: true,
@@ -71,12 +76,11 @@ export async function GET(request: Request) {
         },
       });
     } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "P2022"
-      ) {
+      const isFieldMismatch =
+        (typeof error === "object" && error !== null && "code" in error && error.code === "P2022") ||
+        (error instanceof Error && /Unknown field|does not exist/i.test(error.message));
+
+      if (isFieldMismatch) {
         stores = await prisma.store.findMany({
           where: storeWhere,
           orderBy: {
@@ -120,6 +124,10 @@ export async function GET(request: Request) {
           authNetLoginId: null,
           authNetClientKey: null,
           authNetEnv: "sandbox",
+          pixelpayKey: null,
+          pixelpayAppId: null,
+          pixelpayEnv: "sandbox",
+          pixelpayEndpoint: null,
           welcomeEmailEnabled: false,
           orderConfirmationEmailEnabled: false,
           invoiceEmailEnabled: false,
@@ -138,15 +146,23 @@ export async function GET(request: Request) {
         const authNetTransKeyEncrypted = "authNetTransKeyEncrypted" in store
           ? store.authNetTransKeyEncrypted
           : null;
+        const pixelpaySecretEncrypted = "pixelpaySecretEncrypted" in store
+          ? (store as any).pixelpaySecretEncrypted
+          : null;
         const safeStore = {
           ...store,
-        } as typeof store & { authNetTransKeyEncrypted?: string | null };
+        } as typeof store & {
+          authNetTransKeyEncrypted?: string | null;
+          pixelpaySecretEncrypted?: string | null;
+        };
 
         delete safeStore.authNetTransKeyEncrypted;
+        delete safeStore.pixelpaySecretEncrypted;
 
         return {
           ...safeStore,
           authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
+          pixelpayConfigured: Boolean((store as any).pixelpayKey && (store as any).pixelpayAppId && pixelpaySecretEncrypted),
         };
       }),
     );

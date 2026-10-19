@@ -91,6 +91,11 @@ export async function GET(_req: Request, { params }: RouteContext) {
           authNetClientKey: true,
           authNetTransKeyEncrypted: true,
           authNetEnv: true,
+          pixelpayKey: true,
+          pixelpayAppId: true,
+          pixelpaySecretEncrypted: true,
+          pixelpayEnv: true,
+          pixelpayEndpoint: true,
           mainColor: true,
           ownerId: true,
           currency: true,
@@ -128,12 +133,11 @@ export async function GET(_req: Request, { params }: RouteContext) {
         },
       });
     } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "P2022"
-      ) {
+      const isFieldMismatch =
+        (typeof error === "object" && error !== null && "code" in error && error.code === "P2022") ||
+        (error instanceof Error && /Unknown field|does not exist/i.test(error.message));
+
+      if (isFieldMismatch) {
         const legacyStore = await prisma.store.findUnique({
           where: {
             id,
@@ -204,11 +208,12 @@ export async function GET(_req: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const { authNetTransKeyEncrypted, ...safeStore } = store;
+    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, ...safeStore } = store as any;
 
     return NextResponse.json({
       ...safeStore,
       authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
+      pixelpayConfigured: Boolean((store as any).pixelpayKey && (store as any).pixelpayAppId && pixelpaySecretEncrypted),
     });
   } catch (error) {
     console.error("[STORE_GET_ERROR]", error);
@@ -239,6 +244,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         authNetClientKey: true,
         authNetTransKeyEncrypted: true,
         authNetEnv: true,
+        pixelpayKey: true,
+        pixelpayAppId: true,
+        pixelpaySecretEncrypted: true,
+        pixelpayEnv: true,
+        pixelpayEndpoint: true,
         ownerUser: {
           select: {
             plan: true,
@@ -276,6 +286,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       authNetClientKey,
       authNetTransKey,
       authNetEnv,
+      pixelpayKey,
+      pixelpayAppId,
+      pixelpaySecret,
+      pixelpayEnv,
+      pixelpayEndpoint,
       welcomeEmailEnabled,
       orderConfirmationEmailEnabled,
       invoiceEmailEnabled,
@@ -312,6 +327,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       authNetClientKey?: string | null;
       authNetTransKey?: string | null;
       authNetEnv?: "sandbox" | "production" | string;
+      pixelpayKey?: string | null;
+      pixelpayAppId?: string | null;
+      pixelpaySecret?: string | null;
+      pixelpayEnv?: "sandbox" | "production" | string;
+      pixelpayEndpoint?: string | null;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -351,6 +371,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       authNetClientKey?: string | null;
       authNetTransKeyEncrypted?: string | null;
       authNetEnv?: string;
+      pixelpayKey?: string | null;
+      pixelpayAppId?: string | null;
+      pixelpaySecretEncrypted?: string | null;
+      pixelpayEnv?: string;
+      pixelpayEndpoint?: string | null;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -525,6 +550,66 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       }
     }
 
+    if (pixelpayKey !== undefined) {
+      updates.pixelpayKey = typeof pixelpayKey === "string" && pixelpayKey.trim()
+        ? pixelpayKey.trim()
+        : null;
+    }
+
+    if (pixelpayAppId !== undefined) {
+      updates.pixelpayAppId = typeof pixelpayAppId === "string" && pixelpayAppId.trim()
+        ? pixelpayAppId.trim()
+        : null;
+    }
+
+    if (pixelpaySecret !== undefined) {
+      updates.pixelpaySecretEncrypted = typeof pixelpaySecret === "string" && pixelpaySecret.trim()
+        ? encryptStoredSecret(pixelpaySecret.trim())
+        : null;
+    }
+
+    if (pixelpayEnv !== undefined) {
+      const normalizedPixelpayEnv = String(pixelpayEnv).trim().toLowerCase();
+      if (normalizedPixelpayEnv !== "sandbox" && normalizedPixelpayEnv !== "production") {
+        return NextResponse.json(
+          { error: "Pixelpay environment must be sandbox or production." },
+          { status: 400 },
+        );
+      }
+      updates.pixelpayEnv = normalizedPixelpayEnv;
+    }
+
+    if (pixelpayEndpoint !== undefined) {
+      updates.pixelpayEndpoint = typeof pixelpayEndpoint === "string" && pixelpayEndpoint.trim()
+        ? pixelpayEndpoint.trim()
+        : null;
+    }
+
+    const hasPixelpayPartialConfig = [
+      updates.pixelpayKey !== undefined ? updates.pixelpayKey : (owned as any).pixelpayKey,
+      updates.pixelpayAppId !== undefined ? updates.pixelpayAppId : (owned as any).pixelpayAppId,
+      updates.pixelpaySecretEncrypted !== undefined ? updates.pixelpaySecretEncrypted : (owned as any).pixelpaySecretEncrypted,
+    ].some((value) => value !== null && value !== undefined && value !== "");
+
+    if (hasPixelpayPartialConfig) {
+      const nextPixelpayKey = updates.pixelpayKey !== undefined ? updates.pixelpayKey : (owned as any).pixelpayKey;
+      const nextPixelpayAppId = updates.pixelpayAppId !== undefined ? updates.pixelpayAppId : (owned as any).pixelpayAppId;
+      const nextPixelpaySecretEncrypted = updates.pixelpaySecretEncrypted !== undefined
+        ? updates.pixelpaySecretEncrypted
+        : (owned as any).pixelpaySecretEncrypted;
+
+      const pixelpayFieldCount = [nextPixelpayKey, nextPixelpayAppId, nextPixelpaySecretEncrypted]
+        .filter(Boolean)
+        .length;
+
+      if (pixelpayFieldCount > 0 && pixelpayFieldCount < 3) {
+        return NextResponse.json(
+          { error: "Pixelpay setup requires Auth Key, App ID, and Secret Hash." },
+          { status: 400 },
+        );
+      }
+    }
+
     if (typeof cardFeeEnabled === "boolean") {
       updates.cardFeeEnabled = cardFeeEnabled;
     }
@@ -642,6 +727,11 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         authNetClientKey: true,
         authNetTransKeyEncrypted: true,
         authNetEnv: true,
+        pixelpayKey: true,
+        pixelpayAppId: true,
+        pixelpaySecretEncrypted: true,
+        pixelpayEnv: true,
+        pixelpayEndpoint: true,
         mainColor: true,
         ownerId: true,
         currency: true,
@@ -679,12 +769,15 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       ? await getVercelDomainStatus(updatedStore.customDomain)
       : null;
 
-    const { authNetTransKeyEncrypted, ...safeUpdatedStore } = updatedStore;
+    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, ...safeUpdatedStore } = updatedStore as any;
 
     return NextResponse.json({
       ...safeUpdatedStore,
       authNetConfigured: Boolean(
         updatedStore.authNetLoginId && updatedStore.authNetClientKey && authNetTransKeyEncrypted,
+      ),
+      pixelpayConfigured: Boolean(
+        (updatedStore as any).pixelpayKey && (updatedStore as any).pixelpayAppId && pixelpaySecretEncrypted,
       ),
       domainStatus,
     });
