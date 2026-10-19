@@ -26,6 +26,7 @@ export default function ShippingPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [stores, setStores] = useState<StoreShippingSettings[]>([]);
   const [storeId, setStoreId] = useState("");
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [shipStationConnected, setShipStationConnected] = useState(false);
@@ -91,6 +92,45 @@ export default function ShippingPage() {
     return zonesFromStore;
   }
 
+  async function selectStore(selected: StoreShippingSettings) {
+    setStoreId(selected.id);
+    setOriginName((selected.name ?? "").trim());
+    setZones(selected.shippingZones ? normalizeShippingZones(selected.shippingZones) : []);
+    setShipStationConnected(false);
+    setShowShipStationConfig(false);
+    setShipStationApiKey("");
+    setShipStationApiSecret("");
+
+    try {
+      const shipStationStatusResponse = await fetch(`/api/stores/${selected.id}/shipstation`, {
+        cache: "no-store",
+      });
+      if (shipStationStatusResponse.ok) {
+        const shipStationPayload = (await shipStationStatusResponse.json()) as {
+          connected?: boolean;
+          allowedByPlan?: boolean;
+        };
+        setShipStationConnected(Boolean(shipStationPayload.connected));
+        setShipStationAllowedByPlan(shipStationPayload.allowedByPlan ?? true);
+      }
+    } catch (e) {
+      console.error("[SHIPPING_SHIPSTATION_LOAD_ERROR]", e);
+    }
+  }
+
+  async function handleStoreChange(newId: string) {
+    const chosen = stores.find((s) => s.id === newId);
+    if (!chosen) return;
+    setError(null);
+    setShipStationMessage(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("storeId", newId);
+      window.history.replaceState(null, "", url.toString());
+    }
+    await selectStore(chosen);
+  }
+
   useEffect(() => {
     async function loadShippingSettings() {
       try {
@@ -100,30 +140,15 @@ export default function ShippingPage() {
         ]);
 
         if (storesResponse.ok) {
-          const stores = (await storesResponse.json()) as StoreShippingSettings[];
-          const firstStore = Array.isArray(stores) ? stores[0] : null;
-          setStoreId(firstStore?.id ?? "");
-          setOriginName((firstStore?.name ?? "").trim());
+          const fetchedStores = (await storesResponse.json()) as StoreShippingSettings[];
+          const validStores = Array.isArray(fetchedStores) ? fetchedStores : [];
+          setStores(validStores);
 
-          if (firstStore?.shippingZones) {
-            const parsedZones = normalizeShippingZones(firstStore.shippingZones);
-            if (parsedZones.length > 0) {
-              setZones(parsedZones);
-            }
-          }
-
-          if (firstStore?.id) {
-            const shipStationStatusResponse = await fetch(`/api/stores/${firstStore.id}/shipstation`, {
-              cache: "no-store",
-            });
-            if (shipStationStatusResponse.ok) {
-              const shipStationPayload = (await shipStationStatusResponse.json()) as {
-                connected?: boolean;
-                allowedByPlan?: boolean;
-              };
-              setShipStationConnected(Boolean(shipStationPayload.connected));
-              setShipStationAllowedByPlan(shipStationPayload.allowedByPlan ?? true);
-            }
+          if (validStores.length > 0) {
+            const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+            const paramId = urlParams?.get("storeId");
+            const targetStore = (paramId && validStores.find((s) => s.id === paramId)) || validStores[0];
+            await selectStore(targetStore);
           }
         }
 
@@ -187,6 +212,10 @@ export default function ShippingPage() {
               : "Unable to save shipping settings.")
         );
       }
+
+      setStores((prev) =>
+        prev.map((s) => (s.id === storeId ? { ...s, shippingZones: zones } : s))
+      );
 
       setShipStationMessage(
         isEs ? "Configuración de envío guardada." : "Shipping settings saved."
@@ -325,12 +354,39 @@ export default function ShippingPage() {
               {isEs ? "Envíos y Entregas" : "Shipping"}
             </h1>
 
-            <Link
-              href="/dashboard/settings"
-              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              {isEs ? "← Volver a configuración" : "← Back to settings"}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {stores.length > 1 ? (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="shipping-store-select" className="text-xs font-semibold text-slate-600 hidden sm:inline">
+                    {isEs ? "Tienda:" : "Store:"}
+                  </label>
+                  <select
+                    id="shipping-store-select"
+                    value={storeId}
+                    onChange={(e) => void handleStoreChange(e.target.value)}
+                    className="text-xs font-semibold rounded-full border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-2xs focus:border-cyan-500 focus:outline-none"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name || s.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : stores.length === 1 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  {stores[0].name || stores[0].id}
+                </span>
+              ) : null}
+
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {isEs ? "← Volver a configuración" : "← Back to settings"}
+              </Link>
+            </div>
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs

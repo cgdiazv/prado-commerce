@@ -303,8 +303,8 @@ export default function DashboardHelpPage() {
               </li>
               <li>
                 {isEs
-                  ? "Monedas: confirma la moneda principal y divisas secundarias admitidas para transacciones."
-                  : "Currencies: confirm the primary store currency and supported payment currencies."}
+                  ? "Moneda: configura la divisa principal de cada tienda directamente desde la sección Tiendas (editar tienda)."
+                  : "Currencies: configure each store's primary currency directly from the Stores section (edit store)."}
               </li>
               <li>
                 {isEs

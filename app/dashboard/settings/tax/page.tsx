@@ -24,6 +24,8 @@ export default function TaxPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [stores, setStores] = useState<Array<{ id: string; name: string }>>([]);
+  const [storeId, setStoreId] = useState<string>("");
   const [pricesIncludeTax, setPricesIncludeTax] = useState(false);
   const [automaticTax, setAutomaticTax] = useState(true);
   const [collectTaxOnShipping, setCollectTaxOnShipping] = useState(true);
@@ -53,8 +55,9 @@ export default function TaxPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedSettings = localStorage.getItem(TAX_SETTINGS_STORAGE_KEY);
+  function loadSettingsForStore(id: string) {
+    const key = id ? `${TAX_SETTINGS_STORAGE_KEY}_${id}` : TAX_SETTINGS_STORAGE_KEY;
+    const savedSettings = localStorage.getItem(key) || localStorage.getItem(TAX_SETTINGS_STORAGE_KEY);
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
@@ -70,6 +73,42 @@ export default function TaxPage() {
         console.error("Failed to parse tax settings from localStorage", loadError);
       }
     }
+  }
+
+  function handleStoreChange(newId: string) {
+    setStoreId(newId);
+    setError(null);
+    setSuccess(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("storeId", newId);
+      window.history.replaceState(null, "", url.toString());
+    }
+    loadSettingsForStore(newId);
+  }
+
+  useEffect(() => {
+    async function loadStores() {
+      try {
+        const response = await fetch("/api/stores", { cache: "no-store" });
+        if (response.ok) {
+          const payload = await response.json();
+          const list = Array.isArray(payload) ? payload : [];
+          setStores(list);
+          const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+          const paramId = urlParams?.get("storeId");
+          const target = (paramId && list.find((s: { id: string }) => s.id === paramId)) || list[0];
+          const chosenId = target?.id || "";
+          setStoreId(chosenId);
+          loadSettingsForStore(chosenId);
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to load stores for tax settings", e);
+      }
+      loadSettingsForStore("");
+    }
+    void loadStores();
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -92,7 +131,10 @@ export default function TaxPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      const key = storeId ? `${TAX_SETTINGS_STORAGE_KEY}_${storeId}` : TAX_SETTINGS_STORAGE_KEY;
+      localStorage.setItem(key, JSON.stringify(payload));
       localStorage.setItem(TAX_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+
       setSuccess(
         isEs
           ? "Configuración de cálculo de impuestos guardada correctamente."
@@ -162,12 +204,39 @@ export default function TaxPage() {
               {isEs ? "Impuestos" : "Tax"}
             </h1>
 
-            <Link
-              href="/dashboard/settings"
-              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              {isEs ? "← Volver a configuración" : "← Back to settings"}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {stores.length > 1 ? (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="tax-store-select" className="text-xs font-semibold text-slate-600 hidden sm:inline">
+                    {isEs ? "Tienda:" : "Store:"}
+                  </label>
+                  <select
+                    id="tax-store-select"
+                    value={storeId}
+                    onChange={(e) => handleStoreChange(e.target.value)}
+                    className="text-xs font-semibold rounded-full border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-2xs focus:border-cyan-500 focus:outline-none"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name || s.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : stores.length === 1 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  {stores[0].name || stores[0].id}
+                </span>
+              ) : null}
+
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {isEs ? "← Volver a configuración" : "← Back to settings"}
+              </Link>
+            </div>
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs

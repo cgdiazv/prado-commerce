@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/i18n/language-context";
 
 type StoreEmailSettings = {
   id: string;
+  name?: string;
   welcomeEmailEnabled?: boolean;
   orderConfirmationEmailEnabled?: boolean;
   invoiceEmailEnabled?: boolean;
@@ -22,6 +23,7 @@ export default function EmailSettingsPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [stores, setStores] = useState<StoreEmailSettings[]>([]);
   const [storeId, setStoreId] = useState("");
   const [welcomeEmailEnabled, setWelcomeEmailEnabled] = useState(false);
   const [orderConfirmationEmailEnabled, setOrderConfirmationEmailEnabled] = useState(false);
@@ -32,6 +34,29 @@ export default function EmailSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  function populateStoreEmailSettings(selected: StoreEmailSettings) {
+    setStoreId(selected.id);
+    setWelcomeEmailEnabled(Boolean(selected.welcomeEmailEnabled));
+    setOrderConfirmationEmailEnabled(Boolean(selected.orderConfirmationEmailEnabled));
+    setInvoiceEmailEnabled(Boolean(selected.invoiceEmailEnabled));
+    setSenderName(selected.senderName ?? "");
+    setSenderEmail(selected.senderEmail ?? "");
+    setReplyToEmail(selected.replyToEmail ?? "");
+  }
+
+  function handleStoreChange(newId: string) {
+    const chosen = stores.find((s) => s.id === newId);
+    if (!chosen) return;
+    setError(null);
+    setSuccess(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("storeId", newId);
+      window.history.replaceState(null, "", url.toString());
+    }
+    populateStoreEmailSettings(chosen);
+  }
 
   useEffect(() => {
     async function loadStoreSettings() {
@@ -55,10 +80,10 @@ export default function EmailSettingsPage() {
           );
         }
 
-        const stores = payload as StoreEmailSettings[];
-        const activeStore = Array.isArray(stores) ? stores[0] : null;
+        const fetchedStores = Array.isArray(payload) ? (payload as StoreEmailSettings[]) : [];
+        setStores(fetchedStores);
 
-        if (!activeStore?.id) {
+        if (fetchedStores.length === 0) {
           throw new Error(
             isEs
               ? "No se encontró ninguna tienda. Crea una tienda primero para administrar los correos."
@@ -66,13 +91,11 @@ export default function EmailSettingsPage() {
           );
         }
 
-        setStoreId(activeStore.id);
-        setWelcomeEmailEnabled(Boolean(activeStore.welcomeEmailEnabled));
-        setOrderConfirmationEmailEnabled(Boolean(activeStore.orderConfirmationEmailEnabled));
-        setInvoiceEmailEnabled(Boolean(activeStore.invoiceEmailEnabled));
-        setSenderName(activeStore.senderName ?? "");
-        setSenderEmail(activeStore.senderEmail ?? "");
-        setReplyToEmail(activeStore.replyToEmail ?? "");
+        const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const paramId = urlParams?.get("storeId");
+        const activeStore = (paramId && fetchedStores.find((s) => s.id === paramId)) || fetchedStores[0];
+
+        populateStoreEmailSettings(activeStore);
       } catch (loadError) {
         setError(
           loadError instanceof Error
@@ -144,6 +167,22 @@ export default function EmailSettingsPage() {
         );
       }
 
+      setStores((prev) =>
+        prev.map((s) =>
+          s.id === storeId
+            ? {
+                ...s,
+                welcomeEmailEnabled,
+                orderConfirmationEmailEnabled,
+                invoiceEmailEnabled,
+                senderName,
+                senderEmail,
+                replyToEmail,
+              }
+            : s
+        )
+      );
+
       setSuccess(
         isEs
           ? "Configuración de correos guardada correctamente."
@@ -176,12 +215,39 @@ export default function EmailSettingsPage() {
               {isEs ? "Correos Electrónicos" : "Emails"}
             </h1>
 
-            <Link
-              href="/dashboard/settings"
-              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              {isEs ? "← Volver a configuración" : "← Back to settings"}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {stores.length > 1 ? (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="emails-store-select" className="text-xs font-semibold text-slate-600 hidden sm:inline">
+                    {isEs ? "Tienda:" : "Store:"}
+                  </label>
+                  <select
+                    id="emails-store-select"
+                    value={storeId}
+                    onChange={(e) => handleStoreChange(e.target.value)}
+                    className="text-xs font-semibold rounded-full border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-2xs focus:border-cyan-500 focus:outline-none"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name || s.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : stores.length === 1 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  {stores[0].name || stores[0].id}
+                </span>
+              ) : null}
+
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {isEs ? "← Volver a configuración" : "← Back to settings"}
+              </Link>
+            </div>
           </div>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             {isEs

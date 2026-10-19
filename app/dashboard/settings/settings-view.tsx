@@ -26,13 +26,6 @@ export function SettingsView({ user }: SettingsViewProps) {
       href: "/dashboard/settings/store-profile",
     },
     {
-      title: isEs ? "Monedas" : "Currencies",
-      detail: isEs
-        ? "Elige las monedas en las que los compradores pueden navegar y pagar."
-        : "Choose which currencies customers can browse and pay with.",
-      href: "/dashboard/settings/currencies",
-    },
-    {
       title: isEs ? "Métodos de pago" : "Payments",
       detail: isEs
         ? "Administra las pasarelas de pago disponibles para las monedas admitidas."
@@ -95,7 +88,7 @@ export function SettingsView({ user }: SettingsViewProps) {
           </h1>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
-              ? "Administra tu perfil, seguridad, monedas y preferencias de la tienda."
+              ? "Administra tu perfil, seguridad y preferencias de la tienda."
               : "Manage your profile, security, and notification preferences."}
           </p>
         </div>

@@ -30,6 +30,7 @@ export default function PaymentsPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [stores, setStores] = useState<StoreSummary[]>([]);
   const [store, setStore] = useState<StoreSummary | null>(null);
   const [stripeStatus, setStripeStatus] = useState<StripeStatus>({
     stripeConnected: false,
@@ -71,41 +72,70 @@ export default function PaymentsPage() {
     });
   }
 
+  async function selectStore(selected: StoreSummary) {
+    setStore(selected);
+    setOfflinePaymentsEnabled(Boolean(selected.offlinePaymentsEnabled));
+    setAuthNetLoginId(selected.authNetLoginId ?? "");
+    setAuthNetClientKey(selected.authNetClientKey ?? "");
+    setAuthNetTransKey("");
+    setAuthNetEnv(selected.authNetEnv === "production" ? "production" : "sandbox");
+
+    if (selected.stripeConnectAccountId) {
+      await refreshStripeStatus(selected.id);
+    } else {
+      setStripeStatus({
+        stripeConnected: false,
+        stripeConnectAccountId: null,
+        stripeChargesEnabled: false,
+        stripePayoutsEnabled: false,
+        stripeDetailsSubmitted: false,
+      });
+    }
+  }
+
+  async function handleStoreChange(newId: string) {
+    const chosen = stores.find((s) => s.id === newId);
+    if (!chosen) return;
+    setIsStripeLoading(true);
+    try {
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.set("storeId", newId);
+        window.history.replaceState(null, "", url.toString());
+      }
+      await selectStore(chosen);
+    } catch (err) {
+      console.error("[PAYMENTS_STORE_CHANGE_ERROR]", err);
+    } finally {
+      setIsStripeLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function loadStoreSettings() {
       setIsStripeLoading(true);
 
       try {
         const response = await fetch("/api/stores", { cache: "no-store" });
-        const stores = (await response.json()) as StoreSummary[];
+        const fetchedStores = (await response.json()) as StoreSummary[];
 
         if (!response.ok) {
           throw new Error(isEs ? "No se pudieron cargar las tiendas." : "Unable to load stores.");
         }
 
-        const firstStore = Array.isArray(stores) && stores[0] ? stores[0] : null;
-        if (!firstStore) {
+        const validStores = Array.isArray(fetchedStores) ? fetchedStores : [];
+        setStores(validStores);
+
+        if (validStores.length === 0) {
           setStore(null);
           return;
         }
 
-        setStore(firstStore);
-        setOfflinePaymentsEnabled(Boolean(firstStore.offlinePaymentsEnabled));
-        setAuthNetLoginId(firstStore.authNetLoginId ?? "");
-        setAuthNetClientKey(firstStore.authNetClientKey ?? "");
-        setAuthNetEnv(firstStore.authNetEnv === "production" ? "production" : "sandbox");
+        const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const paramId = urlParams?.get("storeId");
+        const initialStore = (paramId && validStores.find((s) => s.id === paramId)) || validStores[0];
 
-        if (firstStore.stripeConnectAccountId) {
-          await refreshStripeStatus(firstStore.id);
-        } else {
-          setStripeStatus({
-            stripeConnected: false,
-            stripeConnectAccountId: null,
-            stripeChargesEnabled: false,
-            stripePayoutsEnabled: false,
-            stripeDetailsSubmitted: false,
-          });
-        }
+        await selectStore(initialStore);
       } catch (error) {
         console.error("[PAYMENTS_SETTINGS_LOAD_ERROR]", error);
       } finally {
@@ -336,12 +366,39 @@ export default function PaymentsPage() {
               {isEs ? "Pasarelas y Métodos de Pago" : "Payments"}
             </h1>
 
-            <Link
-              href="/dashboard/settings"
-              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              {isEs ? "← Volver a configuración" : "← Back to settings"}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {stores.length > 1 ? (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="payments-store-select" className="text-xs font-semibold text-slate-600 hidden sm:inline">
+                    {isEs ? "Tienda:" : "Store:"}
+                  </label>
+                  <select
+                    id="payments-store-select"
+                    value={store?.id || ""}
+                    onChange={(e) => void handleStoreChange(e.target.value)}
+                    className="text-xs font-semibold rounded-full border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-2xs focus:border-cyan-500 focus:outline-none"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : stores.length === 1 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  {stores[0].name}
+                </span>
+              ) : null}
+
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {isEs ? "← Volver a configuración" : "← Back to settings"}
+              </Link>
+            </div>
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
