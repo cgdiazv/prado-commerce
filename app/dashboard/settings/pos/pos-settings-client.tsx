@@ -866,6 +866,83 @@ export function PosSettingsClient({
                     </p>
                   </div>
 
+                  {/* Hold / En Espera Duration */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="hold-duration-select" className="block text-xs font-bold text-slate-700">
+                      {isEs ? "Duración de Tickets en Espera (Hold)" : "Parked Ticket Hold Duration"}
+                    </label>
+                    <select
+                      id="hold-duration-select"
+                      value={settings.holdDurationMinutes !== undefined && settings.holdDurationMinutes !== null ? String(settings.holdDurationMinutes) : "60"}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setSettings({ ...settings, holdDurationMinutes: isNaN(val) ? 60 : val });
+                      }}
+                      className="w-full text-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-cyan-500 focus:outline-none"
+                    >
+                      <option value="15">{isEs ? "15 minutos" : "15 minutes"}</option>
+                      <option value="30">{isEs ? "30 minutos" : "30 minutes"}</option>
+                      <option value="60">{isEs ? "1 hora (Predeterminado)" : "1 hour (Default)"}</option>
+                      <option value="120">{isEs ? "2 horas" : "2 hours"}</option>
+                      <option value="1440">{isEs ? "24 horas (1 día)" : "24 hours (1 day)"}</option>
+                      <option value="0">{isEs ? "Sin expiración automática" : "No auto-expiration"}</option>
+                    </select>
+                    <p className="text-[11px] text-slate-400">
+                      {isEs
+                        ? "Tiempo durante el cual un carrito pausado permanecerá activo antes de ser marcado como vencido en el POS."
+                        : "How long a parked cart remains active before being flagged as expired in POS."}
+                    </p>
+                  </div>
+
+                  {/* POS Card Surcharge */}
+                  <div className="space-y-3 rounded-xl border border-slate-200 p-4 bg-slate-50/70">
+                    <label className="flex items-start justify-between gap-4 cursor-pointer">
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">
+                          {isEs ? "Recargo por pago con Tarjeta de Crédito (T/C)" : "Credit Card Surcharge at Register"}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {isEs
+                            ? "Aplica automáticamente una comisión porcentual al total cuando el cajero selecciona el método 'Tarjeta'."
+                            : "Automatically applies a surcharge percentage when cashier tenders with 'Tarjeta'."}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.cardFeeEnabled ?? false}
+                        onChange={(e) => {
+                          setSettings({ ...settings, cardFeeEnabled: e.target.checked });
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 mt-1 cursor-pointer"
+                      />
+                    </label>
+
+                    {settings.cardFeeEnabled && (
+                      <div className="pt-2 border-t border-slate-200">
+                        <label htmlFor="pos-card-fee-input" className="block text-xs font-medium text-slate-700 mb-1">
+                          {isEs ? "Porcentaje de comisión en POS (%)" : "POS Surcharge Percentage (%)"}
+                        </label>
+                        <div className="relative max-w-xs">
+                          <input
+                            id="pos-card-fee-input"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="30"
+                            value={settings.cardFeePercentage !== undefined && settings.cardFeePercentage !== null ? String(settings.cardFeePercentage) : ""}
+                            onChange={(e) => {
+                              const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                              setSettings({ ...settings, cardFeePercentage: isNaN(val) ? 0 : val });
+                            }}
+                            placeholder="Ej: 3.50"
+                            className="w-full text-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-cyan-500 focus:outline-none"
+                          />
+                          <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Receipt Footer Message */}
                   <div className="space-y-1.5">
                     <label htmlFor="receipt-footer-textarea" className="block text-xs font-bold text-slate-700">

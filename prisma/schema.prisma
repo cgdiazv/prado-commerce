@@ -95,6 +95,11 @@ model Store {
   posSettings    Json?
   customCss      String?
 
+  lateInterestRate      Decimal?  @default(0.00) @db.Decimal(5, 2)
+  lateInterestGraceDays Int       @default(30)
+  cardFeePercentage     Decimal?  @default(0.00) @db.Decimal(5, 2)
+  cardFeeEnabled        Boolean   @default(false)
+
   apiKeys        ApiKey[]
   products       Product[]
   categories     Category[]
@@ -103,9 +108,11 @@ model Store {
   orders         Order[]
   customers      Customer[]
   customerGroups CustomerGroup[]
+  customerPayments CustomerPayment[]
   vendors        Vendor[]
   purchaseOrders PurchaseOrder[]
   purchaseReceipts PurchaseReceipt[]
+  consignments   Consignment[]
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -323,11 +330,17 @@ model Customer {
   billingAddress  Json?
   savedAddresses  Json?
 
+  allowCredit        Boolean  @default(false)
+  creditLimit        Decimal  @default(0.00) @db.Decimal(10, 2)
+  creditDays         Int      @default(30)
+  creditInterestRate Decimal  @default(0.00) @db.Decimal(5, 2)
+
   groupId   String?
   group     CustomerGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   orders    Order[]
   carts     Cart[]
+  payments  CustomerPayment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -391,7 +404,11 @@ model Order {
   shipStationSyncedAt DateTime?
   shipStationSyncError String?
 
+  dueDate         DateTime?
+  interestAmount  Decimal       @default(0.00) @db.Decimal(10, 2)
+
   items           OrderItem[]
+  payments        CustomerPayment[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -410,6 +427,7 @@ enum OrderStatus {
 
 enum PaymentStatus {
   UNPAID
+  PARTIAL
   PAID
   REFUNDED
   FAILED
@@ -418,6 +436,34 @@ enum PaymentStatus {
 enum FulfillmentStatus {
   UNFULFILLED
   SHIPPED
+}
+
+model CustomerPayment {
+  id             String    @id @default(cuid())
+  storeId        String
+  store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  orderId        String?
+  order          Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  amount         Decimal   @db.Decimal(10, 2)
+  interestAmount Decimal   @default(0.00) @db.Decimal(10, 2)
+  paymentMethod  String    @default("cash")
+  reference      String?
+  notes          String?   @db.Text
+  receivedBy     String?
+  paidAt         DateTime  @default(now())
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([storeId])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([paidAt])
 }
 
 model OrderItem {
@@ -567,3 +613,90 @@ model PurchaseReceiptItem {
   @@index([receiptId])
   @@index([poItemId])
 }
+
+// ==========================================
+// CONSIGNMENTS & SETTLEMENTS
+// ==========================================
+
+enum ConsignmentType {
+  RECEIVED
+  GIVEN
+}
+
+enum ConsignmentStatus {
+  ACTIVE
+  SETTLED
+  CANCELLED
+}
+
+model Consignment {
+  id                 String               @id @default(cuid())
+  storeId            String
+  store              Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  type               ConsignmentType      @default(RECEIVED)
+  consignmentNumber  Int                  @default(autoincrement())
+  code               String
+  contactName        String
+  contactEmail       String?
+  contactPhone       String?
+  status             ConsignmentStatus    @default(ACTIVE)
+  startDate          DateTime             @default(now())
+  endDate            DateTime?
+  notes              String?              @db.Text
+
+  totalAgreedAmount  Decimal              @default(0.00) @db.Decimal(10, 2)
+  totalSettledAmount Decimal              @default(0.00) @db.Decimal(10, 2)
+  currency           String               @default("USD")
+
+  items              ConsignmentItem[]
+  settlements        ConsignmentSettlement[]
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@index([type])
+}
+
+model ConsignmentItem {
+  id                String          @id @default(cuid())
+  consignmentId     String
+  consignment       Consignment     @relation(fields: [consignmentId], references: [id], onDelete: Cascade)
+
+  variantId         String?
+  productTitle      String
+  sku               String?
+  initialQuantity   Int
+  soldQuantity      Int             @default(0)
+  returnedQuantity  Int             @default(0)
+  agreedCost        Decimal         @default(0.00) @db.Decimal(10, 2)
+  suggestedPrice    Decimal?        @db.Decimal(10, 2)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([consignmentId])
+  @@index([variantId])
+}
+
+model ConsignmentSettlement {
+  id                String          @id @default(cuid())
+  consignmentId     String
+  consignment       Consignment     @relation(fields: [consignmentId], references: [id], onDelete: Cascade)
+
+  settlementNumber  Int             @default(autoincrement())
+  date              DateTime        @default(now())
+  totalUnitsSold    Int
+  totalAmount       Decimal         @db.Decimal(10, 2)
+  paymentMethod     String          @default("TRANSFERENCIA")
+  reference         String?
+  notes             String?         @db.Text
+  settledBy         String?
+
+  createdAt         DateTime        @default(now())
+
+  @@index([consignmentId])
+}
+

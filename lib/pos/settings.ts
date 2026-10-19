@@ -74,6 +74,9 @@ export function getDefaultPosSettings(user?: { name?: string | null; email?: str
     allowCustomCashierName: true,
     allowManualDiscounts: true,
     receiptFooterText: "Thank you for shopping with us! Please retain this ticket.",
+    holdDurationMinutes: 60,
+    cardFeeEnabled: false,
+    cardFeePercentage: 0,
   };
 }
 
@@ -97,5 +100,8 @@ export function resolvePosSettings(
     allowManualDiscounts: existing.allowManualDiscounts ?? defaults.allowManualDiscounts,
     allowCustomCashierName: existing.allowCustomCashierName ?? defaults.allowCustomCashierName,
     defaultTaxRate: existing.defaultTaxRate !== undefined ? existing.defaultTaxRate : null,
+    holdDurationMinutes: existing.holdDurationMinutes !== undefined ? existing.holdDurationMinutes : defaults.holdDurationMinutes,
+    cardFeeEnabled: existing.cardFeeEnabled !== undefined ? existing.cardFeeEnabled : defaults.cardFeeEnabled,
+    cardFeePercentage: existing.cardFeePercentage !== undefined ? existing.cardFeePercentage : defaults.cardFeePercentage,
   };
 }

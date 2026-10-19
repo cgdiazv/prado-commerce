@@ -209,12 +209,52 @@ export async function GET(request: Request) {
         },
         shippingAddress: true,
         billingAddress: true,
+        allowCredit: true,
+        creditLimit: true,
+        creditDays: true,
+        creditInterestRate: true,
+        orders: {
+          where: {
+            status: { not: "CANCELLED" },
+            paymentStatus: { in: ["UNPAID", "PARTIAL"] },
+          },
+          select: {
+            total: true,
+            payments: {
+              select: { amount: true },
+            },
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
     });
 
-    return corsJson(customers);
+    const serialized = customers.map((c) => {
+      let currentBalance = 0;
+      for (const ord of c.orders) {
+        const total = Number(ord.total);
+        const paid = ord.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        currentBalance += Math.max(0, total - paid);
+      }
+      currentBalance = Math.round(currentBalance * 100) / 100;
+      const creditLimit = Number(c.creditLimit);
+      const availableCredit = Math.max(0, Math.round((creditLimit - currentBalance) * 100) / 100);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { orders: _orders, ...rest } = c;
+
+      return {
+        ...rest,
+        creditLimit,
+        creditDays: c.creditDays,
+        creditInterestRate: Number(c.creditInterestRate),
+        currentBalance,
+        availableCredit,
+      };
+    });
+
+    return corsJson(serialized);
   } catch (error) {
     console.error("[CUSTOMERS_GET_ERROR]", error);
     return corsJson({ error: "Failed to fetch customers" }, { status: 500 });

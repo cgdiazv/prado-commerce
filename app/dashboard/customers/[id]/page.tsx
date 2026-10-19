@@ -38,6 +38,8 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
         id: true,
         name: true,
         currency: true,
+        lateInterestRate: true,
+        lateInterestGraceDays: true,
       },
     });
 
@@ -49,6 +51,14 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
         },
       },
       include: {
+        payments: {
+          orderBy: { paidAt: "desc" },
+          include: {
+            order: {
+              select: { orderNumber: true },
+            },
+          },
+        },
         orders: {
           orderBy: { createdAt: "desc" },
           select: {
@@ -58,7 +68,18 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
             currency: true,
             status: true,
             paymentStatus: true,
+            dueDate: true,
+            interestAmount: true,
             createdAt: true,
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                interestAmount: true,
+                paymentMethod: true,
+                paidAt: true,
+              },
+            },
             items: {
               select: {
                 id: true,
@@ -95,6 +116,25 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
           groupId: customer.groupId,
           shippingAddress: customer.shippingAddress,
           billingAddress: customer.billingAddress,
+          allowCredit: customer.allowCredit,
+          creditLimit: Number(customer.creditLimit),
+          creditDays: customer.creditDays,
+          creditInterestRate: Number(customer.creditInterestRate),
+          payments: customer.payments.map((p) => ({
+            id: p.id,
+            storeId: p.storeId,
+            customerId: p.customerId,
+            orderId: p.orderId,
+            orderNumber: p.order?.orderNumber ?? null,
+            amount: Number(p.amount),
+            interestAmount: Number(p.interestAmount),
+            paymentMethod: p.paymentMethod,
+            reference: p.reference,
+            notes: p.notes,
+            receivedBy: p.receivedBy,
+            paidAt: p.paidAt.toISOString(),
+            createdAt: p.createdAt.toISOString(),
+          })),
           orders: customer.orders.map((o) => ({
             id: o.id,
             orderNumber: o.orderNumber,
@@ -102,7 +142,16 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
             currency: o.currency,
             status: o.status,
             paymentStatus: o.paymentStatus,
+            dueDate: o.dueDate ? o.dueDate.toISOString() : null,
+            interestAmount: Number(o.interestAmount || 0),
             createdAt: o.createdAt.toISOString(),
+            payments: o.payments.map((pm) => ({
+              id: pm.id,
+              amount: Number(pm.amount),
+              interestAmount: Number(pm.interestAmount),
+              paymentMethod: pm.paymentMethod,
+              paidAt: pm.paidAt.toISOString(),
+            })),
             items: o.items.map((it) => ({
               id: it.id,
               title: it.title,

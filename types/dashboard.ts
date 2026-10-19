@@ -20,6 +20,59 @@ export type Customer = {
   salesRepId?: string | null;
   salesRepName?: string | null;
   zone?: string | null;
+  allowCredit?: boolean;
+  creditLimit?: number;
+  creditDays?: number;
+  creditInterestRate?: number;
+  currentBalance?: number;
+  availableCredit?: number;
+};
+
+export type CustomerPayment = {
+  id: string;
+  storeId: string;
+  customerId: string;
+  orderId?: string | null;
+  orderNumber?: number | null;
+  amount: number;
+  interestAmount: number;
+  paymentMethod: string;
+  reference?: string | null;
+  notes?: string | null;
+  receivedBy?: string | null;
+  paidAt: string;
+  createdAt?: string;
+};
+
+export type CustomerCreditInvoice = {
+  orderId: string;
+  orderNumber: number;
+  issueDate: string;
+  dueDate: string;
+  daysOverdue: number;
+  isOverdue: boolean;
+  total: number;
+  totalPaid: number;
+  balance: number;
+  interestDue: number;
+  totalDue: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+};
+
+export type CustomerCreditSummary = {
+  allowCredit: boolean;
+  creditLimit: number;
+  creditDays: number;
+  creditInterestRate: number;
+  storeDefaultLateRate?: number;
+  totalDebt: number;
+  totalInterestDue: number;
+  availableCredit: number;
+  overdueInvoicesCount: number;
+  invoices: CustomerCreditInvoice[];
+  payments: CustomerPayment[];
 };
 
 export type Vendor = {
@@ -410,4 +463,7 @@ export type PosStoreSettings = {
   allowManualDiscounts?: boolean;
   allowCustomCashierName?: boolean;
   defaultTaxRate?: number | null;
+  holdDurationMinutes?: number | null;
+  cardFeeEnabled?: boolean;
+  cardFeePercentage?: number | null;
 };

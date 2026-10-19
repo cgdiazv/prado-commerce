@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3 } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3, Boxes } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -263,6 +263,11 @@ export default function DashboardLayout({
         { href: "/dashboard/procurement/receipts", label: t.dashboard.receivingHistory },
         { href: "/dashboard/procurement/vendors", label: t.dashboard.vendors },
       ],
+    },
+    {
+      href: "/dashboard/consignments",
+      label: t.dashboard.consignments,
+      icon: Boxes,
     },
     {
       href: "/dashboard/customers",

@@ -83,6 +83,22 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
               },
               shippingAddress: true,
               billingAddress: true,
+              allowCredit: true,
+              creditLimit: true,
+              creditDays: true,
+              creditInterestRate: true,
+              orders: {
+                where: {
+                  status: { not: "CANCELLED" },
+                  paymentStatus: { in: ["UNPAID", "PARTIAL"] },
+                },
+                select: {
+                  total: true,
+                  payments: {
+                    select: { amount: true },
+                  },
+                },
+              },
               createdAt: true,
             },
           })
@@ -101,10 +117,29 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
     serializedCustomers = JSON.parse(
       JSON.stringify(
-        customers.map((customer) => ({
-          ...customer,
-          createdAt: customer.createdAt.toISOString(),
-        }))
+        customers.map((customer) => {
+          let currentBalance = 0;
+          for (const ord of customer.orders) {
+            const tot = Number(ord.total);
+            const pd = ord.payments.reduce((s, p) => s + Number(p.amount), 0);
+            currentBalance += Math.max(0, tot - pd);
+          }
+          currentBalance = Math.round(currentBalance * 100) / 100;
+          const creditLimit = Number(customer.creditLimit || 0);
+          const availableCredit = Math.max(0, Math.round((creditLimit - currentBalance) * 100) / 100);
+
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { orders: _ord, ...rest } = customer;
+          return {
+            ...rest,
+            creditLimit,
+            creditDays: customer.creditDays,
+            creditInterestRate: Number(customer.creditInterestRate || 0),
+            currentBalance,
+            availableCredit,
+            createdAt: customer.createdAt.toISOString(),
+          };
+        })
       )
     );
 

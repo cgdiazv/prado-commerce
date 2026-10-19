@@ -35,6 +35,8 @@ type CheckoutExperienceProps = {
   storeName: string;
   basePath: string;
   offlinePaymentsEnabled: boolean;
+  cardFeeEnabled?: boolean;
+  cardFeePercentage?: number;
   stripeOnlinePaymentsEnabled: boolean;
   onlinePaymentProvider: "stripe" | "authorize_net" | null;
   authorizeNetConfig: {
@@ -57,6 +59,8 @@ export default function CheckoutExperience({
   storeName,
   basePath,
   offlinePaymentsEnabled,
+  cardFeeEnabled = false,
+  cardFeePercentage = 0,
   stripeOnlinePaymentsEnabled,
   onlinePaymentProvider,
   authorizeNetConfig,
@@ -155,6 +159,8 @@ export default function CheckoutExperience({
         subtotal={subtotal}
         storeId={storeId}
         offlinePaymentsEnabled={offlinePaymentsEnabled}
+        cardFeeEnabled={cardFeeEnabled}
+        cardFeePercentage={cardFeePercentage}
         stripeOnlinePaymentsEnabled={stripeOnlinePaymentsEnabled}
         onlinePaymentProvider={onlinePaymentProvider}
         authorizeNetConfig={authorizeNetConfig}

@@ -140,6 +140,12 @@ export function PosClientView({
           phone: c.phone || null,
           address: c.shippingAddress ? (typeof c.shippingAddress === "string" ? c.shippingAddress : JSON.stringify(c.shippingAddress)) : null,
           currency: activeStore?.currency || "USD",
+          allowCredit: Boolean(c.allowCredit),
+          creditLimit: Number(c.creditLimit || 0),
+          creditDays: Number(c.creditDays || 30),
+          creditInterestRate: Number(c.creditInterestRate || 0),
+          currentBalance: Number(c.currentBalance || 0),
+          availableCredit: Number(c.availableCredit || 0),
         }));
       }
 

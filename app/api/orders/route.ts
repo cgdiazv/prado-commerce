@@ -73,7 +73,7 @@ function serializeOrder(order: {
   customerEmail: string;
   customer?: { firstName: string | null; lastName: string | null } | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
-  paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+  paymentStatus: "UNPAID" | "PARTIAL" | "PAID" | "REFUNDED" | "FAILED";
   subtotal: { toString(): string };
   tax: { toString(): string };
   shipping: { toString(): string };
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
     }
 
     const validStatus = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
-    const validPaymentStatus = ["UNPAID", "PAID", "REFUNDED", "FAILED"] as const;
+    const validPaymentStatus = ["UNPAID", "PARTIAL", "PAID", "REFUNDED", "FAILED"] as const;
 
     if (!validStatus.includes(status as (typeof validStatus)[number])) {
       return NextResponse.json({ error: "Invalid order status" }, { status: 400 });

@@ -19,6 +19,7 @@ import {
   QrCode,
   FileText,
   RotateCcw,
+  Ban,
   Sparkles,
   ArrowLeft,
   Tag,
@@ -71,9 +72,14 @@ export interface ParkedTicket {
   id: string;
   ticketNumber: string;
   createdAt: string;
+  createdTimestamp?: number;
+  expiresAt?: string | null;
   customerName: string;
+  customerId?: string;
+  customerRtn?: string;
   items: CartItem[];
   total: number;
+  notes?: string;
 }
 
 export interface POSModuleProps {
@@ -230,6 +236,10 @@ export default function POSModule({
     return [];
   });
   const [showParkedModal, setShowParkedModal] = useState(false);
+  const [parkedSearchQuery, setParkedSearchQuery] = useState("");
+  const [showVoidModal, setShowVoidModal] = useState(false);
+  const [voidReason, setVoidReason] = useState<string>("Cliente desistió de la compra");
+  const [voidFeedbackMessage, setVoidFeedbackMessage] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -503,15 +513,26 @@ export default function POSModule({
   // ----------------------------------------------------
   // Park Order / En Espera
   // ----------------------------------------------------
-  const handleParkOrder = () => {
+  const handleParkOrder = (customNotes?: string) => {
     if (cart.length === 0) return;
+    const holdDurationMinutes = posSettings?.holdDurationMinutes !== undefined && posSettings?.holdDurationMinutes !== null
+      ? posSettings.holdDurationMinutes
+      : 60;
+    const now = Date.now();
+    const expiresAt = holdDurationMinutes > 0 ? new Date(now + holdDurationMinutes * 60 * 1000).toISOString() : null;
+
     const ticket: ParkedTicket = {
-      id: `parked-${Date.now()}`,
+      id: `parked-${now}`,
       ticketNumber: `TK-${Math.floor(1000 + Math.random() * 9000)}`,
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdTimestamp: now,
+      expiresAt,
       customerName: selectedCustomer.name,
+      customerId: selectedCustomer.id,
+      customerRtn: selectedCustomer.rtn,
       items: [...cart],
       total: cartTotals.total,
+      notes: typeof customNotes === "string" ? customNotes : undefined,
     };
     setParkedTickets((prev) => [ticket, ...prev]);
     setCart([]);
@@ -520,13 +541,56 @@ export default function POSModule({
 
   const handleRestoreParkedOrder = (ticket: ParkedTicket) => {
     setCart(ticket.items);
-    setSelectedCustomer({ name: ticket.customerName, rtn: "" });
+    setSelectedCustomer({
+      id: ticket.customerId,
+      name: ticket.customerName,
+      rtn: ticket.customerRtn || "",
+    });
     setParkedTickets((prev) => prev.filter((t) => t.id !== ticket.id));
     setShowParkedModal(false);
   };
 
   const handleDeleteParkedOrder = (ticketId: string) => {
     setParkedTickets((prev) => prev.filter((t) => t.id !== ticketId));
+  };
+
+  const handleDiscardExpiredParkedOrders = () => {
+    const now = Date.now();
+    setParkedTickets((prev) => prev.filter((t) => {
+      if (!t.expiresAt) return true;
+      return new Date(t.expiresAt).getTime() > now;
+    }));
+  };
+
+  const handleConfirmVoidSale = () => {
+    if (cart.length === 0) return;
+    const voidLog = {
+      id: `void-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      cashier: activeCashierName || (isEs ? "Cajero Principal" : "Main Cashier"),
+      register: activeRegister,
+      customerName: selectedCustomer.name,
+      itemsCount: cartTotals.totalItems,
+      total: cartTotals.total,
+      reason: voidReason,
+    };
+
+    try {
+      const existing = localStorage.getItem("prado_pos_void_audit_log");
+      const list = existing ? JSON.parse(existing) : [];
+      list.unshift(voidLog);
+      localStorage.setItem("prado_pos_void_audit_log", JSON.stringify(list.slice(0, 100)));
+    } catch {}
+
+    setCart([]);
+    setSelectedCustomer({ name: isEs ? "Consumidor Final" : "Walk-in Customer", rtn: "" });
+    setShowVoidModal(false);
+    setVoidFeedbackMessage(
+      isEs
+        ? "Venta anulada correctamente (Sin registrar venta ni alterar caja)."
+        : "Sale voided successfully (No sale recorded, cash unaffected)."
+    );
+    setTimeout(() => setVoidFeedbackMessage(null), 4000);
   };
 
   // ----------------------------------------------------
@@ -833,6 +897,59 @@ export default function POSModule({
     return cartTotals.total + cardFee;
   }, [cartTotals.total, cardFee]);
 
+  const activeCustomerRecord = useMemo(() => {
+    if (!selectedCustomer.id || selectedCustomer.id === "default") return null;
+    return customers.find((c) => c.id === selectedCustomer.id) || null;
+  }, [selectedCustomer.id, customers]);
+
+  const creditValidation = useMemo(() => {
+    if (paymentMethod !== "CREDITO") {
+      return { isValid: true, error: null };
+    }
+    if (!activeCustomerRecord) {
+      return {
+        isValid: false,
+        error: isEs
+          ? "Para compras a crédito debes seleccionar un cliente registrado (no permitido para Consumidor Final)."
+          : "For credit sales you must select a registered customer (not allowed for Walk-in Customer).",
+      };
+    }
+    if (!activeCustomerRecord.allowCredit) {
+      return {
+        isValid: false,
+        error: isEs
+          ? `El cliente "${activeCustomerRecord.name}" no tiene compras al crédito autorizadas.`
+          : `Customer "${activeCustomerRecord.name}" is not approved for credit purchases.`,
+      };
+    }
+    const limit = Number(activeCustomerRecord.creditLimit || 0);
+    const balance = Number(activeCustomerRecord.currentBalance || 0);
+    const available = Math.max(0, limit - balance);
+    const saleTotal = cartTotals.total;
+
+    if (limit > 0 && saleTotal > available) {
+      return {
+        isValid: false,
+        error: isEs
+          ? `Límite de crédito excedido. Disponible: $${available.toFixed(2)} (Límite: $${limit.toFixed(2)}, Deuda actual: $${balance.toFixed(2)}). Total venta: $${saleTotal.toFixed(2)}`
+          : `Credit limit exceeded. Available: $${available.toFixed(2)} (Limit: $${limit.toFixed(2)}, Current debt: $${balance.toFixed(2)}). Order: $${saleTotal.toFixed(2)}`,
+        limit,
+        balance,
+        available,
+      };
+    }
+
+    return {
+      isValid: true,
+      error: null,
+      limit,
+      balance,
+      available,
+      remainingAfterSale: Math.max(0, available - saleTotal),
+      creditDays: activeCustomerRecord.creditDays || 30,
+    };
+  }, [paymentMethod, activeCustomerRecord, isEs, cartTotals.total]);
+
   const openCheckout = () => {
     if (cart.length === 0) return;
     if (typeof window !== "undefined") {
@@ -891,7 +1008,12 @@ export default function POSModule({
         salesRepId: rep ? rep.id : null,
         salesRepName: selectedSalesRep,
         invoiceDate: saleDate.toISOString().split("T")[0],
-        paymentTerms: paymentMethod === "CREDITO" ? (isEs ? "Crédito 15 días" : "Credit 15 days") : (isEs ? "Contado" : "Cash / Immediate"),
+        dueDate: paymentMethod === "CREDITO" && activeCustomerRecord
+          ? new Date(saleDate.getTime() + (activeCustomerRecord.creditDays || 30) * 86400000).toISOString()
+          : undefined,
+        paymentTerms: paymentMethod === "CREDITO"
+          ? (isEs ? `Crédito ${activeCustomerRecord?.creditDays || 30} días` : `Credit ${activeCustomerRecord?.creditDays || 30} days`)
+          : (isEs ? "Contado" : "Cash / Immediate"),
         paymentMethod: paymentMethod === "CREDITO" ? (isEs ? "Crédito" : "Credit") : paymentMethod === "TARJETA" ? (isEs ? "Tarjeta" : "Card") : paymentMethod === "TRANSFERENCIA" ? (isEs ? "Transferencia" : "Bank Transfer") : (isEs ? "Efectivo" : "Cash"),
         subtotal: cartTotals.subtotal,
         isv15: cartTotals.isv15,
@@ -1619,25 +1741,47 @@ export default function POSModule({
               </div>
             </div>
 
-            {/* Quick Actions (Clear, Hold) */}
-            <div className="flex items-center gap-2">
+            {/* Void feedback toast/notice */}
+            {voidFeedbackMessage && (
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-900 flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="font-medium">{voidFeedbackMessage}</span>
+              </div>
+            )}
+
+            {/* Quick Actions (Clear, Hold, Void) */}
+            <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleClearCart}
-                className="flex-1 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                className="py-1.5 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                title={isEs ? "Vaciar carrito" : "Clear cart"}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3 h-3 text-slate-500" />
                 <span>{isEs ? "Vaciar" : "Clear"}</span>
               </button>
+
               <button
                 type="button"
                 disabled={cart.length === 0}
-                onClick={handleParkOrder}
-                className="flex-1 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                onClick={() => handleParkOrder()}
+                className="py-1.5 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                title={isEs ? "Poner venta en espera con tiempo configurable" : "Hold sale temporarily"}
               >
-                <PauseCircle className="w-3.5 h-3.5 text-cyan-600" />
+                <PauseCircle className="w-3 h-3 text-cyan-600" />
                 <span>{isEs ? "En Espera" : "Hold"}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={cart.length === 0}
+                onClick={() => setShowVoidModal(true)}
+                className="py-1.5 px-2 rounded-md border border-rose-200 bg-rose-50/60 hover:bg-rose-100 disabled:opacity-40 text-rose-700 text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                title={isEs ? "Anulación rápida de transacción sin registrar venta" : "Void current transaction"}
+              >
+                <Ban className="w-3 h-3 text-rose-600" />
+                <span>{isEs ? "Anular" : "Void"}</span>
               </button>
             </div>
 
@@ -1939,13 +2083,42 @@ export default function POSModule({
               )}
 
               {paymentMethod === "CREDITO" && (
-                <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>
-                    {isEs
-                      ? "Esta venta se registrará como cuenta por cobrar pendiente para el cliente seleccionado."
-                      : "This sale will be logged as an open pending balance on the selected customer account."}
-                  </span>
+                <div className="space-y-2">
+                  {!creditValidation.isValid ? (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">{isEs ? "Crédito No Autorizado" : "Credit Not Authorized"}</p>
+                        <p className="mt-0.5">{creditValidation.error}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-950 space-y-2">
+                      <div className="flex items-center justify-between font-bold text-indigo-900 border-b border-indigo-100 pb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <CreditCard className="w-4 h-4 text-indigo-600" />
+                          {isEs ? "Venta a Crédito Autorizada" : "Credit Sale Authorized"}
+                        </span>
+                        <span className="text-[11px] font-normal text-indigo-700">
+                          {isEs ? `Plazo: ${creditValidation.creditDays} días` : `Terms: ${creditValidation.creditDays} days`}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px] pt-0.5">
+                        <div>
+                          <span className="text-slate-500 block">{isEs ? "Límite:" : "Limit:"}</span>
+                          <span className="font-mono font-bold">${(creditValidation.limit || 0).toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block">{isEs ? "Deuda Actual:" : "Current Debt:"}</span>
+                          <span className="font-mono font-bold text-amber-800">${(creditValidation.balance || 0).toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block">{isEs ? "Tras esta venta:" : "After sale:"}</span>
+                          <span className="font-mono font-bold text-emerald-800">${(creditValidation.remainingAfterSale || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1963,7 +2136,8 @@ export default function POSModule({
                 type="button"
                 disabled={
                   isProcessingSale ||
-                  (paymentMethod === "EFECTIVO" && (parseFloat(amountReceived) || 0) < cartTotals.total)
+                  (paymentMethod === "EFECTIVO" && (parseFloat(amountReceived) || 0) < cartTotals.total) ||
+                  (paymentMethod === "CREDITO" && !creditValidation.isValid)
                 }
                 onClick={handleCompleteSale}
                 className="px-6 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-cyan-600/20"
@@ -2140,15 +2314,15 @@ export default function POSModule({
         </div>
       )}
 
-      {/* ================= 5. PARKED TICKETS MODAL ================= */}
+      {/* ================= 5. PARKED TICKETS MODAL (HOLD) ================= */}
       {showParkedModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col">
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-cyan-400" />
                 <h3 className="font-bold text-sm text-cyan-400">
-                  {isEs ? "Tickets en Espera" : "Parked / Held Tickets"} ({parkedTickets.length})
+                  {isEs ? "Tickets en Espera (Hold)" : "Parked / Held Tickets"} ({parkedTickets.length})
                 </h3>
               </div>
               <button
@@ -2160,50 +2334,225 @@ export default function POSModule({
               </button>
             </div>
 
-            <div className="p-4 max-h-80 overflow-y-auto space-y-2">
-              {parkedTickets.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-xs">
-                  {isEs ? "No hay tickets puestos en espera" : "No parked tickets currently held"}
-                </div>
-              ) : (
-                parkedTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="p-3 rounded-md border border-slate-200 bg-white hover:border-cyan-500 transition flex items-center justify-between gap-3 shadow-2xs"
-                  >
-                    <div>
-                      <div className="font-bold text-xs text-slate-900">{ticket.ticketNumber}</div>
-                      <div className="text-[11px] text-slate-600">
-                        {ticket.customerName} • {ticket.items.length} {isEs ? "artículos" : "items"}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        {isEs ? "Puesto a las" : "Held at"} {ticket.createdAt}
-                      </div>
-                    </div>
+            {/* Search & Bulk Discard Expired */}
+            <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  value={parkedSearchQuery}
+                  onChange={(e) => setParkedSearchQuery(e.target.value)}
+                  placeholder={isEs ? "Buscar por ticket o cliente..." : "Search by ticket # or customer..."}
+                  className="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:border-cyan-500 focus:outline-none text-slate-800"
+                />
+              </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold font-mono text-xs text-cyan-700">
-                        {formatCurrency(ticket.total)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRestoreParkedOrder(ticket)}
-                        className="px-2.5 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition cursor-pointer"
-                      >
-                        {isEs ? "Recuperar" : "Restore"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteParkedOrder(ticket.id)}
-                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                        title={isEs ? "Descartar" : "Discard"}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
+              {parkedTickets.some((t) => t.expiresAt && new Date(t.expiresAt).getTime() <= Date.now()) && (
+                <button
+                  type="button"
+                  onClick={handleDiscardExpiredParkedOrders}
+                  className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>{isEs ? "Descartar vencidos" : "Discard expired"}</span>
+                </button>
               )}
+            </div>
+
+            <div className="p-4 max-h-96 overflow-y-auto space-y-2.5">
+              {(() => {
+                const filtered = parkedTickets.filter((ticket) => {
+                  if (!parkedSearchQuery.trim()) return true;
+                  const query = parkedSearchQuery.toLowerCase();
+                  return (
+                    ticket.ticketNumber.toLowerCase().includes(query) ||
+                    ticket.customerName.toLowerCase().includes(query)
+                  );
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-10 text-slate-400 text-xs">
+                      {parkedSearchQuery.trim()
+                        ? (isEs ? "No se encontraron tickets con esa búsqueda" : "No tickets matching search query")
+                        : (isEs ? "No hay tickets puestos en espera actualmente" : "No parked tickets currently held")}
+                    </div>
+                  );
+                }
+
+                return filtered.map((ticket) => {
+                  const now = Date.now();
+                  const isExpired = Boolean(ticket.expiresAt && new Date(ticket.expiresAt).getTime() <= now);
+                  const remainingMinutes = ticket.expiresAt
+                    ? Math.max(0, Math.ceil((new Date(ticket.expiresAt).getTime() - now) / 60000))
+                    : null;
+
+                  return (
+                    <div
+                      key={ticket.id}
+                      className={`p-3 rounded-lg border transition flex items-center justify-between gap-3 shadow-2xs ${
+                        isExpired
+                          ? "border-rose-200 bg-rose-50/40"
+                          : "border-slate-200 bg-white hover:border-cyan-400"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold font-mono text-xs text-slate-900">{ticket.ticketNumber}</span>
+                          {isExpired ? (
+                            <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                              {isEs ? "Vencido" : "Expired"}
+                            </span>
+                          ) : remainingMinutes !== null ? (
+                            <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{isEs ? `Expira en ${remainingMinutes}m` : `Expires in ${remainingMinutes}m`}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                              {isEs ? "Sin expiración" : "No expiry"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-[11px] text-slate-700 mt-1 truncate">
+                          <span className="font-semibold">{ticket.customerName}</span> • {ticket.items.length} {isEs ? "artículos" : "items"}
+                        </div>
+
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {isEs ? "Guardado:" : "Held:"} {ticket.createdAt}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-bold font-mono text-xs text-cyan-700">
+                          {formatCurrency(ticket.total)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRestoreParkedOrder(ticket)}
+                          className="px-3 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
+                        >
+                          {isEs ? "Recuperar" : "Resume"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteParkedOrder(ticket.id)}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          title={isEs ? "Descartar" : "Discard"}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 5.5 VOID TRANSACTION MODAL ================= */}
+      {showVoidModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-rose-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-4 bg-rose-950 text-white flex items-center justify-between border-b border-rose-900">
+              <div className="flex items-center gap-2">
+                <Ban className="w-5 h-5 text-rose-400" />
+                <h3 className="font-bold text-sm text-rose-200">
+                  {isEs ? "Anular Transacción en Curso (Void)" : "Void Current Transaction"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVoidModal(false)}
+                className="p-1 rounded-md hover:bg-white/10 text-rose-300 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="rounded-lg bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-800 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-rose-900">
+                    {isEs ? "¿Confirmas la anulación de esta venta?" : "Confirm voiding this sale?"}
+                  </p>
+                  <p className="mt-0.5 leading-relaxed">
+                    {isEs
+                      ? "Esta acción vaciará el carrito inmediatamente sin registrar factura, sin modificar el inventario y sin alterar el balance de caja. Se guardará un registro de auditoría."
+                      : "This action immediately resets the cart without registering an invoice, modifying inventory, or affecting the cash drawer balance. An audit entry is recorded."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Transaction Snapshot */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>{isEs ? "Cliente:" : "Customer:"}</span>
+                  <span className="font-semibold text-slate-800">{selectedCustomer.name}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>{isEs ? "Artículos en carrito:" : "Cart items count:"}</span>
+                  <span className="font-semibold text-slate-800">{cartTotals.totalItems}</span>
+                </div>
+                <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200">
+                  <span>{isEs ? "Monto a anular:" : "Amount to void:"}</span>
+                  <span className="font-mono text-rose-600">{formatCurrency(cartTotals.total)}</span>
+                </div>
+              </div>
+
+              {/* Void Reason Selector */}
+              <div className="space-y-1.5">
+                <label htmlFor="void-reason-select" className="block text-xs font-bold text-slate-700">
+                  {isEs ? "Motivo de la Anulación:" : "Void Reason:"}
+                </label>
+                <select
+                  id="void-reason-select"
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  className="w-full text-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-rose-500 focus:outline-none"
+                >
+                  <option value="Cliente desistió de la compra">
+                    {isEs ? "Cliente desistió de la compra" : "Customer changed mind / walked away"}
+                  </option>
+                  <option value="Error en digitación o productos duplicados">
+                    {isEs ? "Error en digitación o productos duplicados" : "Entry error or duplicate items"}
+                  </option>
+                  <option value="Problema con el método de pago / Tarjeta rechazada">
+                    {isEs ? "Problema con el método de pago / Tarjeta rechazada" : "Payment issue / Card declined"}
+                  </option>
+                  <option value="Cliente no contaba con fondos suficientes">
+                    {isEs ? "Cliente no contaba con fondos suficientes" : "Insufficient funds"}
+                  </option>
+                  <option value="Prueba o demostración del sistema">
+                    {isEs ? "Prueba o demostración del sistema" : "System testing or training"}
+                  </option>
+                  <option value="Otro motivo">
+                    {isEs ? "Otro motivo" : "Other"}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowVoidModal(false)}
+                className="px-4 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer"
+              >
+                {isEs ? "Volver a la venta" : "Back to sale"}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmVoidSale}
+                className="px-5 py-2 rounded-md bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{isEs ? "Confirmar Anulación" : "Confirm Void"}</span>
+              </button>
             </div>
           </div>
         </div>

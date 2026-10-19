@@ -79,6 +79,8 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
             },
           },
           offlinePaymentsEnabled: true,
+          cardFeePercentage: true,
+          cardFeeEnabled: true,
           stripeChargesEnabled: true,
           stripePayoutsEnabled: true,
           authNetLoginId: true,
@@ -172,6 +174,8 @@ export default async function CheckoutTokenPage({ params }: PageProps) {
             storeName={cart.store.name}
             basePath={base}
             offlinePaymentsEnabled={Boolean(cart.store.offlinePaymentsEnabled)}
+            cardFeeEnabled={Boolean(cart.store.cardFeeEnabled)}
+            cardFeePercentage={cart.store.cardFeePercentage ? Number(cart.store.cardFeePercentage) : 0}
             stripeOnlinePaymentsEnabled={stripeOnlinePaymentsEnabled}
             onlinePaymentProvider={onlinePaymentProvider}
             authorizeNetConfig={authorizeNetReady ? {

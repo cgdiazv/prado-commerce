@@ -6,10 +6,14 @@ import { useRouter } from "next/navigation";
 import { ShoppingBag, Calendar, ArrowUpRight, DollarSign, Package } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
+import { CustomerCreditModule } from "./customer-credit-module";
+
 type Store = {
   id: string;
   name: string;
   currency: string;
+  lateInterestRate?: number | null;
+  lateInterestGraceDays?: number | null;
 };
 
 type AddressForm = {
@@ -49,8 +53,26 @@ export type CustomerOrder = {
   currency: string;
   status: string;
   paymentStatus: string;
+  dueDate?: string | null;
+  interestAmount?: number;
   createdAt: string;
   items: CustomerOrderItem[];
+};
+
+type CustomerPaymentRecord = {
+  id: string;
+  storeId: string;
+  customerId: string;
+  orderId?: string | null;
+  orderNumber?: number | null;
+  amount: number;
+  interestAmount: number;
+  paymentMethod: string;
+  reference?: string | null;
+  notes?: string | null;
+  receivedBy?: string | null;
+  paidAt: string;
+  createdAt?: string;
 };
 
 type Customer = {
@@ -63,7 +85,12 @@ type Customer = {
   groupId?: string | null;
   shippingAddress: AddressRecord | null;
   billingAddress: AddressRecord | null;
+  allowCredit?: boolean;
+  creditLimit?: number;
+  creditDays?: number;
+  creditInterestRate?: number;
   orders?: CustomerOrder[];
+  payments?: CustomerPaymentRecord[];
 };
 
 type EditCustomerFormProps = {
@@ -82,6 +109,11 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
   const [firstName, setFirstName] = useState(customer.firstName ?? "");
   const [lastName, setLastName] = useState(customer.lastName ?? "");
   const [phone, setPhone] = useState(customer.phone ?? "");
+
+  const [allowCredit, setAllowCredit] = useState(customer.allowCredit ?? false);
+  const [creditLimit, setCreditLimit] = useState(String(customer.creditLimit ?? 0));
+  const [creditDays, setCreditDays] = useState(String(customer.creditDays ?? 30));
+  const [creditInterestRate, setCreditInterestRate] = useState(String(customer.creditInterestRate ?? 0));
 
   const initShipping: AddressForm = {
     line1: customer.shippingAddress?.line1 ?? "",
@@ -141,6 +173,10 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           groupId: groupId || null,
           shippingAddress,
           billingAddress,
+          allowCredit,
+          creditLimit: parseFloat(creditLimit) || 0,
+          creditDays: parseInt(creditDays, 10) || 30,
+          creditInterestRate: parseFloat(creditInterestRate) || 0,
         }),
       });
 
@@ -444,6 +480,92 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               </label>
             </div>
           </div>
+
+          {/* Condiciones Comerciales y Línea de Crédito */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  {isEs ? "Condiciones de Crédito y Cobranza" : "Credit & Collection Terms"}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {isEs
+                    ? "Configura la autorización de compras al crédito, cupo máximo y tasa de mora."
+                    : "Configure credit purchase authorization, maximum limit, and late interest rate."}
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allowCredit}
+                  onChange={(e) => setAllowCredit(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs font-bold text-slate-800">
+                  {isEs ? "Habilitar Crédito" : "Enable Credit"}
+                </span>
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3 pt-1">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Límite de Crédito ($)" : "Credit Limit ($)"}
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  disabled={!allowCredit}
+                  value={creditLimit}
+                  onChange={(event) => setCreditLimit(event.target.value)}
+                  placeholder="0.00"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold font-mono outline-none transition placeholder:text-slate-400 focus:border-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+                <span className="text-[11px] text-slate-400">
+                  {isEs ? "Monto máximo autorizado para deber." : "Max authorized outstanding amount."}
+                </span>
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Plazo de Crédito (Días)" : "Credit Terms (Days)"}
+                </span>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  disabled={!allowCredit}
+                  value={creditDays}
+                  onChange={(event) => setCreditDays(event.target.value)}
+                  placeholder="30"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+                <span className="text-[11px] text-slate-400">
+                  {isEs ? "Días para vencimiento (ej. 15, 30, 60)." : "Days until due (e.g. 15, 30, 60)."}
+                </span>
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {isEs ? "Tasa Mensual por Mora (%)" : "Monthly Late Rate (%)"}
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  disabled={!allowCredit}
+                  value={creditInterestRate}
+                  onChange={(event) => setCreditInterestRate(event.target.value)}
+                  placeholder="0.00"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+                <span className="text-[11px] text-slate-400">
+                  {isEs ? "0% para usar la tasa global de la tienda." : "0% to use store default rate."}
+                </span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -473,6 +595,21 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           </button>
         </div>
       </form>
+
+      {/* Módulo de Cuentas por Cobrar (CxC), Abonos e Intereses por Mora */}
+      <CustomerCreditModule
+        customerId={customer.id}
+        storeId={customer.storeId}
+        customerName={[firstName, lastName].filter(Boolean).join(" ") || email}
+        customerEmail={email}
+        currencySymbol={currencySymbol}
+        isEs={isEs}
+        initialAllowCredit={allowCredit}
+        initialCreditLimit={parseFloat(creditLimit) || 0}
+        initialCreditDays={parseInt(creditDays, 10) || 30}
+        initialCreditInterestRate={parseFloat(creditInterestRate) || 0}
+        onCreditConfigUpdated={() => router.refresh()}
+      />
 
       {/* Amber POS: Historial de Compras por Producto y Ventas Anuales */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">

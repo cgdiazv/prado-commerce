@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
@@ -97,6 +97,10 @@ export async function GET(_req: Request, { params }: RouteContext) {
           timezone: true,
           allowedDomains: true,
           offlinePaymentsEnabled: true,
+          cardFeePercentage: true,
+          cardFeeEnabled: true,
+          lateInterestRate: true,
+          lateInterestGraceDays: true,
           welcomeEmailEnabled: true,
           orderConfirmationEmailEnabled: true,
           invoiceEmailEnabled: true,
@@ -264,6 +268,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone,
       allowedDomains,
       offlinePaymentsEnabled,
+      cardFeePercentage,
+      cardFeeEnabled,
+      lateInterestRate,
+      lateInterestGraceDays,
       authNetLoginId,
       authNetClientKey,
       authNetTransKey,
@@ -296,6 +304,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      cardFeePercentage?: number | string | null;
+      cardFeeEnabled?: boolean;
+      lateInterestRate?: number | string | null;
+      lateInterestGraceDays?: number;
       authNetLoginId?: string | null;
       authNetClientKey?: string | null;
       authNetTransKey?: string | null;
@@ -331,6 +343,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       timezone?: string;
       allowedDomains?: string[];
       offlinePaymentsEnabled?: boolean;
+      cardFeePercentage?: Prisma.Decimal | null;
+      cardFeeEnabled?: boolean;
+      lateInterestRate?: Prisma.Decimal | null;
+      lateInterestGraceDays?: number;
       authNetLoginId?: string | null;
       authNetClientKey?: string | null;
       authNetTransKeyEncrypted?: string | null;
@@ -506,6 +522,36 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           { error: "Authorize.net setup requires API Login ID, Public Client Key, and Transaction Key." },
           { status: 400 },
         );
+      }
+    }
+
+    if (typeof cardFeeEnabled === "boolean") {
+      updates.cardFeeEnabled = cardFeeEnabled;
+    }
+
+    if (cardFeePercentage !== undefined) {
+      if (cardFeePercentage === null || cardFeePercentage === "") {
+        updates.cardFeePercentage = new Prisma.Decimal(0.00);
+      } else {
+        const parsedFee = parseFloat(String(cardFeePercentage));
+        if (!isNaN(parsedFee) && parsedFee >= 0) {
+          updates.cardFeePercentage = new Prisma.Decimal(parsedFee.toFixed(2));
+        }
+      }
+    }
+
+    if (typeof lateInterestGraceDays === "number" && lateInterestGraceDays >= 0) {
+      updates.lateInterestGraceDays = Math.floor(lateInterestGraceDays);
+    }
+
+    if (lateInterestRate !== undefined) {
+      if (lateInterestRate === null || lateInterestRate === "") {
+        updates.lateInterestRate = new Prisma.Decimal(0.00);
+      } else {
+        const parsedLate = parseFloat(String(lateInterestRate));
+        if (!isNaN(parsedLate) && parsedLate >= 0) {
+          updates.lateInterestRate = new Prisma.Decimal(parsedLate.toFixed(2));
+        }
       }
     }
 

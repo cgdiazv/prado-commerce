@@ -93,6 +93,22 @@ export async function POST(request: Request) {
     });
     const validVariantMap = new Map(existingVariants.map((v) => [v.id, v]));
 
+    let dueDate: Date | null = null;
+    if (isCredit) {
+      if (body.dueDate) {
+        dueDate = new Date(body.dueDate);
+      } else {
+        const custRecord = customerId
+          ? await prisma.customer.findUnique({
+              where: { id: customerId },
+              select: { creditDays: true },
+            })
+          : null;
+        const days = custRecord?.creditDays || 30;
+        dueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      }
+    }
+
     // Create Order in database
     const order = await prisma.order.create({
       data: {
@@ -108,6 +124,7 @@ export async function POST(request: Request) {
         tax,
         shipping: 0,
         total,
+        dueDate,
         currency: store.currency || "USD",
         items: {
           create: lines.map((line) => {

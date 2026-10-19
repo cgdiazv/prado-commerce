@@ -51,6 +51,8 @@ type CheckoutFormProps = {
   storeId: string;
   initialShippingZones: ShippingZone[];
   offlinePaymentsEnabled?: boolean;
+  cardFeeEnabled?: boolean;
+  cardFeePercentage?: number;
   stripeOnlinePaymentsEnabled?: boolean;
   onlinePaymentProvider?: "stripe" | "authorize_net" | null;
   authorizeNetConfig?: {
@@ -68,6 +70,8 @@ export default function CheckoutForm({
   storeId,
   initialShippingZones,
   offlinePaymentsEnabled = false,
+  cardFeeEnabled = false,
+  cardFeePercentage = 0,
   stripeOnlinePaymentsEnabled = true,
   onlinePaymentProvider = null,
   authorizeNetConfig = null,
@@ -127,6 +131,17 @@ export default function CheckoutForm({
   const activePaymentProvider = activePaymentMethod === "card"
     ? (onlinePaymentProvider ?? (stripeOnlinePaymentsEnabled ? "stripe" : null))
     : "manual";
+
+  const cardFeeAmount = useMemo(() => {
+    if (activePaymentMethod !== "card" || !cardFeeEnabled || !cardFeePercentage || cardFeePercentage <= 0) {
+      return 0;
+    }
+    return Math.round(((subtotal + shippingAmount) * (cardFeePercentage / 100)) * 100) / 100;
+  }, [activePaymentMethod, cardFeeEnabled, cardFeePercentage, subtotal, shippingAmount]);
+
+  const payableTotal = useMemo(() => {
+    return subtotal + shippingAmount + cardFeeAmount;
+  }, [subtotal, shippingAmount, cardFeeAmount]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -264,6 +279,7 @@ export default function CheckoutForm({
           },
           shippingAmount,
           taxAmount: 0,
+          cardFeeAmount: cardFeeAmount > 0 ? cardFeeAmount : undefined,
           paymentMethod: activePaymentMethod,
           paymentProvider: activePaymentProvider,
           authorizeNetOpaqueData,
@@ -638,6 +654,30 @@ export default function CheckoutForm({
         ) : (
           <p className="mt-3 text-sm text-slate-500">No saved addresses yet.</p>
         )}
+      </div>
+
+      {/* Order Total Breakdown */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-sm shadow-xs">
+        <div className="flex justify-between text-slate-600">
+          <span>Subtotal</span>
+          <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
+        </div>
+        {shippingAmount > 0 && (
+          <div className="flex justify-between text-slate-600">
+            <span>Shipping</span>
+            <span className="font-semibold">{currency} {shippingAmount.toFixed(2)}</span>
+          </div>
+        )}
+        {cardFeeAmount > 0 && (
+          <div className="flex justify-between text-cyan-800 bg-cyan-50/80 -mx-2 px-2 py-1.5 rounded-lg border border-cyan-100">
+            <span className="font-medium">Credit Card Surcharge ({cardFeePercentage}%)</span>
+            <span className="font-bold">+{currency} {cardFeeAmount.toFixed(2)}</span>
+          </div>
+        )}
+        <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-bold text-slate-900">
+          <span>Total to Pay</span>
+          <span className="text-cyan-700">{currency} {payableTotal.toFixed(2)}</span>
+        </div>
       </div>
 
       <button

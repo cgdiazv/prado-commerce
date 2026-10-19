@@ -257,6 +257,8 @@ export async function POST(request: Request) {
         authNetClientKey: string | null;
         authNetTransKeyEncrypted: string | null;
         authNetEnv: string;
+        cardFeeEnabled?: boolean;
+        cardFeePercentage?: unknown;
         ownerUser?: {
           plan: SubscriptionPlan;
         } | null;
@@ -297,6 +299,8 @@ export async function POST(request: Request) {
               authNetClientKey: true,
               authNetTransKeyEncrypted: true,
               authNetEnv: true,
+              cardFeePercentage: true,
+              cardFeeEnabled: true,
               ownerUser: {
                 select: {
                   plan: true,
@@ -404,7 +408,16 @@ export async function POST(request: Request) {
     );
     const shipping = toDecimal(Math.max(0, shippingAmount));
     const tax = toDecimal(Math.max(0, taxAmount));
-    const total = toDecimal(subtotal + shipping + tax);
+
+    let cardFee = 0;
+    if (paymentMethod === "card" && cart.store?.cardFeeEnabled && cart.store?.cardFeePercentage) {
+      const feePercent = Number(cart.store.cardFeePercentage);
+      if (feePercent > 0) {
+        cardFee = toDecimal((subtotal + shipping + tax) * (feePercent / 100));
+      }
+    }
+
+    const total = toDecimal(subtotal + shipping + tax + cardFee);
 
     const stripeReady = Boolean(
       cart.store?.stripeConnectAccountId && cart.store?.stripeChargesEnabled && cart.store?.stripePayoutsEnabled,
@@ -470,6 +483,19 @@ export async function POST(request: Request) {
               unit_amount: Math.round(tax * 100),
               product_data: {
                 name: "Tax",
+              },
+            },
+          });
+        }
+
+        if (cardFee > 0) {
+          lineItems.push({
+            quantity: 1,
+            price_data: {
+              currency: currencyCode,
+              unit_amount: Math.round(cardFee * 100),
+              product_data: {
+                name: "Credit Card Surcharge / Recargo por Tarjeta",
               },
             },
           });

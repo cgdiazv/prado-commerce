@@ -134,6 +134,31 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updateData.groupId = groupId;
     }
 
+    if (body?.allowCredit !== undefined) {
+      updateData.allowCredit = Boolean(body.allowCredit);
+    }
+
+    if (body?.creditLimit !== undefined) {
+      const parsedLimit = parseFloat(body.creditLimit);
+      if (!isNaN(parsedLimit) && parsedLimit >= 0) {
+        updateData.creditLimit = new Prisma.Decimal(parsedLimit);
+      }
+    }
+
+    if (body?.creditDays !== undefined) {
+      const parsedDays = parseInt(body.creditDays, 10);
+      if (!isNaN(parsedDays) && parsedDays >= 0) {
+        updateData.creditDays = parsedDays;
+      }
+    }
+
+    if (body?.creditInterestRate !== undefined) {
+      const parsedRate = parseFloat(body.creditInterestRate);
+      if (!isNaN(parsedRate) && parsedRate >= 0) {
+        updateData.creditInterestRate = new Prisma.Decimal(parsedRate);
+      }
+    }
+
     const updatedCustomer = await prisma.customer.update({
       where: { id },
       data: updateData,
@@ -157,6 +182,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         phone: updatedCustomer.phone,
         groupId: updatedCustomer.groupId,
         group: updatedCustomer.group,
+        allowCredit: updatedCustomer.allowCredit,
+        creditLimit: Number(updatedCustomer.creditLimit),
+        creditDays: updatedCustomer.creditDays,
+        creditInterestRate: Number(updatedCustomer.creditInterestRate),
       },
     });
   } catch (error) {

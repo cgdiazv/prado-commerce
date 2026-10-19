@@ -66,13 +66,13 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     const updates: {
       status?: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
-      paymentStatus?: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+      paymentStatus?: "UNPAID" | "PARTIAL" | "PAID" | "REFUNDED" | "FAILED";
       fulfillmentStatus?: "UNFULFILLED" | "SHIPPED";
       shippedAt?: Date | null;
     } = {};
 
     const validStatuses = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
-    const validPaymentStatuses = ["UNPAID", "PAID", "REFUNDED", "FAILED"] as const;
+    const validPaymentStatuses = ["UNPAID", "PARTIAL", "PAID", "REFUNDED", "FAILED"] as const;
     const validFulfillmentStatuses = ["UNFULFILLED", "SHIPPED"] as const;
 
     const isOrderStatus = (value: string): value is (typeof validStatuses)[number] =>

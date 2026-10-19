@@ -28,6 +28,12 @@ type Customer = {
   group?: { id: string; name: string } | null;
   shippingAddress: unknown | null;
   billingAddress: unknown | null;
+  allowCredit?: boolean;
+  creditLimit?: number;
+  creditDays?: number;
+  creditInterestRate?: number;
+  currentBalance?: number;
+  availableCredit?: number;
   createdAt: string | Date;
 };
 
@@ -738,6 +744,9 @@ export function CustomersDashboard({
                       </button>
                     </th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      {isEs ? "Crédito / Saldo (CxC)" : "Credit / Balance"}
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("createdAt")}
@@ -776,6 +785,35 @@ export function CustomersDashboard({
                         <td className="px-4 py-3 align-top text-xs text-slate-700">{customer.phone || "-"}</td>
                         <td className="px-4 py-3 align-top text-xs text-slate-700">
                           {customer.group?.name || "—"}
+                        </td>
+                        <td className="px-4 py-3 align-top text-xs">
+                          {customer.allowCredit ? (
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5 font-bold">
+                                <span className={Number(customer.currentBalance || 0) > 0 ? "text-amber-700" : "text-emerald-700"}>
+                                  ${Number(customer.currentBalance || 0).toFixed(2)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-normal">
+                                  / ${Number(customer.creditLimit || 0).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="text-[10px]">
+                                {Number(customer.currentBalance || 0) > 0 ? (
+                                  <span className="inline-flex items-center gap-0.5 text-amber-700 font-medium">
+                                    • {isEs ? "Saldo pendiente" : "Pending debt"}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-0.5 text-emerald-700 font-medium">
+                                    • {isEs ? "Al día" : "Zero balance"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                              {isEs ? "Contado" : "Cash Only"}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 align-top text-xs text-slate-700">
                           {new Date(customer.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
