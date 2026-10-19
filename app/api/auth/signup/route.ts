@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const salesChannels = Array.isArray(body?.salesChannels)
       ? body.salesChannels.map((ch: unknown) => String(ch).trim()).filter(Boolean)
       : [];
-    const preferredTheme = ["MINIMAL", "BOLD", "CLASSIC"].includes(body?.preferredTheme)
+    const preferredTheme = ["MINIMAL", "RECINTO", "CLASSIC"].includes(body?.preferredTheme)
       ? body.preferredTheme
       : null;
     const questionnaireAnswers = body?.questionnaireAnswers && typeof body.questionnaireAnswers === "object"

@@ -289,7 +289,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       heroTitle?: string | null;
       heroSubtitle?: string | null;
       heroButtonText?: string | null;
-      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
+      activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;
@@ -323,7 +323,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       heroTitle?: string | null;
       heroSubtitle?: string | null;
       heroButtonText?: string | null;
-      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
+      activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC";
       customDomain?: string | null;
       customCss?: string | null;
       mainColor?: string;

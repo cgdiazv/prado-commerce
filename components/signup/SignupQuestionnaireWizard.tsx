@@ -59,10 +59,10 @@ const THEMES = [
     colorClass: "from-cyan-50 to-blue-50/50 border-cyan-300",
   },
   {
-    id: "BOLD" as const,
-    label: "Bold",
-    tagline: "High-contrast dynamic hero sections and vivid accents.",
-    colorClass: "from-purple-50 to-pink-50/50 border-purple-300",
+    id: "RECINTO" as const,
+    label: "Recinto",
+    tagline: "Warm, editorial aesthetic with refined typography and natural tones.",
+    colorClass: "from-stone-50 to-[#ecede5] border-[#344e41]",
   },
   {
     id: "CLASSIC" as const,
@@ -90,7 +90,7 @@ function SignupQuestionnaireWizardContent() {
   const [salesChannels, setSalesChannels] = useState<string[]>(["Online Web Storefront"]);
 
   // Step 3 State (Store Preferences)
-  const [preferredTheme, setPreferredTheme] = useState<"MINIMAL" | "BOLD" | "CLASSIC">("MINIMAL");
+  const [preferredTheme, setPreferredTheme] = useState<"MINIMAL" | "RECINTO" | "CLASSIC">("MINIMAL");
   const [primaryCurrency, setPrimaryCurrency] = useState("USD");
 
   // Submission State

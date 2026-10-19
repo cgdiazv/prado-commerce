@@ -92,10 +92,18 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
 
     if (!product) notFound();
 
+    const serializedProduct = {
+      ...product,
+      variants: product.variants.map((v) => ({
+        ...v,
+        price: v.price != null ? Number(v.price) : null,
+      })),
+    };
+
     return (
       <StorefrontProductClient
         store={store}
-        product={product}
+        product={serializedProduct}
         base=""
       />
     );
@@ -161,6 +169,22 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
     }),
   ]);
 
+  const serializedProducts = products.map((product) => ({
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  }));
+
+  const serializedFeaturedProducts = featuredProducts.map((product) => ({
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  }));
+
   if (activeCategoryFromPath) {
     const category = categories.find((candidate) => candidate.slug === activeCategoryFromPath);
 
@@ -173,7 +197,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         storeName={store.name}
         currency={store.currency}
         categoryName={category.name}
-        products={products}
+        products={serializedProducts}
         basePath=""
         theme={theme}
         searchQuery={searchQuery}
@@ -184,8 +208,8 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
   return (
     <StorefrontHomeClient
       store={store}
-      products={products}
-      featuredProducts={featuredProducts}
+      products={serializedProducts}
+      featuredProducts={serializedFeaturedProducts}
       categories={categories}
       base=""
     />

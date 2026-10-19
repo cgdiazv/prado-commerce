@@ -39,7 +39,7 @@ type StorefrontProductClientProps = {
     name: string;
     slug: string;
     logoUrl?: string | null;
-    activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC" | null;
+    activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC" | null;
     mainColor?: string;
     currency?: string;
   };

@@ -51,7 +51,12 @@ export default function StorefrontShell({
       />
       {children}
       <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
-      <StorefrontFooter storeName={store.name} />
+      <StorefrontFooter
+        storeName={store.name}
+        theme={theme}
+        categories={categories}
+        basePath={basePath}
+      />
     </div>
   );
 }

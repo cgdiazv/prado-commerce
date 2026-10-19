@@ -75,10 +75,18 @@ export default async function StorefrontProductPage({ params }: PageProps) {
   const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
   const base = isSubdomain ? "" : `/storefront/${store.slug}`;
 
+  const serializedProduct = {
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  };
+
   return (
     <StorefrontProductClient
       store={store}
-      product={product}
+      product={serializedProduct}
       base={base}
     />
   );

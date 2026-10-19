@@ -177,7 +177,7 @@ export async function POST(req: Request) {
       name?: string;
       slug?: string;
       logoUrl?: string | null;
-      activeTheme?: "MINIMAL" | "BOLD" | "CLASSIC";
+      activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC";
       customDomain?: string | null;
       mainColor?: string;
       currency?: string;

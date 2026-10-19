@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Lock, Sparkles, Check, Code } from "lucide-react";
+import { Lock, Check, Code } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { saveStoreCustomCss, type CustomCssActionState } from "./actions";
 
@@ -45,8 +45,7 @@ export default function CustomCssEditor({
                 <h2 className="text-base font-semibold text-slate-900">
                   {isEs ? "Inyector de CSS Personalizado" : "Custom CSS Injector"}
                 </h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-800">
-                  <Sparkles className="h-3 w-3" />
+                <span className="inline-flex items-center rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-800">
                   Pro &amp; Enterprise
                 </span>
               </div>
@@ -63,7 +62,6 @@ export default function CustomCssEditor({
               href="/pricing"
               className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
               {isEs ? "Actualizar a Pro" : "Upgrade to Pro"}
             </Link>
           ) : null}
@@ -91,7 +89,6 @@ export default function CustomCssEditor({
                 href="/pricing"
                 className="inline-flex items-center gap-1.5 rounded-full bg-cyan-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-cyan-800"
               >
-                <Sparkles className="h-3.5 w-3.5" />
                 {isEs ? "Desbloquear en Pro ($39/mes)" : "Unlock with Pro ($39/mo)"}
               </Link>
             </div>

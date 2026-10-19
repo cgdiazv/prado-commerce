@@ -450,7 +450,11 @@ export function EditStoreForm({ store, currentPlan = "STARTER" }: EditStoreFormP
 
         <div className="flex flex-wrap items-center gap-2">
           <a
-            href={`https://${domainLabel}`}
+            href={
+              typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+                ? `/storefront/${store.slug}`
+                : `https://${domainLabel}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"

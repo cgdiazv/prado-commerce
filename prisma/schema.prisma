@@ -116,7 +116,7 @@ model Store {
 
 enum StorefrontTheme {
   MINIMAL
-  BOLD
+  RECINTO
   CLASSIC
 }
 

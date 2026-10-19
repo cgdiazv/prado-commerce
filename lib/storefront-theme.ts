@@ -1,22 +1,24 @@
-export type StorefrontThemeId = "minimal" | "bold" | "classic";
+import type { StorefrontTheme } from "@prisma/client";
+
+export type StorefrontThemeId = "minimal" | "recinto" | "classic";
 
 export function normalizeStorefrontTheme(
-  value: "MINIMAL" | "BOLD" | "CLASSIC" | null | undefined,
+  value: StorefrontTheme | "recinto" | "minimal" | "classic" | null | undefined,
 ): StorefrontThemeId {
-  if (value === "BOLD") {
-    return "bold";
+  if (value === "RECINTO" || value === "recinto") {
+    return "recinto";
   }
 
-  if (value === "CLASSIC") {
+  if (value === "CLASSIC" || value === "classic") {
     return "classic";
   }
 
   return "minimal";
 }
 
-export function toStorefrontThemeEnum(value: StorefrontThemeId): "MINIMAL" | "BOLD" | "CLASSIC" {
-  if (value === "bold") {
-    return "BOLD";
+export function toStorefrontThemeEnum(value: StorefrontThemeId): StorefrontTheme {
+  if (value === "recinto") {
+    return "RECINTO";
   }
 
   if (value === "classic") {
@@ -27,14 +29,14 @@ export function toStorefrontThemeEnum(value: StorefrontThemeId): "MINIMAL" | "BO
 }
 
 export function getStorefrontThemeClasses(theme: StorefrontThemeId) {
-  if (theme === "bold") {
+  if (theme === "recinto") {
     return {
-      shell: "bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.2),_rgba(15,23,42,0.04)_45%,_rgba(248,250,252,1))] text-slate-900",
-      panel: "border-slate-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.14)]",
-      mutedPanel: "border-slate-300 bg-slate-50",
-      productCard: "border-slate-300 bg-white shadow-[0_14px_30px_rgba(15,23,42,0.12)] hover:shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
-      hero: "border-slate-300 bg-[linear-gradient(120deg,_rgba(15,23,42,0.98),_rgba(30,41,59,0.95))] text-white shadow-[0_20px_60px_rgba(15,23,42,0.3)]",
-      featuredWrap: "border-slate-300 bg-white/90",
+      shell: "bg-[#ffffff] text-[#252b27] selection:bg-[#344e41] selection:text-white",
+      panel: "border-[#e3e5de] bg-[#ffffff] shadow-none",
+      mutedPanel: "border-[#e3e5de] bg-[#f3f3ee]",
+      productCard: "border-[#e3e5de] bg-[#ffffff] hover:border-[#344e41]/30 transition-all duration-200",
+      hero: "border-transparent bg-[#ecede5] text-[#252b27]",
+      featuredWrap: "border-[#e3e5de] bg-[#f3f3ee]",
     };
   }
 
@@ -76,14 +78,14 @@ export function getStorefrontThemeHeroContentWithOverrides(
 ) {
   const isEs = lang === "es";
   const defaults =
-    theme === "bold"
+    theme === "recinto"
       ? {
-          eyebrow: isEs ? "Lanzamientos exclusivos" : "Limited drops",
-          title: isEs ? `Tienda ${storeName}, creada para destacar` : `${storeName} storefront, built to stand out`,
+          eyebrow: isEs ? "COLECCIÓN COTIDIANA" : "THE EVERYDAY COLLECTION",
+          title: isEs ? `Cosas buenas para días comunes en ${storeName}` : `Good things for ordinary days at ${storeName}`,
           subtitle: isEs
-            ? "Diseño de alto contraste, enfoque directo en productos y compra rápida."
-            : "High-contrast layout, punchy product focus, and quick cart actions for fast buying.",
-          buttonText: isEs ? "Ver destacados" : "Shop featured",
+            ? "Piezas pensadas para la vida diaria. Descubre un lado más cálido de lo esencial."
+            : "Thoughtful pieces for the way you live. Discover a softer side of everyday essentials.",
+          buttonText: isEs ? "Explorar colección" : "Shop the collection",
         }
       : theme === "classic"
         ? {

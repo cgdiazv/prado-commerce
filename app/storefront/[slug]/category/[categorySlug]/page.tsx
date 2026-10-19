@@ -87,12 +87,20 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   const isSubdomain = hdrs.get("x-storefront-subdomain") === "1";
   const basePath = isSubdomain ? "" : `/storefront/${category.store.slug}`;
 
+  const serializedProducts = products.map((product) => ({
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  }));
+
   return (
     <CategoryPageContent
       storeName={category.store.name}
       currency={category.store.currency}
       categoryName={category.name}
-      products={products}
+      products={serializedProducts}
       basePath={basePath}
       theme={normalizeStorefrontTheme(category.store.activeTheme)}
       searchQuery={searchQuery}

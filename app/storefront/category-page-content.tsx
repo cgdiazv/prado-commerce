@@ -117,7 +117,11 @@ export default function CategoryPageContent({
                           type="button"
                           data-prado-add={variantId}
                           data-prado-add-to-cart={variantId}
-                          className="relative z-10 rounded-full bg-[var(--store-main-color)] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
+                          className={`relative z-10 px-4 py-1.5 text-xs font-medium transition ${
+                            theme === "recinto"
+                              ? "rounded-[4px] border border-[#344e41] text-[#344e41] hover:bg-[#344e41] hover:text-white"
+                              : "rounded-full bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
+                          }`}
                         >
                           {t.storefront.addToCart}
                         </button>

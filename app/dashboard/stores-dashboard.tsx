@@ -309,7 +309,11 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             </td>
                             <td className="px-4 py-3 align-top text-xs text-slate-700">
                               <a
-                                href={`https://${domainLabel}`}
+                                href={
+                                  typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+                                    ? `/storefront/${store.slug}`
+                                    : `https://${domainLabel}`
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:text-slate-900 hover:underline"

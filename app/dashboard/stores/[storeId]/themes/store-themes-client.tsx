@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { activateStoreTheme } from "./actions";
@@ -8,7 +9,7 @@ import HeroImageManager from "./hero-image-manager";
 import HeroTextForm from "./hero-text-form";
 import CustomCssEditor from "./custom-css-editor";
 
-type ThemeId = "minimal" | "bold" | "classic";
+type ThemeId = "minimal" | "recinto" | "classic";
 
 type StoreData = {
   id: string;
@@ -41,6 +42,7 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
     title: string;
     description: string;
     swatch: string;
+    thumbnail?: string;
   }> = [
     {
       id: "minimal",
@@ -51,12 +53,13 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
       swatch: "from-slate-200 via-white to-slate-100",
     },
     {
-      id: "bold",
-      title: isEs ? "Audaz / Bold" : "Bold",
+      id: "recinto",
+      title: "Recinto",
       description: isEs
-        ? "Paneles de alto contraste, llamados a la acción llamativos y ritmo visual enérgico."
-        : "High-contrast panels, louder calls-to-action, and energetic visual rhythm.",
-      swatch: "from-cyan-300 via-blue-200 to-slate-900",
+        ? "Diseño editorial y sereno, tonos naturales cálidos, tipografía refinada y una atmósfera cotidiana acogedora."
+        : "Editorial and serene design, warm natural tones, refined typography, and an inviting everyday feel.",
+      swatch: "from-[#344e41] via-[#8c9987] to-[#ecede5]",
+      thumbnail: "/storefront/recinto/recinto-thumb.png",
     },
     {
       id: "classic",
@@ -82,12 +85,23 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
           </p>
         </div>
 
-        <Link
-          href="/dashboard/stores"
-          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-        >
-          {isEs ? "← Volver" : "Back"}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/storefront/${store.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
+          >
+            <span>{isEs ? "Ver tienda" : "View storefront"}</span>
+            <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+          </Link>
+          <Link
+            href="/dashboard/stores"
+            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            {isEs ? "← Volver" : "Back"}
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -101,17 +115,28 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
             >
               <div className="p-5">
                 <div
-                  className={`aspect-[16/10] rounded-xl border border-slate-200 bg-gradient-to-br ${theme.swatch} p-3`}
+                  className={`relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br ${theme.swatch} ${
+                    theme.thumbnail ? "p-0 bg-slate-100" : "p-3"
+                  }`}
                 >
-                  <div className="h-full w-full rounded-lg border border-white/60 bg-white/70 p-3 backdrop-blur-[1px]">
-                    <div className="mb-2 h-2.5 w-14 rounded-full bg-slate-400/70" />
-                    <div className="mb-2 h-2 w-2/3 rounded-full bg-slate-300/80" />
-                    <div className="grid grid-cols-3 gap-2 pt-2">
-                      <span className="h-12 rounded-md bg-white/70" />
-                      <span className="h-12 rounded-md bg-white/70" />
-                      <span className="h-12 rounded-md bg-white/70" />
+                  {theme.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={theme.thumbnail}
+                      alt={`${theme.title} theme preview`}
+                      className="h-full w-full object-cover object-top transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full rounded-lg border border-white/60 bg-white/70 p-3 backdrop-blur-[1px]">
+                      <div className="mb-2 h-2.5 w-14 rounded-full bg-slate-400/70" />
+                      <div className="mb-2 h-2 w-2/3 rounded-full bg-slate-300/80" />
+                      <div className="grid grid-cols-3 gap-2 pt-2">
+                        <span className="h-12 rounded-md bg-white/70" />
+                        <span className="h-12 rounded-md bg-white/70" />
+                        <span className="h-12 rounded-md bg-white/70" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="mt-4 space-y-2">

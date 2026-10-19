@@ -100,11 +100,27 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
     }),
   ]);
 
+  const serializedProducts = products.map((product) => ({
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  }));
+
+  const serializedFeaturedProducts = featuredProducts.map((product) => ({
+    ...product,
+    variants: product.variants.map((v) => ({
+      ...v,
+      price: v.price != null ? Number(v.price) : null,
+    })),
+  }));
+
   return (
     <StorefrontHomeClient
       store={store}
-      products={products}
-      featuredProducts={featuredProducts}
+      products={serializedProducts}
+      featuredProducts={serializedFeaturedProducts}
       categories={categories}
       base={base}
     />
