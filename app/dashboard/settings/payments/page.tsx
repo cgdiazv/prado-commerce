@@ -936,7 +936,7 @@ export default function PaymentsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-slate-950">Pixelpay</h2>
-                    <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-800 uppercase tracking-wider">
+                    <span className="rounded-md bg-[#3975f4] px-2 py-0.5 text-[10px] font-semibold text-white uppercase tracking-wider">
                       Centroamérica &amp; LATAM
                     </span>
                   </div>
