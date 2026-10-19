@@ -332,14 +332,14 @@ export function CustomersDashboard({
         </div>
 
         {/* Desktop Controls (lg+) */}
-        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
-          <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
-            <div className="relative mt-2">
+        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-center">
+          <div className="w-full shrink-0 lg:w-56">
+            <div className="relative">
               <Store className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <select
                 value={activeStoreId}
                 onChange={(event) => void handleStoreChange(event.target.value)}
+                aria-label={isEs ? "Seleccionar tienda" : "Select store"}
                 className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
               >
                 <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
@@ -353,33 +353,31 @@ export function CustomersDashboard({
             </div>
           </div>
 
-          <label className="w-full min-w-0 flex-1 flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
-            <div className="relative mt-2">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => {
-                  setSearchQuery(event.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder={isEs ? "Nombre, correo, teléfono o grupo" : "Name, email, phone, or group"}
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </div>
+          <label className="relative w-full min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              aria-label={isEs ? "Buscar" : "Search"}
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={isEs ? "Nombre, correo, teléfono o grupo" : "Name, email, phone, or group"}
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
           </label>
 
           {groups.length > 0 && (
-            <div className="w-full shrink-0 flex-col gap-2 lg:w-48">
-              <span className="text-sm font-medium text-slate-700">{isEs ? "Filtrar por grupo" : "Filter by group"}</span>
+            <div className="w-full shrink-0 lg:w-48">
               <select
                 value={selectedGroupFilter}
                 onChange={(e) => {
                   setSelectedGroupFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                aria-label={isEs ? "Filtrar por grupo" : "Filter by group"}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
                 <option value="">{isEs ? "Todos los grupos" : "All groups"}</option>
                 <option value="__none__">{isEs ? "Sin grupo" : "Without group"}</option>
@@ -392,33 +390,29 @@ export function CustomersDashboard({
             </div>
           )}
 
-          <div className="w-full shrink-0 flex-col gap-2 lg:ml-auto lg:w-auto">
-            <div className="flex justify-end">
-              <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-3 lg:justify-end">
-              <button
-                type="button"
-                onClick={() => void handleApplyBulkAction()}
-                disabled={
-                  isApplyingBulkAction ||
-                  !bulkAction ||
-                  (bulkAction === "delete" && validSelectedCustomerIds.length === 0)
-                }
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isEs ? "Aplicar" : "Apply"}
-              </button>
-              <select
-                value={bulkAction}
-                onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
-                className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
-                <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
-                <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
-              </select>
-            </div>
+          <div className="flex w-full items-center gap-3 shrink-0 lg:ml-auto lg:w-auto">
+            <button
+              type="button"
+              onClick={() => void handleApplyBulkAction()}
+              disabled={
+                isApplyingBulkAction ||
+                !bulkAction ||
+                (bulkAction === "delete" && validSelectedCustomerIds.length === 0)
+              }
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isEs ? "Aplicar" : "Apply"}
+            </button>
+            <select
+              value={bulkAction}
+              onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+              aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
+              className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+              <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
+              <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
+            </select>
           </div>
         </div>
 
@@ -430,7 +424,6 @@ export function CustomersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "store" ? null : "store"))}
               aria-label={isEs ? "Seleccionar tienda" : "Select store"}
-              title={isEs ? "Tienda" : "Store"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "store"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"
@@ -445,7 +438,6 @@ export function CustomersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "search" ? null : "search"))}
               aria-label={isEs ? "Buscar clientes" : "Search customers"}
-              title={isEs ? "Buscar" : "Search"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "search"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"
@@ -463,7 +455,6 @@ export function CustomersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "actions" ? null : "actions"))}
               aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
-              title={isEs ? "Acciones" : "Actions"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "actions"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"

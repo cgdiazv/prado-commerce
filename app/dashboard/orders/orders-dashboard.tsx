@@ -388,14 +388,14 @@ export function OrdersDashboard({
         </div>
 
         {/* Desktop Controls (lg+) */}
-        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-end">
-          <div className="w-full shrink-0 flex-col gap-2 lg:w-56">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
-            <div className="relative mt-2">
+        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-center">
+          <div className="w-full shrink-0 lg:w-56">
+            <div className="relative">
               <Store className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <select
                 value={activeStoreId}
                 onChange={(event) => void handleStoreChange(event.target.value)}
+                aria-label={isEs ? "Seleccionar tienda" : "Select store"}
                 className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
               >
                 <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
@@ -409,56 +409,50 @@ export function OrdersDashboard({
             </div>
           </div>
 
-          <label className="w-full min-w-0 flex-1 flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Buscar" : "Search"}</span>
-            <div className="relative mt-2">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => {
-                  setSearchQuery(event.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder={isEs ? "Cliente, estado o pago" : "Customer, status, or payment"}
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-            </div>
+          <label className="relative w-full min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              aria-label={isEs ? "Buscar" : "Search"}
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={isEs ? "Cliente, estado o pago" : "Customer, status, or payment"}
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            />
           </label>
 
-          <div className="w-full shrink-0 flex-col gap-2 lg:ml-auto lg:w-auto">
-            <div className="flex justify-end">
-              <span className="whitespace-nowrap text-sm font-medium text-slate-700">{isEs ? "Acciones" : "Actions"}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-3 lg:justify-end">
-              <button
-                type="button"
-                onClick={() => void handleApplyBulkAction()}
-                disabled={
-                  isApplyingBulkAction ||
-                  !bulkAction ||
-                  (bulkAction !== "clear" && selectedOrderIds.length === 0)
-                }
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isEs ? "Aplicar" : "Apply"}
-              </button>
-              <select
-                value={bulkAction}
-                onChange={(event) => setBulkAction(event.target.value as typeof bulkAction)}
-                className="w-52 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
-                <option value="status_processing">{isEs ? "Marcar en proceso" : "Mark as processing"}</option>
-                <option value="status_completed">{isEs ? "Marcar como completado" : "Mark as completed"}</option>
-                <option value="status_cancelled">{isEs ? "Marcar como cancelado" : "Mark as cancelled"}</option>
-                <option value="status_cancelled_restock">{isEs ? "Cancelar y devolver al inventario" : "Cancel & restock inventory"}</option>
-                <option value="payment_paid">{isEs ? "Marcar como pagado" : "Mark as paid"}</option>
-                <option value="payment_refunded">{isEs ? "Marcar como reembolsado" : "Mark as refunded"}</option>
-                <option value="payment_refunded_restock">{isEs ? "Reembolsar y devolver al inventario" : "Refund & restock inventory"}</option>
-                <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
-              </select>
-            </div>
+          <div className="flex w-full items-center gap-3 shrink-0 lg:ml-auto lg:w-auto">
+            <button
+              type="button"
+              onClick={() => void handleApplyBulkAction()}
+              disabled={
+                isApplyingBulkAction ||
+                !bulkAction ||
+                (bulkAction !== "clear" && selectedOrderIds.length === 0)
+              }
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isEs ? "Aplicar" : "Apply"}
+            </button>
+            <select
+              value={bulkAction}
+              onChange={(event) => setBulkAction(event.target.value as typeof bulkAction)}
+              aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
+              className="w-52 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+              <option value="status_processing">{isEs ? "Marcar en proceso" : "Mark as processing"}</option>
+              <option value="status_completed">{isEs ? "Marcar como completado" : "Mark as completed"}</option>
+              <option value="status_cancelled">{isEs ? "Marcar como cancelado" : "Mark as cancelled"}</option>
+              <option value="status_cancelled_restock">{isEs ? "Cancelar y devolver al inventario" : "Cancel & restock inventory"}</option>
+              <option value="payment_paid">{isEs ? "Marcar como pagado" : "Mark as paid"}</option>
+              <option value="payment_refunded">{isEs ? "Marcar como reembolsado" : "Mark as refunded"}</option>
+              <option value="payment_refunded_restock">{isEs ? "Reembolsar y devolver al inventario" : "Refund & restock inventory"}</option>
+              <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
+            </select>
           </div>
         </div>
 
@@ -470,7 +464,6 @@ export function OrdersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "store" ? null : "store"))}
               aria-label={isEs ? "Seleccionar tienda" : "Select store"}
-              title={isEs ? "Tienda" : "Store"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "store"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"
@@ -485,7 +478,6 @@ export function OrdersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "search" ? null : "search"))}
               aria-label={isEs ? "Buscar pedidos" : "Search orders"}
-              title={isEs ? "Buscar" : "Search"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "search"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"
@@ -503,7 +495,6 @@ export function OrdersDashboard({
               type="button"
               onClick={() => setMobileActiveFilter((prev) => (prev === "actions" ? null : "actions"))}
               aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
-              title={isEs ? "Acciones" : "Actions"}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl border transition ${
                 mobileActiveFilter === "actions"
                   ? "border-slate-950 bg-slate-950 text-white shadow-sm"
