@@ -346,21 +346,14 @@ export function ConsignmentsClient({
       {/* Top Banner & Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm shadow-violet-200">
-              <Boxes className="h-5 w-5" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {isEs ? "Módulo de Consignaciones" : "Consignments Module"}
-              </h1>
-              <p className="text-sm text-slate-500">
-                {isEs
-                  ? "Control formal de inventario recibido de proveedores y entregado a terceros con liquidaciones periódicas."
-                  : "Formal consignment management for goods received from vendors or placed with third parties."}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {isEs ? "Consignaciones" : "Consignments"}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {isEs
+              ? "Control formal de inventario recibido de proveedores y entregado a terceros con liquidaciones periódicas."
+              : "Formal consignment management for goods received from vendors or placed with third parties."}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -383,7 +376,7 @@ export function ConsignmentsClient({
               setNewStoreId(selectedStoreId || stores[0]?.id || "");
               setIsNewModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 hover:bg-violet-700 active:scale-[0.98] transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.98] transition-all"
           >
             <Plus className="h-4 w-4" />
             {isEs ? "Nueva Consignación" : "New Consignment"}
@@ -395,13 +388,11 @@ export function ConsignmentsClient({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Activas */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Consignaciones Activas" : "Active Consignments"}
             </span>
-            <span className="rounded-lg bg-emerald-50 p-2 text-emerald-600">
-              <Clock className="h-4 w-4" />
-            </span>
+            <Clock className="h-4 w-4 text-slate-400" />
           </div>
           <div className="mt-2 text-2xl font-bold text-slate-900">{metrics.activeCount}</div>
           <p className="mt-1 text-xs text-slate-500">
@@ -411,13 +402,11 @@ export function ConsignmentsClient({
 
         {/* Card 2: Monto Total Pactado */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Valor Total Pactado" : "Total Consignment Value"}
             </span>
-            <span className="rounded-lg bg-blue-50 p-2 text-blue-600">
-              <Boxes className="h-4 w-4" />
-            </span>
+            <Boxes className="h-4 w-4 text-slate-400" />
           </div>
           <div className="mt-2 text-2xl font-bold text-slate-900">
             {formatCurrency(metrics.totalAgreed)}
@@ -429,15 +418,13 @@ export function ConsignmentsClient({
 
         {/* Card 3: Monto Liquidado */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Total Liquidado / Pagado" : "Total Settled / Paid"}
             </span>
-            <span className="rounded-lg bg-violet-50 p-2 text-violet-600">
-              <CheckCircle2 className="h-4 w-4" />
-            </span>
+            <CheckCircle2 className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-violet-700">
+          <div className="mt-2 text-2xl font-bold text-slate-900">
             {formatCurrency(metrics.totalSettled)}
           </div>
           <p className="mt-1 text-xs text-slate-500">
@@ -447,15 +434,13 @@ export function ConsignmentsClient({
 
         {/* Card 4: Saldo Pendiente */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">
               {isEs ? "Saldo Pendiente" : "Pending Balance"}
             </span>
-            <span className="rounded-lg bg-amber-50 p-2 text-amber-600">
-              <DollarSign className="h-4 w-4" />
-            </span>
+            <DollarSign className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-amber-600">
+          <div className="mt-2 text-2xl font-bold text-slate-900">
             {formatCurrency(metrics.pendingBalance)}
           </div>
           <p className="mt-1 text-xs text-slate-500">
@@ -465,7 +450,7 @@ export function ConsignmentsClient({
       </div>
 
       {/* Tabs & Filters */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* Type tabs */}
         <div className="inline-flex rounded-xl bg-slate-100 p-1">
           <button
@@ -482,22 +467,22 @@ export function ConsignmentsClient({
             onClick={() => setActiveTab("RECEIVED")}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               activeTab === "RECEIVED"
-                ? "bg-white text-emerald-700 shadow-sm"
+                ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <ArrowDownLeft className="h-3.5 w-3.5" />
+            <ArrowDownLeft className="h-3.5 w-3.5 text-slate-500" />
             {isEs ? "Recibidas (de Proveedor)" : "Received (from Vendor)"}
           </button>
           <button
             onClick={() => setActiveTab("GIVEN")}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               activeTab === "GIVEN"
-                ? "bg-white text-blue-700 shadow-sm"
+                ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <ArrowUpRight className="h-3.5 w-3.5" />
+            <ArrowUpRight className="h-3.5 w-3.5 text-slate-500" />
             {isEs ? "Entregadas (a Tercero)" : "Given (to Third Party)"}
           </button>
         </div>
@@ -511,14 +496,14 @@ export function ConsignmentsClient({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={isEs ? "Buscar código, contacto, producto..." : "Search code, contact, product..."}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-violet-500 focus:bg-white focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 shadow-xs focus:border-slate-400 focus:outline-none"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:border-violet-500 focus:bg-white focus:outline-none"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-xs focus:border-slate-400 focus:outline-none"
           >
             <option value="ALL">{isEs ? "Todos los estados" : "All statuses"}</option>
             <option value="ACTIVE">{isEs ? "Activas" : "Active"}</option>
@@ -543,7 +528,7 @@ export function ConsignmentsClient({
             </p>
             <button
               onClick={() => setIsNewModalOpen(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-violet-700"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
             >
               <Plus className="h-4 w-4" />
               {isEs ? "Crear primera consignación" : "Create first consignment"}
@@ -619,13 +604,13 @@ export function ConsignmentsClient({
 
                       {/* Settled */}
                       <td className="px-5 py-4">
-                        <div className="text-xs font-bold text-violet-700">
+                        <div className="text-xs font-bold text-slate-900">
                           {formatCurrency(consignment.totalSettledAmount, consignment.currency)}
                         </div>
                         <div className="mt-1.5 flex items-center gap-2">
                           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className="h-full bg-violet-600 rounded-full"
+                              className="h-full bg-slate-900 rounded-full"
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -670,7 +655,7 @@ export function ConsignmentsClient({
                           {consignment.status === "ACTIVE" && remainingUnits > 0 && (
                             <button
                               onClick={() => openSettlementModal(consignment)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700 active:scale-[0.98] transition-all"
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 active:scale-[0.98] transition-all"
                             >
                               <Receipt className="h-3.5 w-3.5" />
                               {isEs ? "Liquidar" : "Settle"}
@@ -693,7 +678,7 @@ export function ConsignmentsClient({
           <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                   <Boxes className="h-5 w-5" />
                 </span>
                 <div>
@@ -1012,7 +997,7 @@ export function ConsignmentsClient({
                 <div className="flex justify-end pt-2">
                   <div className="text-right">
                     <span className="text-xs text-slate-500">{isEs ? "Total Pactado Estimado:" : "Estimated Agreed Total:"}</span>
-                    <span className="ml-2 text-base font-bold text-violet-700">
+                    <span className="ml-2 text-base font-bold text-slate-900">
                       {formatCurrency(
                         newItems.reduce((s, i) => s + i.initialQuantity * i.agreedCost, 0)
                       )}
@@ -1033,7 +1018,7 @@ export function ConsignmentsClient({
                 <button
                   type="submit"
                   disabled={isSubmittingNew}
-                  className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-violet-200 hover:bg-violet-700 disabled:opacity-50"
+                  className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
                 >
                   {isSubmittingNew
                     ? (isEs ? "Guardando..." : "Saving...")
@@ -1051,7 +1036,7 @@ export function ConsignmentsClient({
           <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                   <Boxes className="h-5 w-5" />
                 </span>
                 <div>
@@ -1094,7 +1079,7 @@ export function ConsignmentsClient({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isEs ? "Total Liquidado" : "Total Settled"}
                 </span>
-                <div className="mt-1 text-lg font-bold text-violet-700">
+                <div className="mt-1 text-lg font-bold text-slate-900">
                   {formatCurrency(selectedConsignment.totalSettledAmount, selectedConsignment.currency)}
                 </div>
               </div>
@@ -1102,7 +1087,7 @@ export function ConsignmentsClient({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isEs ? "Saldo Pendiente" : "Pending Balance"}
                 </span>
-                <div className="mt-1 text-lg font-bold text-amber-600">
+                <div className="mt-1 text-lg font-bold text-slate-900">
                   {formatCurrency(
                     Math.max(
                       0,
@@ -1144,7 +1129,7 @@ export function ConsignmentsClient({
                             {item.sku && <span className="ml-1 text-[10px] text-slate-400">({item.sku})</span>}
                           </td>
                           <td className="px-3 py-2.5 text-center font-medium">{item.initialQuantity}</td>
-                          <td className="px-3 py-2.5 text-center font-bold text-violet-700">{item.soldQuantity}</td>
+                          <td className="px-3 py-2.5 text-center font-bold text-slate-900">{item.soldQuantity}</td>
                           <td className="px-3 py-2.5 text-center text-slate-500">{item.returnedQuantity}</td>
                           <td className="px-3 py-2.5 text-center font-semibold text-emerald-700">{available}</td>
                           <td className="px-3 py-2.5 text-right text-slate-600">
@@ -1228,7 +1213,7 @@ export function ConsignmentsClient({
                     setSelectedConsignment(null);
                     openSettlementModal(c);
                   }}
-                  className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-violet-700"
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
                 >
                   {isEs ? "Liquidar Esta Consignación" : "Settle Consignment"}
                 </button>
@@ -1250,7 +1235,7 @@ export function ConsignmentsClient({
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                   <Receipt className="h-5 w-5" />
                 </span>
                 <div>
@@ -1360,11 +1345,11 @@ export function ConsignmentsClient({
               </div>
 
               {/* Settlement summary banner */}
-              <div className="flex items-center justify-between rounded-xl bg-violet-50 p-4 border border-violet-100">
-                <span className="text-xs font-bold uppercase tracking-wider text-violet-900">
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 border border-slate-200">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   {isEs ? "Monto Total de Liquidación:" : "Total Settlement Amount:"}
                 </span>
-                <span className="text-xl font-black text-violet-700">
+                <span className="text-xl font-black text-slate-900">
                   {formatCurrency(currentSettlementTotal, settleConsignment.currency)}
                 </span>
               </div>
@@ -1427,7 +1412,7 @@ export function ConsignmentsClient({
                 <button
                   type="submit"
                   disabled={isSubmittingSettle || currentSettlementTotal <= 0}
-                  className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-violet-200 hover:bg-violet-700 disabled:opacity-50"
+                  className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
                 >
                   {isSubmittingSettle
                     ? (isEs ? "Procesando..." : "Processing...")
@@ -1511,14 +1496,14 @@ export function ConsignmentsClient({
               </div>
 
               {/* Amount Highlight */}
-              <div className="rounded-2xl border border-violet-200 bg-violet-50/70 p-4 text-center">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   {isEs ? "Monto Total Liquidado" : "Total Settled Amount"}
                 </span>
-                <div className="mt-1 text-2xl font-black text-violet-900">
+                <div className="mt-1 text-2xl font-black text-slate-900">
                   {formatCurrency(receiptSettlement.settlement.totalAmount, receiptSettlement.consignment.currency)}
                 </div>
-                <p className="mt-1 text-[11px] text-violet-700">
+                <p className="mt-1 text-[11px] text-slate-500">
                   {receiptSettlement.settlement.totalUnitsSold} {isEs ? "unidades vendidas" : "units sold"}
                 </p>
               </div>
