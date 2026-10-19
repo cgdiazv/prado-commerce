@@ -156,6 +156,7 @@ export interface Translations {
     reports: string;
     salesByCustomer: string;
     salesByBrand: string;
+    monthlyProfitAndCost: string;
     customers: string;
     allCustomers: string;
     addCustomer: string;
@@ -501,6 +502,7 @@ export const translations: Record<Language, Translations> = {
       reports: "Reportes",
       salesByCustomer: "Ventas por cliente",
       salesByBrand: "Ventas por marca",
+      monthlyProfitAndCost: "Ventas, costo y profit mensual",
       customers: "Clientes",
       allCustomers: "Todos los clientes",
       addCustomer: "Nuevo cliente",
@@ -844,6 +846,7 @@ export const translations: Record<Language, Translations> = {
       reports: "Reports",
       salesByCustomer: "Sales by Customer",
       salesByBrand: "Sales by Brand",
+      monthlyProfitAndCost: "Monthly Profit & Cost",
       customers: "Customers",
       allCustomers: "All Customers",
       addCustomer: "New Customer",

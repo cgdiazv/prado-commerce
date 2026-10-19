@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import ReportsDashboardClient, {
@@ -6,7 +7,17 @@ import ReportsDashboardClient, {
   ReportSummary,
 } from "./reports-dashboard-client";
 
-export default async function ReportsPage() {
+export default async function ReportsPage(props: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const resolvedParams = props.searchParams ? await props.searchParams : undefined;
+  const initialTab =
+    resolvedParams?.tab === "brands"
+      ? "brands"
+      : resolvedParams?.tab === "profit"
+        ? "profit"
+        : "customers";
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -31,23 +42,26 @@ export default async function ReportsPage() {
 
   if (storeIds.length === 0) {
     return (
-      <ReportsDashboardClient
-        initialCustomers={[]}
-        initialBrands={[]}
-        initialSummary={{
-          totalRevenue: 0,
-          totalCost: 0,
-          totalProfit: 0,
-          profitMargin: 0,
-          totalOrdersCount: 0,
-          averageOrderValue: 0,
-          uniqueCustomers: 0,
-          uniqueBrands: 0,
-          monthlyBreakdown: [],
-        }}
-        stores={[]}
-        availableYears={[new Date().getFullYear().toString()]}
-      />
+      <Suspense fallback={null}>
+        <ReportsDashboardClient
+          initialCustomers={[]}
+          initialBrands={[]}
+          initialSummary={{
+            totalRevenue: 0,
+            totalCost: 0,
+            totalProfit: 0,
+            profitMargin: 0,
+            totalOrdersCount: 0,
+            averageOrderValue: 0,
+            uniqueCustomers: 0,
+            uniqueBrands: 0,
+            monthlyBreakdown: [],
+          }}
+          stores={[]}
+          availableYears={[new Date().getFullYear().toString()]}
+          initialTab={initialTab}
+        />
+      </Suspense>
     );
   }
 
@@ -349,12 +363,15 @@ export default async function ReportsPage() {
   };
 
   return (
-    <ReportsDashboardClient
-      initialCustomers={customersResult}
-      initialBrands={brandsResult}
-      initialSummary={summary}
-      stores={JSON.parse(JSON.stringify(stores))}
-      availableYears={availableYears}
-    />
+    <Suspense fallback={null}>
+      <ReportsDashboardClient
+        initialCustomers={customersResult}
+        initialBrands={brandsResult}
+        initialSummary={summary}
+        stores={JSON.parse(JSON.stringify(stores))}
+        availableYears={availableYears}
+        initialTab={initialTab}
+      />
+    </Suspense>
   );
 }

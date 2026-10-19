@@ -92,6 +92,9 @@ export interface POSModuleProps {
   posSettings?: PosStoreSettings;
   activeCashierName?: string;
   isCashier?: boolean;
+  stores?: Array<{ id: string; name: string; currency: string }>;
+  activeStoreId?: string;
+  onSelectStore?: (storeId: string) => void;
 }
 
 export default function POSModule({
@@ -111,6 +114,9 @@ export default function POSModule({
   posSettings,
   activeCashierName,
   isCashier = false,
+  stores = [],
+  activeStoreId,
+  onSelectStore,
 }: POSModuleProps) {
   const { language: contextLang } = useLanguage();
   const activeLang = propLanguage || contextLang || "en";
@@ -1037,6 +1043,31 @@ export default function POSModule({
               <span className="font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap text-cyan-400">
                 {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
               </span>
+
+              {/* Selector de Tienda Activa */}
+              {!isCashier && stores && stores.length > 1 ? (
+                <div className="flex items-center gap-1.5 bg-slate-800/90 hover:bg-slate-700/90 px-2 py-1 rounded-md border border-slate-700 text-[11px] text-white">
+                  <Store className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <select
+                    value={activeStoreId}
+                    onChange={(e) => onSelectStore?.(e.target.value)}
+                    className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                        {s.name} ({s.currency})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : stores && stores.length === 1 ? (
+                <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700 text-[11px] text-slate-300">
+                  <Store className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="font-semibold text-slate-200 truncate max-w-[140px]">
+                    {stores[0].name} ({stores[0].currency})
+                  </span>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={handleOpenShiftModal}

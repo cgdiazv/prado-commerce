@@ -1062,17 +1062,17 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                     disabled={isNonPhysicalProduct}
                   />
                   <Field
-                    label={isEs ? "Precio (P1)" : "Price (P1)"}
-                    value={variant.price}
-                    onChange={(value) => updateVariant(index, { price: value })}
-                    placeholder="99.00"
-                    type="number"
-                  />
-                  <Field
                     label={isEs ? "Costo unitario (Costo)" : "Unit cost (Cost)"}
                     value={variant.costPrice}
                     onChange={(value) => updateVariant(index, { costPrice: value })}
                     placeholder="45.00"
+                    type="number"
+                  />
+                  <Field
+                    label={isEs ? "Precio (P1)" : "Price (P1)"}
+                    value={variant.price}
+                    onChange={(value) => updateVariant(index, { price: value })}
+                    placeholder="99.00"
                     type="number"
                   />
                   <Field

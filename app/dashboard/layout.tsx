@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3 } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
@@ -294,6 +294,7 @@ export default function DashboardLayout({
       children: [
         { href: "/dashboard/reports?tab=customers", label: t.dashboard.salesByCustomer },
         { href: "/dashboard/reports?tab=brands", label: t.dashboard.salesByBrand },
+        { href: "/dashboard/reports?tab=profit", label: t.dashboard.monthlyProfitAndCost },
       ],
     },
   ];
@@ -329,6 +330,33 @@ export default function DashboardLayout({
 
   function toggleSection(href: string) {
     setOpenSection((current) => (current === href ? null : href));
+  }
+
+  function ReportsSubLink({
+    child,
+    onNavigate,
+  }: {
+    child: NavChild;
+    onNavigate?: () => void;
+  }) {
+    const searchParams = useSearchParams();
+    const currentTab = searchParams?.get("tab") || "customers";
+    const childTab = child.href.includes("tab=") ? child.href.split("tab=")[1] : "customers";
+    const childActive = currentTab === childTab;
+
+    return (
+      <Link
+        href={child.href}
+        onClick={() => onNavigate?.()}
+        className={`block truncate rounded px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition border-l-2 ${
+          childActive
+            ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+            : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        }`}
+      >
+        {child.label}
+      </Link>
+    );
   }
 
   function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -387,6 +415,25 @@ export default function DashboardLayout({
                 {item.children && isSectionOpen(item.href) ? (
                   <div className="ml-5 space-y-1 border-l border-slate-200 pl-2">
                     {item.children.map((child) => {
+                      if (item.href === "/dashboard/reports") {
+                        return (
+                          <Suspense
+                            key={`${child.href}:${child.label}`}
+                            fallback={
+                              <Link
+                                href={child.href}
+                                onClick={() => onNavigate?.()}
+                                className="block truncate rounded px-2 py-1.5 text-xs font-semibold tracking-[0.02em] transition border-l-2 border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                              >
+                                {child.label}
+                              </Link>
+                            }
+                          >
+                            <ReportsSubLink child={child} onNavigate={onNavigate} />
+                          </Suspense>
+                        );
+                      }
+
                       const childActive =
                         item.href === "/dashboard/orders"
                           ? child.href === "/dashboard/orders/new"

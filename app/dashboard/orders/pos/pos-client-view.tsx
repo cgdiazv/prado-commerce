@@ -433,6 +433,11 @@ export function PosClientView({
       {/* Embedded POS Terminal */}
       <div className="rounded-lg overflow-hidden border border-slate-300 shadow-md">
         <POSModule
+          stores={stores}
+          activeStoreId={activeStoreId}
+          onSelectStore={(newStoreId) => {
+            setActiveStoreId(newStoreId);
+          }}
           inventory={inventory}
           setInventory={setInventory}
           customers={customers}

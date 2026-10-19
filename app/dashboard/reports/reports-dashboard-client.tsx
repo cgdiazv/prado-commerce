@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Calendar,
   ChevronDown,
@@ -95,6 +96,7 @@ type ReportsDashboardClientProps = {
   initialSummary: ReportSummary;
   stores: Array<{ id: string; name: string; currency: string }>;
   availableYears: string[];
+  initialTab?: "customers" | "brands" | "profit";
 };
 
 export default function ReportsDashboardClient({
@@ -103,11 +105,44 @@ export default function ReportsDashboardClient({
   initialSummary,
   stores,
   availableYears,
+  initialTab = "customers",
 }: ReportsDashboardClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
-  const [activeTab, setActiveTab] = useState<"customers" | "brands" | "profit">("customers");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const tabParam = searchParams?.get("tab");
+  const resolvedTab: "customers" | "brands" | "profit" =
+    tabParam === "brands"
+      ? "brands"
+      : tabParam === "profit"
+        ? "profit"
+        : tabParam === "customers"
+          ? "customers"
+          : initialTab;
+
+  const [activeTab, setActiveTab] = useState<"customers" | "brands" | "profit">(resolvedTab);
+
+  // Sync state whenever the URL search param changes (e.g. clicking sidebar links or browser back/forward)
+  useEffect(() => {
+    if (tabParam === "brands" || tabParam === "profit" || tabParam === "customers") {
+      setActiveTab(tabParam);
+    } else if (!tabParam && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [tabParam, initialTab]);
+
+  const handleTabChange = (newTab: "customers" | "brands" | "profit") => {
+    setActiveTab(newTab);
+    setSearchQuery("");
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    params.set("tab", newTab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -270,18 +305,6 @@ export default function ReportsDashboardClient({
             </button>
           )}
 
-          {activeTab === "profit" && (
-            <button
-              type="button"
-              onClick={exportProfitCsv}
-              disabled={!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Download className="h-4 w-4 text-slate-500" />
-              {isEs ? "Exportar Profit CSV" : "Export Profit CSV"}
-            </button>
-          )}
-
           {activeTab === "brands" && (
             <button
               type="button"
@@ -291,6 +314,18 @@ export default function ReportsDashboardClient({
             >
               <Download className="h-4 w-4 text-slate-500" />
               {isEs ? "Exportar Marcas CSV" : "Export Brands CSV"}
+            </button>
+          )}
+
+          {activeTab === "profit" && (
+            <button
+              type="button"
+              onClick={exportProfitCsv}
+              disabled={!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4 text-slate-500" />
+              {isEs ? "Exportar Profit CSV" : "Export Profit CSV"}
             </button>
           )}
         </div>
@@ -409,55 +444,33 @@ export default function ReportsDashboardClient({
           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("customers");
-              setSearchQuery("");
+        {/* Report Type selector */}
+        <div className="relative shrink-0">
+          {activeTab === "customers" ? (
+            <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          ) : activeTab === "profit" ? (
+            <TrendingUp className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          ) : (
+            <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          )}
+          <select
+            value={activeTab}
+            onChange={(e) => {
+              handleTabChange(e.target.value as "customers" | "brands" | "profit");
             }}
-            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-              activeTab === "customers"
-                ? "bg-slate-900 text-white shadow-2xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
+            className="h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
           >
-            <Users className="h-3.5 w-3.5" />
-            {isEs ? "Ventas y Productos por Cliente" : "Sales by Customer"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("profit");
-              setSearchQuery("");
-            }}
-            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-              activeTab === "profit"
-                ? "bg-slate-900 text-white shadow-2xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            {isEs ? "Ventas, Costo y Profit Mensual" : "Monthly Profit & Cost"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("brands");
-              setSearchQuery("");
-            }}
-            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-              activeTab === "brands"
-                ? "bg-slate-900 text-white shadow-2xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <Tag className="h-3.5 w-3.5" />
-            {isEs ? "Ventas por Marcas" : "Sales by Brand"}
-          </button>
+            <option value="customers">
+              {isEs ? "Ventas y Productos por Cliente" : "Sales by Customer"}
+            </option>
+            <option value="brands">
+              {isEs ? "Ventas por Marcas" : "Sales by Brand"}
+            </option>
+            <option value="profit">
+              {isEs ? "Ventas, Costo y Profit Mensual" : "Monthly Profit & Cost"}
+            </option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         </div>
 
         {/* Search Input for Current Tab */}
@@ -565,55 +578,33 @@ export default function ReportsDashboardClient({
             )}
           </button>
 
-          {/* Navigation Tabs on mobile (ml-auto) */}
-          <div className="ml-auto inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("customers");
-                setSearchQuery("");
+          {/* Report Type selector on mobile (ml-auto) */}
+          <div className="relative ml-auto shrink-0">
+            {activeTab === "customers" ? (
+              <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            ) : activeTab === "profit" ? (
+              <TrendingUp className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            ) : (
+              <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            )}
+            <select
+              value={activeTab}
+              onChange={(e) => {
+                handleTabChange(e.target.value as "customers" | "brands" | "profit");
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition ${
-                activeTab === "customers"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className="h-11 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
             >
-              <Users className="h-3.5 w-3.5" />
-              <span>{isEs ? "Clientes" : "Customers"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("profit");
-                setSearchQuery("");
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition ${
-                activeTab === "profit"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>{isEs ? "Profit" : "Profit"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("brands");
-                setSearchQuery("");
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition ${
-                activeTab === "brands"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Tag className="h-3.5 w-3.5" />
-              <span>{isEs ? "Marcas" : "Brands"}</span>
-            </button>
+              <option value="customers">
+                {isEs ? "Clientes" : "Customers"}
+              </option>
+              <option value="brands">
+                {isEs ? "Marcas" : "Brands"}
+              </option>
+              <option value="profit">
+                {isEs ? "Profit" : "Profit"}
+              </option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
