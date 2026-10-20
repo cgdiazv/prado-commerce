@@ -258,8 +258,19 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   } catch (error) {
-    console.error("[AUTH_LOGIN_ERROR]", error);
+    console.error("[AUTH_LOGIN_ERROR]", error instanceof Error ? error.message : error);
 
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    const isDbUnavailable =
+      error instanceof Error &&
+      /connection|timeout|pool|reached|clients|client read|closed|econnrefused|emaxconn/i.test(error.message);
+
+    return NextResponse.json(
+      {
+        error: isDbUnavailable
+          ? "Database connection is temporarily busy. Please wait a few seconds and try again."
+          : "Login failed",
+      },
+      { status: isDbUnavailable ? 503 : 500 },
+    );
   }
 }

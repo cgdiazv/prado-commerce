@@ -1,15 +1,32 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const connectionString = process.env.DATABASE_URL;
+const rawConnectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
+if (!rawConnectionString) {
   throw new Error("DATABASE_URL is not set");
 }
 
+function getEffectiveConnectionString(url: string): string {
+  // If Supabase pooler is used on port 5432 (session mode), redirect to port 6543 (transaction mode)
+  // to avoid hitting EMAXCONNSESSION (pool_size: 15 limit) in serverless environments like Vercel.
+  if (url.includes(".pooler.supabase.com:5432")) {
+    let normalized = url.replace(".pooler.supabase.com:5432", ".pooler.supabase.com:6543");
+    if (!normalized.includes("pgbouncer=true")) {
+      const sep = normalized.includes("?") ? "&" : "?";
+      normalized = `${normalized}${sep}pgbouncer=true`;
+    }
+    return normalized;
+  }
+  return url;
+}
+
+const connectionString = getEffectiveConnectionString(rawConnectionString);
+
+const defaultPoolMax = process.env.NODE_ENV === "production" ? 1 : 5;
 const poolMax = process.env.DATABASE_POOL_MAX
   ? Number.parseInt(process.env.DATABASE_POOL_MAX, 10)
-  : 5;
+  : defaultPoolMax;
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -21,9 +38,9 @@ const adapter =
   new PrismaPg(
     {
       connectionString,
-      max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : 5,
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000,
+      max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : defaultPoolMax,
+      idleTimeoutMillis: process.env.NODE_ENV === "production" ? 2_000 : 10_000,
+      connectionTimeoutMillis: 5_000,
     },
     {
       onPoolError: (err) => {
