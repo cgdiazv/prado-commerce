@@ -441,71 +441,71 @@ export function ProductsDashboard({
         ) : null}
 
         {/* Inventory Value & Metrics KPI Bar */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-2xs">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs leading-tight">
                 {isEs ? "Catálogo" : "Catalog"}
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <Layers className="h-4 w-4" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 sm:h-8 sm:w-8">
+                <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-              {products.length} <span className="text-sm font-normal text-slate-500">{isEs ? "productos" : "products"}</span>
+            <p className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+              {products.length} <span className="text-xs font-normal text-slate-500 sm:text-sm">{isEs ? "productos" : "products"}</span>
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-500 sm:text-xs leading-snug">
               {inventoryStats.productsWithCost} {isEs ? "con costo registrado" : "with cost recorded"}
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-2xs">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs leading-tight">
                 {isEs ? "Unidades en Stock" : "Units in Stock"}
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                <Boxes className="h-4 w-4" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 sm:h-8 sm:w-8">
+                <Boxes className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            <p className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               {inventoryStats.totalUnits.toLocaleString()}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-500 sm:text-xs leading-snug">
               {isEs ? "Total físico disponible" : "Total available physical units"}
             </p>
           </div>
 
-          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 p-4 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
+          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 p-3.5 sm:p-4 shadow-2xs">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800 sm:text-xs leading-tight">
                 {isEs ? "Inventario al Costo" : "Inventory at Cost"}
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                <DollarSign className="h-4 w-4" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 sm:h-8 sm:w-8">
+                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-950">
+            <p className="mt-2 text-lg font-bold tracking-tight text-emerald-950 sm:text-2xl truncate" title={currencyFormatter.format(inventoryStats.totalCostValue)}>
               {currencyFormatter.format(inventoryStats.totalCostValue)}
             </p>
-            <p className="mt-1 text-xs text-emerald-700">
+            <p className="mt-1 text-[11px] text-emerald-700 sm:text-xs leading-snug">
               {isEs ? "Valor total invertido (Stock × Costo)" : "Capital invested (Stock × Cost)"}
             </p>
           </div>
 
-          <div className="rounded-xl border border-cyan-200/80 bg-gradient-to-br from-cyan-50/50 via-white to-cyan-50/30 p-4 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
+          <div className="rounded-xl border border-cyan-200/80 bg-gradient-to-br from-cyan-50/50 via-white to-cyan-50/30 p-3.5 sm:p-4 shadow-2xs">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-800 sm:text-xs leading-tight">
                 {isEs ? "Valor Venta / Ganancia Est." : "Retail Value / Est. Profit"}
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700">
-                <TrendingUp className="h-4 w-4" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 sm:h-8 sm:w-8">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-cyan-950">
+            <p className="mt-2 text-lg font-bold tracking-tight text-cyan-950 sm:text-2xl truncate" title={currencyFormatter.format(inventoryStats.totalRetailValue)}>
               {currencyFormatter.format(inventoryStats.totalRetailValue)}
             </p>
-            <p className="mt-1 text-xs font-medium text-cyan-700">
+            <p className="mt-1 text-[11px] font-medium text-cyan-700 sm:text-xs leading-snug">
               {isEs ? "Ganancia pot.: " : "Pot. profit: "}
               <span className="font-semibold text-emerald-700">
                 +{currencyFormatter.format(inventoryStats.potentialProfit)}
