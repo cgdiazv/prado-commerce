@@ -76,7 +76,7 @@ type StorefrontHomeClientProps = {
     heroTitle?: string | null;
     heroSubtitle?: string | null;
     heroButtonText?: string | null;
-    activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC" | null;
+    activeTheme?: "MINIMAL" | "RECINTO" | "CLASSIC" | "BOLD" | null;
     mainColor?: string;
     currency?: string;
   };

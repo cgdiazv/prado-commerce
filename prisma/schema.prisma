@@ -130,6 +130,7 @@ enum StorefrontTheme {
   MINIMAL
   RECINTO
   CLASSIC
+  BOLD
 }
 
 model ApiKey {
@@ -703,5 +704,70 @@ model ConsignmentSettlement {
   createdAt         DateTime        @default(now())
 
   @@index([consignmentId])
+}
+
+// ==========================================
+// HELPDESK & SUPPORT CHAT MODELS
+// ==========================================
+
+model HelpdeskTicket {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId         String?                 @map("organization_id")
+  requestedByUserId      String?                 @map("requested_by_user_id")
+  requestedByEmail       String?                 @map("requested_by_email")
+  subject                String
+  description            String
+  priority               String                  @default("medium")
+  status                 String                  @default("open")
+  assigneeName           String?                 @map("assignee_name")
+  assigneeEmail          String?                 @map("assignee_email")
+  escalatedFrom          String                  @default("dashboard_chat") @map("escalated_from")
+  waitingOn              String                  @default("none") @map("waiting_on")
+  unreadForAgentCount    Int                     @default(0) @map("unread_for_agent_count")
+  unreadForUserCount     Int                     @default(0) @map("unread_for_user_count")
+  lastCommentAt          DateTime?               @map("last_comment_at")
+  lastCommentAuthorEmail String?                 @map("last_comment_author_email")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+
+  comments               HelpdeskTicketComment[]
+  events                 HelpdeskTicketEvent[]
+
+  @@map("helpdesk_tickets")
+  @@index([organizationId])
+  @@index([status])
+  @@index([waitingOn])
+  @@index([unreadForAgentCount])
+  @@index([lastCommentAt])
+}
+
+model HelpdeskTicketComment {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId     String         @map("ticket_id") @db.Uuid
+  authorUserId String?        @map("author_user_id")
+  authorEmail  String?        @map("author_email")
+  comment      String
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  ticket       HelpdeskTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("helpdesk_ticket_comments")
+  @@index([ticketId])
+}
+
+model HelpdeskTicketEvent {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId    String         @map("ticket_id") @db.Uuid
+  eventType   String         @map("event_type")
+  eventNote   String?        @map("event_note")
+  actorUserId String?        @map("actor_user_id")
+  actorEmail  String?        @map("actor_email")
+  metadata    Json           @default("{}")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  ticket      HelpdeskTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("helpdesk_ticket_events")
+  @@index([ticketId])
 }
 

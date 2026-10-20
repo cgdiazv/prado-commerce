@@ -8,6 +8,7 @@ import { PradoLogo } from "@/components/PradoLogo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import SupportChatModal from "@/components/dashboard/SupportChatModal";
 
 type NavChild = {
   href: string;
@@ -758,6 +759,9 @@ export default function DashboardLayout({
 
       {/* PWA Install Banner */}
       <PwaInstallPrompt />
+
+      {/* Prado Support Chat */}
+      <SupportChatModal locale={language} />
     </div>
   );
 }

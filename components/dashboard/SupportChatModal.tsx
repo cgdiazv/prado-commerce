@@ -1,0 +1,354 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
+import { getDashboardSupportThread, sendDashboardSupportMessage } from '@/app/actions/messengerActions';
+
+type SupportMessage = {
+  id: string;
+  author_user_id: string | null;
+  author_email: string | null;
+  comment: string;
+  created_at: string;
+};
+
+interface SupportChatModalProps {
+  locale?: string;
+  currentUserId?: string;
+}
+
+export default function SupportChatModal({ locale = 'en', currentUserId: initialUserId }: SupportChatModalProps) {
+  const isEs = locale.toLowerCase().startsWith('es');
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoadingThread, setIsLoadingThread] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId || null);
+  const [ticketStatus, setTicketStatus] = useState<string | null>(null);
+  const [ticketPriority, setTicketPriority] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSending, startTransition] = useTransition();
+  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const loadThread = async () => {
+    setIsLoadingThread(true);
+    setErrorMessage('');
+    const result = await getDashboardSupportThread();
+
+    if (result?.error) {
+      setErrorMessage(result.error);
+      setIsLoadingThread(false);
+      return;
+    }
+
+    if (result?.currentUserId) {
+      setCurrentUserId(result.currentUserId);
+    }
+
+    setMessages((result?.messages || []) as SupportMessage[]);
+    setTicketStatus((result?.ticketStatus as string | null) || null);
+    setTicketPriority((result?.ticketPriority as string | null) || null);
+    setIsLoadingThread(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    void loadThread();
+
+    const pollId = window.setInterval(() => {
+      void loadThread();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(pollId);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const updateViewportState = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    updateViewportState();
+
+    mediaQuery.addEventListener('change', updateViewportState);
+    return () => {
+      mediaQuery.removeEventListener('change', updateViewportState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [isOpen, messages.length]);
+
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+
+    composer.style.height = '0px';
+    const nextHeight = Math.min(composer.scrollHeight, 140);
+    composer.style.height = `${nextHeight}px`;
+    composer.style.overflowY = composer.scrollHeight > 140 ? 'auto' : 'hidden';
+  }, [messageText, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isMobileViewport) return;
+
+    const scrollY = window.scrollY;
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalLeft = document.body.style.left;
+    const originalRight = document.body.style.right;
+    const originalWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.left = originalLeft;
+      document.body.style.right = originalRight;
+      document.body.style.width = originalWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isMobileViewport, isOpen]);
+
+  const normalizedStatus = (ticketStatus || '').toLowerCase();
+  const isClosed = normalizedStatus === 'closed';
+  const isResolved = normalizedStatus === 'resolved';
+
+  const statusLabel = useMemo(() => {
+    if (!ticketStatus) return isEs ? 'Nuevo chat' : 'New chat';
+
+    const map: Record<string, { en: string; es: string }> = {
+      open: { en: 'Open', es: 'Abierto' },
+      in_progress: { en: 'In progress', es: 'En progreso' },
+      blocked: { en: 'Blocked', es: 'Bloqueado' },
+      resolved: { en: 'Resolved', es: 'Resuelto' },
+      closed: { en: 'Closed', es: 'Cerrado' },
+    };
+
+    const normalized = ticketStatus.toLowerCase();
+    return map[normalized] ? (isEs ? map[normalized].es : map[normalized].en) : ticketStatus;
+  }, [isEs, ticketStatus]);
+
+  const toggleModal = () => {
+    setIsOpen((current) => !current);
+    setStatusMessage('');
+    setErrorMessage('');
+  };
+
+  const handleSendMessage = () => {
+    startTransition(async () => {
+      setStatusMessage('');
+      setErrorMessage('');
+
+      const result = await sendDashboardSupportMessage({
+        message: messageText,
+        locale,
+      });
+
+      if (result?.error) {
+        setErrorMessage(result.error);
+        return;
+      }
+
+      setMessageText('');
+      setStatusMessage(isEs ? 'Mensaje enviado.' : 'Message sent.');
+      await loadThread();
+    });
+  };
+
+  const handleComposerKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey) {
+      return;
+    }
+
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isSending || messageText.trim().length === 0) {
+      return;
+    }
+
+    handleSendMessage();
+  };
+
+  return (
+    <>
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={toggleModal}
+          title={isEs ? 'Chat de soporte' : 'Support chat'}
+          aria-label={isEs ? 'Chat de soporte' : 'Support chat'}
+          className="fixed bottom-5 right-5 z-40 flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-full bg-cyan-600 text-white shadow-lg shadow-cyan-900/25 transition hover:bg-cyan-700 hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-cyan-500/20"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-6 w-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 19.5A2.625 2.625 0 0021 16.875V7.125A2.625 2.625 0 0018.375 4.5H5.625A2.625 2.625 0 003 7.125v9.75A2.625 2.625 0 005.625 19.5h8.155a2.625 2.625 0 011.857.769l1.594 1.594a.375.375 0 00.64-.265V19.5h.504Z" />
+          </svg>
+        </button>
+      ) : null}
+
+      {isOpen && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="fixed inset-0 z-[9999] flex h-dvh flex-col overscroll-none bg-white text-slate-900 md:inset-auto md:bottom-20 md:right-5 md:h-[min(78vh,680px)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-slate-200 md:shadow-2xl font-sans">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 bg-white md:rounded-t-2xl">
+              <button
+                type="button"
+                onClick={toggleModal}
+                className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900 transition cursor-pointer"
+                aria-label={isEs ? 'Volver al dashboard' : 'Back to dashboard'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+                <span>{isEs ? 'Volver' : 'Back'}</span>
+              </button>
+
+              <div className="text-right">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center justify-end gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+                  {isEs ? 'Chat con Prado' : 'Prado support chat'}
+                </h3>
+                <div className="mt-1 flex items-center justify-end gap-2">
+                  <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-800">
+                    {statusLabel}
+                  </span>
+                  {ticketPriority ? (
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
+                      {ticketPriority}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/70 px-4 py-4 space-y-2.5 text-slate-900">
+              {isLoadingThread ? (
+                <div className="flex items-center justify-center py-6">
+                  <p className="text-sm text-slate-600 font-medium">{isEs ? 'Cargando conversación...' : 'Loading conversation...'}</p>
+                </div>
+              ) : null}
+
+              {!isLoadingThread && messages.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-2xs">
+                  <p className="font-semibold text-slate-900 mb-1">
+                    {isEs ? '👋 ¡Hola! ¿En qué podemos ayudarte?' : '👋 Hello! How can we help you?'}
+                  </p>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {isEs
+                      ? 'Aún no hay mensajes. Escríbenos para abrir tu chat de soporte directo con nuestro equipo.'
+                      : 'No messages yet. Send us a message to start your support chat directly with our team.'}
+                  </p>
+                </div>
+              ) : null}
+
+              {messages.map((message) => {
+                const isMine = Boolean(currentUserId && message.author_user_id === currentUserId);
+                const rawAuthor = (message.author_email || '').toLowerCase();
+                const isPrado = rawAuthor.endsWith('@pradojob.com') || rawAuthor.endsWith('@indevasa.com') || rawAuthor.includes('support@') || rawAuthor.includes('admin@');
+                const authorLabel = isMine
+                  ? (isEs ? 'Tú' : 'You')
+                  : (isPrado ? (isEs ? 'Soporte Prado' : 'Prado Support') : (isEs ? 'Equipo' : 'Team'));
+                const bubbleClassName = isMine
+                  ? 'ml-auto bg-cyan-100 border border-cyan-300 text-slate-950 shadow-2xs'
+                  : (isPrado ? 'bg-sky-50 text-slate-950 border border-sky-200 shadow-2xs' : 'bg-white text-slate-950 border border-slate-200 shadow-2xs');
+                const authorLabelClass = isMine
+                  ? 'text-cyan-900 font-bold'
+                  : (isPrado ? 'text-sky-900 font-bold' : 'text-slate-700 font-bold');
+                const timestampClassName = isMine
+                  ? 'text-cyan-800'
+                  : (isPrado ? 'text-slate-500' : 'text-slate-500');
+
+                return (
+                  <div
+                    key={message.id}
+                    className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm ${bubbleClassName}`}
+                  >
+                    <p className={`mb-1 text-[10px] uppercase tracking-wider ${authorLabelClass}`}>{authorLabel}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed text-slate-950">{message.comment}</p>
+                    <p className={`mt-1 text-[10px] ${timestampClassName} text-right font-medium`}>
+                      {new Date(message.created_at).toLocaleString(isEs ? 'es-ES' : 'en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                );
+              })}
+
+              <div ref={scrollAnchorRef} />
+            </div>
+
+            <div className="border-t border-slate-200 bg-white px-4 py-3 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-b-2xl">
+              {isClosed ? (
+                <p className="rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-1.5 text-[11px] text-cyan-900 font-medium">
+                  {isEs ? 'Este chat fue cerrado. Envía un nuevo mensaje para abrir una conversación nueva.' : 'This chat was closed. Send a new message to open a new conversation.'}
+                </p>
+              ) : null}
+              {isResolved ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900 font-medium">
+                  {isEs ? 'Ticket resuelto. Puedes enviar un nuevo mensaje para reabrir.' : 'Ticket resolved. Send a new message to reopen it.'}
+                </p>
+              ) : null}
+              {statusMessage ? <p className="text-xs text-cyan-800 font-semibold">{statusMessage}</p> : null}
+              {errorMessage ? <p className="text-xs text-rose-700 font-semibold">{errorMessage}</p> : null}
+
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={composerRef}
+                  value={messageText}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                  rows={1}
+                  placeholder={isEs ? 'Escribe tu mensaje...' : 'Write your message...'}
+                  className="support-chat-composer min-h-[42px] max-h-[140px] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 leading-5 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition"
+                  disabled={isSending}
+                />
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={isSending || messageText.trim().length === 0}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-600 text-white transition hover:bg-cyan-700 disabled:opacity-50 cursor-pointer shadow-md shadow-cyan-600/20"
+                  aria-label={isEs ? 'Enviar mensaje' : 'Send message'}
+                >
+                  {isSending ? (
+                    <span className="text-[10px] font-semibold animate-pulse">...</span>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m13 6 6 6-6 6" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+        : null}
+    </>
+  );
+}
