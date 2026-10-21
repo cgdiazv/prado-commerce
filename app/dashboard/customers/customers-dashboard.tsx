@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, Search, Shield, Store, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Mail, Plus, Search, Shield, Store, SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { BroadcastEmailModal } from "./broadcast-email-modal";
 
 type Store = {
   id: string;
@@ -76,8 +77,9 @@ export function CustomersDashboard({
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
-  const [bulkAction, setBulkAction] = useState<"" | "clear" | "delete">("");
+  const [bulkAction, setBulkAction] = useState<"" | "clear" | "delete" | "broadcast">("");
   const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | "actions" | null>(null);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -256,6 +258,12 @@ export function CustomersDashboard({
       return;
     }
 
+    if (bulkAction === "broadcast") {
+      setIsBroadcastModalOpen(true);
+      setBulkAction("");
+      return;
+    }
+
     if (validSelectedCustomerIds.length === 0) {
       return;
     }
@@ -314,6 +322,14 @@ export function CustomersDashboard({
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsBroadcastModalOpen(true)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-300 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-800 shadow-xs transition hover:bg-cyan-100 sm:w-auto cursor-pointer"
+            >
+              <Mail className="h-4 w-4 text-cyan-600" />
+              <span>{isEs ? "Difusión de correos" : "Email broadcast"}</span>
+            </button>
             <Link
               href={`/dashboard/customers/groups${activeStoreId && activeStoreId !== "ALL" ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
               className="hidden items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 lg:inline-flex"
@@ -405,11 +421,12 @@ export function CustomersDashboard({
             </button>
             <select
               value={bulkAction}
-              onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+              onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete" | "broadcast")}
               aria-label={isEs ? "Acciones por lote" : "Bulk actions"}
-              className="w-44 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="w-48 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+              <option value="broadcast">{isEs ? "Enviar difusión por correo" : "Send email broadcast"}</option>
               <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
               <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
             </select>
@@ -624,10 +641,11 @@ export function CustomersDashboard({
               <div className="flex items-center gap-2">
                 <select
                   value={bulkAction}
-                  onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete")}
+                  onChange={(event) => setBulkAction(event.target.value as "" | "clear" | "delete" | "broadcast")}
                   className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="">{isEs ? "Seleccionar acción" : "Select action"}</option>
+                  <option value="broadcast">{isEs ? "Enviar difusión por correo" : "Send email broadcast"}</option>
                   <option value="delete">{isEs ? "Eliminar seleccionados" : "Delete selected"}</option>
                   <option value="clear">{isEs ? "Limpiar selección" : "Clear selection"}</option>
                 </select>
@@ -863,6 +881,25 @@ export function CustomersDashboard({
           )}
         </div>
       </div>
+
+      {/* Email Broadcast Modal */}
+      <BroadcastEmailModal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+        stores={stores}
+        activeStoreId={activeStoreId}
+        customers={customers.map((c) => ({
+          id: c.id,
+          storeId: c.storeId,
+          email: c.email,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          groupId: c.groupId,
+        }))}
+        selectedCustomerIds={validSelectedCustomerIds}
+        groups={groups}
+        isEs={isEs}
+      />
     </section>
   );
 }

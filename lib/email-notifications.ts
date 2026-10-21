@@ -616,3 +616,101 @@ export async function sendPurchaseOrderVendorEmail(input: PurchaseOrderVendorEma
   return await resend.emails.send(payload);
 }
 
+export type BroadcastEmailRecipient = {
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+};
+
+export type BroadcastEmailInput = {
+  store: StoreEmailConfig;
+  recipients: BroadcastEmailRecipient[];
+  subject: string;
+  preheader?: string;
+  messageHtml: string;
+  ctaText?: string;
+  ctaUrl?: string;
+};
+
+export async function sendCustomerBroadcastEmail(input: BroadcastEmailInput) {
+  const { store, recipients, subject, preheader, messageHtml, ctaText, ctaUrl } = input;
+  const theme = buildEmailBrandingStyles(store.mainColor);
+  const appBaseUrl = resolveAppBaseUrl();
+  const targetCtaUrl = ctaUrl?.trim() || `${appBaseUrl}/storefront/${store.slug}`;
+  const targetCtaLabel = ctaText?.trim() || "";
+
+  let sentCount = 0;
+  let failedCount = 0;
+  const failedEmails: string[] = [];
+
+  for (const recipient of recipients) {
+    const greeting = recipient.firstName ? `Hola ${recipient.firstName},` : "";
+    const html = `
+      <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+        <table role="presentation" style="max-width:620px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 4px 12px rgba(15,23,42,0.04);">
+          ${preheader ? `<tr><td style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</td></tr>` : ""}
+          <!-- Header Branding -->
+          <tr>
+            <td style="padding:28px 28px 12px 28px;border-bottom:1px solid #f1f5f9;">
+              <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">${store.name}</p>
+              <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:800;color:#0f172a;">${subject}</h1>
+            </td>
+          </tr>
+          <!-- Body Content -->
+          <tr>
+            <td style="padding:24px 28px;font-size:15px;line-height:1.65;color:#334155;">
+              ${greeting ? `<p style="margin:0 0 16px 0;font-weight:600;color:#0f172a;">${greeting}</p>` : ""}
+              <div style="margin:0 0 24px 0;white-space:pre-wrap;">${messageHtml}</div>
+              ${targetCtaLabel ? `
+                <p style="margin:28px 0 12px 0;">
+                  <a href="${targetCtaUrl}" style="${theme.button};display:inline-block;padding:12px 28px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">${targetCtaLabel}</a>
+                </p>
+              ` : ""}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 28px 24px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;line-height:1.5;">
+              <p style="margin:0 0 4px 0;">Has recibido esta comunicación porque eres cliente registrado de <strong>${store.name}</strong>.</p>
+              <p style="margin:0;">Para dudas o consultas puedes responder directamente a este correo.</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    try {
+      if (!resend) {
+        console.log(`[SIMULATED_BROADCAST_EMAIL] To: ${recipient.email} | Subject: ${subject}`);
+        sentCount++;
+      } else {
+        const payload: any = {
+          from: getFromHeader(store),
+          to: recipient.email,
+          subject,
+          html,
+        };
+        const replyTo = getReplyTo(store);
+        if (replyTo) {
+          payload.replyTo = replyTo;
+          payload.reply_to = replyTo;
+        }
+        await resend.emails.send(payload);
+        sentCount++;
+      }
+    } catch (err) {
+      console.error(`Failed to send broadcast email to ${recipient.email}:`, err);
+      failedCount++;
+      failedEmails.push(recipient.email);
+    }
+  }
+
+  return {
+    total: recipients.length,
+    sentCount,
+    failedCount,
+    failedEmails,
+  };
+}
+
+
