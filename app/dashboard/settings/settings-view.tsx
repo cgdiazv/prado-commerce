@@ -60,6 +60,13 @@ export function SettingsView({ user }: SettingsViewProps) {
         : "Manage physical registers, checkouts, cashiers, and operator PINs.",
       href: "/dashboard/settings/pos",
     },
+    {
+      title: isEs ? "Configuración de la barra de tareas" : "Taskbar Settings",
+      detail: isEs
+        ? "Personaliza la posición y el comportamiento."
+        : "Customize position and behavior.",
+      href: "/dashboard/settings/taskbar",
+    },
   ];
 
   const securityItems = [

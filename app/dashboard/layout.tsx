@@ -11,6 +11,11 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import SupportChatModal from "@/components/dashboard/SupportChatModal";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { BillingModal } from "@/components/dashboard/BillingModal";
+import {
+  getStoredTaskbarSettings,
+  subscribeToTaskbarSettingsChange,
+  TaskbarPosition,
+} from "@/lib/dashboard-taskbar-settings";
 
 type NavChild = {
   href: string;
@@ -70,14 +75,29 @@ export default function DashboardLayout({
     return null;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [taskbarPosition, setTaskbarPosition] = useState<TaskbarPosition>(() => {
+    if (typeof window === "undefined") return "side";
+    return getStoredTaskbarSettings().position;
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
-      return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+      const explicit = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+      if (explicit !== null) {
+        return explicit === "true";
+      }
+      return getStoredTaskbarSettings().initialState === "collapsed";
     } catch {
       return false;
     }
   });
+
+  useEffect(() => {
+    return subscribeToTaskbarSettingsChange((settings) => {
+      setTaskbarPosition(settings.position);
+      setIsSidebarCollapsed(settings.initialState === "collapsed");
+    });
+  }, []);
 
   function toggleSidebar() {
     setIsSidebarCollapsed((prev) => {
@@ -695,6 +715,185 @@ export default function DashboardLayout({
     );
   }
 
+  function TopTaskbar() {
+    if (isSidebarCollapsed) {
+      return (
+        <nav className="sticky top-14 z-30 hidden lg:block border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xs print:hidden">
+          <div className="mx-auto flex h-10 w-full items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+
+                return (
+                  <div key={item.href} className="group relative flex items-center shrink-0">
+                    <Link
+                      href={item.href}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                        active
+                          ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/30 shadow-xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-current" />
+                    </Link>
+
+                    {/* Flyout dropdown below compact icon */}
+                    <div className="invisible pointer-events-none absolute left-0 top-full pt-1.5 z-50 opacity-0 transition-all duration-150 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+                      <div className="min-w-[200px] rounded-xl border border-slate-200 bg-white p-2.5 shadow-xl">
+                        <div className="mb-1 border-b border-slate-100 pb-1.5 px-1">
+                          <span className="text-xs font-bold text-slate-900">{item.label}</span>
+                        </div>
+                        {item.children ? (
+                          <div className="space-y-0.5">
+                            {item.children.map((child) => (
+                              <Link
+                                key={`${child.href}:${child.label}`}
+                                href={child.href}
+                                className="block rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-700"
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className="block rounded-lg px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
+                          >
+                            {language === "es" ? "Abrir sección" : "Open section"}
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-1.5 pl-3 shrink-0 border-l border-slate-200">
+              <Link
+                href="/dashboard/help"
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                  isHelpActive
+                    ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/30"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+                title={t.dashboard.help}
+              >
+                <CircleHelp className="h-4 w-4 shrink-0 text-current" />
+              </Link>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                title={language === "es" ? "Expandir barra de tareas" : "Expand taskbar"}
+                aria-label="Expand taskbar"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </nav>
+      );
+    }
+
+    // Expanded top bar
+    return (
+      <nav className="sticky top-14 z-30 hidden lg:block border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xs print:hidden">
+        <div className="mx-auto flex h-12 w-full items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-1 overflow-x-auto py-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              if (!item.children) {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.01em] transition shrink-0 ${
+                      active
+                        ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/30 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-current" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              }
+
+              return (
+                <div key={item.href} className="group relative flex items-center shrink-0">
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.01em] transition ${
+                      active
+                        ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/30 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-current" />
+                    <span>{item.label}</span>
+                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-slate-600 transition-transform group-hover:rotate-180" />
+                  </Link>
+
+                  {/* Flyout dropdown below nav item */}
+                  <div className="invisible pointer-events-none absolute left-0 top-full pt-1.5 z-50 opacity-0 transition-all duration-150 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+                    <div className="min-w-[200px] rounded-xl border border-slate-200 bg-white p-2.5 shadow-xl">
+                      <div className="mb-1 border-b border-slate-100 pb-1.5 px-1">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          {item.label}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {item.children.map((child) => (
+                          <Link
+                            key={`${child.href}:${child.label}`}
+                            href={child.href}
+                            className="block rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-700"
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 pl-3 shrink-0 border-l border-slate-200">
+            <Link
+              href="/dashboard/help"
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                isHelpActive
+                  ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/30"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <CircleHelp className="h-4 w-4 shrink-0 text-current" />
+              <span className="hidden sm:inline">{t.dashboard.help}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+              title={language === "es" ? "Colapsar barra de tareas" : "Collapse taskbar"}
+              aria-label="Collapse taskbar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   if (pathname.endsWith("/invoice")) {
     return <>{children}</>;
   }
@@ -830,6 +1029,11 @@ export default function DashboardLayout({
         </div>
       </header>
 
+      {/* Top Taskbar below topbar */}
+      {taskbarPosition === "top" && !currentUser?.isCashier && (
+        <TopTaskbar />
+      )}
+
       {isMobileMenuOpen && !currentUser?.isCashier ? (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <button
@@ -858,7 +1062,7 @@ export default function DashboardLayout({
       ) : null}
 
       <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
-        {!currentUser?.isCashier && (
+        {!currentUser?.isCashier && taskbarPosition === "side" && (
           <aside
             className={`sticky top-14 z-30 hidden h-[calc(100vh-3.5rem)] shrink-0 flex-col overflow-visible border-r border-slate-200 bg-[#ffffff] pt-3 pb-5 transition-[width,padding] duration-200 ease-in-out lg:flex print:hidden ${
               isSidebarCollapsed ? "w-16 px-2" : "w-64 px-4 xl:w-72"
