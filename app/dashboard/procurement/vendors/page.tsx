@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import VendorsClient from "./vendors-client";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
@@ -54,10 +55,17 @@ export default async function VendorsPage() {
           })
       : [];
 
+    const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
     const serializedStores = JSON.parse(JSON.stringify(stores));
     const serializedVendors = JSON.parse(JSON.stringify(vendors));
 
-    return <VendorsClient initialStores={serializedStores} initialVendors={serializedVendors} />;
+    return (
+      <VendorsClient
+        initialStores={serializedStores}
+        initialVendors={serializedVendors}
+        initialSelectedStoreId={initialSelectedStoreId}
+      />
+    );
   } catch (error) {
     console.error("[VENDORS_PAGE_ERROR]", error);
     return (

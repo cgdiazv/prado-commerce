@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 export type ReceiptRecord = {
   id: string;
@@ -62,17 +63,31 @@ export type ReceiptRecord = {
 type ReceiptsClientProps = {
   initialReceipts: ReceiptRecord[];
   stores: Array<{ id: string; name: string; currency: string }>;
+  initialSelectedStoreId?: string;
 };
 
-export default function ReceiptsClient({ initialReceipts, stores }: ReceiptsClientProps) {
+export default function ReceiptsClient({ initialReceipts, stores, initialSelectedStoreId }: ReceiptsClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
   const [receipts] = useState<ReceiptRecord[]>(initialReceipts);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId) return initialSelectedStoreId;
+    const stored = getStoredActiveStoreId();
+    if (stored) return stored;
+    return "ALL";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== selectedStoreId) {
+        setSelectedStoreId(newStoreId);
+      }
+    });
+  }, [selectedStoreId]);
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((receipt) => {
@@ -231,7 +246,11 @@ export default function ReceiptsClient({ initialReceipts, stores }: ReceiptsClie
                 <StoreIcon className="h-4 w-4 text-slate-400" />
                 <select
                   value={selectedStoreId}
-                  onChange={(e) => setSelectedStoreId(e.target.value)}
+                  onChange={(e) => {
+                    const newId = e.target.value;
+                    setSelectedStoreId(newId);
+                    setStoredActiveStoreId(newId);
+                  }}
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
                 >
                   <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>

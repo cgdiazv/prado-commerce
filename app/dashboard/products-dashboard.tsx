@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -261,6 +262,7 @@ export function ProductsDashboard({
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
+    setStoredActiveStoreId(storeId);
     setQuery("");
     setCurrentPage(1);
     setSelectedProductIds([]);
@@ -273,6 +275,15 @@ export function ProductsDashboard({
       setError("Failed to load products for this store.");
     }
   }
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId !== activeStoreId) {
+        setActiveStoreId(newStoreId);
+        void refreshProducts(newStoreId).catch(() => {});
+      }
+    });
+  }, [activeStoreId]);
 
   async function handleToggleFeatured(productId: string, featured: boolean) {
     if (updatingFeaturedIds.includes(productId)) {

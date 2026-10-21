@@ -21,6 +21,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 export type CustomerProductPurchase = {
   productId: string;
@@ -97,6 +98,7 @@ type ReportsDashboardClientProps = {
   stores: Array<{ id: string; name: string; currency: string }>;
   availableYears: string[];
   initialTab?: "customers" | "brands" | "profit";
+  initialSelectedStoreId?: string;
 };
 
 export default function ReportsDashboardClient({
@@ -106,6 +108,7 @@ export default function ReportsDashboardClient({
   stores,
   availableYears,
   initialTab = "customers",
+  initialSelectedStoreId,
 }: ReportsDashboardClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
@@ -143,11 +146,24 @@ export default function ReportsDashboardClient({
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId) return initialSelectedStoreId;
+    const stored = getStoredActiveStoreId();
+    if (stored) return stored;
+    return "ALL";
+  });
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
   const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | "year" | null>(null);
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== selectedStoreId) {
+        setSelectedStoreId(newStoreId);
+      }
+    });
+  }, [selectedStoreId]);
 
   const activeCurrency = stores[0]?.currency || "USD";
   const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
@@ -431,7 +447,11 @@ export default function ReportsDashboardClient({
           <StoreIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <select
             value={selectedStoreId}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
+            onChange={(e) => {
+              const newId = e.target.value;
+              setSelectedStoreId(newId);
+              setStoredActiveStoreId(newId);
+            }}
             className="h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
           >
             <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
@@ -650,7 +670,9 @@ export default function ReportsDashboardClient({
               <select
                 value={selectedStoreId}
                 onChange={(e) => {
-                  setSelectedStoreId(e.target.value);
+                  const newId = e.target.value;
+                  setSelectedStoreId(newId);
+                  setStoredActiveStoreId(newId);
                   setMobileActiveFilter(null);
                 }}
                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-slate-400"

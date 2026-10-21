@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, FileText } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -45,6 +46,7 @@ type POListClientProps = {
   initialStores: Store[];
   initialVendors: Vendor[];
   initialPurchaseOrders: PurchaseOrder[];
+  initialSelectedStoreId?: string;
 };
 
 type POSortField =
@@ -76,12 +78,18 @@ export default function POListClient({
   initialStores,
   initialVendors,
   initialPurchaseOrders,
+  initialSelectedStoreId,
 }: POListClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
   const [purchaseOrders] = useState<PurchaseOrder[]>(initialPurchaseOrders);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId) return initialSelectedStoreId;
+    const stored = getStoredActiveStoreId();
+    if (stored) return stored;
+    return "ALL";
+  });
   const [selectedVendorId, setSelectedVendorId] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,6 +127,16 @@ export default function POListClient({
       return matchesStore && matchesVendor && matchesStatus && matchesSearch;
     });
   }, [purchaseOrders, selectedStoreId, selectedVendorId, selectedStatus, searchQuery]);
+
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== selectedStoreId) {
+        setSelectedStoreId(newStoreId);
+        setCurrentPage(1);
+      }
+    });
+  }, [selectedStoreId]);
 
   const sortedPOs = useMemo(() => {
     const list = [...filteredPOs];
@@ -215,7 +233,9 @@ export default function POListClient({
             <select
               value={selectedStoreId}
               onChange={(e) => {
-                setSelectedStoreId(e.target.value);
+                const newId = e.target.value;
+                setSelectedStoreId(newId);
+                setStoredActiveStoreId(newId);
                 setCurrentPage(1);
               }}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium outline-none transition focus:border-slate-400"

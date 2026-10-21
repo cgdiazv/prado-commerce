@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import { Boxes } from "lucide-react";
 import { ConsignmentsClient } from "@/app/dashboard/consignments/consignments-client";
 
@@ -62,11 +63,14 @@ export default async function OrdersConsignmentsPage() {
     console.error("Error loading consignments:", error);
   }
 
+  const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
+
   return (
     <section className="min-w-0 space-y-6">
       <ConsignmentsClient
         initialConsignments={consignments}
         stores={stores}
+        initialSelectedStoreId={initialSelectedStoreId}
       />
     </section>
   );

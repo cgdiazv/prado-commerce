@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 import {
   Boxes,
   Plus,
@@ -80,21 +81,36 @@ interface ConsignmentsClientProps {
   initialConsignments: ConsignmentData[];
   stores: Array<{ id: string; name: string; currency: string }>;
   products?: Array<{ id: string; title: string; sku?: string; variants?: Array<{ id: string; title: string; sku?: string; price: number; cost?: number }> }>;
+  initialSelectedStoreId?: string;
 }
 
 export function ConsignmentsClient({
   initialConsignments,
   stores,
   products = [],
+  initialSelectedStoreId,
 }: ConsignmentsClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
   const [consignments, setConsignments] = useState<ConsignmentData[]>(initialConsignments);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId) return initialSelectedStoreId;
+    const stored = getStoredActiveStoreId();
+    if (stored) return stored;
+    return "ALL";
+  });
   const [activeTab, setActiveTab] = useState<"ALL" | "RECEIVED" | "GIVEN">("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== selectedStoreId) {
+        setSelectedStoreId(newStoreId);
+      }
+    });
+  }, [selectedStoreId]);
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -364,7 +380,11 @@ export function ConsignmentsClient({
               <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <select
                 value={selectedStoreId}
-                onChange={(e) => setSelectedStoreId(e.target.value)}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setSelectedStoreId(newId);
+                  setStoredActiveStoreId(newId);
+                }}
                 className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-9 text-sm font-medium text-slate-700 shadow-sm focus:border-violet-500 focus:outline-none cursor-pointer hover:bg-slate-50 transition"
               >
                 <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>

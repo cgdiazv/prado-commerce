@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, Building2, Mail, Phone, MapPin, Trash2, Edit } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -27,15 +28,33 @@ type Vendor = {
 type VendorsClientProps = {
   initialStores: Store[];
   initialVendors: Vendor[];
+  initialSelectedStoreId?: string;
 };
 
-export default function VendorsClient({ initialStores, initialVendors }: VendorsClientProps) {
+export default function VendorsClient({
+  initialStores,
+  initialVendors,
+  initialSelectedStoreId,
+}: VendorsClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>("ALL");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId) return initialSelectedStoreId;
+    const stored = getStoredActiveStoreId();
+    if (stored) return stored;
+    return "ALL";
+  });
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== selectedStoreId) {
+        setSelectedStoreId(newStoreId);
+      }
+    });
+  }, [selectedStoreId]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
@@ -212,7 +231,11 @@ export default function VendorsClient({ initialStores, initialVendors }: Vendors
         {initialStores.length > 1 && (
           <select
             value={selectedStoreId}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
+            onChange={(e) => {
+              const newId = e.target.value;
+              setSelectedStoreId(newId);
+              setStoredActiveStoreId(newId);
+            }}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-slate-400"
           >
             <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>

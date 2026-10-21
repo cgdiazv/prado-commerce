@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Search, Store, SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -177,6 +178,7 @@ export function OrdersDashboard({
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
+    setStoredActiveStoreId(storeId);
     setError(null);
     setCurrentPage(1);
     setSelectedOrderIds([]);
@@ -188,6 +190,15 @@ export function OrdersDashboard({
       setError("Failed to load orders for this store.");
     }
   }
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId !== activeStoreId) {
+        setActiveStoreId(newStoreId);
+        void refreshOrders(newStoreId).catch(() => {});
+      }
+    });
+  }, [activeStoreId]);
 
   useEffect(() => {
     const activeOrderIdSet = new Set(visibleOrders.map((order) => order.id));

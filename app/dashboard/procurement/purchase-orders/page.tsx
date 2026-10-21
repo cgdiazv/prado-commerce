@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import POListClient from "./po-list-client";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
@@ -77,6 +78,7 @@ export default async function PurchaseOrdersPage() {
           })
       : [];
 
+    const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
     const serializedStores = JSON.parse(JSON.stringify(stores));
     const serializedVendors = JSON.parse(JSON.stringify(vendors));
     const serializedPOs = JSON.parse(JSON.stringify(purchaseOrders));
@@ -86,6 +88,7 @@ export default async function PurchaseOrdersPage() {
         initialStores={serializedStores}
         initialVendors={serializedVendors}
         initialPurchaseOrders={serializedPOs}
+        initialSelectedStoreId={initialSelectedStoreId}
       />
     );
   } catch (error) {

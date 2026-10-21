@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import { OrdersDashboard } from "./orders-dashboard";
 
 type OrdersPageProps = {
@@ -50,7 +51,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       },
     });
 
-    const selectedStoreId = resolvedSearchParams?.storeId ?? "ALL";
+    const selectedStoreId = await resolveServerActiveStoreId(resolvedSearchParams?.storeId, stores);
 
     const orders =
       selectedStoreId === "ALL"

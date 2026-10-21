@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3, Boxes } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3, Boxes, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { PradoLogo } from "@/components/PradoLogo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -25,6 +25,7 @@ type NavItem = {
 };
 
 const KNOWN_ORDERS_STORAGE_KEY = "prado_dashboard_known_orders";
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "prado_sidebar_collapsed";
 
 function loadKnownOrders(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -69,6 +70,26 @@ export default function DashboardLayout({
     return null;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  function toggleSidebar() {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next));
+      } catch {
+        // Ignore localStorage errors
+      }
+      return next;
+    });
+  }
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
@@ -377,13 +398,149 @@ export default function DashboardLayout({
     );
   }
 
-  function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  function SidebarContent({
+    isCollapsed = false,
+    onToggleCollapse,
+    onNavigate,
+  }: {
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
+    onNavigate?: () => void;
+  }) {
+    if (isCollapsed) {
+      return (
+        <div className="flex flex-col h-full">
+          {onToggleCollapse && (
+            <div className="flex items-center justify-center mb-1 shrink-0">
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                title={language === "es" ? "Expandir barra lateral" : "Expand sidebar"}
+                aria-label="Expand sidebar"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <nav className="flex-1 min-h-0 space-y-1.5 overflow-visible">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              return (
+                <div key={item.href} className="group relative flex justify-center">
+                  <Link
+                    href={item.href}
+                    onClick={() => onNavigate?.()}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+                      active
+                        ? "border-cyan-600 bg-cyan-50 text-cyan-700 shadow-xs ring-1 ring-cyan-600/30 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                    aria-label={item.label}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-current" />
+                  </Link>
+
+                  {/* Flyout popover on hover with continuous hover bridge */}
+                  <div className="invisible pointer-events-none absolute left-full top-0 -mt-1 pl-2 z-50 opacity-0 transition-all duration-150 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+                    <div className="min-w-[220px] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                      <div className="mb-1.5 border-b border-slate-100 pb-2 px-1">
+                        <span className="text-xs font-bold text-slate-900">{item.label}</span>
+                      </div>
+                      {item.children ? (
+                        <div className="space-y-0.5 pt-0.5">
+                          {item.children.map((child) => (
+                            <Link
+                              key={`${child.href}:${child.label}`}
+                              href={child.href}
+                              onClick={() => onNavigate?.()}
+                              className="block rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-700"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => onNavigate?.()}
+                          className="block rounded-lg px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
+                        >
+                          {language === "es" ? "Abrir sección" : "Open section"}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="pt-2">
+              <div className="my-2 border-t border-slate-200" />
+              <div className="group relative flex justify-center">
+                <Link
+                  href="/dashboard/help"
+                  onClick={() => onNavigate?.()}
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+                    isHelpActive
+                      ? "border-cyan-600 bg-cyan-50 text-cyan-700 shadow-xs ring-1 ring-cyan-600/30"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                  aria-label={t.dashboard.help}
+                >
+                  <CircleHelp className="h-4 w-4 shrink-0 text-current" />
+                </Link>
+                <div className="invisible pointer-events-none absolute left-full top-0 pl-2 z-50 opacity-0 transition-opacity group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+                  <div className="whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-xl">
+                    {t.dashboard.help}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
     return (
       <>
         <nav className="flex-1 min-h-0 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
+
+            if (item.href === "/dashboard") {
+              return (
+                <div key={item.href} className="flex items-center gap-1">
+                  <Link
+                    href={item.href}
+                    onClick={() => onNavigate?.()}
+                    className={`flex flex-1 min-w-0 items-center gap-3 rounded px-4 py-2.5 text-sm font-medium transition border-l-2 ${
+                      active
+                        ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                        : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-current" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                  {onToggleCollapse && (
+                    <button
+                      type="button"
+                      onClick={onToggleCollapse}
+                      className="hidden lg:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                      title={language === "es" ? "Colapsar barra lateral" : "Collapse sidebar"}
+                      aria-label="Collapse sidebar"
+                    >
+                      <PanelLeftClose className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            }
 
             return (
               <div key={item.href} className="space-y-1">
@@ -550,9 +707,22 @@ export default function DashboardLayout({
     >
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#ffffff] backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6">
-          <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="inline-flex items-center gap-2.5 transition hover:opacity-85">
-            <PradoLogo theme="light" />
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {!currentUser?.isCashier && (
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 lg:hidden cursor-pointer"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
+
+            <Link href={currentUser?.isCashier ? "/dashboard/orders/pos" : "/dashboard"} className="inline-flex items-center gap-2.5 transition hover:opacity-85">
+              <PradoLogo theme="light" />
+            </Link>
+          </div>
 
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden lg:flex items-center">
@@ -656,17 +826,6 @@ export default function DashboardLayout({
                 </div>
               );
             })()}
-
-            {!currentUser?.isCashier && (
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(true)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden cursor-pointer"
-                aria-label="Open navigation menu"
-              >
-                <Menu className="h-4 w-4" />
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -700,8 +859,15 @@ export default function DashboardLayout({
 
       <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
         {!currentUser?.isCashier && (
-          <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[#ffffff] px-4 py-6 lg:flex xl:w-72 print:hidden">
-            <SidebarContent />
+          <aside
+            className={`sticky top-14 z-30 hidden h-[calc(100vh-3.5rem)] shrink-0 flex-col overflow-visible border-r border-slate-200 bg-[#ffffff] pt-3 pb-5 transition-[width,padding] duration-200 ease-in-out lg:flex print:hidden ${
+              isSidebarCollapsed ? "w-16 px-2" : "w-64 px-4 xl:w-72"
+            }`}
+          >
+            <SidebarContent
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={toggleSidebar}
+            />
           </aside>
         )}
 

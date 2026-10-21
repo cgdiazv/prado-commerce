@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getStoredActiveStoreId, setStoredActiveStoreId } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -150,7 +151,16 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
-  const [activeStoreId, setActiveStoreId] = useState(selectedStoreId ?? stores[0]?.id ?? "");
+  const [activeStoreId, setActiveStoreId] = useState(() => {
+    if (selectedStoreId && stores.some((s) => s.id === selectedStoreId)) {
+      return selectedStoreId;
+    }
+    const stored = getStoredActiveStoreId();
+    if (stored && stored !== "ALL" && stores.some((s) => s.id === stored)) {
+      return stored;
+    }
+    return stores[0]?.id ?? "";
+  });
   const [availableCategories, setAvailableCategories] = useState<Category[]>(categories);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
@@ -909,7 +919,9 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             <select
               value={activeStoreId}
               onChange={(event) => {
-                setActiveStoreId(event.target.value);
+                const newId = event.target.value;
+                setActiveStoreId(newId);
+                setStoredActiveStoreId(newId);
                 setProductForm((current) => ({ ...current, categoryId: "" }));
                 setNewCategoryName("");
                 setIsCreatingNewCategoryMode(false);

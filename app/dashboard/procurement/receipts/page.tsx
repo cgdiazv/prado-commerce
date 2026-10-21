@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import ReceiptsClient from "./receipts-client";
 
 export default async function ReceiptsPage() {
@@ -78,6 +79,7 @@ export default async function ReceiptsPage() {
         })
     : [];
 
+  const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
   const serializedReceipts = JSON.parse(JSON.stringify(rawReceipts));
   const serializedStores = JSON.parse(JSON.stringify(stores));
 
@@ -85,6 +87,7 @@ export default async function ReceiptsPage() {
     <ReceiptsClient
       initialReceipts={serializedReceipts}
       stores={serializedStores}
+      initialSelectedStoreId={initialSelectedStoreId}
     />
   );
 }

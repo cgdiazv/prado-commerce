@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -96,6 +97,7 @@ export function CategoriesDashboard({
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
+    setStoredActiveStoreId(storeId);
     setCategoryError(null);
     setEditingCategoryId(null);
 
@@ -105,6 +107,15 @@ export function CategoriesDashboard({
       setCategoryError("Failed to load categories for this store.");
     }
   }
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== "ALL" && newStoreId !== activeStoreId && stores.some((s) => s.id === newStoreId)) {
+        setActiveStoreId(newStoreId);
+        void refreshCategories(newStoreId).catch(() => {});
+      }
+    });
+  }, [activeStoreId, stores]);
 
   function openCreateCategoryModal() {
     resetCategoryForm();

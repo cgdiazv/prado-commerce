@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import { BrandsDashboard } from "./brands-dashboard";
 
 type BrandsPageProps = {
@@ -37,7 +38,7 @@ export default async function ProductBrandsPage({ searchParams }: BrandsPageProp
       },
     });
 
-    const selectedStoreId = resolvedSearchParams?.storeId ?? stores[0]?.id ?? null;
+    const selectedStoreId = await resolveServerActiveStoreId(resolvedSearchParams?.storeId, stores, { allowAll: false });
 
     const brands = stores.length
       ? await prisma.brand.findMany({

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import { ProductForm } from "../product-form";
 
 export default async function NewProductPage() {
@@ -27,6 +28,8 @@ export default async function NewProductPage() {
       },
     });
 
+    const selectedStoreId = await resolveServerActiveStoreId(undefined, stores, { allowAll: false });
+
     const categories = await prisma.category.findMany({
       where: { storeId: { in: stores.map((s) => s.id) } },
       orderBy: { name: "asc" },
@@ -39,7 +42,14 @@ export default async function NewProductPage() {
       select: { id: true, name: true, storeId: true },
     });
 
-    return <ProductForm stores={stores} categories={categories} brands={brands} />;
+    return (
+      <ProductForm
+        stores={stores}
+        categories={categories}
+        brands={brands}
+        selectedStoreId={selectedStoreId}
+      />
+    );
   } catch (error) {
     console.error("[NEW_PRODUCT_PAGE_DB_ERROR]", error);
     return (

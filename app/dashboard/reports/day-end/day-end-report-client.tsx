@@ -52,6 +52,7 @@ export interface DayEndReportClientProps {
   initialDate: string;
   stores: StoreOption[];
   initialData?: any;
+  initialSelectedStoreId?: string;
 }
 
 interface DenominationCount {
@@ -110,6 +111,7 @@ export default function DayEndReportClient({
   initialDate,
   stores = [],
   initialData,
+  initialSelectedStoreId,
 }: DayEndReportClientProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
@@ -117,7 +119,7 @@ export default function DayEndReportClient({
   // Filter States
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [selectedStoreId, setSelectedStoreId] = useState<string>(
-    stores[0]?.id || initialData?.store?.id || ""
+    initialSelectedStoreId || stores[0]?.id || initialData?.store?.id || ""
   );
   const [scope, setScope] = useState<"store" | "till" | "cashier">("store");
   const [selectedTerminal, setSelectedTerminal] = useState<string>("ALL");

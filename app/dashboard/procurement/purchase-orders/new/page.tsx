@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import POFormClient from "./po-form-client";
 
 export default async function NewPurchaseOrderPage() {
@@ -56,6 +57,7 @@ export default async function NewPurchaseOrderPage() {
         })
       : [];
 
+    const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores, { allowAll: false });
     const serializedStores = JSON.parse(JSON.stringify(stores));
     const serializedVendors = JSON.parse(JSON.stringify(vendors));
     const serializedProducts = JSON.parse(JSON.stringify(products));
@@ -65,6 +67,7 @@ export default async function NewPurchaseOrderPage() {
         initialStores={serializedStores}
         initialVendors={serializedVendors}
         initialProducts={serializedProducts}
+        initialSelectedStoreId={initialSelectedStoreId}
       />
     );
   } catch (error) {

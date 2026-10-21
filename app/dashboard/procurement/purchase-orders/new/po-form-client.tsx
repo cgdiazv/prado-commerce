@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Search, Package } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getStoredActiveStoreId, setStoredActiveStoreId } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -49,14 +50,29 @@ type POFormClientProps = {
   initialStores: Store[];
   initialVendors: Vendor[];
   initialProducts: Product[];
+  initialSelectedStoreId?: string;
 };
 
-export default function POFormClient({ initialStores, initialVendors, initialProducts }: POFormClientProps) {
+export default function POFormClient({
+  initialStores,
+  initialVendors,
+  initialProducts,
+  initialSelectedStoreId,
+}: POFormClientProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
 
-  const [selectedStoreId, setSelectedStoreId] = useState<string>(initialStores[0]?.id || "");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (initialSelectedStoreId && initialStores.some((s) => s.id === initialSelectedStoreId)) {
+      return initialSelectedStoreId;
+    }
+    const stored = getStoredActiveStoreId();
+    if (stored && stored !== "ALL" && initialStores.some((s) => s.id === stored)) {
+      return stored;
+    }
+    return initialStores[0]?.id || "";
+  });
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [poNumber, setPoNumber] = useState<string>("");
   const [expectedDate, setExpectedDate] = useState<string>("");
@@ -231,7 +247,9 @@ export default function POFormClient({ initialStores, initialVendors, initialPro
                 <select
                   value={selectedStoreId}
                   onChange={(e) => {
-                    setSelectedStoreId(e.target.value);
+                    const newId = e.target.value;
+                    setSelectedStoreId(newId);
+                    setStoredActiveStoreId(newId);
                     setSelectedVendorId("");
                     setLineItems([]);
                   }}

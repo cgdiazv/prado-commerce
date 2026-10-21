@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import DayEndReportClient from "./day-end-report-client";
 import { resolvePosSettings } from "@/lib/pos/settings";
 
@@ -37,8 +38,11 @@ export default async function DayEndReportPage() {
 
   // If user has stores, pre-calculate today's initial stats for the first store
   let initialData: any = null;
+  let primaryStoreId = stores[0]?.id;
   if (stores.length > 0) {
-    const primaryStore = stores[0];
+    const activeStoreId = await resolveServerActiveStoreId(undefined, stores, { allowAll: false });
+    const primaryStore = stores.find((s) => s.id === activeStoreId) || stores[0];
+    primaryStoreId = primaryStore.id;
     const posConfig = resolvePosSettings(primaryStore.posSettings, user);
 
     const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
@@ -178,6 +182,7 @@ export default async function DayEndReportPage() {
           currency: s.currency || "USD",
         }))}
         initialData={initialData}
+        initialSelectedStoreId={primaryStoreId}
       />
     </Suspense>
   );

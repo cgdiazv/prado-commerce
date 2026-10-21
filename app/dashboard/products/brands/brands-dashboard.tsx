@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Pencil, Plus, Search, Tag, Trash2, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
 type Store = {
   id: string;
@@ -93,6 +94,7 @@ export function BrandsDashboard({
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
+    setStoredActiveStoreId(storeId);
     setBrandError(null);
     setEditingBrandId(null);
 
@@ -102,6 +104,15 @@ export function BrandsDashboard({
       setBrandError(isEs ? "No se pudieron cargar las marcas de la tienda seleccionada" : "Could not load brands for the selected store");
     }
   }
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId && newStoreId !== "ALL" && newStoreId !== activeStoreId && stores.some((s) => s.id === newStoreId)) {
+        setActiveStoreId(newStoreId);
+        void refreshBrands(newStoreId).catch(() => {});
+      }
+    });
+  }, [activeStoreId, stores]);
 
   function handleNameChange(value: string) {
     setBrandName(value);

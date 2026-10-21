@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import ReportsDashboardClient, {
   BrandReportItem,
   CustomerReportItem,
@@ -362,6 +363,8 @@ export default async function ReportsPage(props: {
     monthlyBreakdown,
   };
 
+  const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
+
   return (
     <Suspense fallback={null}>
       <ReportsDashboardClient
@@ -371,6 +374,7 @@ export default async function ReportsPage(props: {
         stores={JSON.parse(JSON.stringify(stores))}
         availableYears={availableYears}
         initialTab={initialTab}
+        initialSelectedStoreId={initialSelectedStoreId}
       />
     </Suspense>
   );

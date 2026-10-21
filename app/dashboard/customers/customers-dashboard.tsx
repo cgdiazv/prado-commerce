@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Mail, Plus, Search, Shield, Store, SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 import { BroadcastEmailModal } from "./broadcast-email-modal";
 
 type Store = {
@@ -207,6 +208,7 @@ export function CustomersDashboard({
 
   async function handleStoreChange(storeId: string) {
     setActiveStoreId(storeId);
+    setStoredActiveStoreId(storeId);
     setError(null);
     setCurrentPage(1);
     setSelectedGroupFilter("");
@@ -219,6 +221,15 @@ export function CustomersDashboard({
       setError("Failed to load customers for this store.");
     }
   }
+
+  useEffect(() => {
+    return subscribeToActiveStoreChange((newStoreId) => {
+      if (newStoreId !== activeStoreId) {
+        setActiveStoreId(newStoreId);
+        void refreshCustomers(newStoreId).catch(() => {});
+      }
+    });
+  }, [activeStoreId]);
 
   useEffect(() => {
     if (!selectAllRef.current) {

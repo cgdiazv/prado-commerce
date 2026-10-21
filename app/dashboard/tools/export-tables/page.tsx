@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getStoredActiveStoreId, setStoredActiveStoreId } from "@/lib/dashboard-store-selection";
 
 type StoreOption = {
   id: string;
@@ -36,7 +37,9 @@ export default function ExportTablesPage() {
         const payload = (await storesRes.json()) as Array<{ id: string; name: string }>;
         if (storesRes.ok) {
           setStores(payload);
-          setSelectedStoreId(payload[0]?.id ?? "");
+          const stored = getStoredActiveStoreId();
+          const matching = stored && stored !== "ALL" && payload.some((s) => s.id === stored) ? stored : payload[0]?.id ?? "";
+          setSelectedStoreId(matching);
         }
 
         if (userRes.ok) {
@@ -169,7 +172,11 @@ export default function ExportTablesPage() {
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={selectedStoreId}
-              onChange={(event) => setSelectedStoreId(event.target.value)}
+              onChange={(event) => {
+                const newId = event.target.value;
+                setSelectedStoreId(newId);
+                setStoredActiveStoreId(newId);
+              }}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
               {stores.map((store) => (
