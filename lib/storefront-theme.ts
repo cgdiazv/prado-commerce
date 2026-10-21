@@ -1,9 +1,9 @@
 import type { StorefrontTheme } from "@prisma/client";
 
-export type StorefrontThemeId = "minimal" | "recinto" | "classic";
+export type StorefrontThemeId = "mercado" | "minimal" | "recinto" | "classic";
 
 export function normalizeStorefrontTheme(
-  value: StorefrontTheme | "recinto" | "minimal" | "classic" | null | undefined,
+  value: StorefrontTheme | "recinto" | "minimal" | "mercado" | "classic" | null | undefined,
 ): StorefrontThemeId {
   if (value === "RECINTO" || value === "recinto") {
     return "recinto";
@@ -13,7 +13,7 @@ export function normalizeStorefrontTheme(
     return "classic";
   }
 
-  return "minimal";
+  return "mercado";
 }
 
 export function toStorefrontThemeEnum(value: StorefrontThemeId): StorefrontTheme {
@@ -51,13 +51,14 @@ export function getStorefrontThemeClasses(theme: StorefrontThemeId) {
     };
   }
 
+  // Mercado (Figma design system)
   return {
-    shell: "bg-slate-50 text-slate-900",
-    panel: "border-slate-200 bg-white shadow-sm",
-    mutedPanel: "border-slate-200 bg-slate-50",
-    productCard: "border-slate-200 bg-white shadow-sm hover:shadow-md",
-    hero: "border-slate-200 bg-white text-slate-900 shadow-sm",
-    featuredWrap: "border-slate-200 bg-white",
+    shell: "bg-white text-[#20201e] selection:bg-[#20201e] selection:text-white",
+    panel: "border-[#e5e5e0] bg-white shadow-none",
+    mutedPanel: "border-[#e5e5e0] bg-[#f6f6f3]",
+    productCard: "border-transparent bg-white transition-all duration-200",
+    hero: "border-transparent bg-white text-[#20201e]",
+    featuredWrap: "border-[#e5e5e0] bg-[#f6f6f3]",
   };
 }
 
@@ -97,12 +98,13 @@ export function getStorefrontThemeHeroContentWithOverrides(
             buttonText: isEs ? "Ver productos destacados" : "View featured products",
           }
         : {
-            eyebrow: isEs ? "Tienda en línea" : "Shop online",
-            title: isEs ? `Explora ${storeName}` : `Explore ${storeName}`,
+            // Mercado theme defaults from Figma
+            eyebrow: isEs ? "TU PRÓXIMO PROYECTO" : "YOUR NEXT PROJECT",
+            title: isEs ? "Tu próximo proyecto empieza aquí." : "Your next project starts here.",
             subtitle: isEs
-              ? "Una experiencia de navegación limpia con búsqueda, categorías y compra rápida."
-              : "A clean browsing experience with search, categories, and quick add-to-cart actions.",
-            buttonText: isEs ? "Comenzar a comprar" : "Start shopping",
+              ? `Explora los mejores productos y servicios disponibles en ${storeName}.`
+              : `Explore top quality products and services available at ${storeName}.`,
+            buttonText: isEs ? "Explorar catálogo" : "Explore catalog",
           };
 
   return {

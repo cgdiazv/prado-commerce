@@ -54,7 +54,7 @@ export default function StorefrontNavbar({
       ? "border-b border-[#e3e5de] bg-white px-4 sm:px-8 lg:px-12 py-3.5"
       : theme === "classic"
         ? "border-b border-amber-200 bg-[#fffdf8] px-6 py-4"
-        : "border-b border-slate-200 bg-white px-6 py-4";
+        : "border-b border-[#e5e5e0] bg-white px-6 sm:px-10 lg:px-16 py-3.5";
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
@@ -84,7 +84,7 @@ export default function StorefrontNavbar({
         style={getStoreBrandingCssVars(resolvedMainColor) as CSSProperties}
         className={headerClass}
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-between gap-4 sm:gap-8">
             <div className="flex items-center gap-2">
               {categories.length > 0 ? (
@@ -112,8 +112,16 @@ export default function StorefrontNavbar({
                   <span className="text-2xl sm:text-[30px] font-semibold tracking-tight text-[#252b27] lowercase">
                     {storeName}.
                   </span>
-                ) : (
+                ) : theme === "classic" ? (
                   <span className="text-xl font-semibold tracking-tight">{storeName}</span>
+                ) : (
+                  // Mercado template brand mark from Figma
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#20201e] text-sm font-semibold text-white">
+                      {storeName.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[19px] font-semibold tracking-tight text-[#20201e]">{storeName}</span>
+                  </div>
                 )}
               </Link>
             </div>
@@ -123,7 +131,7 @@ export default function StorefrontNavbar({
                 <div className="relative">
                   <Search
                     className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
-                      theme === "recinto" ? "text-[#73766f]" : "text-slate-400"
+                      theme === "recinto" ? "text-[#73766f]" : theme === "classic" ? "text-slate-400" : "text-[#20201e]"
                     }`}
                   />
                   <input
@@ -135,12 +143,16 @@ export default function StorefrontNavbar({
                         ? isEs
                           ? "Buscar productos, colecciones y más"
                           : "Search products, collections and more"
-                        : t.storefront.searchPlaceholder
+                        : isEs
+                          ? "Buscar productos..."
+                          : "Search products..."
                     }
                     className={`h-9 w-full pl-9 pr-12 text-xs outline-none transition ${
                       theme === "recinto"
                         ? "rounded-[4px] border border-transparent bg-[#f3f3ee] text-[#252b27] placeholder-[#73766f] focus:border-[#344e41] focus:bg-white"
-                        : "rounded-full border border-slate-200 bg-white text-slate-900 focus:border-[var(--store-main-color)]"
+                        : theme === "classic"
+                          ? "rounded-full border border-slate-200 bg-white text-slate-900 focus:border-[var(--store-main-color)]"
+                          : "rounded-[4px] border border-transparent bg-[#f6f6f3] text-[#20201e] placeholder-[#747470] focus:border-[#20201e] focus:bg-white"
                     }`}
                   />
                   {theme === "recinto" && (
@@ -152,26 +164,28 @@ export default function StorefrontNavbar({
               </form>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <div className="flex shrink-0 items-center gap-3 sm:gap-5">
               <LanguageToggle variant="light" />
 
               <Link
                 href={accountHref}
                 aria-label={t.storefront.account}
                 onClick={closeMobileMenu}
-                className={`inline-flex items-center gap-1.5 transition text-xs font-medium ${
+                className={`inline-flex items-center gap-2 transition text-xs ${
                   theme === "recinto"
                     ? isAccountActive
                       ? "text-[#344e41] font-semibold"
                       : "text-[#252b27] hover:text-[#344e41]"
-                    : isAccountActive
-                      ? "bg-slate-100 text-slate-900 rounded-full h-9 w-9 justify-center"
-                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
+                    : theme === "classic"
+                      ? isAccountActive
+                        ? "bg-slate-100 text-slate-900 rounded-full h-9 w-9 justify-center"
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
+                      : "text-[#20201e] font-normal hover:opacity-75"
                 }`}
               >
-                <User size={18} />
-                {theme === "recinto" && (
-                  <span className="hidden sm:inline">{isEs ? "Cuenta" : "Account"}</span>
+                <User size={18} className={theme !== "classic" ? "text-[#20201e]" : undefined} />
+                {theme !== "classic" && (
+                  <span className="hidden sm:inline">{isEs ? "Mi cuenta" : "Account"}</span>
                 )}
               </Link>
 
@@ -179,22 +193,30 @@ export default function StorefrontNavbar({
                 type="button"
                 data-prado-cart-toggle
                 aria-label={t.storefront.cart}
-                className={`relative inline-flex items-center gap-1.5 transition text-xs font-medium ${
+                className={`relative inline-flex items-center gap-2 transition text-xs ${
                   theme === "recinto"
                     ? "text-[#252b27] hover:text-[#344e41]"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
+                    : theme === "classic"
+                      ? "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
+                      : "text-[#20201e] font-normal hover:opacity-75"
                 }`}
               >
-                {theme === "recinto" ? <ShoppingBag size={18} /> : <ShoppingCart size={20} />}
-                {theme === "recinto" && (
+                {theme === "classic" ? <ShoppingCart size={20} /> : <ShoppingBag size={18} className="text-[#20201e]" />}
+                {theme !== "classic" && (
                   <span className="hidden sm:inline">
-                    {isEs ? "Bolsa" : "Bag"} (<span data-prado-cart-count className="inline">0</span>)
+                    {theme === "recinto" ? (isEs ? "Bolsa" : "Bag") : (isEs ? "Carrito" : "Cart")} (<span data-prado-cart-count className="inline">0</span>)
                   </span>
                 )}
-                {theme !== "recinto" && (
+                {theme === "classic" && (
                   <span
                     data-prado-cart-count
                     className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-[var(--store-main-color)] px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
+                  />
+                )}
+                {theme !== "classic" && (
+                  <span
+                    data-prado-cart-count
+                    className="sm:hidden absolute -right-1 -top-1 hidden min-w-[16px] rounded-full bg-[#20201e] px-1 text-center text-[10px] font-bold leading-[16px] text-white [&:not(:empty)]:block"
                   />
                 )}
               </button>

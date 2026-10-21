@@ -54,9 +54,9 @@ const CHANNEL_OPTIONS = [
 const THEMES = [
   {
     id: "MINIMAL" as const,
-    label: "Minimal",
-    tagline: "Clean, product-first layout with elegant whitespace.",
-    colorClass: "from-cyan-50 to-blue-50/50 border-cyan-300",
+    label: "Mercado",
+    tagline: "Clean, contemporary design with structured catalog and rapid purchasing.",
+    colorClass: "from-[#20201e]/10 to-[#f6f6f3] border-[#20201e]",
   },
   {
     id: "RECINTO" as const,

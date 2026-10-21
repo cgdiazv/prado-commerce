@@ -210,18 +210,159 @@ export default function StorefrontFooter({
     );
   }
 
+  if (theme === "classic") {
+    return (
+      <footer className="border-t border-amber-200 bg-[#fffdf8] px-6 py-5">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
+          <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
+          <a
+            href="https://pradocommerce.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition hover:text-slate-900"
+          >
+            {t.storefront.poweredBy}
+          </a>
+        </div>
+      </footer>
+    );
+  }
+
+  // Mercado (Figma template)
   return (
-    <footer className="border-t border-slate-200 bg-white px-6 py-5">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
-        <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
-        <a
-          href="https://pradocommerce.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="transition hover:text-slate-900"
-        >
-          {t.storefront.poweredBy}
-        </a>
+    <footer className="w-full border-t border-[#e5e5e0] bg-white px-6 sm:px-10 lg:px-16 pt-12 pb-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10 lg:gap-16 pb-10">
+          {/* Brand mark and description */}
+          <div className="space-y-3 max-w-sm">
+            <Link href={homeHref} className="inline-flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#20201e] text-sm font-semibold text-white">
+                {storeName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xl font-semibold tracking-tight text-[#20201e]">
+                {storeName}
+              </span>
+            </Link>
+            <p className="text-[13px] leading-relaxed text-[#747470]">
+              {isEs
+                ? "Tienda minimalista para explorar productos, comparar ofertas y completar compras de manera clara."
+                : "Minimalist store to explore products, compare offers, and complete purchases clearly."}
+            </p>
+          </div>
+
+          {/* Navigation columns */}
+          <div className="grid grid-cols-3 gap-8 sm:gap-14 lg:gap-16">
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#747470]">
+                {isEs ? "TIENDA" : "SHOP"}
+              </p>
+              <ul className="space-y-2.5 text-[13px] text-[#20201e]">
+                <li>
+                  <Link href={`${homeHref}#all-products`} className="hover:opacity-70 transition">
+                    {isEs ? "Catálogo" : "Catalog"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${homeHref}#all-products`} className="hover:opacity-70 transition">
+                    {isEs ? "Nuevos" : "New"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${homeHref}#all-products`} className="hover:opacity-70 transition">
+                    {isEs ? "Ofertas" : "Offers"}
+                  </Link>
+                </li>
+                {categories.length > 0 ? (
+                  categories.slice(0, 3).map((cat) => (
+                    <li key={cat.id}>
+                      <Link
+                        href={basePath ? `${basePath}/category/${cat.slug}` : `/category/${cat.slug}`}
+                        className="hover:opacity-70 transition"
+                      >
+                        {cat.name}
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li>
+                    <Link href={`${homeHref}#all-products`} className="hover:opacity-70 transition">
+                      {isEs ? "Categorías" : "Categories"}
+                    </Link>
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#747470]">
+                {isEs ? "CUENTA" : "ACCOUNT"}
+              </p>
+              <ul className="space-y-2.5 text-[13px] text-[#20201e]">
+                <li>
+                  <Link href={`${basePath}/account`} className="hover:opacity-70 transition">
+                    {isEs ? "Ingresar" : "Sign In"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${basePath}/account`} className="hover:opacity-70 transition">
+                    {isEs ? "Mi cuenta" : "My Account"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${basePath}/account`} className="hover:opacity-70 transition">
+                    {isEs ? "Pedidos" : "Orders"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`${basePath}/account`} className="hover:opacity-70 transition">
+                    {isEs ? "Favoritos" : "Wishlist"}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#747470]">
+                {isEs ? "AYUDA" : "HELP"}
+              </p>
+              <ul className="space-y-2.5 text-[13px] text-[#20201e]">
+                <li>
+                  <a href="#faq" className="hover:opacity-70 transition">
+                    {isEs ? "Preguntas frecuentes" : "FAQ"}
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:soporte@pradocommerce.com" className="hover:opacity-70 transition">
+                    {isEs ? "Soporte" : "Support"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:opacity-70 transition">
+                    {isEs ? "Contacto" : "Contact"}
+                  </a>
+                </li>
+                <li>
+                  <a href="#locations" className="hover:opacity-70 transition">
+                    {isEs ? "Puntos de venta" : "Locations"}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer bottom bar */}
+        <div className="border-t border-[#e5e5e0] pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#747470]">
+          <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
+          <a
+            href="https://pradocommerce.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[#20201e] transition"
+          >
+            {isEs ? "Desarrollado por Prado Commerce" : t.storefront.poweredBy}
+          </a>
+        </div>
       </div>
     </footer>
   );

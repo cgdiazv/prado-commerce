@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronDown,
   Heart,
   MessageCircle,
   Package,
@@ -131,6 +133,15 @@ const DEFAULT_CATEGORY_TILES = [
   },
 ];
 
+const MERCADO_FALLBACK_IMAGES = [
+  "/storefront/mercado/d3069bcf6a06f8c960c1daf11528c1f033319058.png",
+  "/storefront/mercado/ae2f31ca3c3ccf311a298e0ebf9fe39b0e8a2d78.png",
+  "/storefront/mercado/6dbe971161654b2aec9cc387952f8b47072cf780.png",
+  "/storefront/mercado/63506525f0b86a71feca9b4e3fe13db339222a49.png",
+  "/storefront/mercado/c2d3ff23b8e3e025355aab2357145e2d72bbc366.png",
+  "/storefront/mercado/ce7d5c561883ce14f1b9db28175c3caa1581cbca.png",
+];
+
 export default function StorefrontHomeClient({
   store,
   products,
@@ -143,6 +154,13 @@ export default function StorefrontHomeClient({
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
   const hasHeroImage = Boolean(store.heroImageUrl);
+  const isMercado = theme === "mercado" || theme === "minimal";
+
+  // Interactive state for Mercado theme
+  const [selectedMercadoCategory, setSelectedMercadoCategory] = useState<string>("all");
+  const [selectedMercadoSort, setSelectedMercadoSort] = useState<
+    "featured" | "price_asc" | "price_desc" | "name_asc"
+  >("featured");
 
   // Interactive state for Recinto theme
   const [selectedBestsellerCategory, setSelectedBestsellerCategory] = useState<string>("all");
@@ -193,15 +211,56 @@ export default function StorefrontHomeClient({
       ? (featuredProducts.length > 0 ? featuredProducts : products.slice(0, 4))
       : products.filter((p) => p.category?.id === selectedBestsellerCategory);
 
+  // Filter and sort products for Mercado theme
+  const filteredMercadoProducts = products
+    .filter((p) => {
+      if (selectedMercadoCategory === "all") return true;
+      return p.category?.id === selectedMercadoCategory;
+    })
+    .slice()
+    .sort((a, b) => {
+      const priceA = Number(a.variants[0]?.price ?? 0);
+      const priceB = Number(b.variants[0]?.price ?? 0);
+      if (selectedMercadoSort === "price_asc") return priceA - priceB;
+      if (selectedMercadoSort === "price_desc") return priceB - priceA;
+      if (selectedMercadoSort === "name_asc") return a.title.localeCompare(b.title);
+      return 0;
+    });
+
   // New arrivals products for Recinto
   const newArrivalsList = products.slice(-4).reverse();
 
   return (
     <div className="contents">
       {/* ================================================================ */}
-      {/* THEME: MINIMAL HERO                                              */}
+      {/* THEME: MERCADO HERO (FIGMA STOREFRONT TEMPLATE)                   */}
       {/* ================================================================ */}
-      {theme === "minimal" ? (
+      {isMercado ? (
+        <section className="w-full bg-white border-b border-[#e5e5e0]/60">
+          <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 py-12 sm:py-16 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+            <div className="space-y-3 max-w-xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#747470]">
+                {heroContent.eyebrow}
+              </p>
+              <h1 className="text-4xl sm:text-5xl font-medium tracking-tight text-[#20201e] leading-[1.12]">
+                {heroContent.title}
+              </h1>
+            </div>
+            <div className="space-y-3 max-w-sm lg:text-left">
+              <p className="text-sm text-[#747470] leading-relaxed">
+                {heroContent.subtitle}
+              </p>
+              <a
+                href="#all-products"
+                className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#20201e] hover:opacity-75 transition"
+              >
+                <span>{heroContent.buttonText}</span>
+                <ArrowDown size={14} className="text-[#383838]" />
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : theme === "classic" ? (
         <section
           className={`w-full border-b px-6 py-14 text-center ${themeClasses.hero}`}
           style={
@@ -251,8 +310,10 @@ export default function StorefrontHomeClient({
       ) : null}
 
       <main
-        className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8 pb-16 ${
-          theme === "minimal" ? "pt-8" : "py-6 sm:py-8"
+        className={`mx-auto w-full flex-1 pb-16 ${
+          isMercado
+            ? "max-w-7xl px-6 sm:px-10 lg:px-16 pt-8 sm:pt-10"
+            : "max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
         }`}
       >
         {/* ================================================================ */}
@@ -865,108 +926,166 @@ export default function StorefrontHomeClient({
         ) : null}
 
         {/* ================================================================ */}
-        {/* MINIMAL & CLASSIC FEATURED PRODUCTS GRID                         */}
+        {/* THEME: MERCADO CATALOG (FIGMA STOREFRONT TEMPLATE)               */}
         {/* ================================================================ */}
-        {theme !== "recinto" && featuredProducts.length > 0 ? (
-          <section
-            id="featured-products"
-            className={`mb-10 ${
-              theme === "minimal"
-                ? ""
-                : `rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`
-            }`}
-          >
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">{t.storefront.featuredProducts}</h2>
+        {isMercado ? (
+          <section id="all-products" className="pt-2">
+            {/* Catalog Heading */}
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-2xl sm:text-[26px] font-medium text-[#20201e]">
+                {isEs ? "Catálogo completo" : "Complete Catalog"}
+              </h2>
+              <span className="text-xs text-[#747470]">
+                {filteredMercadoProducts.length} {isEs ? "productos" : "products"}
+              </span>
             </div>
-            {theme === "classic" ? (
-              <div className="grid gap-3">
-                {featuredProducts.map((product, index) => {
-                  const featuredPrice = product.variants[0]?.price;
-                  const isSoldOut = Boolean(
-                    product.variants[0]?.trackInventory &&
-                      (product.variants[0]?.inventory ?? 0) <= 0
-                  );
+
+            {/* Browse Toolbar */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e5e0] pb-0">
+              {/* Category navigation tabs */}
+              <nav className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMercadoCategory("all")}
+                  className={`flex items-center gap-1.5 pb-3 text-[13px] transition cursor-pointer -mb-[1px] ${
+                    selectedMercadoCategory === "all"
+                      ? "border-b-2 border-[#20201e] font-semibold text-[#20201e]"
+                      : "font-normal text-[#747470] hover:text-[#20201e]"
+                  }`}
+                >
+                  <span>{isEs ? "Todos" : "All"}</span>
+                  <span className="text-[10px] opacity-75">{products.length}</span>
+                </button>
+
+                {categories.map((cat) => {
+                  const count = products.filter((p) => p.category?.id === cat.id).length;
+                  const isSelected = selectedMercadoCategory === cat.id;
                   return (
-                    <Link
-                      key={product.id}
-                      href={`${base}/products/${product.id}`}
-                      className={`relative grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedMercadoCategory(cat.id)}
+                      className={`flex items-center gap-1.5 pb-3 text-[13px] transition cursor-pointer -mb-[1px] shrink-0 ${
+                        isSelected
+                          ? "border-b-2 border-[#20201e] font-semibold text-[#20201e]"
+                          : "font-normal text-[#747470] hover:text-[#20201e]"
+                      }`}
                     >
-                      {isSoldOut && (
-                        <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-                          {language === "es" ? "Agotado" : "Sold Out"}
-                        </span>
-                      )}
-                      {product.images[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="h-20 w-full rounded-md object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-20 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
-                          {t.storefront.noImage}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
-                          No. {index + 1}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {product.title}
-                        </p>
-                      </div>
-                      <p className="text-xs font-semibold text-slate-700">
-                        {featuredPrice != null
-                          ? formatter.format(Number(featuredPrice))
-                          : t.storefront.selectOptions}
-                      </p>
-                    </Link>
+                      <span>{cat.name}</span>
+                      <span className="text-[10px] opacity-75">{count}</span>
+                    </button>
                   );
                 })}
+              </nav>
+
+              {/* Sorting dropdown */}
+              <div className="flex items-center gap-2 pb-3 text-xs text-[#747470]">
+                <span>{isEs ? "Ordenar:" : "Sort:"}</span>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={selectedMercadoSort}
+                    onChange={(e) =>
+                      setSelectedMercadoSort(
+                        e.target.value as "featured" | "price_asc" | "price_desc" | "name_asc"
+                      )
+                    }
+                    className="appearance-none bg-transparent pr-5 text-xs font-normal text-[#20201e] outline-none cursor-pointer"
+                  >
+                    <option value="featured">{isEs ? "Destacados" : "Featured"}</option>
+                    <option value="price_asc">{isEs ? "Precio: menor a mayor" : "Price: Low to High"}</option>
+                    <option value="price_desc">{isEs ? "Precio: mayor a menor" : "Price: High to Low"}</option>
+                    <option value="name_asc">{isEs ? "Nombre: A-Z" : "Name: A-Z"}</option>
+                  </select>
+                  <ChevronDown size={13} className="pointer-events-none absolute right-0 text-[#20201e]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Product Grid */}
+            {filteredMercadoProducts.length === 0 ? (
+              <div className="py-20 text-center text-sm text-[#747470]">
+                {t.storefront.noProductsAvailable}
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {featuredProducts.map((product) => {
-                  const featuredPrice = product.variants[0]?.price;
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 pt-8">
+                {filteredMercadoProducts.map((product, idx) => {
+                  const primaryVariant = product.variants[0];
                   const isSoldOut = Boolean(
-                    product.variants[0]?.trackInventory &&
-                      (product.variants[0]?.inventory ?? 0) <= 0
+                    primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0
                   );
+                  const price = primaryVariant?.price;
+                  const variantId = primaryVariant?.id;
+                  const fallbackImage = MERCADO_FALLBACK_IMAGES[idx % MERCADO_FALLBACK_IMAGES.length];
+                  const displayImage = product.images[0] || fallbackImage;
+
                   return (
-                    <Link
-                      key={product.id}
-                      href={`${base}/products/${product.id}`}
-                      className={`relative rounded-lg border p-3 transition ${themeClasses.productCard}`}
-                    >
-                      {isSoldOut && (
-                        <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
-                          {language === "es" ? "Agotado" : "Sold Out"}
-                        </span>
-                      )}
-                      {product.images[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="h-28 w-full rounded-md object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-28 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
-                          {t.storefront.noImage}
+                    <article key={product.id} className="group flex flex-col justify-between">
+                      <div>
+                        <div className="relative aspect-square w-full overflow-hidden rounded-[3px] bg-[#f6f6f3]">
+                          <Link
+                            href={`${base}/products/${product.id}`}
+                            className="absolute inset-0 z-0"
+                            aria-label={product.title}
+                          />
+                          {isSoldOut && (
+                            <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white">
+                              {language === "es" ? "Agotado" : "Sold Out"}
+                            </span>
+                          )}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={displayImage}
+                            alt={product.title}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
                         </div>
-                      )}
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        {product.title}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {featuredPrice != null
-                          ? formatter.format(Number(featuredPrice))
-                          : t.storefront.selectOptions}
-                      </p>
-                    </Link>
+
+                        <div className="pt-4 pb-2">
+                          <p className="text-[11px] uppercase tracking-wide text-[#747470] line-clamp-1">
+                            {product.category?.name || (isEs ? "General" : "General")}
+                          </p>
+                          <Link
+                            href={`${base}/products/${product.id}`}
+                            className="mt-1 block text-[17px] font-medium text-[#20201e] line-clamp-1 hover:underline"
+                          >
+                            {product.title}
+                          </Link>
+                          <p className="mt-1 text-[15px] font-medium text-[#20201e]">
+                            {price != null ? formatter.format(Number(price)) : t.storefront.selectOptions}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        {isSoldOut ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full h-10 px-3.5 flex items-center justify-between rounded-[4px] border border-[#e5e5e0] bg-[#f6f6f3] text-xs font-medium text-[#747470] cursor-not-allowed"
+                          >
+                            <span>{language === "es" ? "Agotado" : "Sold Out"}</span>
+                          </button>
+                        ) : variantId ? (
+                          <button
+                            type="button"
+                            data-prado-add={variantId}
+                            data-prado-add-to-cart={variantId}
+                            className="w-full h-10 px-3.5 flex items-center justify-between rounded-[4px] border border-[#e5e5e0] bg-white text-xs font-medium text-[#20201e] hover:bg-neutral-50 active:bg-neutral-100 transition cursor-pointer"
+                          >
+                            <span>{language === "es" ? "Agregar al carrito" : "Add to cart"}</span>
+                            <Plus size={14} className="text-[#383838]" />
+                          </button>
+                        ) : (
+                          <Link
+                            href={`${base}/products/${product.id}`}
+                            className="w-full h-10 px-3.5 flex items-center justify-between rounded-[4px] border border-[#e5e5e0] bg-white text-xs font-medium text-[#20201e] hover:bg-neutral-50 transition"
+                          >
+                            <span>{t.storefront.selectOptions}</span>
+                            <ArrowRight size={14} className="text-[#383838]" />
+                          </Link>
+                        )}
+                      </div>
+                    </article>
                   );
                 })}
               </div>
@@ -975,120 +1094,179 @@ export default function StorefrontHomeClient({
         ) : null}
 
         {/* ================================================================ */}
-        {/* ALL PRODUCTS CATALOG GRID                                        */}
+        {/* CLASSIC FEATURED PRODUCTS GRID                                   */}
         {/* ================================================================ */}
-        <section id="all-products" className="pt-6">
-          <div className="mb-6 flex items-baseline justify-between border-b border-slate-200 pb-3">
-            <h2 className="text-xl font-semibold text-slate-900">
-              {isEs ? "Catálogo completo" : "Complete Catalog"}
-            </h2>
-            <span className="text-xs text-slate-500">
-              {products.length} {isEs ? "productos" : "products"}
-            </span>
-          </div>
+        {theme === "classic" && featuredProducts.length > 0 ? (
+          <section
+            id="featured-products"
+            className={`mb-10 rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`}
+          >
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">{t.storefront.featuredProducts}</h2>
+            </div>
+            <div className="grid gap-3">
+              {featuredProducts.map((product, index) => {
+                const featuredPrice = product.variants[0]?.price;
+                const isSoldOut = Boolean(
+                  product.variants[0]?.trackInventory &&
+                    (product.variants[0]?.inventory ?? 0) <= 0
+                );
+                return (
+                  <Link
+                    key={product.id}
+                    href={`${base}/products/${product.id}`}
+                    className={`relative grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
+                  >
+                    {isSoldOut && (
+                      <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                        {language === "es" ? "Agotado" : "Sold Out"}
+                      </span>
+                    )}
+                    {product.images[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={product.images[0]}
+                        alt={product.title}
+                        className="h-20 w-full rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-20 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
+                        {t.storefront.noImage}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
+                        No. {index + 1}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                        {product.title}
+                      </p>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700">
+                      {featuredPrice != null
+                        ? formatter.format(Number(featuredPrice))
+                        : t.storefront.selectOptions}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
-          {products.length === 0 ? (
-            <p className="text-center text-slate-500 py-12">{t.storefront.noProductsAvailable}</p>
-          ) : (
-            <div className="space-y-12">
-              {[
-                ...productGroups,
-                ...(uncategorizedProducts.length > 0
-                  ? [
-                      {
-                        id: "uncategorized",
-                        name: t.storefront.otherProducts,
-                        slug: "uncategorized",
-                        products: uncategorizedProducts,
-                      },
-                    ]
-                  : []),
-              ].map((group) => (
-                <section key={group.id} aria-labelledby={`category-${group.id}`}>
-                  <h3 id={`category-${group.id}`} className="mb-4 text-lg font-medium text-slate-900">
-                    {group.name}
-                  </h3>
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {group.products.map((product) => {
-                      const primaryVariant = product.variants[0];
-                      const isSoldOut = Boolean(
-                        primaryVariant?.trackInventory &&
-                          (primaryVariant?.inventory ?? 0) <= 0
-                      );
-                      const price = primaryVariant?.price;
-                      const variantId = primaryVariant?.id;
-                      return (
-                        <div
-                          key={product.id}
-                          className={`relative overflow-hidden rounded-[4px] border transition ${themeClasses.productCard}`}
-                        >
-                          <Link
-                            href={`${base}/products/${product.id}`}
-                            className="absolute inset-0 z-0"
-                            aria-label={product.title}
-                          />
-                          {isSoldOut && (
-                            <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
-                              {language === "es" ? "Agotado" : "Sold Out"}
-                            </span>
-                          )}
-                          {product.images[0] ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="h-48 w-full object-cover"
+        {/* ================================================================ */}
+        {/* CLASSIC ALL PRODUCTS CATALOG GRID                                */}
+        {/* ================================================================ */}
+        {theme === "classic" ? (
+          <section id="all-products" className="pt-6">
+            <div className="mb-6 flex items-baseline justify-between border-b border-slate-200 pb-3">
+              <h2 className="text-xl font-semibold text-slate-900">
+                {isEs ? "Catálogo completo" : "Complete Catalog"}
+              </h2>
+              <span className="text-xs text-slate-500">
+                {products.length} {isEs ? "productos" : "products"}
+              </span>
+            </div>
+
+            {products.length === 0 ? (
+              <p className="text-center text-slate-500 py-12">{t.storefront.noProductsAvailable}</p>
+            ) : (
+              <div className="space-y-12">
+                {[
+                  ...productGroups,
+                  ...(uncategorizedProducts.length > 0
+                    ? [
+                        {
+                          id: "uncategorized",
+                          name: t.storefront.otherProducts,
+                          slug: "uncategorized",
+                          products: uncategorizedProducts,
+                        },
+                      ]
+                    : []),
+                ].map((group) => (
+                  <section key={group.id} aria-labelledby={`category-${group.id}`}>
+                    <h3 id={`category-${group.id}`} className="mb-4 text-lg font-medium text-slate-900">
+                      {group.name}
+                    </h3>
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {group.products.map((product) => {
+                        const primaryVariant = product.variants[0];
+                        const isSoldOut = Boolean(
+                          primaryVariant?.trackInventory &&
+                            (primaryVariant?.inventory ?? 0) <= 0
+                        );
+                        const price = primaryVariant?.price;
+                        const variantId = primaryVariant?.id;
+                        return (
+                          <div
+                            key={product.id}
+                            className={`relative overflow-hidden rounded-[4px] border transition ${themeClasses.productCard}`}
+                          >
+                            <Link
+                              href={`${base}/products/${product.id}`}
+                              className="absolute inset-0 z-0"
+                              aria-label={product.title}
                             />
-                          ) : (
-                            <div className="flex h-48 items-center justify-center bg-[#f3f3ee] text-slate-400 text-xs">
-                              {t.storefront.noImage}
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <h4 className="font-medium text-slate-900 text-sm">{product.title}</h4>
-                            <div className="mt-3 flex items-center justify-between">
-                              {price != null ? (
-                                <span className="text-sm font-semibold text-slate-700">
-                                  {formatter.format(Number(price))}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-slate-400">
-                                  {t.storefront.selectOptions}
-                                </span>
-                              )}
-                              {isSoldOut ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="relative z-10 rounded-[4px] bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
-                                >
-                                  {language === "es" ? "Agotado" : "Sold Out"}
-                                </button>
-                              ) : variantId ? (
-                                <button
-                                  type="button"
-                                  data-prado-add={variantId}
-                                  data-prado-add-to-cart={variantId}
-                                  className={`relative z-10 px-3.5 py-1.5 text-xs font-medium transition ${
-                                    theme === "recinto"
-                                      ? "rounded-[4px] border border-[#344e41] text-[#344e41] hover:bg-[#344e41] hover:text-white"
-                                      : "rounded-full bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
-                                  }`}
-                                >
-                                  {t.storefront.addToCart}
-                                </button>
-                              ) : null}
+                            {isSoldOut && (
+                              <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                                {language === "es" ? "Agotado" : "Sold Out"}
+                              </span>
+                            )}
+                            {product.images[0] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={product.images[0]}
+                                alt={product.title}
+                                className="h-48 w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-48 items-center justify-center bg-[#f3f3ee] text-slate-400 text-xs">
+                                {t.storefront.noImage}
+                              </div>
+                            )}
+                            <div className="p-4">
+                              <h4 className="font-medium text-slate-900 text-sm">{product.title}</h4>
+                              <div className="mt-3 flex items-center justify-between">
+                                {price != null ? (
+                                  <span className="text-sm font-semibold text-slate-700">
+                                    {formatter.format(Number(price))}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-slate-400">
+                                    {t.storefront.selectOptions}
+                                  </span>
+                                )}
+                                {isSoldOut ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="relative z-10 rounded-[4px] bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                                  >
+                                    {language === "es" ? "Agotado" : "Sold Out"}
+                                  </button>
+                                ) : variantId ? (
+                                  <button
+                                    type="button"
+                                    data-prado-add={variantId}
+                                    data-prado-add-to-cart={variantId}
+                                    className="relative z-10 rounded-full bg-[var(--store-main-color)] px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--store-main-color-hover)]"
+                                  >
+                                    {t.storefront.addToCart}
+                                  </button>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
-        </section>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
       </main>
     </div>
   );

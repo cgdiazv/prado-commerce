@@ -9,7 +9,7 @@ import HeroImageManager from "./hero-image-manager";
 import HeroTextForm from "./hero-text-form";
 import CustomCssEditor from "./custom-css-editor";
 
-type ThemeId = "minimal" | "recinto" | "classic";
+type ThemeId = "mercado" | "minimal" | "recinto" | "classic";
 
 type StoreData = {
   id: string;
@@ -45,12 +45,13 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
     thumbnail?: string;
   }> = [
     {
-      id: "minimal",
-      title: isEs ? "Minimalista" : "Minimal",
+      id: "mercado",
+      title: "Mercado",
       description: isEs
-        ? "Espaciado limpio, tipografía serena y diseños ligeros centrados en el producto."
-        : "Clean spacing, calm typography, and lightweight product-first layouts.",
-      swatch: "from-slate-200 via-white to-slate-100",
+        ? "Diseño limpio y contemporáneo, tipografía precisa, catálogo estructurado y compra rápida."
+        : "Clean and contemporary layout, precise typography, structured catalog, and rapid purchasing.",
+      swatch: "from-[#20201e] via-[#747470] to-[#f6f6f3]",
+      thumbnail: "/storefront/mercado/mercado-thumb.png",
     },
     {
       id: "recinto",
@@ -106,7 +107,10 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {themeOptions.map((theme) => {
-          const isActive = theme.id === activeTheme;
+          const isActive =
+            theme.id === activeTheme ||
+            (theme.id === "mercado" && (activeTheme === "minimal" || activeTheme === "mercado")) ||
+            (theme.id === "minimal" && (activeTheme === "minimal" || activeTheme === "mercado"));
 
           return (
             <article
@@ -172,7 +176,9 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
         })}
       </div>
 
-      <HeroImageManager storeId={store.id} initialHeroImageUrl={store.heroImageUrl} />
+      {activeTheme !== "mercado" && activeTheme !== "minimal" && (
+        <HeroImageManager storeId={store.id} initialHeroImageUrl={store.heroImageUrl} />
+      )}
 
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">
