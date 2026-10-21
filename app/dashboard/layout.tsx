@@ -719,8 +719,8 @@ export default function DashboardLayout({
     if (isSidebarCollapsed) {
       return (
         <nav className="sticky top-14 z-30 hidden lg:block border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xs print:hidden">
-          <div className="mx-auto flex h-10 w-full items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+          <div className="mx-auto flex min-h-10 w-full flex-wrap items-center justify-between gap-y-1 px-4 py-1.5 sm:px-6">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-0.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -803,8 +803,8 @@ export default function DashboardLayout({
     // Expanded top bar
     return (
       <nav className="sticky top-14 z-30 hidden lg:block border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xs print:hidden">
-        <div className="mx-auto flex h-12 w-full items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-1 overflow-x-auto py-1">
+        <div className="mx-auto flex min-h-12 w-full flex-wrap items-center justify-between gap-y-1 px-4 py-2 sm:px-6">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);

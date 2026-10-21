@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Layout, Columns3, Rows3, Maximize2, Minimize2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Check, Layout, Columns3, Rows3, Maximize2, Minimize2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import {
   getStoredTaskbarSettings,
@@ -18,7 +18,6 @@ export default function TaskbarSettingsPage() {
 
   const [position, setPosition] = useState<TaskbarPosition>("side");
   const [initialState, setInitialState] = useState<TaskbarInitialState>("expanded");
-  const [isSavedRecently, setIsSavedRecently] = useState(false);
 
   useEffect(() => {
     const current = getStoredTaskbarSettings();
@@ -34,64 +33,35 @@ export default function TaskbarSettingsPage() {
   function handlePositionChange(newPos: TaskbarPosition) {
     setPosition(newPos);
     setStoredTaskbarSettings({ position: newPos });
-    showSavedFeedback();
   }
 
   function handleInitialStateChange(newState: TaskbarInitialState) {
     setInitialState(newState);
     setStoredTaskbarSettings({ initialState: newState });
-    showSavedFeedback();
-  }
-
-  function showSavedFeedback() {
-    setIsSavedRecently(true);
-    setTimeout(() => {
-      setIsSavedRecently(false);
-    }, 2500);
   }
 
   return (
     <div className="space-y-6">
       {/* Header and Back Link */}
-      <div>
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition mb-3"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>{isEs ? "Volver a Configuración de la cuenta" : "Back to Account Settings"}</span>
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
+      <div className="w-full">
+        <div>
+          <div className="flex items-start justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-              {isEs ? "Configuración de la Barra de Tareas" : "Taskbar Settings"}
+              {isEs ? "Configuración de la barra de tareas" : "Taskbar Settings"}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {isEs
-                ? "Personaliza la posición de la barra de navegación y su estado al iniciar sesión o cargar el panel."
-                : "Customize navigation taskbar position and its default state when loading the dashboard."}
-            </p>
-          </div>
 
-          <div
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all duration-300 ${
-              isSavedRecently
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 opacity-100 scale-100"
-                : "bg-slate-100 text-slate-500 border border-slate-200 opacity-80"
-            }`}
-          >
-            {isSavedRecently ? (
-              <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 animate-in zoom-in" />
-                <span>{isEs ? "Guardado automáticamente" : "Saved automatically"}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 text-slate-400" />
-                <span>{isEs ? "Aplica en tiempo real" : "Live real-time sync"}</span>
-              </>
-            )}
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex shrink-0 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {isEs ? "← Volver a configuración" : "← Back to settings"}
+            </Link>
           </div>
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
+            {isEs
+              ? "Personaliza la posición de la barra de navegación y su estado al iniciar sesión o cargar el panel."
+              : "Customize navigation taskbar position and its default state when loading the dashboard."}
+          </p>
         </div>
       </div>
 
@@ -116,11 +86,10 @@ export default function TaskbarSettingsPage() {
           <button
             type="button"
             onClick={() => handlePositionChange("side")}
-            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${
-              position === "side"
+            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${position === "side"
                 ? "border-cyan-600 bg-cyan-50/20 ring-1 ring-cyan-600/30 shadow-sm"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between w-full mb-3">
               <div className="flex items-center gap-2">
@@ -130,11 +99,10 @@ export default function TaskbarSettingsPage() {
                 </span>
               </div>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  position === "side"
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${position === "side"
                     ? "border-cyan-600 bg-cyan-600 text-white"
                     : "border-slate-300 bg-white text-transparent"
-                }`}
+                  }`}
               >
                 <Check className="h-3 w-3" />
               </div>
@@ -178,11 +146,10 @@ export default function TaskbarSettingsPage() {
           <button
             type="button"
             onClick={() => handlePositionChange("top")}
-            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${
-              position === "top"
+            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${position === "top"
                 ? "border-cyan-600 bg-cyan-50/20 ring-1 ring-cyan-600/30 shadow-sm"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between w-full mb-3">
               <div className="flex items-center gap-2">
@@ -192,11 +159,10 @@ export default function TaskbarSettingsPage() {
                 </span>
               </div>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  position === "top"
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${position === "top"
                     ? "border-cyan-600 bg-cyan-600 text-white"
                     : "border-slate-300 bg-white text-transparent"
-                }`}
+                  }`}
               >
                 <Check className="h-3 w-3" />
               </div>
@@ -258,11 +224,10 @@ export default function TaskbarSettingsPage() {
           <button
             type="button"
             onClick={() => handleInitialStateChange("expanded")}
-            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${
-              initialState === "expanded"
+            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${initialState === "expanded"
                 ? "border-cyan-600 bg-cyan-50/20 ring-1 ring-cyan-600/30 shadow-sm"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between w-full mb-3">
               <div className="flex items-center gap-2">
@@ -272,11 +237,10 @@ export default function TaskbarSettingsPage() {
                 </span>
               </div>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  initialState === "expanded"
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${initialState === "expanded"
                     ? "border-cyan-600 bg-cyan-600 text-white"
                     : "border-slate-300 bg-white text-transparent"
-                }`}
+                  }`}
               >
                 <Check className="h-3 w-3" />
               </div>
@@ -297,11 +261,10 @@ export default function TaskbarSettingsPage() {
           <button
             type="button"
             onClick={() => handleInitialStateChange("collapsed")}
-            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${
-              initialState === "collapsed"
+            className={`group relative flex flex-col text-left rounded-xl border-2 p-5 transition-all cursor-pointer ${initialState === "collapsed"
                 ? "border-cyan-600 bg-cyan-50/20 ring-1 ring-cyan-600/30 shadow-sm"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between w-full mb-3">
               <div className="flex items-center gap-2">
@@ -311,11 +274,10 @@ export default function TaskbarSettingsPage() {
                 </span>
               </div>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  initialState === "collapsed"
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${initialState === "collapsed"
                     ? "border-cyan-600 bg-cyan-600 text-white"
                     : "border-slate-300 bg-white text-transparent"
-                }`}
+                  }`}
               >
                 <Check className="h-3 w-3" />
               </div>
