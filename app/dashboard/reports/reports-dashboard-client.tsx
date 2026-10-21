@@ -456,6 +456,10 @@ export default function ReportsDashboardClient({
           <select
             value={activeTab}
             onChange={(e) => {
+              if (e.target.value === "day-end") {
+                router.push("/dashboard/reports/day-end");
+                return;
+              }
               handleTabChange(e.target.value as "customers" | "brands" | "profit");
             }}
             className="h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
@@ -468,6 +472,9 @@ export default function ReportsDashboardClient({
             </option>
             <option value="profit">
               {isEs ? "Ventas, Costo y Profit Mensual" : "Monthly Profit & Cost"}
+            </option>
+            <option value="day-end">
+              {isEs ? "Cierre de Día (Day End)" : "Day End Report"}
             </option>
           </select>
           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />

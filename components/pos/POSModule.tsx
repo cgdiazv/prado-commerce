@@ -44,6 +44,7 @@ import {
   Lock,
   KeyRound,
   ShieldCheck,
+  Calculator,
 } from "lucide-react";
 import { InventoryItem, Customer, SalesRep, CompanySettings, PosStoreSettings } from "@/types/dashboard";
 import { offlineSync } from "@/lib/offline-sync";
@@ -1207,6 +1208,16 @@ export default function POSModule({
                 title={isEs ? "Configuración de Cajas y Cajeros" : "POS Settings & Registers"}
               >
                 <Settings className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href={`/dashboard/reports/day-end${storeId ? `?storeId=${storeId}` : ""}`}
+                className="flex items-center gap-1.5 p-1.5 sm:px-2 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shrink-0"
+                title={isEs ? "Cierre de Día (Day End Report)" : "Day End Report"}
+              >
+                <Calculator className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[11px] font-semibold text-slate-200 hidden sm:inline">
+                  {isEs ? "Cierre de Día" : "Day End"}
+                </span>
               </a>
             </div>
           </div>

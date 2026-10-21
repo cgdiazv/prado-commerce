@@ -297,6 +297,7 @@ export default function DashboardLayout({
         { href: "/dashboard/reports?tab=customers", label: t.dashboard.salesByCustomer },
         { href: "/dashboard/reports?tab=brands", label: t.dashboard.salesByBrand },
         { href: "/dashboard/reports?tab=profit", label: t.dashboard.monthlyProfitAndCost },
+        { href: "/dashboard/reports/day-end", label: t.dashboard.dayEndReport },
       ],
     },
   ];
@@ -342,9 +343,15 @@ export default function DashboardLayout({
     onNavigate?: () => void;
   }) {
     const searchParams = useSearchParams();
-    const currentTab = searchParams?.get("tab") || "customers";
-    const childTab = child.href.includes("tab=") ? child.href.split("tab=")[1] : "customers";
-    const childActive = currentTab === childTab;
+    const isDayEnd = child.href.startsWith("/dashboard/reports/day-end");
+    let childActive = false;
+    if (isDayEnd) {
+      childActive = pathname.startsWith("/dashboard/reports/day-end");
+    } else {
+      const currentTab = searchParams?.get("tab") || "customers";
+      const childTab = child.href.includes("tab=") ? child.href.split("tab=")[1] : "customers";
+      childActive = pathname === "/dashboard/reports" && currentTab === childTab;
+    }
 
     return (
       <Link
