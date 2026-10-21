@@ -139,6 +139,7 @@ function SignupQuestionnaireWizardContent() {
           catalogSize,
           salesChannels,
           preferredTheme,
+          plan: selectedPlan,
           questionnaireAnswers: {
             selectedPlan,
             billingInterval: intervalParam,
@@ -220,7 +221,7 @@ function SignupQuestionnaireWizardContent() {
                   {selectedPlan && selectedPlan !== "Starter" && (
                     <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
                       <ShieldCheck className="h-3.5 w-3.5 text-cyan-600" />
-                      Selected Plan: <span className="font-bold text-cyan-900">{selectedPlan}</span> ({intervalParam === "year" ? "Annual" : "Monthly"})
+                      Selected Plan: <span className="font-bold text-cyan-900">{selectedPlan}</span> ({intervalParam === "year" ? "Annual" : "Monthly"}) · 30-Day Free Trial
                     </div>
                   )}
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Create your Merchant Account</h1>

@@ -92,6 +92,15 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: SESSION_MAX_AGE_SECONDS,
     });
+    response.cookies.set({
+      name: "prado_plan",
+      value: merchantUser.plan,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
 
     return response;
   } catch (error) {

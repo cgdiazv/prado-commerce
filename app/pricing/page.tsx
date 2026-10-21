@@ -17,6 +17,18 @@ function PricingPageContent() {
   const [billingMode, setBillingMode] = useState<BillingMode>("monthly");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setIsAuthenticated(Boolean(data?.authenticated));
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+      });
+  }, []);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -29,8 +41,9 @@ function PricingPageContent() {
       const interval =
         forcedInterval || (billingMode === "annual" ? "year" : "month");
 
-      if (planName === "Starter") {
-        window.location.assign(`/signup?plan=Starter&interval=${interval}`);
+      // Non-authenticated visitors go directly to signup with the plan pre-selected
+      if (planName === "Starter" || isAuthenticated === false) {
+        window.location.assign(`/signup?plan=${planName}&interval=${interval}`);
         return;
       }
 
@@ -502,6 +515,8 @@ function PricingPageContent() {
                   : "Growing merchants, agencies, and mid-sized storefronts."}
               </p>
 
+
+
               <div className="flex items-baseline gap-2 pt-2">
                 <span className="text-[76px] font-normal leading-[80px] tracking-tight text-[#030618]">
                   {billingMode === "annual" ? "$39" : "$49"}
@@ -515,7 +530,7 @@ function PricingPageContent() {
                 type="button"
                 disabled={isUpgrading === "Pro"}
                 onClick={(e) => handleUpgrade(e, "Pro")}
-                className="mt-2 inline-flex w-full items-center justify-between rounded-[5px] bg-[#030618] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-75"
+                className="mt-2 inline-flex w-full items-center justify-between rounded-[5px] bg-[#030618] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-75 cursor-pointer shadow-xs"
               >
                 <span>
                   {isUpgrading === "Pro"
@@ -523,8 +538,8 @@ function PricingPageContent() {
                       ? "Procesando..."
                       : "Processing..."
                     : isEs
-                    ? "Elegir Pro"
-                    : "Choose Pro"}
+                    ? "Iniciar prueba de 30 días"
+                    : "Start 30-day free trial"}
                 </span>
                 <ArrowUpRight className="h-4 w-4" />
               </button>
@@ -532,11 +547,11 @@ function PricingPageContent() {
               <p className="text-[12px] text-[#626763]">
                 {billingMode === "annual"
                   ? isEs
-                    ? "Facturación anual ($468/año)"
-                    : "Billed annually ($468/yr)"
+                    ? "30 días gratis, luego $468/año. Cancela cuando quieras."
+                    : "30 days free, then $468/yr. Cancel anytime."
                   : isEs
-                  ? "Facturación mensual"
-                  : "Billed monthly"}
+                  ? "30 días gratis, luego $49/mes. Cancela cuando quieras."
+                  : "30 days free, then $49/mo. Cancel anytime."}
               </p>
 
               <div className="my-2 h-px w-full bg-[#d8dcd6]" />
@@ -630,6 +645,8 @@ function PricingPageContent() {
                   : "High-volume brands and integrated POS operations."}
               </p>
 
+
+
               <div className="flex items-baseline gap-2 pt-2">
                 <span className="text-[76px] font-normal leading-[80px] tracking-tight text-[#030618]">
                   {billingMode === "annual" ? "$159" : "$199"}
@@ -643,7 +660,7 @@ function PricingPageContent() {
                 type="button"
                 disabled={isUpgrading === "Enterprise"}
                 onClick={(e) => handleUpgrade(e, "Enterprise")}
-                className="mt-2 inline-flex w-full items-center justify-between rounded-[5px] bg-[#030618] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-75"
+                className="mt-2 inline-flex w-full items-center justify-between rounded-[5px] bg-[#030618] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-75 cursor-pointer shadow-xs"
               >
                 <span>
                   {isUpgrading === "Enterprise"
@@ -651,8 +668,8 @@ function PricingPageContent() {
                       ? "Procesando..."
                       : "Processing..."
                     : isEs
-                    ? "Elegir Enterprise"
-                    : "Choose Enterprise"}
+                    ? "Iniciar prueba de 30 días"
+                    : "Start 30-day free trial"}
                 </span>
                 <ArrowUpRight className="h-4 w-4" />
               </button>
@@ -660,11 +677,11 @@ function PricingPageContent() {
               <p className="text-[12px] text-[#626763]">
                 {billingMode === "annual"
                   ? isEs
-                    ? "Facturación anual ($1.908/año)"
-                    : "Billed annually ($1,908/yr)"
+                    ? "30 días gratis, luego $1.908/año. Cancela cuando quieras."
+                    : "30 days free, then $1,908/yr. Cancel anytime."
                   : isEs
-                  ? "Facturación mensual"
-                  : "Billed monthly"}
+                  ? "30 días gratis, luego $199/mes. Cancela cuando quieras."
+                  : "30 days free, then $199/mo. Cancel anytime."}
               </p>
 
               <div className="my-2 h-px w-full bg-[#d8dcd6]" />

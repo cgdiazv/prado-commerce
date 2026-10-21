@@ -86,7 +86,10 @@ export async function POST(request: Request) {
         where: { stripeSubId: subscription.id },
         data: {
           plan: "STARTER",
+          subscriptionStatus: "cancelled",
           stripeSubId: null,
+          trialStartsAt: null,
+          trialPlan: null,
         },
       });
       return NextResponse.json({ ok: true });
@@ -98,14 +101,22 @@ export async function POST(request: Request) {
       const plan = getPlanFromPriceId(priceId);
 
       if (plan && (subscription.status === "active" || subscription.status === "trialing")) {
+        const isTrial = subscription.status === "trialing";
         await prisma.merchantUser.updateMany({
           where: { stripeSubId: subscription.id },
-          data: { plan },
+          data: {
+            plan,
+            subscriptionStatus: isTrial ? "trial" : "active",
+            trialPlan: isTrial ? plan : null,
+          },
         });
       } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
         await prisma.merchantUser.updateMany({
           where: { stripeSubId: subscription.id },
-          data: { plan: "STARTER" },
+          data: {
+            plan: "STARTER",
+            subscriptionStatus: "cancelled",
+          },
         });
       }
       return NextResponse.json({ ok: true });
@@ -128,6 +139,9 @@ export async function POST(request: Request) {
             where: { id: userId },
             data: {
               plan,
+              subscriptionStatus: "trial",
+              trialStartsAt: new Date(),
+              trialPlan: plan,
               stripeCustomerId: customerId,
               stripeSubId: subscriptionId,
             },

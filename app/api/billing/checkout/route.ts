@@ -49,6 +49,13 @@ export async function POST(request: Request) {
       payment_method_types: ["card"],
       client_reference_id: user.id,
       customer_email: user.email,
+      subscription_data: {
+        trial_period_days: 30,
+        metadata: {
+          userId: user.id,
+          plan,
+        },
+      },
       metadata: {
         userId: user.id,
         plan,

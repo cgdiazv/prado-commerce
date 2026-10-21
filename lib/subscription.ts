@@ -55,3 +55,6 @@ export function getPlanLimits(plan: SubscriptionPlan): PlanLimits {
 export function getPlanOrDefault(plan: SubscriptionPlan | null | undefined): SubscriptionPlan {
   return plan ?? "STARTER";
 }
+
+export { checkTrialExpiry, getTrialDaysLeft, getEffectivePlan, TRIAL_DAYS } from "./trial-check";
+

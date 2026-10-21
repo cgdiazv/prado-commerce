@@ -9,6 +9,8 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import SupportChatModal from "@/components/dashboard/SupportChatModal";
+import { TrialBanner } from "@/components/dashboard/TrialBanner";
+import { BillingModal } from "@/components/dashboard/BillingModal";
 
 type NavChild = {
   href: string;
@@ -87,6 +89,13 @@ export default function DashboardLayout({
     name?: string | null;
     company?: string | null;
     plan?: string;
+    rawPlan?: string;
+    subscriptionStatus?: string;
+    trialStartsAt?: string | null;
+    trialPlan?: string | null;
+    isTrial?: boolean;
+    isTrialExpired?: boolean;
+    trialDaysRemaining?: number;
     authenticated?: boolean;
     verified?: boolean;
     isCashier?: boolean;
@@ -711,6 +720,14 @@ export default function DashboardLayout({
                 : "mx-auto max-w-4xl"
             }`}
           >
+            {currentUser?.isTrial && currentUser?.trialStartsAt && (
+              <Suspense fallback={null}>
+                <TrialBanner
+                  trialStartsAt={currentUser.trialStartsAt}
+                  planName={currentUser.plan || "Pro"}
+                />
+              </Suspense>
+            )}
             {children}
           </div>
         </main>
@@ -769,6 +786,15 @@ export default function DashboardLayout({
 
       {/* Prado Support Chat */}
       <SupportChatModal locale={language} />
+
+      {/* Subscription & Billing Modal */}
+      <Suspense fallback={null}>
+        <BillingModal
+          userEmail={currentUser?.email}
+          userId={currentUser?.id}
+          currentPlan={currentUser?.plan}
+        />
+      </Suspense>
     </div>
   );
 }

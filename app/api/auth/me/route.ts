@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, getCurrentCashier } from "@/lib/session";
 
+import { checkTrialExpiry, getEffectivePlan } from "@/lib/trial-check";
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
@@ -9,6 +11,13 @@ export async function GET() {
       return NextResponse.json({ authenticated: false, verified: false }, { status: 401 });
     }
     const cashier = await getCurrentCashier();
+    const trial = checkTrialExpiry(user.trialStartsAt, user.subscriptionStatus);
+    const effectivePlan = getEffectivePlan(
+      user.plan,
+      user.subscriptionStatus,
+      user.trialStartsAt,
+      user.trialPlan,
+    );
 
     return NextResponse.json({
       id: user.id,
@@ -18,7 +27,14 @@ export async function GET() {
       phone: user.phone,
       address: user.address,
       addressType: user.addressType,
-      plan: user.plan,
+      plan: effectivePlan,
+      rawPlan: user.plan,
+      subscriptionStatus: user.subscriptionStatus || "active",
+      trialStartsAt: user.trialStartsAt || null,
+      trialPlan: user.trialPlan || null,
+      isTrial: user.subscriptionStatus === "trial",
+      isTrialExpired: trial.isExpired,
+      trialDaysRemaining: trial.daysRemaining,
       authenticated: true,
       verified: true,
       isCashier: Boolean(cashier),

@@ -35,11 +35,11 @@ export function ManagePlanPanel({ merchantId, currentPlan }: ManagePlanPanelProp
       ? "Ideal para comenzar con una tienda y herramientas de comercio básicas."
       : "Ideal for getting started with one storefront and core commerce tools.",
     PRO: isEs
-      ? "Agrega más tiendas, dominios personalizados y funciones avanzadas de crecimiento."
-      : "Adds more stores, custom domains, and advanced growth features.",
+      ? "Agrega más tiendas, dominios personalizados y POS (incluye 30 días de prueba gratuita)."
+      : "Adds more stores, custom domains, and POS (includes 30-day free trial).",
     ENTERPRISE: isEs
-      ? "Diseñado para equipos grandes con límites ampliados y mayor control."
-      : "Designed for larger teams with expanded limits and more control.",
+      ? "Diseñado para equipos grandes con límites ampliados y ShipStation (incluye 30 días de prueba gratuita)."
+      : "Designed for larger teams with expanded limits and ShipStation (includes 30-day free trial).",
   };
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>(normalizedPlan);

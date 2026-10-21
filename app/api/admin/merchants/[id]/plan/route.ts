@@ -85,7 +85,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const updatedMerchant = await prisma.merchantUser.update({
       where: { id },
-      data: { plan },
+      data: {
+        plan,
+        ...(plan === "STARTER" ? { subscriptionStatus: "active", trialPlan: null } : {}),
+      },
       select: {
         id: true,
         email: true,

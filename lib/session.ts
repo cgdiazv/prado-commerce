@@ -14,6 +14,9 @@ type SessionUser = {
   address: string | null;
   addressType: string | null;
   plan: "STARTER" | "PRO" | "ENTERPRISE";
+  subscriptionStatus?: string;
+  trialStartsAt?: Date | null;
+  trialPlan?: "STARTER" | "PRO" | "ENTERPRISE" | null;
   sessionVersion: number;
 };
 
@@ -91,7 +94,20 @@ async function findSessionUser(email: string, sessionVersion: number): Promise<S
   try {
     const user = await prisma.merchantUser.findUnique({
       where: { email },
-      select: { id: true, email: true, name: true, company: true, phone: true, address: true, addressType: true, plan: true, sessionVersion: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        company: true,
+        phone: true,
+        address: true,
+        addressType: true,
+        plan: true,
+        subscriptionStatus: true,
+        trialStartsAt: true,
+        trialPlan: true,
+        sessionVersion: true,
+      },
     });
 
     if (!user) {

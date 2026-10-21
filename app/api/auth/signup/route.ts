@@ -42,11 +42,26 @@ export async function POST(request: Request) {
 
     const { tokenId, tokenSecret, token } = createOnboardingToken();
 
+    const rawPlanChoice = String(
+      body?.plan ||
+      (questionnaireAnswers as Record<string, unknown> | null)?.selectedPlan ||
+      "Starter"
+    ).trim().toUpperCase();
+
+    const isEnterpriseChoice = rawPlanChoice === "ENTERPRISE";
+    const isProChoice = rawPlanChoice === "PRO";
+    const isTrialEligible = isEnterpriseChoice || isProChoice;
+    const assignedPlan = isEnterpriseChoice ? "ENTERPRISE" : isProChoice ? "PRO" : "STARTER";
+
     await prisma.merchantUser.create({
       data: {
         name,
         email,
         company,
+        plan: assignedPlan,
+        subscriptionStatus: isTrialEligible ? "trial" : "active",
+        trialStartsAt: isTrialEligible ? new Date() : null,
+        trialPlan: isTrialEligible ? assignedPlan : null,
         businessCategory,
         catalogSize,
         salesChannels,
