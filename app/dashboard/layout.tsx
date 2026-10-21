@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Home, Store, Package, ShoppingCart, Users, Settings, Wrench, CircleHelp, Menu, X, Bell, LogOut, Truck, BarChart3, Boxes, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -31,6 +31,54 @@ type NavItem = {
 
 const KNOWN_ORDERS_STORAGE_KEY = "prado_dashboard_known_orders";
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "prado_sidebar_collapsed";
+const SIDEBAR_COLLAPSED_CHANGE_EVENT = "prado_sidebar_collapsed_changed";
+let sidebarCollapsedFallback: boolean | null = null;
+
+function subscribeToTaskbarPosition(onStoreChange: () => void) {
+  return subscribeToTaskbarSettingsChange(onStoreChange);
+}
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+function getHydrationSnapshot() {
+  return true;
+}
+
+function getServerHydrationSnapshot() {
+  return false;
+}
+
+function subscribeToSidebarCollapsed(onStoreChange: () => void) {
+  const unsubscribeTaskbarSettings = subscribeToTaskbarSettingsChange(onStoreChange);
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === SIDEBAR_COLLAPSED_STORAGE_KEY) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener(SIDEBAR_COLLAPSED_CHANGE_EVENT, onStoreChange);
+  window.addEventListener("storage", handleStorageChange);
+  return () => {
+    unsubscribeTaskbarSettings();
+    window.removeEventListener(SIDEBAR_COLLAPSED_CHANGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", handleStorageChange);
+  };
+}
+
+function getStoredSidebarCollapsed() {
+  const settings = getStoredTaskbarSettings();
+  try {
+    const explicit = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+    if (explicit !== null) {
+      return explicit === "true";
+    }
+    return sidebarCollapsedFallback ?? settings.initialState === "collapsed";
+  } catch {
+    return sidebarCollapsedFallback ?? settings.initialState === "collapsed";
+  }
+}
 
 function loadKnownOrders(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -75,40 +123,34 @@ export default function DashboardLayout({
     return null;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [taskbarPosition, setTaskbarPosition] = useState<TaskbarPosition>(() => {
-    if (typeof window === "undefined") return "side";
-    return getStoredTaskbarSettings().position;
-  });
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const explicit = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
-      if (explicit !== null) {
-        return explicit === "true";
-      }
-      return getStoredTaskbarSettings().initialState === "collapsed";
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    return subscribeToTaskbarSettingsChange((settings) => {
-      setTaskbarPosition(settings.position);
-      setIsSidebarCollapsed(settings.initialState === "collapsed");
-    });
-  }, []);
+  const taskbarPosition = useSyncExternalStore(
+    subscribeToTaskbarPosition,
+    () => getStoredTaskbarSettings().position,
+    () => "side" as TaskbarPosition
+  );
+  const isSidebarCollapsed = useSyncExternalStore(
+    subscribeToSidebarCollapsed,
+    getStoredSidebarCollapsed,
+    () => false
+  );
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
+  const renderedTaskbarPosition = isHydrated ? taskbarPosition : "side";
+  const renderedSidebarCollapsed = isHydrated && isSidebarCollapsed;
 
   function toggleSidebar() {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next));
-      } catch {
-        // Ignore localStorage errors
-      }
-      return next;
-    });
+    const next = !isSidebarCollapsed;
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next));
+      sidebarCollapsedFallback = null;
+    } catch {
+      // Keep the in-memory state when localStorage is unavailable.
+      sidebarCollapsedFallback = next;
+    }
+    window.dispatchEvent(new Event(SIDEBAR_COLLAPSED_CHANGE_EVENT));
   }
   const isHelpActive = pathname.startsWith("/dashboard/help");
 
@@ -716,7 +758,7 @@ export default function DashboardLayout({
   }
 
   function TopTaskbar() {
-    if (isSidebarCollapsed) {
+    if (renderedSidebarCollapsed) {
       return (
         <nav className="sticky top-14 z-30 hidden lg:block border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xs print:hidden">
           <div className="mx-auto flex min-h-10 w-full flex-wrap items-center justify-between gap-y-1 px-4 py-1.5 sm:px-6">
@@ -1030,7 +1072,7 @@ export default function DashboardLayout({
       </header>
 
       {/* Top Taskbar below topbar */}
-      {taskbarPosition === "top" && !currentUser?.isCashier && (
+      {renderedTaskbarPosition === "top" && !currentUser?.isCashier && (
         <TopTaskbar />
       )}
 
@@ -1062,14 +1104,14 @@ export default function DashboardLayout({
       ) : null}
 
       <div className="flex min-h-[calc(100vh-3.5rem)] bg-[#f8fafc] print:bg-white print:min-h-0">
-        {!currentUser?.isCashier && taskbarPosition === "side" && (
+        {!currentUser?.isCashier && renderedTaskbarPosition === "side" && (
           <aside
             className={`sticky top-14 z-30 hidden h-[calc(100vh-3.5rem)] shrink-0 flex-col overflow-visible border-r border-slate-200 bg-[#ffffff] pt-3 pb-5 transition-[width,padding] duration-200 ease-in-out lg:flex print:hidden ${
-              isSidebarCollapsed ? "w-16 px-2" : "w-64 px-4 xl:w-72"
+              renderedSidebarCollapsed ? "w-16 px-2" : "w-64 px-4 xl:w-72"
             }`}
           >
             <SidebarContent
-              isCollapsed={isSidebarCollapsed}
+              isCollapsed={renderedSidebarCollapsed}
               onToggleCollapse={toggleSidebar}
             />
           </aside>

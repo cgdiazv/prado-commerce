@@ -696,10 +696,18 @@ export default function POSModule({
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [tempRegister, setTempRegister] = useState(activeRegister);
   const [tempCashier, setTempCashier] = useState(selectedSalesRep);
+  const [registerSearchQuery, setRegisterSearchQuery] = useState("");
+  const [cashierSearchQuery, setCashierSearchQuery] = useState("");
+  const [isRegisterSearchOpen, setIsRegisterSearchOpen] = useState(false);
+  const [isCashierSearchOpen, setIsCashierSearchOpen] = useState(false);
 
   const handleOpenShiftModal = () => {
     setTempRegister(activeRegister);
     setTempCashier(selectedSalesRep);
+    setRegisterSearchQuery("");
+    setCashierSearchQuery("");
+    setIsRegisterSearchOpen(false);
+    setIsCashierSearchOpen(false);
     setShowShiftModal(true);
   };
 
@@ -823,6 +831,7 @@ export default function POSModule({
         reason: "switch",
         targetAction: () => {
           setTempCashier(rep.name);
+          setCashierSearchQuery(rep.name);
           const defaultReg = isEs ? "Caja 01 - Principal" : "Register 01 - Main";
           const finalRegister = tempRegister || defaultReg;
           setActiveRegister(finalRegister);
@@ -838,6 +847,7 @@ export default function POSModule({
       });
     } else {
       setTempCashier(rep.name);
+      setCashierSearchQuery(rep.name);
     }
   };
 
@@ -1401,6 +1411,7 @@ export default function POSModule({
         </div>
       )}
 
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       {/* ================= 2. MAIN WORKSPACE (CATALOG + TICKET) ================= */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* LEFT COLUMN: PRODUCT CATALOG */}
@@ -1813,10 +1824,9 @@ export default function POSModule({
         </div>
       </div>
 
-      {/* ================= 3. CHECKOUT & TENDER MODAL ================= */}
+      {/* ================= 3. CHECKOUT & TENDER PANEL ================= */}
       {showCheckoutModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col">
+        <aside className="flex h-full w-full shrink-0 animate-in fade-in slide-in-from-right duration-300 ease-out flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl sm:w-[min(30rem,45vw)]">
             {/* Modal Header */}
             <div className="p-4 bg-[#0c1624] text-white flex items-center justify-between border-b border-slate-800">
               <div>
@@ -1836,7 +1846,7 @@ export default function POSModule({
               </button>
             </div>
 
-            <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
               {/* Grand Total Box */}
               <div className="p-4 rounded-md bg-cyan-50/70 border border-cyan-200 flex items-center justify-between">
                 <div>
@@ -2163,9 +2173,9 @@ export default function POSModule({
                 )}
               </button>
             </div>
-          </div>
-        </div>
+        </aside>
       )}
+      </div>
 
       {/* ================= 4. SALE COMPLETED / THERMAL RECEIPT MODAL ================= */}
       {completedSale && (
@@ -2679,44 +2689,97 @@ export default function POSModule({
                   <span>{isEs ? "1. Seleccionar Caja / Terminal" : "1. Select Register / Terminal"}</span>
                 </label>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {(() => {
-                    const activeTerminalList = posSettings?.terminals?.filter((t) => t.status !== "INACTIVE") || [];
-                    const registersToDisplay = activeTerminalList.length > 0
-                      ? activeTerminalList.map((t) => ({ name: t.name, code: t.code, location: t.location }))
-                      : (isEs
-                          ? ["Caja 01 - Principal", "Caja 02 - Mostrador", "Caja 03 - Rápida", "Caja 04 - Kiosco"]
-                          : ["Register 01 - Main", "Register 02 - Counter", "Register 03 - Express", "Register 04 - Kiosk"]
-                        ).map((name, i) => ({ name, code: `REG-0${i + 1}`, location: null }));
+                {(() => {
+                  const activeTerminalList = posSettings?.terminals?.filter((t) => t.status !== "INACTIVE") || [];
+                  const registersToDisplay = activeTerminalList.length > 0
+                    ? activeTerminalList.map((t) => ({ id: t.id, name: t.name, code: t.code, location: t.location }))
+                    : (isEs
+                        ? ["Caja 01 - Principal", "Caja 02 - Mostrador", "Caja 03 - Rápida", "Caja 04 - Kiosco"]
+                        : ["Register 01 - Main", "Register 02 - Counter", "Register 03 - Express", "Register 04 - Kiosk"]
+                      ).map((name, i) => ({ id: `reg-${i + 1}`, name, code: `REG-0${i + 1}`, location: null }));
+                  const filteredRegisters = registersToDisplay.filter((reg) =>
+                    `${reg.name} ${reg.code} ${reg.location || ""}`
+                      .toLowerCase()
+                      .includes(registerSearchQuery.trim().toLowerCase())
+                  );
 
-                    return registersToDisplay.map((reg) => {
-                      const isSelected = tempRegister === reg.name;
-                      return (
-                        <button
-                          key={reg.name}
-                          type="button"
-                          onClick={() => {
-                            setTempRegister(reg.name);
+                  return (
+                    <div className="relative">
+                      <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500">
+                        <Search className="w-4 h-4 shrink-0 text-slate-400" aria-hidden />
+                        <input
+                          id="pos-register-search"
+                          type="search"
+                          role="combobox"
+                          aria-label={isEs ? "Buscar caja o terminal" : "Search registers or terminals"}
+                          aria-autocomplete="list"
+                          aria-expanded={isRegisterSearchOpen}
+                          aria-controls="pos-register-options"
+                          value={isRegisterSearchOpen ? registerSearchQuery : tempRegister}
+                          onFocus={() => {
+                            setRegisterSearchQuery("");
+                            setIsRegisterSearchOpen(true);
                           }}
-                          className={`p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer text-xs font-semibold ${
-                            isSelected
-                              ? "bg-cyan-50/70 border-cyan-500 text-cyan-900 shadow-2xs ring-1 ring-cyan-500"
-                              : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                          }`}
+                          onBlur={() => setIsRegisterSearchOpen(false)}
+                          onChange={(event) => {
+                            setRegisterSearchQuery(event.target.value);
+                            setTempRegister("");
+                            setIsRegisterSearchOpen(true);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              setIsRegisterSearchOpen(false);
+                            } else if (event.key === "Enter" && filteredRegisters[0]) {
+                              event.preventDefault();
+                              setTempRegister(filteredRegisters[0].name);
+                              setRegisterSearchQuery(filteredRegisters[0].name);
+                              setIsRegisterSearchOpen(false);
+                            }
+                          }}
+                          placeholder={isEs ? "Buscar caja o terminal..." : "Search registers or terminals..."}
+                          className="w-full bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+                      {isRegisterSearchOpen && (
+                        <div
+                          id="pos-register-options"
+                          role="listbox"
+                          aria-label={isEs ? "Cajas y terminales disponibles" : "Available registers and terminals"}
+                          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg"
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? "bg-cyan-600" : "bg-slate-300"}`} />
-                            <div className="min-w-0">
-                              <div className="truncate">{reg.name}</div>
-                              {reg.location && <div className="text-[10px] text-slate-400 font-normal truncate">{reg.location}</div>}
-                            </div>
-                          </div>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />}
-                        </button>
-                      );
-                    });
-                  })()}
-                </div>
+                          {filteredRegisters.length > 0 ? filteredRegisters.map((reg) => (
+                            <button
+                              key={reg.id}
+                              type="button"
+                              role="option"
+                              aria-selected={tempRegister === reg.name}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => {
+                                setTempRegister(reg.name);
+                                setRegisterSearchQuery(reg.name);
+                                setIsRegisterSearchOpen(false);
+                              }}
+                              className="flex w-full items-center justify-between rounded px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-cyan-50"
+                            >
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span className="h-2 w-2 shrink-0 rounded-full bg-slate-300" aria-hidden />
+                                <span className="min-w-0">
+                                  <span className="block truncate font-semibold">{reg.name}</span>
+                                  {reg.location && <span className="block truncate text-[10px] text-slate-400">{reg.location}</span>}
+                                </span>
+                              </span>
+                              {tempRegister === reg.name && <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-600" />}
+                            </button>
+                          )) : (
+                            <p className="px-2.5 py-2 text-xs text-slate-500">
+                              {isEs ? "No se encontraron cajas o terminales." : "No matching registers or terminals."}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 2. SELECCIÓN DE CAJERO */}
@@ -2726,50 +2789,109 @@ export default function POSModule({
                   <span>{isEs ? "2. Seleccionar Cajero / Operador Activo" : "2. Select Active Cashier / Operator"}</span>
                 </label>
 
-                {salesReps && salesReps.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                    {salesReps.map((rep) => {
-                      const isSelected = tempCashier === rep.name;
-                      const matchingCashier = posSettings?.cashiers?.find(
-                        (c) => c.name.toLowerCase() === rep.name.toLowerCase() || c.id === rep.id
+                {salesReps && salesReps.some((rep) => rep.status !== "INACTIVE") ? (
+                  (() => {
+                    const filteredCashiers = salesReps
+                      .filter((rep) => rep.status !== "INACTIVE")
+                      .filter((rep) =>
+                        `${rep.name} ${rep.email || ""} ${rep.phone || ""} ${rep.zone || ""}`
+                          .toLowerCase()
+                          .includes(cashierSearchQuery.trim().toLowerCase())
                       );
-                      const hasPin = Boolean(matchingCashier?.pin || (rep.code && !["000", "001", "002"].includes(rep.code)));
 
-                      return (
-                        <button
-                          key={rep.id || rep.name}
-                          type="button"
-                          onClick={() => handleSelectCashierWithPinCheck(rep)}
-                          className={`p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer text-xs ${
-                            isSelected
-                              ? "bg-cyan-50/70 border-cyan-500 text-cyan-900 font-bold ring-1 ring-cyan-500 shadow-2xs"
-                              : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                              isSelected ? "bg-cyan-600 text-white" : "bg-slate-200 text-slate-600"
-                            }`}>
-                              {rep.name.slice(0, 2).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <div className="truncate">{rep.name}</div>
-                                {hasPin && (
-                                  <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 shrink-0" title={isEs ? "Requiere PIN de seguridad para acceder" : "Requires security PIN to access"}>
-                                    <Lock className="w-2.5 h-2.5 text-emerald-600" />
-                                    <span>PIN</span>
-                                  </span>
-                                )}
-                              </div>
-                              {rep.email && <div className="text-[10px] text-slate-400 font-normal truncate">{rep.email}</div>}
-                            </div>
+                    return (
+                      <div className="relative">
+                        <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500">
+                          <Search className="w-4 h-4 shrink-0 text-slate-400" aria-hidden />
+                          <input
+                            id="pos-cashier-search"
+                            type="search"
+                            role="combobox"
+                            aria-label={isEs ? "Buscar usuario o cajero" : "Search users or cashiers"}
+                            aria-autocomplete="list"
+                            aria-expanded={isCashierSearchOpen}
+                            aria-controls="pos-cashier-options"
+                            value={isCashierSearchOpen ? cashierSearchQuery : tempCashier}
+                            onFocus={() => {
+                              setCashierSearchQuery("");
+                              setIsCashierSearchOpen(true);
+                            }}
+                            onBlur={() => setIsCashierSearchOpen(false)}
+                            onChange={(event) => {
+                              setCashierSearchQuery(event.target.value);
+                              setTempCashier("");
+                              setIsCashierSearchOpen(true);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Escape") {
+                                setIsCashierSearchOpen(false);
+                              } else if (event.key === "Enter" && filteredCashiers[0]) {
+                                event.preventDefault();
+                                setIsCashierSearchOpen(false);
+                                handleSelectCashierWithPinCheck(filteredCashiers[0]);
+                              }
+                            }}
+                            placeholder={isEs ? "Buscar usuario o cajero..." : "Search users or cashiers..."}
+                            className="w-full bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
+                          />
+                        </div>
+                        {isCashierSearchOpen && (
+                          <div
+                            id="pos-cashier-options"
+                            role="listbox"
+                            aria-label={isEs ? "Usuarios y cajeros disponibles" : "Available users and cashiers"}
+                            className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg"
+                          >
+                            {filteredCashiers.length > 0 ? filteredCashiers.map((rep) => {
+                              const isSelected = tempCashier === rep.name;
+                              const matchingCashier = posSettings?.cashiers?.find(
+                                (c) => c.name.toLowerCase() === rep.name.toLowerCase() || c.id === rep.id
+                              );
+                              const hasPin = Boolean(matchingCashier?.pin || (rep.code && !["000", "001", "002"].includes(rep.code)));
+
+                              return (
+                                <button
+                                  key={rep.id || rep.name}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => {
+                                    setIsCashierSearchOpen(false);
+                                    handleSelectCashierWithPinCheck(rep);
+                                  }}
+                                  className="flex w-full items-center justify-between rounded px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-cyan-50"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-slate-200 text-slate-600">
+                                      {rep.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <div className="truncate">{rep.name}</div>
+                                        {hasPin && (
+                                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 shrink-0" title={isEs ? "Requiere PIN de seguridad para acceder" : "Requires security PIN to access"}>
+                                            <Lock className="w-2.5 h-2.5 text-emerald-600" />
+                                            <span>PIN</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                      {rep.email && <div className="text-[10px] text-slate-400 font-normal truncate">{rep.email}</div>}
+                                    </div>
+                                  </div>
+                                  {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />}
+                                </button>
+                              );
+                            }) : (
+                              <p className="px-2.5 py-2 text-xs text-slate-500">
+                                {isEs ? "No se encontraron usuarios o cajeros." : "No matching users or cashiers."}
+                              </p>
+                            )}
                           </div>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
                     {isEs ? "No hay cajeros configurados en Ajustes POS." : "No cashiers configured in POS Settings."}

@@ -17,7 +17,7 @@ export function SettingsView({ user }: SettingsViewProps) {
   const { language } = useLanguage();
   const isEs = language === "es";
 
-  const accountProfileItems = [
+  const generalSettingsItems = [
     {
       title: isEs ? "Perfil de comerciante" : "Merchant profile",
       detail: isEs
@@ -103,10 +103,10 @@ export function SettingsView({ user }: SettingsViewProps) {
         <div className="mt-8 space-y-5">
           <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <h2 className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {isEs ? "Perfil de cuenta" : "Account profile"}
+              {isEs ? "Configuración general" : "General Settings"}
             </h2>
             <div className="border-t border-slate-200">
-              {accountProfileItems.map((item) => (
+              {generalSettingsItems.map((item) => (
                 <Link
                   href={item.href}
                   key={item.title}

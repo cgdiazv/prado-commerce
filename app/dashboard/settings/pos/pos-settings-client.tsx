@@ -453,7 +453,7 @@ export function PosSettingsClient({
             }`}
           >
             <Users className="h-4 w-4 text-cyan-600" />
-            <span>{isEs ? "Cajeros y Operadores" : "Cashiers & Operators"}</span>
+            <span>{isEs ? "Usuarios y equipo" : "Users & Team"}</span>
             <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] text-slate-700">
               {settings.cashiers.length}
             </span>
@@ -617,7 +617,7 @@ export function PosSettingsClient({
                       className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-cyan-700 cursor-pointer"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>{isEs ? "Nuevo Cajero" : "Add Cashier"}</span>
+                      <span>{isEs ? "Nuevo usuario" : "Add User"}</span>
                     </button>
                   </div>
 
@@ -632,7 +632,7 @@ export function PosSettingsClient({
                         className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white hover:bg-cyan-700"
                       >
                         <Plus className="h-4 w-4" />
-                        <span>{isEs ? "Agregar Cajero" : "Add Cashier"}</span>
+                        <span>{isEs ? "Agregar usuario" : "Add User"}</span>
                       </button>
                     </div>
                   ) : (
