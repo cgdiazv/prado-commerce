@@ -184,7 +184,7 @@ async function exportProducts(storeId: string) {
       categorySlug: product.category?.slug ?? null,
       variantTitle: variant?.title ?? null,
       sku: variant?.sku ?? null,
-      barcode: variant?.barcode ?? null,
+      lookups: variant?.barcode ?? null,
       price: variant ? String(variant.price) : null,
       cost: variant?.costPrice ? String(variant.costPrice) : null,
       compareAtPrice: variant?.compareAtPrice ? String(variant.compareAtPrice) : null,

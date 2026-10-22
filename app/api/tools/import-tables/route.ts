@@ -80,6 +80,15 @@ function asOptionalString(value: unknown) {
   return parsed ? parsed : null;
 }
 
+function parseLookupCodes(value: unknown) {
+  const codes = asString(value)
+    .split(";")
+    .map((code) => code.trim())
+    .filter(Boolean);
+  const uniqueCodes = [...new Set(codes)];
+  return uniqueCodes.length > 0 ? uniqueCodes.join(";") : null;
+}
+
 function asNumber(value: unknown, fallback = 0) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : fallback;
@@ -418,12 +427,12 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
       const featured = asBoolean(rowValue(row, ["featured", "isfeatured"]), false);
       const productType = parseProductType(rowValue(row, ["producttype", "type"]));
       const categoryId = await resolveCategoryId(storeId, row);
-      const barcodeAliases = ["barcode", "barcodenumber", "upc", "ean"];
+      const barcodeAliases = ["barcode", "barcodenumber", "barcodes", "upc", "ean", "lookup", "lookups"];
       const costAliases = ["cost", "costprice", "unitcost", "purchasecost"];
       const sku = asOptionalString(rowValue(row, ["sku"]));
       const hasVariantFields =
         rowValue(row, ["price", "price3", "p3", "sku", ...barcodeAliases, ...costAliases, "inventory", "varianttitle", "variant_title"]) !== null;
-      const barcode = asOptionalString(rowValue(row, barcodeAliases));
+      const barcode = parseLookupCodes(rowValue(row, barcodeAliases));
       const costInput = rowValue(row, costAliases);
       const costAmount = costInput === null ? null : Number.parseFloat(asString(costInput));
       if (costAmount !== null && (!Number.isFinite(costAmount) || costAmount < 0)) {
@@ -486,8 +495,13 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
           orderBy: { createdAt: "asc" },
           select: { id: true, sku: true, barcode: true, title: true },
         });
+        const importedLookupCodes = new Set(barcode?.split(";") ?? []);
         const matchingVariant =
-          (barcode ? existingVariants.find((variant) => variant.barcode === barcode) : null) ??
+          (importedLookupCodes.size > 0
+            ? existingVariants.find((variant) =>
+                (variant.barcode ?? "").split(";").some((code) => importedLookupCodes.has(code.trim())),
+              )
+            : null) ??
           (sku ? existingVariants.find((variant) => variant.sku === sku) : null) ??
           existingVariants.find((variant) => variant.title === variantTitle) ??
           (existingVariants.length === 1 && !barcode && !sku ? existingVariants[0] : null);

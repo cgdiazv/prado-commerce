@@ -106,6 +106,7 @@ export type ItemSerial = {
 export type InventoryItem = {
   id: string;
   sku: string;
+  lookupCodes?: string[];
   description: string;
   quantity: number;
   cost: number;

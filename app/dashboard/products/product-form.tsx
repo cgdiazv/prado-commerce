@@ -210,6 +210,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         }))
       : [{ ...emptyVariant }],
   );
+  const [activeVariantIndex, setActiveVariantIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>(
@@ -342,6 +343,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
 
   function addVariantRow() {
     setVariants((current) => [...current, { ...emptyVariant }]);
+    setActiveVariantIndex(variants.length);
   }
 
   function updateVariant(index: number, patch: Partial<VariantFormState>) {
@@ -351,7 +353,17 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
   }
 
   function removeVariant(index: number) {
-    setVariants((current) => current.filter((_, currentIndex) => currentIndex !== index));
+    setVariants((current) => {
+      const next = current.filter((_, currentIndex) => currentIndex !== index);
+      return next.length > 0 ? next : [{ ...emptyVariant }];
+    });
+    setActiveVariantIndex((current) => {
+      if (current > index) {
+        return current - 1;
+      }
+
+      return current >= variants.length - 1 ? Math.max(0, current - 1) : current;
+    });
   }
 
   async function handleCreateCategory() {
@@ -995,15 +1007,41 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                 </p>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={addVariantRow}
-              aria-label={isEs ? "Añadir variante" : "Add variant"}
-              title={isEs ? "Añadir variante" : "Add variant"}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            <div className="flex min-w-0 items-center gap-2">
+              <div
+                role="tablist"
+                aria-label={isEs ? "Variantes del producto" : "Product variants"}
+                className="flex min-w-0 items-center gap-1 overflow-x-auto"
+              >
+                {variants.map((variant, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    role="tab"
+                    id={`product-variant-tab-${index}`}
+                    aria-controls="product-variant-panel"
+                    aria-selected={activeVariantIndex === index}
+                    onClick={() => setActiveVariantIndex(index)}
+                    className={`max-w-40 shrink-0 truncate rounded-full border px-3 py-2 text-sm font-medium transition ${
+                      activeVariantIndex === index
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {`VAR${index + 1}`}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addVariantRow}
+                aria-label={isEs ? "Añadir variante" : "Add variant"}
+                title={isEs ? "Añadir variante" : "Add variant"}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -1041,7 +1079,14 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
 
           <div className="space-y-4">
             {variants.map((variant, index) => (
-              <div key={`${index}-${variant.title}`} className="rounded-xl border border-slate-200 bg-white p-4">
+              activeVariantIndex === index ? (
+              <div
+                key={`${index}-${variant.title}`}
+                id="product-variant-panel"
+                role="tabpanel"
+                aria-labelledby={`product-variant-tab-${index}`}
+                className="rounded-xl border border-slate-200 bg-white p-4"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm font-semibold text-slate-700">
                     {isEs ? `Variante ${index + 1}` : `Variant ${index + 1}`}
@@ -1071,10 +1116,10 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                     placeholder="SKU-123"
                   />
                   <Field
-                    label={isEs ? "Código de barras" : "Barcode"}
+                    label={isEs ? "Códigos de Barra (Lookups)" : "Barcodes (Lookups)"}
                     value={variant.barcode}
                     onChange={(value) => updateVariant(index, { barcode: value })}
-                    placeholder="0123456789012"
+                    placeholder="0123456789012;0123456789013"
                   />
                   <Field
                     label={isEs ? "Inventario" : "Inventory"}
@@ -1119,7 +1164,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                       const profit = priceNum - costNum;
                       const margin = priceNum > 0 ? (profit / priceNum) * 100 : 0;
                       return (
-                        <div className="col-span-full rounded-md border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 text-xs flex items-center justify-between">
+                        <div className="flex h-full min-h-[72px] flex-col justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 text-xs">
                           <span className="text-emerald-800 font-medium">
                             {isEs ? "Ganancia unitaria estimada (Profit):" : "Estimated unit profit:"}
                           </span>
@@ -1149,6 +1194,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                   </label>
                 </div>
               </div>
+              ) : null
             ))}
           </div>
         </div>

@@ -194,6 +194,7 @@ export default function POSModule({
       if (!q) return true;
       return (
         item.sku.toLowerCase().includes(q) ||
+        item.lookupCodes?.some((code) => code.toLowerCase().includes(q)) ||
         item.description.toLowerCase().includes(q)
       );
     });
@@ -275,9 +276,11 @@ export default function POSModule({
           const scannedCode = barcodeBufferRef.current.trim().toLowerCase();
           barcodeBufferRef.current = "";
 
-          // Look for exact SKU match
+          // A scanner sends one lookup code at a time; all aliases belong to one inventory item.
           const matchedItem = inventory.find(
-            (item) => item.sku.toLowerCase() === scannedCode
+            (item) =>
+              item.sku.trim().toLowerCase() === scannedCode ||
+              item.lookupCodes?.some((code) => code.trim().toLowerCase() === scannedCode)
           );
           if (matchedItem) {
             handleAddToCart(matchedItem);

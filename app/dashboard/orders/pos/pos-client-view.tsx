@@ -99,6 +99,9 @@ export function PosClientView({
               flattenedItems.push({
                 id: variant.id,
                 sku: variant.sku || product.slug || variant.id.slice(-6).toUpperCase(),
+                lookupCodes: typeof variant.barcode === "string"
+                  ? variant.barcode.split(";").map((code: string) => code.trim()).filter(Boolean)
+                  : [],
                 description: variantTitle,
                 quantity: Number(variant.inventory ?? 0),
                 cost: 0,
