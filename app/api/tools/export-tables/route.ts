@@ -154,6 +154,7 @@ async function exportProducts(storeId: string) {
           sku: true,
           barcode: true,
           price: true,
+          price3: true,
           costPrice: true,
           compareAtPrice: true,
           inventory: true,
@@ -162,10 +163,10 @@ async function exportProducts(storeId: string) {
     },
   });
 
-  return products.map((product) => {
-    const firstVariant = product.variants[0] ?? null;
+  return products.flatMap((product) => {
+    const variants = product.variants.length > 0 ? product.variants : [null];
 
-    return {
+    return variants.map((variant) => ({
       title: product.title,
       slug: product.slug,
       description: product.description,
@@ -181,16 +182,17 @@ async function exportProducts(storeId: string) {
       featured: product.featured,
       category: product.category?.name ?? null,
       categorySlug: product.category?.slug ?? null,
-      variantTitle: firstVariant?.title ?? null,
-      sku: firstVariant?.sku ?? null,
-      barcode: firstVariant?.barcode ?? null,
-      price: firstVariant ? String(firstVariant.price) : null,
-      cost: firstVariant?.costPrice ? String(firstVariant.costPrice) : null,
-      compareAtPrice: firstVariant?.compareAtPrice ? String(firstVariant.compareAtPrice) : null,
-      inventory: firstVariant?.inventory ?? null,
+      variantTitle: variant?.title ?? null,
+      sku: variant?.sku ?? null,
+      barcode: variant?.barcode ?? null,
+      price: variant ? String(variant.price) : null,
+      cost: variant?.costPrice ? String(variant.costPrice) : null,
+      compareAtPrice: variant?.compareAtPrice ? String(variant.compareAtPrice) : null,
+      price3: variant?.price3 ? String(variant.price3) : null,
+      inventory: variant?.inventory ?? null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
-    };
+    }));
   });
 }
 

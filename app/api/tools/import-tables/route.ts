@@ -420,8 +420,9 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
       const categoryId = await resolveCategoryId(storeId, row);
       const barcodeAliases = ["barcode", "barcodenumber", "upc", "ean"];
       const costAliases = ["cost", "costprice", "unitcost", "purchasecost"];
+      const sku = asOptionalString(rowValue(row, ["sku"]));
       const hasVariantFields =
-        rowValue(row, ["price", "sku", ...barcodeAliases, ...costAliases, "inventory", "varianttitle", "variant_title"]) !== null;
+        rowValue(row, ["price", "price3", "p3", "sku", ...barcodeAliases, ...costAliases, "inventory", "varianttitle", "variant_title"]) !== null;
       const barcode = asOptionalString(rowValue(row, barcodeAliases));
       const costInput = rowValue(row, costAliases);
       const costAmount = costInput === null ? null : Number.parseFloat(asString(costInput));
@@ -469,23 +470,31 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
 
       if (hasVariantFields) {
         const variantTitle = asString(rowValue(row, ["varianttitle", "variant_title", "variant", "variantname"])) || "Default";
-        const sku = asOptionalString(rowValue(row, ["sku"]));
         const price = new Prisma.Decimal(String(asNumber(rowValue(row, ["price"]), 0)));
         const compareAtNumber = asNumber(rowValue(row, ["compareatprice", "compare_at_price"]), Number.NaN);
         const compareAtPrice = Number.isFinite(compareAtNumber)
           ? new Prisma.Decimal(String(compareAtNumber))
           : null;
+        const price3Number = asNumber(rowValue(row, ["price3", "price_3", "p3"]), Number.NaN);
+        const price3 = Number.isFinite(price3Number)
+          ? new Prisma.Decimal(String(price3Number))
+          : null;
         const inventory = asInteger(rowValue(row, ["inventory", "stock"]), 0);
 
-        const firstVariant = await prisma.productVariant.findFirst({
+        const existingVariants = await prisma.productVariant.findMany({
           where: { productId: imported.id },
           orderBy: { createdAt: "asc" },
-          select: { id: true },
+          select: { id: true, sku: true, barcode: true, title: true },
         });
+        const matchingVariant =
+          (barcode ? existingVariants.find((variant) => variant.barcode === barcode) : null) ??
+          (sku ? existingVariants.find((variant) => variant.sku === sku) : null) ??
+          existingVariants.find((variant) => variant.title === variantTitle) ??
+          (existingVariants.length === 1 && !barcode && !sku ? existingVariants[0] : null);
 
-        if (firstVariant) {
+        if (matchingVariant) {
           await prisma.productVariant.update({
-            where: { id: firstVariant.id },
+            where: { id: matchingVariant.id },
             data: {
               title: variantTitle,
               sku,
@@ -493,6 +502,7 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
               ...(hasRowValue(row, costAliases) ? { costPrice } : {}),
               price,
               compareAtPrice,
+              price3,
               inventory,
               trackInventory: true,
             },
@@ -507,6 +517,7 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
               costPrice,
               price,
               compareAtPrice,
+              price3,
               inventory,
               trackInventory: true,
             },
