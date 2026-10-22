@@ -454,9 +454,25 @@ export type PosCashier = {
   updatedAt?: string;
 };
 
+export const POS_ACCESS_MODULES = [
+  "dashboard",
+  "orders",
+  "products",
+  "procurement",
+  "customers",
+  "stores",
+  "reports",
+  "tools",
+  "settings",
+] as const;
+
+export type PosRole = PosCashier["role"];
+export type PosAccessModule = (typeof POS_ACCESS_MODULES)[number];
+
 export type PosStoreSettings = {
   terminals: PosTerminal[];
   cashiers: PosCashier[];
+  roleModules?: Partial<Record<PosRole, PosAccessModule[]>>;
   requireCashierPin?: boolean;
   defaultTerminalId?: string | null;
   receiptFooterText?: string | null;

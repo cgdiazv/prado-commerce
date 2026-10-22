@@ -1,4 +1,33 @@
-import type { PosStoreSettings } from "@/types/dashboard";
+import {
+  POS_ACCESS_MODULES,
+  type PosAccessModule,
+  type PosRole,
+  type PosStoreSettings,
+} from "@/types/dashboard";
+
+const POS_ROLES: PosRole[] = ["MANAGER", "SUPERVISOR", "CASHIER"];
+
+export function resolvePosRoleModules(rawModules: unknown): NonNullable<PosStoreSettings["roleModules"]> {
+  if (!rawModules || typeof rawModules !== "object" || Array.isArray(rawModules)) {
+    return {};
+  }
+
+  const source = rawModules as Record<string, unknown>;
+  const roleModules: NonNullable<PosStoreSettings["roleModules"]> = {};
+
+  for (const role of POS_ROLES) {
+    const modules = source[role];
+    if (!Array.isArray(modules)) continue;
+
+    roleModules[role] = modules.filter(
+      (module): module is PosAccessModule =>
+        typeof module === "string" &&
+        (POS_ACCESS_MODULES as readonly string[]).includes(module)
+    );
+  }
+
+  return roleModules;
+}
 
 export function getDefaultPosSettings(user?: { name?: string | null; email?: string | null }): PosStoreSettings {
   const now = new Date().toISOString();
@@ -69,6 +98,7 @@ export function getDefaultPosSettings(user?: { name?: string | null; email?: str
         createdAt: now,
       },
     ],
+    roleModules: {},
     requireCashierPin: false,
     defaultTerminalId: "reg-1",
     allowCustomCashierName: true,
@@ -94,6 +124,7 @@ export function resolvePosSettings(
   return {
     terminals: Array.isArray(existing.terminals) && existing.terminals.length > 0 ? existing.terminals : defaults.terminals,
     cashiers: Array.isArray(existing.cashiers) && existing.cashiers.length > 0 ? existing.cashiers : defaults.cashiers,
+    roleModules: resolvePosRoleModules(existing.roleModules),
     requireCashierPin: existing.requireCashierPin ?? defaults.requireCashierPin,
     defaultTerminalId: existing.defaultTerminalId ?? defaults.defaultTerminalId,
     receiptFooterText: existing.receiptFooterText ?? defaults.receiptFooterText,

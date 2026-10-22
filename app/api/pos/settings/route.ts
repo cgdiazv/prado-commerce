@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, getCurrentUserFromRequest, getCurrentCashier, getCurrentCashierFromRequest } from "@/lib/session";
-import { resolvePosSettings } from "@/lib/pos/settings";
+import { resolvePosRoleModules, resolvePosSettings } from "@/lib/pos/settings";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import type { PosStoreSettings, PosTerminal, PosCashier } from "@/types/dashboard";
 
@@ -163,6 +163,7 @@ export async function POST(request: Request) {
     const sanitizedSettings: PosStoreSettings = {
       terminals,
       cashiers,
+      roleModules: resolvePosRoleModules(settings?.roleModules),
       requireCashierPin: Boolean(settings?.requireCashierPin),
       defaultTerminalId: settings?.defaultTerminalId ? String(settings.defaultTerminalId) : (terminals[0]?.id || null),
       receiptFooterText: settings?.receiptFooterText ? String(settings.receiptFooterText).trim() : null,
