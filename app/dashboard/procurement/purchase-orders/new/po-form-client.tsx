@@ -24,7 +24,9 @@ type ProductVariant = {
   id: string;
   title: string;
   sku: string | null;
+  barcode: string | null;
   price: string;
+  costPrice: string | null;
   inventory: number;
 };
 
@@ -99,7 +101,8 @@ export default function POFormClient({
         return (
           product.title.toLowerCase().includes(q) ||
           variant.title.toLowerCase().includes(q) ||
-          (variant.sku && variant.sku.toLowerCase().includes(q))
+          (variant.sku && variant.sku.toLowerCase().includes(q)) ||
+          (variant.barcode && variant.barcode.toLowerCase().includes(q))
         );
       })
       .map((variant) => ({
@@ -128,7 +131,9 @@ export default function POFormClient({
           title: itemTitle,
           sku: variant.sku || "",
           qtyOrdered: 1,
-          unitCost: Math.round((Number(variant.price) * 0.5) * 100) / 100 || 10, // Default wholesale cost estimate
+          unitCost: variant.costPrice === null
+            ? Math.round((Number(variant.price) * 0.5) * 100) / 100 || 10
+            : Number(variant.costPrice),
         },
       ]);
     }

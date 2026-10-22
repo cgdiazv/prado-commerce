@@ -17,6 +17,7 @@ type Store = {
 type ProductVariant = {
   id: string;
   sku: string | null;
+  barcode: string | null;
   title: string;
   price: string;
   compareAtPrice: string | null;
@@ -68,6 +69,7 @@ type ProductFormState = {
 
 type VariantFormState = {
   sku: string;
+  barcode: string;
   title: string;
   price: string;
   compareAtPrice: string;
@@ -84,6 +86,7 @@ function toSlug(value: string): string {
 
 const emptyVariant: VariantFormState = {
   sku: "",
+  barcode: "",
   title: "",
   price: "",
   compareAtPrice: "",
@@ -195,6 +198,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
     initialProduct && initialProduct.variants.length > 0
       ? initialProduct.variants.map((variant) => ({
           sku: variant.sku ?? "",
+          barcode: variant.barcode ?? "",
           title: variant.title,
           price: variant.price,
           compareAtPrice: variant.compareAtPrice ?? "",
@@ -504,6 +508,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           .filter((variant) => variant.price.trim())
           .map((variant) => ({
             sku: variant.sku.trim() || null,
+            barcode: variant.barcode.trim() || null,
             title: variant.title.trim() || productForm.title.trim() || "Default",
             price: variant.price,
             compareAtPrice: variant.compareAtPrice.trim() || null,
@@ -1064,6 +1069,12 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                     value={variant.sku}
                     onChange={(value) => updateVariant(index, { sku: value })}
                     placeholder="SKU-123"
+                  />
+                  <Field
+                    label={isEs ? "Código de barras" : "Barcode"}
+                    value={variant.barcode}
+                    onChange={(value) => updateVariant(index, { barcode: value })}
+                    placeholder="0123456789012"
                   />
                   <Field
                     label={isEs ? "Inventario" : "Inventory"}

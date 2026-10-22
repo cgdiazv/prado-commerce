@@ -254,6 +254,7 @@ model ProductVariant {
   product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   sku            String?
+  barcode        String?
   title          String
   price          Decimal     @db.Decimal(10, 2)
   compareAtPrice Decimal?    @db.Decimal(10, 2)
@@ -274,6 +275,7 @@ model ProductVariant {
 
   @@index([productId])
   @@index([sku])
+  @@index([barcode])
 }
 
 // ==========================================
@@ -773,4 +775,3 @@ model HelpdeskTicketEvent {
   @@map("helpdesk_ticket_events")
   @@index([ticketId])
 }
-

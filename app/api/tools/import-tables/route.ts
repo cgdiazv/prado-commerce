@@ -63,6 +63,10 @@ function rowValue(row: Map<string, unknown>, aliases: string[]) {
   return null;
 }
 
+function hasRowValue(row: Map<string, unknown>, aliases: string[]) {
+  return aliases.some((alias) => row.has(normalizeKey(alias)));
+}
+
 function asString(value: unknown) {
   if (value === null || value === undefined) {
     return "";
@@ -414,6 +418,17 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
       const featured = asBoolean(rowValue(row, ["featured", "isfeatured"]), false);
       const productType = parseProductType(rowValue(row, ["producttype", "type"]));
       const categoryId = await resolveCategoryId(storeId, row);
+      const barcodeAliases = ["barcode", "barcodenumber", "upc", "ean"];
+      const costAliases = ["cost", "costprice", "unitcost", "purchasecost"];
+      const hasVariantFields =
+        rowValue(row, ["price", "sku", ...barcodeAliases, ...costAliases, "inventory", "varianttitle", "variant_title"]) !== null;
+      const barcode = asOptionalString(rowValue(row, barcodeAliases));
+      const costInput = rowValue(row, costAliases);
+      const costAmount = costInput === null ? null : Number.parseFloat(asString(costInput));
+      if (costAmount !== null && (!Number.isFinite(costAmount) || costAmount < 0)) {
+        throw new Error("Cost must be a non-negative number");
+      }
+      const costPrice = costAmount === null ? null : new Prisma.Decimal(String(costAmount));
 
       const imported = await prisma.product.upsert({
         where: { storeId_slug: { storeId, slug } },
@@ -452,9 +467,6 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
         },
       });
 
-      const hasVariantFields =
-        rowValue(row, ["price", "sku", "inventory", "varianttitle", "variant_title"]) !== null;
-
       if (hasVariantFields) {
         const variantTitle = asString(rowValue(row, ["varianttitle", "variant_title", "variant", "variantname"])) || "Default";
         const sku = asOptionalString(rowValue(row, ["sku"]));
@@ -477,6 +489,8 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
             data: {
               title: variantTitle,
               sku,
+              ...(hasRowValue(row, barcodeAliases) ? { barcode } : {}),
+              ...(hasRowValue(row, costAliases) ? { costPrice } : {}),
               price,
               compareAtPrice,
               inventory,
@@ -489,6 +503,8 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
               productId: imported.id,
               title: variantTitle,
               sku,
+              barcode,
+              costPrice,
               price,
               compareAtPrice,
               inventory,

@@ -101,7 +101,9 @@ function getTemplateRows(table: ImportTable): Array<Record<string, unknown>> {
       categorySlug: "apparel",
       variantTitle: "Default",
       sku: "HD-001",
+      barcode: "0123456789012",
       price: "49.99",
+      cost: "22.50",
       compareAtPrice: "59.99",
       inventory: "25",
     },
@@ -242,7 +244,7 @@ export default function ImportTablesPage() {
       return `email, firstName (${opt}), lastName (${opt}), phone (${opt}), shippingAddressLine1/City/State/PostalCode/Country (${opt}), billingAddressLine1/City/State/PostalCode/Country (${opt})`;
     }
 
-    return `title, slug (${opt}), description (${opt}), status (${opt}), productType (${opt}), price/sku/inventory (${opt}), category/categorySlug (${opt})`;
+    return `title, slug (${opt}), description (${opt}), status (${opt}), productType (${opt}), price/sku/barcode/cost/inventory (${opt}), category/categorySlug (${opt})`;
   }, [table, isEs]);
 
   async function handleImport(event: React.FormEvent<HTMLFormElement>) {
@@ -464,4 +466,3 @@ export default function ImportTablesPage() {
     </section>
   );
 }
-

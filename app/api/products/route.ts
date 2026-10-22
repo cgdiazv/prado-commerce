@@ -6,6 +6,7 @@ import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
 type ProductVariantInput = {
   sku?: string | null;
+  barcode?: string | null;
   title: string;
   price: string | number;
   compareAtPrice?: string | number | null;
@@ -57,6 +58,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
 
     parsed.push({
       sku: candidate.sku ?? null,
+      barcode: candidate.barcode ?? null,
       title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title : "Default",
       price: candidate.price,
       compareAtPrice: candidate.compareAtPrice ?? null,
@@ -158,6 +160,7 @@ export async function GET(request: Request) {
           select: {
             id: true,
             sku: true,
+            barcode: true,
             title: true,
             price: true,
             compareAtPrice: true,
@@ -314,6 +317,7 @@ export async function POST(request: Request) {
           ? {
               create: parsedVariants.map((variant) => ({
                 sku: variant.sku ?? null,
+                barcode: variant.barcode ?? null,
                 title: variant.title,
                 price: toDecimal(variant.price, 0) ?? new Prisma.Decimal("0"),
                 compareAtPrice: toDecimal(variant.compareAtPrice, null),
