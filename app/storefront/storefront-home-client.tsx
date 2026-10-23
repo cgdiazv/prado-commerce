@@ -20,13 +20,14 @@ import {
   normalizeStorefrontTheme,
 } from "@/lib/storefront-theme";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { isStockUnavailable } from "@/lib/product-stock";
 
 type ProductVariant = {
   id: string;
   title: string;
   price: unknown;
   inventory?: number;
-  trackInventory?: boolean;
+  stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
 };
 
 type StorefrontProduct = {
@@ -57,7 +58,7 @@ type FeaturedProduct = {
     id?: string;
     price: unknown;
     inventory?: number;
-    trackInventory?: boolean;
+    stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   }>;
 };
 
@@ -1010,9 +1011,9 @@ export default function StorefrontHomeClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 pt-8">
                 {filteredMercadoProducts.map((product, idx) => {
                   const primaryVariant = product.variants[0];
-                  const isSoldOut = Boolean(
-                    primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0
-                  );
+                  const isSoldOut = primaryVariant
+                    ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
+                    : false;
                   const price = primaryVariant?.price;
                   const variantId = primaryVariant?.id;
                   const fallbackImage = MERCADO_FALLBACK_IMAGES[idx % MERCADO_FALLBACK_IMAGES.length];
@@ -1107,10 +1108,9 @@ export default function StorefrontHomeClient({
             <div className="grid gap-3">
               {featuredProducts.map((product, index) => {
                 const featuredPrice = product.variants[0]?.price;
-                const isSoldOut = Boolean(
-                  product.variants[0]?.trackInventory &&
-                    (product.variants[0]?.inventory ?? 0) <= 0
-                );
+                const isSoldOut = product.variants[0]
+                  ? isStockUnavailable(product.variants[0].stockStatus, product.variants[0].inventory)
+                  : false;
                 return (
                   <Link
                     key={product.id}
@@ -1192,10 +1192,9 @@ export default function StorefrontHomeClient({
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {group.products.map((product) => {
                         const primaryVariant = product.variants[0];
-                        const isSoldOut = Boolean(
-                          primaryVariant?.trackInventory &&
-                            (primaryVariant?.inventory ?? 0) <= 0
-                        );
+                        const isSoldOut = primaryVariant
+                          ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
+                          : false;
                         const price = primaryVariant?.price;
                         const variantId = primaryVariant?.id;
                         return (

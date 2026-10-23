@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentCashierFromRequest } from "@/lib/session";
+import { parseStockStatus } from "@/lib/product-stock";
 
 type RouteContext = {
   params: Promise<{
@@ -18,7 +19,7 @@ type ProductVariantInput = {
   price3?: string | number | null;
   costPrice?: string | number | null;
   inventory?: number;
-  trackInventory?: boolean;
+  stockStatus?: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   options?: unknown;
 };
 
@@ -70,7 +71,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       price3: candidate.price3 ?? null,
       costPrice: candidate.costPrice ?? null,
       inventory: candidate.inventory ?? 0,
-      trackInventory: candidate.trackInventory ?? true,
+      stockStatus: parseStockStatus(candidate.stockStatus),
       options: candidate.options ?? null,
     });
   }
@@ -273,7 +274,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           price3: toDecimal(variant.price3, null),
           costPrice: toDecimal(variant.costPrice, null),
           inventory: variant.inventory ?? 0,
-          trackInventory: variant.trackInventory ?? true,
+          stockStatus: variant.stockStatus ?? "IN_STOCK",
           ...(variant.options === null || variant.options === undefined
             ? {}
             : { options: variant.options }),

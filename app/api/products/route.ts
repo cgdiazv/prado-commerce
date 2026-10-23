@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { parseStockStatus } from "@/lib/product-stock";
 
 type ProductVariantInput = {
   sku?: string | null;
@@ -13,7 +14,7 @@ type ProductVariantInput = {
   price3?: string | number | null;
   costPrice?: string | number | null;
   inventory?: number;
-  trackInventory?: boolean;
+  stockStatus?: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   options?: unknown;
 };
 
@@ -65,7 +66,7 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
       price3: candidate.price3 ?? null,
       costPrice: candidate.costPrice ?? null,
       inventory: candidate.inventory ?? 0,
-      trackInventory: candidate.trackInventory ?? true,
+      stockStatus: parseStockStatus(candidate.stockStatus),
       options: candidate.options ?? null,
     });
   }
@@ -167,7 +168,7 @@ export async function GET(request: Request) {
             price3: true,
             costPrice: true,
             inventory: true,
-            trackInventory: true,
+            stockStatus: true,
             options: true,
             createdAt: true,
             updatedAt: true,
@@ -324,7 +325,7 @@ export async function POST(request: Request) {
                 price3: toDecimal(variant.price3, null),
                 costPrice: toDecimal(variant.costPrice, null),
                 inventory: variant.inventory ?? 0,
-                trackInventory: variant.trackInventory ?? true,
+                stockStatus: variant.stockStatus ?? "IN_STOCK",
                 ...(variant.options === null || variant.options === undefined
                   ? {}
                   : { options: variant.options }),

@@ -67,7 +67,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
           select: { id: true, name: true, slug: true },
         },
         variants: {
-          select: { id: true, title: true, price: true, inventory: true, trackInventory: true },
+          select: { id: true, title: true, price: true, inventory: true, stockStatus: true },
           take: 1,
           orderBy: { price: "asc" },
         },
@@ -87,7 +87,7 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
         slug: true,
         images: true,
         variants: {
-          select: { price: true, inventory: true, trackInventory: true },
+          select: { price: true, inventory: true, stockStatus: true },
           take: 1,
           orderBy: { price: "asc" },
         },

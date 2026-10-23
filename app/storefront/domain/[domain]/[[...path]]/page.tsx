@@ -84,7 +84,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
           select: { id: true, name: true, slug: true },
         },
         variants: {
-          select: { id: true, title: true, price: true },
+          select: { id: true, title: true, price: true, inventory: true, stockStatus: true },
           orderBy: { price: "asc" as const },
         },
       },
@@ -136,7 +136,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
           select: { id: true, name: true, slug: true },
         },
         variants: {
-          select: { id: true, title: true, price: true },
+          select: { id: true, title: true, price: true, inventory: true, stockStatus: true },
           take: 1,
           orderBy: { price: "asc" },
         },
@@ -156,7 +156,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
         slug: true,
         images: true,
         variants: {
-          select: { price: true },
+          select: { id: true, price: true, inventory: true, stockStatus: true },
           take: 1,
           orderBy: { price: "asc" },
         },

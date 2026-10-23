@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { parseStockStatus as normalizeStockStatus } from "@/lib/product-stock";
 
 type SupportedTable = "categories" | "products" | "customers";
 
@@ -196,6 +197,10 @@ function parseProductType(value: unknown): "PHYSICAL" | "DIGITAL" | "SERVICE" {
   }
 
   return "PHYSICAL";
+}
+
+function parseStockStatus(value: unknown): "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER" {
+  return normalizeStockStatus(asString(value).toUpperCase().replace(/[\s-]+/g, "_"));
 }
 
 function parseImages(value: unknown): string[] {
@@ -555,6 +560,9 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
             ? new Prisma.Decimal(String(price3Number))
             : null;
           const inventory = asInteger(rowValue(row, ["inventory", "stock"]), 0);
+          const stockStatus = productType === "PHYSICAL"
+            ? parseStockStatus(rowValue(row, ["stockstatus", "stock_status"]))
+            : "ON_BACKORDER";
 
           const existingVariants = await prisma.productVariant.findMany({
             where: { productId: imported.id },
@@ -584,7 +592,7 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
                 compareAtPrice,
                 price3,
                 inventory,
-                trackInventory: true,
+                stockStatus,
               },
             });
           } else {
@@ -599,7 +607,7 @@ async function importProducts(storeId: string, ownerUserId: string, rows: Import
                 compareAtPrice,
                 price3,
                 inventory,
-                trackInventory: true,
+                stockStatus,
               },
             });
           }

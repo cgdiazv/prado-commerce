@@ -8,6 +8,7 @@ import { getStoreEmailConfig, sendOrderConfirmationEmail } from "@/lib/email-not
 import { findSensitivePaymentField } from "@/lib/payment-pci-guard";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 import { getPlanLimits, getPlanOrDefault, type SubscriptionPlan } from "@/lib/subscription";
+import { isStockUnavailable } from "@/lib/product-stock";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -63,7 +64,7 @@ type FinalizeOrderInput = {
       title: string;
       price: unknown;
       inventory?: number;
-      trackInventory?: boolean;
+      stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
     };
   }>;
 };
@@ -153,7 +154,7 @@ async function finalizeOrder({
     });
 
     for (const item of items) {
-      if (item.variant.trackInventory) {
+      if (item.variant.stockStatus === "IN_STOCK") {
         await tx.productVariant.update({
           where: { id: item.variant.id },
           data: {
@@ -270,7 +271,7 @@ export async function POST(request: Request) {
           title: string;
           price: unknown;
           inventory: number;
-          trackInventory: boolean;
+          stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
         };
       }[];
     } | null = null;
@@ -318,7 +319,7 @@ export async function POST(request: Request) {
                   price: true,
                   costPrice: true,
                   inventory: true,
-                  trackInventory: true,
+                  stockStatus: true,
                 },
               },
             },
@@ -355,7 +356,7 @@ export async function POST(request: Request) {
                     price: true,
                     costPrice: true,
                     inventory: true,
-                    trackInventory: true,
+                    stockStatus: true,
                   },
                 },
               },
@@ -391,8 +392,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Your cart is empty" }, { status: 400 });
     }
 
-    const outOfStockItem = cart.items.find(
-      (item) => item.variant.trackInventory && item.variant.inventory < item.quantity,
+    const outOfStockItem = cart.items.find((item) =>
+      isStockUnavailable(item.variant.stockStatus, item.variant.inventory, item.quantity),
     );
     if (outOfStockItem) {
       return NextResponse.json(

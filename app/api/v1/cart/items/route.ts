@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isStockUnavailable } from "@/lib/product-stock";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
 import { getShopperSessionCookieValueFromRequest } from "@/lib/shopper-auth";
 
@@ -189,7 +190,7 @@ async function getVariantForStore(variantId: string, storeId: string) {
       price: true,
       productId: true,
       inventory: true,
-      trackInventory: true,
+      stockStatus: true,
     },
   });
 }
@@ -321,7 +322,7 @@ export async function POST(request: Request) {
       return corsJson({ error: "Variant not found" }, { status: 404 });
     }
 
-    if (variant.trackInventory && variant.inventory <= 0) {
+    if (isStockUnavailable(variant.stockStatus, variant.inventory)) {
       return corsJson({ error: "Product is out of stock / Producto agotado" }, { status: 400 });
     }
 
@@ -348,7 +349,7 @@ export async function POST(request: Request) {
       finalQuantity = (existing?.quantity ?? 0) + requestedDelta;
     }
 
-    if (variant.trackInventory && finalQuantity > variant.inventory) {
+    if (isStockUnavailable(variant.stockStatus, variant.inventory, finalQuantity)) {
       return corsJson(
         {
           error: `Only ${variant.inventory} item(s) in stock / Solo quedan ${variant.inventory} unidad(es) disponible(s)`,
@@ -416,7 +417,7 @@ export async function PATCH(request: Request) {
 
     const finalQuantity = Math.max(0, Math.floor(quantity ?? 1));
 
-    if (finalQuantity > 0 && variant.trackInventory && finalQuantity > variant.inventory) {
+    if (finalQuantity > 0 && isStockUnavailable(variant.stockStatus, variant.inventory, finalQuantity)) {
       return corsJson(
         {
           error: `Only ${variant.inventory} item(s) in stock / Solo quedan ${variant.inventory} unidad(es) disponible(s)`,

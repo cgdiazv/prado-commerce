@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const variantIds = lines.map((l) => l.productId).filter(Boolean);
     const existingVariants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
-      select: { id: true, trackInventory: true, inventory: true },
+      select: { id: true, stockStatus: true, inventory: true },
     });
     const validVariantMap = new Map(existingVariants.map((v) => [v.id, v]));
 
@@ -146,10 +146,10 @@ export async function POST(request: Request) {
       },
     });
 
-    // Decrement stock for tracked variants
+    // Decrement stock for variants fulfilled from inventory
     for (const line of lines) {
       const variant = validVariantMap.get(line.productId);
-      if (variant && variant.trackInventory) {
+      if (variant && variant.stockStatus === "IN_STOCK") {
         try {
           await prisma.productVariant.update({
             where: { id: variant.id },

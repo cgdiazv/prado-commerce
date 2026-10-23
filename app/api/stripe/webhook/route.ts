@@ -202,7 +202,7 @@ export async function POST(request: Request) {
                   title: true,
                   price: true,
                   costPrice: true,
-                  trackInventory: true,
+                  stockStatus: true,
                 },
               },
             },
@@ -289,13 +289,13 @@ export async function POST(request: Request) {
           },
         });
 
-        // Decrement stock for variants with trackInventory enabled
+        // Decrement stock for variants that are available from inventory
         for (const item of cart.items) {
           if (item.variant?.id && item.quantity > 0) {
             await tx.productVariant.updateMany({
               where: {
                 id: item.variant.id,
-                trackInventory: true,
+                stockStatus: "IN_STOCK",
               },
               data: {
                 inventory: {

@@ -33,7 +33,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
             variant: {
               select: {
                 id: true,
-                trackInventory: true,
+                stockStatus: true,
               },
             },
           },
@@ -130,7 +130,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
       if (restock) {
         for (const item of order.items) {
-          if (item.variantId && item.variant?.trackInventory) {
+          if (item.variantId && item.variant?.stockStatus !== "ON_BACKORDER") {
             await tx.productVariant.update({
               where: { id: item.variantId },
               data: {

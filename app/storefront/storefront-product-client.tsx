@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { isStockUnavailable } from "@/lib/product-stock";
 import AddToCartWithQuantity from "./add-to-cart-with-quantity";
 
 type ProductVariant = {
@@ -11,7 +12,7 @@ type ProductVariant = {
   title: string;
   price: unknown;
   inventory?: number;
-  trackInventory?: boolean;
+  stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
 };
 
 type StorefrontProductDetails = {
@@ -56,7 +57,9 @@ export default function StorefrontProductClient({
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
   const primaryVariant = product.variants[0];
-  const isSoldOut = Boolean(primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0);
+  const isSoldOut = primaryVariant
+    ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
+    : false;
 
   const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
     style: "currency",
@@ -118,6 +121,11 @@ export default function StorefrontProductClient({
                   {language === "es" ? "Agotado" : "Sold Out"}
                 </span>
               )}
+              {primaryVariant?.stockStatus === "ON_BACKORDER" && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                  {language === "es" ? "Disponible bajo pedido" : "On Backorder"}
+                </span>
+              )}
             </div>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h1>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
@@ -165,7 +173,7 @@ export default function StorefrontProductClient({
                   <AddToCartWithQuantity
                     variantId={primaryVariant.id}
                     isSoldOut={isSoldOut}
-                    maxQuantity={primaryVariant.trackInventory ? primaryVariant.inventory : undefined}
+                    maxQuantity={primaryVariant.stockStatus === "IN_STOCK" ? primaryVariant.inventory : undefined}
                   />
                 ) : null}
                 <div>

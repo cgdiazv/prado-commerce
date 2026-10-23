@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { getStorefrontThemeClasses, type StorefrontThemeId } from "@/lib/storefront-theme";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { isStockUnavailable } from "@/lib/product-stock";
 
 type CategoryProduct = {
   id: string;
@@ -12,7 +13,7 @@ type CategoryProduct = {
     id: string;
     price: unknown;
     inventory?: number;
-    trackInventory?: boolean;
+    stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   }>;
 };
 
@@ -67,7 +68,9 @@ export default function CategoryPageContent({
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => {
               const primaryVariant = product.variants[0];
-              const isSoldOut = Boolean(primaryVariant?.trackInventory && (primaryVariant?.inventory ?? 0) <= 0);
+              const isSoldOut = primaryVariant
+                ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
+                : false;
               const price = primaryVariant?.price;
               const variantId = primaryVariant?.id;
 

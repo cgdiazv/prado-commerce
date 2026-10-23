@@ -248,6 +248,12 @@ enum ProductType {
   SERVICE
 }
 
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  ON_BACKORDER
+}
+
 model ProductVariant {
   id             String      @id @default(cuid())
   productId      String
@@ -262,7 +268,7 @@ model ProductVariant {
   costPrice      Decimal?    @db.Decimal(10, 2)
 
   inventory      Int         @default(0)
-  trackInventory Boolean     @default(true)
+  stockStatus    StockStatus @default(IN_STOCK)
 
   options        Json?
 

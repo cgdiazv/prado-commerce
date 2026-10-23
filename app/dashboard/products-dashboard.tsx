@@ -23,7 +23,7 @@ type ProductVariant = {
   price3?: string | null;
   costPrice?: string | null;
   inventory: number;
-  trackInventory: boolean;
+  stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   options: unknown;
 };
 

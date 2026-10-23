@@ -343,13 +343,13 @@ export async function POST(request: Request) {
         },
       });
 
-      // Decrement inventory for items with variantId where stock tracking is enabled
+      // Decrement inventory only for variants fulfilled from stock
       for (const item of parsedItems) {
         if (item.variantId && item.quantity > 0) {
           await tx.productVariant.updateMany({
             where: {
               id: item.variantId,
-              trackInventory: true,
+              stockStatus: "IN_STOCK",
             },
             data: {
               inventory: {

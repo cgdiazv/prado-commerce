@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Store as StoreIcon } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { getStoredActiveStoreId, setStoredActiveStoreId } from "@/lib/dashboard-store-selection";
@@ -24,7 +24,7 @@ type ProductVariant = {
   price3?: string | null;
   costPrice?: string | null;
   inventory: number;
-  trackInventory: boolean;
+  stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   options: unknown;
 };
 
@@ -76,7 +76,7 @@ type VariantFormState = {
   price3: string;
   costPrice: string;
   inventory: string;
-  trackInventory: boolean;
+  stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
   options: string;
 };
 
@@ -93,7 +93,7 @@ const emptyVariant: VariantFormState = {
   price3: "",
   costPrice: "",
   inventory: "0",
-  trackInventory: true,
+  stockStatus: "IN_STOCK",
   options: "",
 };
 
@@ -205,7 +205,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           price3: variant.price3 ?? "",
           costPrice: variant.costPrice ?? "",
           inventory: String(variant.inventory),
-          trackInventory: variant.trackInventory,
+          stockStatus: isNonPhysicalProduct ? "ON_BACKORDER" : variant.stockStatus,
           options: typeof variant.options === "string" ? variant.options : JSON.stringify(variant.options ?? {}, null, 2),
         }))
       : [{ ...emptyVariant }],
@@ -527,7 +527,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             price3: variant.price3.trim() || null,
             costPrice: variant.costPrice.trim() || null,
             inventory: isNonPhysicalProduct ? 0 : Number.parseInt(variant.inventory, 10) || 0,
-            trackInventory: isNonPhysicalProduct ? false : variant.trackInventory,
+            stockStatus: variant.stockStatus,
             options: variant.options.trim() ? JSON.parse(variant.options) : null,
           })),
       };
@@ -576,13 +576,41 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
               : isEs ? "Crear un nuevo producto" : "Create a new product"}
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-        >
-          {isEs ? "Volver" : "Back"}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <label className="relative">
+            <span className="sr-only">{isEs ? "Tienda" : "Store"}</span>
+            <StoreIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            />
+            <select
+              aria-label={isEs ? "Tienda" : "Store"}
+              value={activeStoreId}
+              onChange={(event) => {
+                const newId = event.target.value;
+                setActiveStoreId(newId);
+                setStoredActiveStoreId(newId);
+                setProductForm((current) => ({ ...current, categoryId: "" }));
+                setNewCategoryName("");
+                setIsCreatingNewCategoryMode(false);
+              }}
+              className="max-w-[180px] rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-slate-400 sm:max-w-[260px]"
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name} / {store.currency}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            {isEs ? "Volver" : "Back"}
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -788,39 +816,41 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
-          <Field
-            label={isEs ? "Dimensiones" : "Dimensions"}
-            hint="LxWxH (Length x Width x Height)"
-            value={productForm.dimension}
-            onChange={(value) => setProductForm((current) => ({ ...current, dimension: value }))}
-            placeholder="10 x 5 x 2 in (LxWxH)"
-          />
-          <Field
-            label={isEs ? "Peso" : "Weight"}
-            value={productForm.weight}
-            onChange={(value) => setProductForm((current) => ({ ...current, weight: value }))}
-            placeholder="1.5 lbs"
-          />
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">{isEs ? "Estado / Condición" : "Condition"}</span>
-            <select
-              value={productForm.condition}
-              onChange={(event) =>
-                setProductForm((current) => ({ ...current, condition: event.target.value }))
-              }
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-            >
-              <option value="">{isEs ? "Nuevo / Predeterminado" : "New / Default"}</option>
-              <option value="NEW">{isEs ? "Nuevo" : "New"}</option>
-              <option value="LIKE_NEW">{isEs ? "Usado - Como nuevo / Caja abierta" : "Used - Like New / Open Box"}</option>
-              <option value="EXCELLENT">{isEs ? "Usado - Excelente" : "Used - Excellent"}</option>
-              <option value="VERY_GOOD">{isEs ? "Usado - Muy bueno" : "Used - Very Good"}</option>
-              <option value="GOOD">{isEs ? "Usado - Bueno" : "Used - Good"}</option>
-              <option value="ACCEPTABLE">{isEs ? "Usado - Aceptable" : "Used - Fair / Acceptable"}</option>
-              <option value="REFURBISHED">{isEs ? "Reacondicionado" : "Refurbished"}</option>
-              <option value="FOR_PARTS">{isEs ? "Para piezas / Reparación" : "For Parts / Repair"}</option>
-            </select>
-          </label>
+          <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+            <Field
+              label={isEs ? "Dimensiones" : "Dimensions"}
+              hint="LxWxH (Length x Width x Height)"
+              value={productForm.dimension}
+              onChange={(value) => setProductForm((current) => ({ ...current, dimension: value }))}
+              placeholder="10 x 5 x 2 in (LxWxH)"
+            />
+            <Field
+              label={isEs ? "Peso" : "Weight"}
+              value={productForm.weight}
+              onChange={(value) => setProductForm((current) => ({ ...current, weight: value }))}
+              placeholder="1.5 lbs"
+            />
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Estado / Condición" : "Condition"}</span>
+              <select
+                value={productForm.condition}
+                onChange={(event) =>
+                  setProductForm((current) => ({ ...current, condition: event.target.value }))
+                }
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                <option value="">{isEs ? "Nuevo / Predeterminado" : "New / Default"}</option>
+                <option value="NEW">{isEs ? "Nuevo" : "New"}</option>
+                <option value="LIKE_NEW">{isEs ? "Usado - Como nuevo / Caja abierta" : "Used - Like New / Open Box"}</option>
+                <option value="EXCELLENT">{isEs ? "Usado - Excelente" : "Used - Excellent"}</option>
+                <option value="VERY_GOOD">{isEs ? "Usado - Muy bueno" : "Used - Very Good"}</option>
+                <option value="GOOD">{isEs ? "Usado - Bueno" : "Used - Good"}</option>
+                <option value="ACCEPTABLE">{isEs ? "Usado - Aceptable" : "Used - Fair / Acceptable"}</option>
+                <option value="REFURBISHED">{isEs ? "Reacondicionado" : "Refurbished"}</option>
+                <option value="FOR_PARTS">{isEs ? "Para piezas / Reparación" : "For Parts / Repair"}</option>
+              </select>
+            </label>
+          </div>
           <label className="flex flex-col gap-2 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Notas de condición" : "Condition Notes"}</span>
             <textarea
@@ -833,7 +863,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
-          <div className="flex flex-col gap-2 sm:col-span-2">
+          <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Imagen destacada" : "Featured Image"}</span>
             {uploadedImages.length > 0 ? (
               <div className="flex flex-wrap gap-3">
@@ -873,7 +903,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             </button>
             <p className="text-xs text-slate-400">{isEs ? "JPEG, PNG, WebP o GIF — máx. 5 MB por archivo" : "JPEG, PNG, WebP or GIF — max 5 MB each"}</p>
           </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
+          <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">
               {isEs ? "Galería" : "Gallery"} <span className="font-normal text-slate-400">({galleryImages.length}/6)</span>
             </span>
@@ -924,37 +954,6 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
 
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <label className="text-sm font-medium text-slate-700">
-                {isEs ? "Tienda" : "Store"}
-              </label>
-              <p className="text-xs text-slate-500">
-                {isEs ? "Selecciona a qué tienda pertenece este producto" : "Select which store this product belongs to"}
-              </p>
-            </div>
-            <select
-              value={activeStoreId}
-              onChange={(event) => {
-                const newId = event.target.value;
-                setActiveStoreId(newId);
-                setStoredActiveStoreId(newId);
-                setProductForm((current) => ({ ...current, categoryId: "" }));
-                setNewCategoryName("");
-                setIsCreatingNewCategoryMode(false);
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 sm:w-auto sm:min-w-[260px]"
-            >
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name} / {store.currency}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-1">
             <h3 className="text-lg font-semibold text-slate-950">
               {isEs ? "Impuestos" : "Taxes"}
@@ -1002,8 +1001,8 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
               {isNonPhysicalProduct ? (
                 <p className="mt-1 text-xs text-blue-700">
                   {isEs
-                    ? "El seguimiento de inventario se desactiva automáticamente para productos digitales y servicios."
-                    : "Inventory tracking is automatically disabled for digital and service products."}
+                    ? "El estado de stock no afecta las ventas de productos digitales y servicios."
+                    : "Stock status does not affect sales of digital and service products."}
                 </p>
               ) : null}
             </div>
@@ -1178,18 +1177,21 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                   })() : null}
                   <label className="flex flex-col gap-2">
                     <span className="text-sm font-medium text-slate-700">
-                      {isEs ? "Rastrear inventario" : "Track inventory"}
+                      {isEs ? "Estado del stock" : "Stock Status"}
                     </span>
                     <select
-                      value={isNonPhysicalProduct ? "false" : variant.trackInventory ? "true" : "false"}
+                      value={isNonPhysicalProduct ? "ON_BACKORDER" : variant.stockStatus}
                       onChange={(event) =>
-                        updateVariant(index, { trackInventory: event.target.value === "true" })
+                        updateVariant(index, {
+                          stockStatus: event.target.value as VariantFormState["stockStatus"],
+                        })
                       }
                       disabled={isNonPhysicalProduct}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
                     >
-                      <option value="true">{isEs ? "Sí" : "Yes"}</option>
-                      <option value="false">{isEs ? "No" : "No"}</option>
+                      <option value="IN_STOCK">In Stock</option>
+                      <option value="OUT_OF_STOCK">Out of Stock</option>
+                      <option value="ON_BACKORDER">On Backorder</option>
                     </select>
                   </label>
                 </div>

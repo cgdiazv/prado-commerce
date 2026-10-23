@@ -60,7 +60,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
           title: true,
           price: true,
           inventory: true,
-          trackInventory: true,
+          stockStatus: true,
         },
         orderBy: { price: "asc" },
       },
