@@ -27,6 +27,9 @@ type ImportResult = {
   };
 };
 
+const MAX_IMPORT_REQUEST_BYTES = 3 * 1024 * 1024;
+const MAX_IMPORT_ROWS_PER_REQUEST = 500;
+
 function escapeCsvCell(value: unknown) {
   const text = value === null || value === undefined ? "" : String(value);
 
@@ -200,6 +203,52 @@ function rowsFromJson(text: string): Array<Record<string, unknown>> {
   return [];
 }
 
+function chunkImportRows(
+  rows: Array<Record<string, unknown>>,
+  table: ImportTable,
+  storeId: string,
+  isEs: boolean,
+): Array<Array<Record<string, unknown>>> {
+  const encoder = new TextEncoder();
+  const emptyPayloadBytes = encoder.encode(JSON.stringify({ table, storeId, rows: [] })).byteLength - 2;
+  const chunks: Array<Array<Record<string, unknown>>> = [];
+  let chunk: Array<Record<string, unknown>> = [];
+  let chunkBytes = emptyPayloadBytes;
+
+  for (const row of rows) {
+    const serializedRow = JSON.stringify(row);
+    const rowBytes = encoder.encode(serializedRow).byteLength;
+    let nextBytes = chunkBytes + (chunk.length ? 1 : 0) + rowBytes;
+
+    if (
+      chunk.length &&
+      (chunk.length >= MAX_IMPORT_ROWS_PER_REQUEST || nextBytes > MAX_IMPORT_REQUEST_BYTES)
+    ) {
+      chunks.push(chunk);
+      chunk = [];
+      chunkBytes = emptyPayloadBytes;
+      nextBytes = chunkBytes + rowBytes;
+    }
+
+    if (nextBytes > MAX_IMPORT_REQUEST_BYTES) {
+      throw new Error(
+        isEs
+          ? "Una fila es demasiado grande para importar. Reduce el tamaño de sus campos de texto e inténtalo de nuevo."
+          : "A row is too large to import. Reduce the size of its text fields and try again.",
+      );
+    }
+
+    chunk.push(row);
+    chunkBytes = nextBytes;
+  }
+
+  if (chunk.length) {
+    chunks.push(chunk);
+  }
+
+  return chunks;
+}
+
 export default function ImportTablesPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
@@ -263,6 +312,8 @@ export default function ImportTablesPage() {
     }
 
     setIsImporting(true);
+    let submittedRows = 0;
+    let totalRows = 0;
 
     try {
       const text = await file.text();
@@ -279,32 +330,89 @@ export default function ImportTablesPage() {
         );
       }
 
-      const response = await fetch("/api/tools/import-tables", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          table,
-          storeId: selectedStoreId,
-          rows,
-        }),
-      });
+      totalRows = rows.length;
+      const chunks = chunkImportRows(rows, table, selectedStoreId, isEs);
+      const summary: ImportResult["summary"] = {
+        table,
+        totalRows: rows.length,
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [],
+      };
 
-      const payload = await response.json() as ImportResult & { error?: string };
+      for (const chunk of chunks) {
+        const response = await fetch("/api/tools/import-tables", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            table,
+            storeId: selectedStoreId,
+            rows: chunk,
+          }),
+        });
+        const responseText = await response.text();
+        let payload: (ImportResult & { error?: string }) | null = null;
 
-      if (!response.ok) {
-        throw new Error(payload.error || (isEs ? "Error al importar" : "Import failed"));
+        try {
+          payload = responseText ? JSON.parse(responseText) as ImportResult & { error?: string } : null;
+        } catch {
+          const message = response.status === 413
+            ? isEs
+              ? "La solicitud de importación es demasiado grande. Reduce el tamaño de algunas filas e inténtalo de nuevo."
+              : "The import request is too large. Reduce the size of some rows and try again."
+            : !response.ok && responseText
+              ? responseText.slice(0, 200)
+              : isEs
+                ? "El servidor devolvió una respuesta inesperada."
+                : "The server returned an unexpected response.";
+          throw new Error(message);
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error ||
+              (response.status === 413
+                ? isEs
+                  ? "La solicitud de importación es demasiado grande. Reduce el tamaño de algunas filas e inténtalo de nuevo."
+                  : "The import request is too large. Reduce the size of some rows and try again."
+                : isEs
+                  ? "Error al importar"
+                  : "Import failed"),
+          );
+        }
+
+        if (!payload?.summary) {
+          throw new Error(
+            isEs ? "El servidor devolvió una respuesta de importación no válida." : "The server returned an invalid import response.",
+          );
+        }
+
+        summary.processed += payload.summary.processed;
+        summary.created += payload.summary.created;
+        summary.updated += payload.summary.updated;
+        summary.skipped += payload.summary.skipped;
+        summary.errors.push(...payload.summary.errors.map((item) => ({
+          ...item,
+          row: item.row + submittedRows,
+        })));
+        submittedRows += chunk.length;
       }
 
-      setResult(payload);
+      setResult({ summary });
     } catch (submitError) {
+      const message = submitError instanceof Error
+        ? submitError.message
+        : isEs
+          ? "Error al importar"
+          : "Import failed";
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : isEs
-            ? "Error al importar"
-            : "Import failed"
+        isEs
+          ? `${message}${submittedRows > 0 ? ` La importación se detuvo después de enviar ${submittedRows} de ${totalRows} filas; es posible que algunas ya se hayan importado.` : ""}`
+          : `${message}${submittedRows > 0 ? ` The import stopped after submitting ${submittedRows} of ${totalRows} rows; some may already have been imported.` : ""}`,
       );
     } finally {
       setIsImporting(false);
