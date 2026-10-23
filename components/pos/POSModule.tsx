@@ -128,6 +128,7 @@ export default function POSModule({
   const { language: contextLang } = useLanguage();
   const activeLang = propLanguage || contextLang || "en";
   const isEs = activeLang === "es";
+  const allowZeroInventorySales = posSettings?.allowZeroInventorySales === true;
 
   // ----------------------------------------------------
   // Full-window state
@@ -254,6 +255,7 @@ export default function POSModule({
   // ----------------------------------------------------
   const barcodeBufferRef = useRef<string>("");
   const lastKeyTimeRef = useRef<number>(0);
+  const handleAddToCartRef = useRef<(product: InventoryItem) => void>(() => {});
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,7 +285,7 @@ export default function POSModule({
               item.lookupCodes?.some((code) => code.trim().toLowerCase() === scannedCode)
           );
           if (matchedItem) {
-            handleAddToCart(matchedItem);
+            handleAddToCartRef.current(matchedItem);
             if (searchInputRef.current) {
               searchInputRef.current.value = "";
               setSearchQuery("");
@@ -436,7 +438,12 @@ export default function POSModule({
   // ----------------------------------------------------
   // Cart Actions
   // ----------------------------------------------------
-  const handleAddToCart = (product: InventoryItem) => {
+  const handleAddToCart = useCallback((product: InventoryItem) => {
+    if (product.quantity <= 0 && !allowZeroInventorySales) {
+      alert(isEs ? "Este producto no tiene inventario disponible." : "This product has no inventory available.");
+      return;
+    }
+
     setCart((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
@@ -466,7 +473,11 @@ export default function POSModule({
 
       return [newItem, ...prev];
     });
-  };
+  }, [allowZeroInventorySales, getProductTaxRate, isEs, isProductTaxable]);
+
+  useEffect(() => {
+    handleAddToCartRef.current = handleAddToCart;
+  }, [handleAddToCart]);
 
   const handleUpdateQuantity = (cartId: string, delta: number) => {
     setCart((prev) =>
@@ -1101,6 +1112,7 @@ export default function POSModule({
       }
     } catch (err) {
       console.error("Error processing POS sale:", err);
+      alert(err instanceof Error ? err.message : (isEs ? "No se pudo completar la venta." : "Could not complete the sale."));
     } finally {
       setIsProcessingSale(false);
     }
@@ -1469,15 +1481,16 @@ export default function POSModule({
                 {filteredProducts.map((product) => {
                   const cartLine = cart.find((c) => c.productId === product.id);
                   const isOutOfStock = product.quantity <= 0;
+                  const isUnavailable = isOutOfStock && !allowZeroInventorySales;
 
                   return (
                     <button
                       key={product.id}
                       type="button"
-                      disabled={isOutOfStock}
+                      disabled={isUnavailable}
                       onClick={() => handleAddToCart(product)}
                       className={`group relative flex flex-col justify-between text-left p-2.5 sm:p-3 rounded-md border transition duration-150 cursor-pointer ${
-                        isOutOfStock
+                        isUnavailable
                           ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
                           : cartLine
                           ? "bg-cyan-50/60 border-cyan-500 shadow-xs"

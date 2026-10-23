@@ -135,38 +135,42 @@ class OfflineSyncManager {
     customerName: string,
     total: number
   ): Promise<{ ticketNumber: string; isOffline: boolean; offlineId?: string }> {
-    // 1. Deduct stock in local IndexedDB immediately
-    if (Array.isArray(invoicePayload.lines)) {
-      await deductLocalInventoryStock(
-        invoicePayload.lines.map((l: any) => ({
-          productId: l.productId,
-          quantity: l.quantity,
-        }))
-      );
-    }
-
-    // 2. Try online first if navigator says we are online
+    // 1. Try online first if navigator says we are online
     const hasConnection = await this.verifyConnectivity();
 
     if (hasConnection) {
+      let response: Response | null = null;
       try {
-        const response = await fetch("/api/invoices", {
+        response = await fetch("/api/invoices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(invoicePayload),
         });
-
-        if (response.ok) {
-          this.lastSyncTime = new Date();
-          this.notifyListeners();
-          return { ticketNumber, isOffline: false };
-        }
       } catch (netErr) {
         console.warn("Online POST failed, falling back to offline queue:", netErr);
       }
+
+      if (response && !response.ok && response.status < 500) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Invoice rejected (HTTP ${response.status})`);
+      }
+
+      if (response?.ok) {
+        if (Array.isArray(invoicePayload.lines)) {
+          await deductLocalInventoryStock(
+            invoicePayload.lines.map((line: any) => ({
+              productId: line.productId,
+              quantity: line.quantity,
+            }))
+          );
+        }
+        this.lastSyncTime = new Date();
+        this.notifyListeners();
+        return { ticketNumber, isOffline: false };
+      }
     }
 
-    // 3. Fallback: Save in IndexedDB sync queue
+    // 2. Fallback: Save in IndexedDB sync queue
     const queued = await enqueueOfflineTicket({
       ticketNumber,
       payload: invoicePayload,
@@ -174,6 +178,15 @@ class OfflineSyncManager {
       total,
       createdAt: new Date().toISOString(),
     });
+
+    if (Array.isArray(invoicePayload.lines)) {
+      await deductLocalInventoryStock(
+        invoicePayload.lines.map((line: any) => ({
+          productId: line.productId,
+          quantity: line.quantity,
+        }))
+      );
+    }
 
     this.isOnline = false;
     await this.notifyListeners();

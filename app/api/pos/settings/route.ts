@@ -169,6 +169,20 @@ export async function POST(request: Request) {
       receiptFooterText: settings?.receiptFooterText ? String(settings.receiptFooterText).trim() : null,
       allowManualDiscounts: settings?.allowManualDiscounts !== false,
       allowCustomCashierName: settings?.allowCustomCashierName !== false,
+      allowZeroInventorySales: settings?.allowZeroInventorySales === true,
+      defaultTaxRate:
+        typeof settings?.defaultTaxRate === "number" && Number.isFinite(settings.defaultTaxRate)
+          ? settings.defaultTaxRate
+          : null,
+      holdDurationMinutes:
+        typeof settings?.holdDurationMinutes === "number" && Number.isFinite(settings.holdDurationMinutes)
+          ? settings.holdDurationMinutes
+          : 60,
+      cardFeeEnabled: settings?.cardFeeEnabled === true,
+      cardFeePercentage:
+        typeof settings?.cardFeePercentage === "number" && Number.isFinite(settings.cardFeePercentage)
+          ? settings.cardFeePercentage
+          : 0,
     };
 
     await prisma.store.update({

@@ -16,6 +16,7 @@ import {
   Store,
   Users,
   Shield,
+  ShoppingCart,
   Plus,
   Pencil,
   Trash2,
@@ -56,7 +57,7 @@ export function PosSettingsClient({
     initialStoreId || stores[0]?.id || ""
   );
 
-  const [activeTab, setActiveTab] = useState<"terminals" | "cashiers" | "access" | "preferences">("terminals");
+  const [activeTab, setActiveTab] = useState<"terminals" | "cashiers" | "access" | "generalSales" | "preferences">("terminals");
   const [loading, setLoading] = useState(!initialSettings && Boolean(activeStoreId));
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -72,6 +73,7 @@ export function PosSettingsClient({
       receiptFooterText: "",
       allowManualDiscounts: true,
       allowCustomCashierName: true,
+      allowZeroInventorySales: false,
     };
   });
 
@@ -470,16 +472,16 @@ export function PosSettingsClient({
       )}
 
       {/* Main Tabs Container */}
-      <div className="rounded-[8px] border border-slate-200 bg-white shadow-xs overflow-hidden">
-        {/* Navigation Tabs Header */}
-        <div className="flex border-b border-slate-200 bg-slate-50/70 px-4 pt-2">
+      <div className="flex flex-col overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs md:flex-row">
+        {/* Vertical Navigation Tabs */}
+        <nav aria-label={isEs ? "Configuración del POS" : "POS settings"} className="flex shrink-0 flex-col border-b border-slate-200 bg-slate-50/70 p-2 md:w-60 md:border-b-0 md:border-r">
           <button
             type="button"
             onClick={() => setActiveTab("terminals")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "terminals"
-                ? "border-cyan-600 text-cyan-700 bg-white rounded-t-xl"
-                : "border-transparent text-slate-500 hover:text-slate-800"
+                ? "border-cyan-600 bg-white text-cyan-700"
+                : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
             <Store className="h-4 w-4 text-cyan-600" />
@@ -492,10 +494,10 @@ export function PosSettingsClient({
           <button
             type="button"
             onClick={() => setActiveTab("cashiers")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "cashiers"
-                ? "border-cyan-600 text-cyan-700 bg-white rounded-t-xl"
-                : "border-transparent text-slate-500 hover:text-slate-800"
+                ? "border-cyan-600 bg-white text-cyan-700"
+                : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
             <Users className="h-4 w-4 text-cyan-600" />
@@ -508,10 +510,10 @@ export function PosSettingsClient({
           <button
             type="button"
             onClick={() => setActiveTab("access")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "access"
-                ? "border-cyan-600 text-cyan-700 bg-white rounded-t-xl"
-                : "border-transparent text-slate-500 hover:text-slate-800"
+                ? "border-cyan-600 bg-white text-cyan-700"
+                : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
             <Shield className="h-4 w-4 text-cyan-600" />
@@ -520,20 +522,33 @@ export function PosSettingsClient({
 
           <button
             type="button"
+            onClick={() => setActiveTab("generalSales")}
+            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+              activeTab === "generalSales"
+                ? "border-cyan-600 bg-white text-cyan-700"
+                : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
+            }`}
+          >
+            <ShoppingCart className="h-4 w-4 text-cyan-600" />
+            <span>{isEs ? "Configuración general de ventas" : "General Sales Settings"}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("preferences")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "preferences"
-                ? "border-cyan-600 text-cyan-700 bg-white rounded-t-xl"
-                : "border-transparent text-slate-500 hover:text-slate-800"
+                ? "border-cyan-600 bg-white text-cyan-700"
+                : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
             <Shield className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Preferencias y Seguridad" : "Preferences & Security"}</span>
           </button>
-        </div>
+        </nav>
 
         {/* Tab Body */}
-        <div className="p-6">
+        <div className="min-w-0 flex-1 p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-600 mb-3" />
@@ -862,7 +877,66 @@ export function PosSettingsClient({
                 </div>
               )}
 
-              {/* TAB 3: PREFERENCES & SECURITY */}
+              {activeTab === "generalSales" && (
+                <div className="max-w-2xl space-y-6">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {isEs ? "Configuración general de ventas" : "General Sales Settings"}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {isEs
+                        ? "Define cómo el POS maneja las ventas y el inventario de esta tienda."
+                        : "Configure how POS sales handle inventory for this store."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                    <label className="flex cursor-pointer items-start justify-between gap-4">
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">
+                          {isEs ? "Permitir vender productos sin inventario" : "Allow selling products with zero inventory"}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-slate-500">
+                          {isEs
+                            ? "Permite facturar productos con inventario en cero. El inventario no se reducirá por debajo de cero."
+                            : "Allow POS invoices for products with zero inventory. Inventory will not be reduced below zero."}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.allowZeroInventorySales === true}
+                        onChange={(event) => {
+                          setSettings({ ...settings, allowZeroInventorySales: event.target.checked });
+                        }}
+                        className="mt-1 h-4 w-4 cursor-pointer rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSettings(settings)}
+                      disabled={saving}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-cyan-700 disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>{isEs ? "Guardando..." : "Saving..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>{isEs ? "Guardar configuración" : "Save Settings"}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: PREFERENCES & SECURITY */}
               {activeTab === "preferences" && (
                 <div className="space-y-6 max-w-2xl">
                   <div>

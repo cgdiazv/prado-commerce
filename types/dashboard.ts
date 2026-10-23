@@ -479,6 +479,7 @@ export type PosStoreSettings = {
   receiptFooterText?: string | null;
   allowManualDiscounts?: boolean;
   allowCustomCashierName?: boolean;
+  allowZeroInventorySales?: boolean;
   defaultTaxRate?: number | null;
   holdDurationMinutes?: number | null;
   cardFeeEnabled?: boolean;

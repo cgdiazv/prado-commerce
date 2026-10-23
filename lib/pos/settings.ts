@@ -130,6 +130,7 @@ export function resolvePosSettings(
     receiptFooterText: existing.receiptFooterText ?? defaults.receiptFooterText,
     allowManualDiscounts: existing.allowManualDiscounts ?? defaults.allowManualDiscounts,
     allowCustomCashierName: existing.allowCustomCashierName ?? defaults.allowCustomCashierName,
+    allowZeroInventorySales: existing.allowZeroInventorySales === true,
     defaultTaxRate: existing.defaultTaxRate !== undefined ? existing.defaultTaxRate : null,
     holdDurationMinutes: existing.holdDurationMinutes !== undefined ? existing.holdDurationMinutes : defaults.holdDurationMinutes,
     cardFeeEnabled: existing.cardFeeEnabled !== undefined ? existing.cardFeeEnabled : defaults.cardFeeEnabled,
