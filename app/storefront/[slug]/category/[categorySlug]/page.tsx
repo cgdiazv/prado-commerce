@@ -58,17 +58,24 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   const products = await prisma.product.findMany({
     where: {
       storeId: category.store.id,
-      categoryId: category.id,
       status: "ACTIVE",
-      ...(searchQuery
-        ? {
-            OR: [
-              { title: { contains: searchQuery, mode: "insensitive" as const } },
-              { slug: { contains: searchQuery, mode: "insensitive" as const } },
-              { description: { contains: searchQuery, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
+      AND: [
+        {
+          OR: [
+            { categoryId: category.id },
+            { categories: { some: { id: category.id } } },
+          ],
+        },
+        ...(searchQuery
+          ? [{
+              OR: [
+                { title: { contains: searchQuery, mode: "insensitive" as const } },
+                { slug: { contains: searchQuery, mode: "insensitive" as const } },
+                { description: { contains: searchQuery, mode: "insensitive" as const } },
+              ],
+            }]
+          : []),
+      ],
     },
     orderBy: { createdAt: "desc" },
     select: {

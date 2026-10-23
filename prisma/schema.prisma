@@ -173,6 +173,7 @@ model Category {
   parentCategory   Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: SetNull)
   childCategories  Category[] @relation("CategoryHierarchy")
   products    Product[]
+  assignedProducts Product[] @relation("ProductCategories")
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -220,6 +221,7 @@ model Product {
 
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categories  Category[]     @relation("ProductCategories")
 
   brandId     String?
   brand       Brand?         @relation(fields: [brandId], references: [id], onDelete: SetNull)

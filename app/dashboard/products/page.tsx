@@ -57,6 +57,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   name: true,
                 },
               },
+              categories: {
+                select: { id: true, name: true },
+              },
               variants: true,
             },
           })
@@ -74,6 +77,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     id: true,
                     name: true,
                   },
+                },
+                categories: {
+                  select: { id: true, name: true },
                 },
                 variants: true,
               },
@@ -95,7 +101,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             createdAt: variant.createdAt.toISOString(),
             updatedAt: variant.updatedAt.toISOString(),
           })),
-          categoryName: product.category?.name ?? null,
+          categoryName:
+            product.categories.map((category) => category.name).join(", ") ||
+            product.category?.name ||
+            null,
         }))
       )
     );

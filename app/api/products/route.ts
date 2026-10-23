@@ -74,6 +74,22 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
   return parsed;
 }
 
+function parseCategoryIds(categoryIds: unknown, categoryId: unknown): string[] | null {
+  if (categoryIds !== undefined) {
+    if (!Array.isArray(categoryIds) || categoryIds.some((id) => typeof id !== "string")) {
+      return null;
+    }
+
+    return [...new Set(categoryIds.map((id: string) => id.trim()).filter(Boolean))];
+  }
+
+  if (categoryId === undefined || categoryId === null || categoryId === "") {
+    return [];
+  }
+
+  return typeof categoryId === "string" && categoryId.trim() ? [categoryId.trim()] : null;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -119,7 +135,14 @@ export async function GET(request: Request) {
     const products = await prisma.product.findMany({
       where: {
         storeId: storeCondition,
-        ...(categoryId ? { categoryId } : {}),
+        ...(categoryId
+          ? {
+              OR: [
+                { categoryId },
+                { categories: { some: { id: categoryId } } },
+              ],
+            }
+          : {}),
         ...(validStatus ? { status: validStatus } : {}),
       },
       orderBy: {
@@ -146,6 +169,12 @@ export async function GET(request: Request) {
         createdAt: true,
         updatedAt: true,
         category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        categories: {
           select: {
             id: true,
             name: true,
@@ -180,7 +209,10 @@ export async function GET(request: Request) {
     return NextResponse.json(
       products.map((product) => ({
         ...product,
-        categoryName: product.category?.name ?? null,
+        categoryName:
+          product.categories.map((category) => category.name).join(", ") ||
+          product.category?.name ||
+          null,
         brandName: product.brand?.name ?? null,
       })),
     );
@@ -220,6 +252,7 @@ export async function POST(request: Request) {
       taxable,
       productType,
       categoryId,
+      categoryIds,
       brandId,
       variants,
     } = body as {
@@ -238,6 +271,7 @@ export async function POST(request: Request) {
       taxable?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
+      categoryIds?: unknown;
       brandId?: string | null;
       variants?: unknown;
     };
@@ -254,6 +288,11 @@ export async function POST(request: Request) {
         { error: "storeId, title, and slug are required" },
         { status: 400 },
       );
+    }
+
+    const parsedCategoryIds = parseCategoryIds(categoryIds, categoryId);
+    if (!parsedCategoryIds) {
+      return NextResponse.json({ error: "categoryIds must be an array of category IDs" }, { status: 400 });
     }
 
     const parsedVariants = parseVariants(variants);
@@ -277,6 +316,19 @@ export async function POST(request: Request) {
 
     if (!ownedStore) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    if (parsedCategoryIds.length > 0) {
+      const matchingCategories = await prisma.category.findMany({
+        where: { storeId: ownedStore.id, id: { in: parsedCategoryIds } },
+        select: { id: true },
+      });
+      if (matchingCategories.length !== parsedCategoryIds.length) {
+        return NextResponse.json(
+          { error: "All categories must belong to this store" },
+          { status: 400 },
+        );
+      }
     }
 
     const ownerPlan = getPlanOrDefault(ownedStore.ownerUser?.plan);
@@ -312,7 +364,10 @@ export async function POST(request: Request) {
         featured: typeof featured === "boolean" ? featured : false,
         taxable: typeof taxable === "boolean" ? taxable : true,
         productType: productType ?? "PHYSICAL",
-        categoryId: categoryId ?? null,
+        categoryId: parsedCategoryIds[0] ?? null,
+        categories: parsedCategoryIds.length
+          ? { connect: parsedCategoryIds.map((id) => ({ id })) }
+          : undefined,
         brandId: brandId ?? null,
         variants: parsedVariants.length
           ? {

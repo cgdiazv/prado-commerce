@@ -45,13 +45,26 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
       where: {
         storeId: store.id,
         status: "ACTIVE",
-        ...(activeCategory ? { category: { slug: activeCategory } } : {}),
-        ...(searchQuery
+        ...((activeCategory || searchQuery)
           ? {
-              OR: [
-                { title: { contains: searchQuery, mode: "insensitive" as const } },
-                { slug: { contains: searchQuery, mode: "insensitive" as const } },
-                { description: { contains: searchQuery, mode: "insensitive" as const } },
+              AND: [
+                ...(activeCategory
+                  ? [{
+                      OR: [
+                        { category: { slug: activeCategory } },
+                        { categories: { some: { slug: activeCategory } } },
+                      ],
+                    }]
+                  : []),
+                ...(searchQuery
+                  ? [{
+                      OR: [
+                        { title: { contains: searchQuery, mode: "insensitive" as const } },
+                        { slug: { contains: searchQuery, mode: "insensitive" as const } },
+                        { description: { contains: searchQuery, mode: "insensitive" as const } },
+                      ],
+                    }]
+                  : []),
               ],
             }
           : {}),

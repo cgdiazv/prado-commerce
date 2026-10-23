@@ -21,10 +21,16 @@ function isPrismaError(error: unknown, code: string) {
   );
 }
 
-async function canUserAccessCategory(categoryId: string, userId: string) {
+async function canUserAccessCategory(
+  categoryId: string,
+  userId: string,
+): Promise<
+  | { exists: false; authorized: false }
+  | { exists: true; authorized: boolean; storeId: string }
+> {
   const category = await prisma.category.findUnique({
     where: { id: categoryId },
-    select: { id: true, store: { select: { ownerUserId: true } } },
+    select: { id: true, storeId: true, store: { select: { ownerUserId: true } } },
   });
 
   if (!category) {
@@ -34,6 +40,7 @@ async function canUserAccessCategory(categoryId: string, userId: string) {
   return {
     exists: true,
     authorized: category.store.ownerUserId === userId,
+    storeId: category.storeId,
   };
 }
 
@@ -62,11 +69,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     const description = body?.description === undefined
       ? undefined
       : String(body.description || "").trim() || null;
+    const parentCategoryId =
+      typeof body?.parentCategoryId === "string"
+        ? body.parentCategoryId.trim() || null
+        : body?.parentCategoryId === null
+          ? null
+          : undefined;
 
     const updates: {
       name?: string;
       slug?: string;
       description?: string | null;
+      parentCategoryId?: string | null;
     } = {};
 
     if (name !== undefined) {
@@ -86,6 +100,44 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     if (description !== undefined) {
       updates.description = description;
+    }
+
+    if (body?.parentCategoryId !== undefined) {
+      if (parentCategoryId === undefined) {
+        return NextResponse.json({ error: "parentCategoryId must be a category ID or null" }, { status: 400 });
+      }
+
+      if (parentCategoryId) {
+        if (parentCategoryId === id) {
+          return NextResponse.json({ error: "A category cannot be its own parent" }, { status: 400 });
+        }
+
+        const visited = new Set<string>();
+        let ancestorId: string | null = parentCategoryId;
+        while (ancestorId) {
+          if (ancestorId === id) {
+            return NextResponse.json({ error: "A category cannot be moved beneath one of its descendants" }, { status: 400 });
+          }
+          if (visited.has(ancestorId)) {
+            return NextResponse.json({ error: "The selected parent has an invalid category hierarchy" }, { status: 400 });
+          }
+          visited.add(ancestorId);
+
+          const ancestor = await prisma.category.findFirst({
+            where: { id: ancestorId, storeId: access.storeId },
+            select: { parentCategoryId: true },
+          });
+          if (!ancestor) {
+            return NextResponse.json(
+              { error: "Parent category must belong to this store" },
+              { status: 400 },
+            );
+          }
+          ancestorId = ancestor.parentCategoryId;
+        }
+      }
+
+      updates.parentCategoryId = parentCategoryId;
     }
 
     if (Object.keys(updates).length === 0) {

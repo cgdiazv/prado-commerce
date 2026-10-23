@@ -49,6 +49,9 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
       },
       include: {
         variants: true,
+        categories: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -59,7 +62,7 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
     categories = await prisma.category.findMany({
       where: { storeId: { in: stores.map((store) => store.id) } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, storeId: true },
+      select: { id: true, name: true, storeId: true, parentCategoryId: true },
     });
 
     brands = await prisma.brand.findMany({

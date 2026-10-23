@@ -79,6 +79,22 @@ function parseVariants(variants: unknown): ProductVariantInput[] {
   return parsed;
 }
 
+function parseCategoryIds(categoryIds: unknown, categoryId: unknown): string[] | null {
+  if (categoryIds !== undefined) {
+    if (!Array.isArray(categoryIds) || categoryIds.some((id) => typeof id !== "string")) {
+      return null;
+    }
+
+    return [...new Set(categoryIds.map((id: string) => id.trim()).filter(Boolean))];
+  }
+
+  if (categoryId === undefined || categoryId === null || categoryId === "") {
+    return [];
+  }
+
+  return typeof categoryId === "string" && categoryId.trim() ? [categoryId.trim()] : null;
+}
+
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
@@ -89,6 +105,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       },
       include: {
         variants: true,
+        categories: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -120,20 +139,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     const { id } = await params;
     const cashier = getCurrentCashierFromRequest(request);
 
-    if (cashier) {
-      const existingProduct = await prisma.product.findUnique({
-        where: { id },
-        select: { storeId: true },
-      });
-      if (!existingProduct) {
-        return NextResponse.json({ error: "Product not found" }, { status: 404 });
-      }
-      if (existingProduct.storeId !== cashier.storeId) {
-        return NextResponse.json(
-          { error: "Forbidden: You can only edit products in your assigned store." },
-          { status: 403 },
-        );
-      }
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { storeId: true },
+    });
+    if (!existingProduct) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    if (cashier && existingProduct.storeId !== cashier.storeId) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only edit products in your assigned store." },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
@@ -152,6 +169,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       taxable,
       productType,
       categoryId,
+      categoryIds,
       brandId,
       variants,
     } = body as {
@@ -169,11 +187,33 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       taxable?: boolean;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
+      categoryIds?: unknown;
       brandId?: string | null;
       variants?: unknown;
     };
 
     const updates = {} as Parameters<typeof prisma.product.update>[0]["data"];
+    const shouldUpdateCategories = categoryIds !== undefined || categoryId !== undefined;
+    const parsedCategoryIds = shouldUpdateCategories
+      ? parseCategoryIds(categoryIds, categoryId)
+      : null;
+
+    if (shouldUpdateCategories && !parsedCategoryIds) {
+      return NextResponse.json({ error: "categoryIds must be an array of category IDs" }, { status: 400 });
+    }
+
+    if (parsedCategoryIds && parsedCategoryIds.length > 0) {
+      const matchingCategories = await prisma.category.findMany({
+        where: { storeId: existingProduct.storeId, id: { in: parsedCategoryIds } },
+        select: { id: true },
+      });
+      if (matchingCategories.length !== parsedCategoryIds.length) {
+        return NextResponse.json(
+          { error: "All categories must belong to this store" },
+          { status: 400 },
+        );
+      }
+    }
 
     if (typeof title === "string" && title.trim()) {
       updates.title = title.trim();
@@ -236,16 +276,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       updates.productType = productType;
     }
 
-    if (categoryId !== undefined) {
-      updates.category = categoryId
-        ? {
-            connect: {
-              id: categoryId,
-            },
-          }
-        : {
-            disconnect: true,
-          };
+    if (parsedCategoryIds) {
+      updates.categoryId = parsedCategoryIds[0] ?? null;
+      updates.categories = {
+        set: parsedCategoryIds.map((categoryId) => ({ id: categoryId })),
+      };
     }
 
     if (brandId !== undefined) {
@@ -296,6 +331,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       data: updates,
       include: {
         variants: true,
+        categories: {
+          select: { id: true, name: true },
+        },
       },
     });
 

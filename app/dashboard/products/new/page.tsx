@@ -33,7 +33,7 @@ export default async function NewProductPage() {
     const categories = await prisma.category.findMany({
       where: { storeId: { in: stores.map((s) => s.id) } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, storeId: true },
+      select: { id: true, name: true, storeId: true, parentCategoryId: true },
     });
 
     const brands = await prisma.brand.findMany({

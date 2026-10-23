@@ -23,6 +23,23 @@ type Category = {
   updatedAt?: string | Date;
 };
 
+function isDescendantCategory(
+  candidateId: string,
+  ancestorId: string,
+  categories: Category[],
+) {
+  let parentId = categories.find((category) => category.id === candidateId)?.parentCategoryId;
+  const visited = new Set<string>();
+
+  while (parentId && !visited.has(parentId)) {
+    if (parentId === ancestorId) return true;
+    visited.add(parentId);
+    parentId = categories.find((category) => category.id === parentId)?.parentCategoryId ?? null;
+  }
+
+  return false;
+}
+
 type CategoriesDashboardProps = {
   initialStores: Store[];
   initialCategories: Category[];
@@ -131,6 +148,7 @@ export function CategoriesDashboard({
     setEditingCategoryId(category.id);
     setEditingCategoryName(category.name);
     setEditingCategorySlug(category.slug);
+    setCategoryParentCategoryId(category.parentCategoryId ?? "");
     setCategoryError(null);
   }
 
@@ -138,6 +156,7 @@ export function CategoriesDashboard({
     setEditingCategoryId(null);
     setEditingCategoryName("");
     setEditingCategorySlug("");
+    setCategoryParentCategoryId("");
   }
 
   async function handleCreateCategory(event: React.FormEvent<HTMLFormElement>) {
@@ -195,6 +214,7 @@ export function CategoriesDashboard({
         body: JSON.stringify({
           name: editingCategoryName,
           slug: editingCategorySlug,
+          parentCategoryId: categoryParentCategoryId || null,
         }),
       });
 
@@ -226,8 +246,8 @@ export function CategoriesDashboard({
     if (
       !confirm(
         isEs
-          ? "¿Eliminar esta categoría? Los productos de esta categoría quedarán sin categoría."
-          : "Delete this category? Products in this category will become uncategorized.",
+          ? "¿Eliminar esta categoría? Los productos perderán esta asignación de categoría y sus subcategorías quedarán sin padre."
+          : "Delete this category? Products will lose this category assignment and its child categories will become top-level.",
       )
     ) {
       return;
@@ -246,7 +266,15 @@ export function CategoriesDashboard({
         throw new Error(data.error ?? (isEs ? "No se pudo eliminar la categoría" : "Failed to delete category"));
       }
 
-      setCategories((current) => current.filter((category) => category.id !== categoryId));
+      setCategories((current) =>
+        current
+          .filter((category) => category.id !== categoryId)
+          .map((category) =>
+            category.parentCategoryId === categoryId
+              ? { ...category, parentCategoryId: null }
+              : category,
+          ),
+      );
       if (editingCategoryId === categoryId) {
         cancelEditCategory();
       }
@@ -366,7 +394,26 @@ export function CategoriesDashboard({
                           )}
                         </td>
                         <td className="px-4 py-3 align-middle text-xs text-slate-700">
-                          {category.parentCategoryId
+                          {isEditing ? (
+                            <select
+                              value={categoryParentCategoryId}
+                              onChange={(event) => setCategoryParentCategoryId(event.target.value)}
+                              className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                            >
+                              <option value="">{isEs ? "Sin padre" : "No parent"}</option>
+                              {activeStoreCategories
+                                .filter(
+                                  (candidate) =>
+                                    candidate.id !== category.id &&
+                                    !isDescendantCategory(candidate.id, category.id, activeStoreCategories),
+                                )
+                                .map((candidate) => (
+                                  <option key={candidate.id} value={candidate.id}>
+                                    {candidate.name}
+                                  </option>
+                                ))}
+                            </select>
+                          ) : category.parentCategoryId
                             ? (activeStoreCategoryNameById.get(category.parentCategoryId) ?? "-")
                             : "-"}
                         </td>

@@ -44,6 +44,7 @@ type Product = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string | null;
+  categories?: { id: string; name: string }[];
   brandId?: string | null;
   brand?: { id: string; name: string } | null;
   variants: ProductVariant[];
@@ -62,7 +63,7 @@ type ProductFormState = {
   conditionNotes: string;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
-  categoryId: string;
+  categoryIds: string[];
   brandId: string;
   taxable: boolean;
 };
@@ -108,7 +109,7 @@ const emptyProduct: ProductFormState = {
   conditionNotes: "",
   status: "DRAFT",
   productType: "PHYSICAL",
-  categoryId: "",
+  categoryIds: [],
   brandId: "",
   taxable: true,
 };
@@ -134,6 +135,7 @@ type Category = {
   id: string;
   name: string;
   storeId: string;
+  parentCategoryId: string | null;
 };
 
 type Brand = {
@@ -188,7 +190,8 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           conditionNotes: initialProduct.conditionNotes ?? "",
           status: initialProduct.status,
           productType: initialProduct.productType ?? "PHYSICAL",
-          categoryId: initialProduct.categoryId ?? "",
+          categoryIds: initialProduct.categories?.map((category) => category.id) ??
+            (initialProduct.categoryId ? [initialProduct.categoryId] : []),
           brandId: initialProduct.brandId ?? "",
           taxable: initialProduct.taxable !== undefined ? Boolean(initialProduct.taxable) : true,
         }
@@ -227,11 +230,27 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
   const activeStore = stores.find((store) => store.id === activeStoreId) ?? null;
   const activeStoreCategories = availableCategories
     .filter((category) => category.storeId === activeStoreId)
-    .sort((left, right) => left.name.localeCompare(right.name));
+    .sort((left, right) => getCategoryLabel(left, availableCategories).localeCompare(getCategoryLabel(right, availableCategories)));
   const activeStoreBrands = availableBrands
     .filter((brand) => brand.storeId === activeStoreId)
     .sort((left, right) => left.name.localeCompare(right.name));
   const isNonPhysicalProduct = productForm.productType !== "PHYSICAL";
+
+  function getCategoryLabel(category: Category, allCategories: Category[]) {
+    const path = [category.name];
+    let parentCategoryId = category.parentCategoryId;
+    const visited = new Set([category.id]);
+
+    while (parentCategoryId && !visited.has(parentCategoryId)) {
+      visited.add(parentCategoryId);
+      const parent = allCategories.find((candidate) => candidate.id === parentCategoryId);
+      if (!parent) break;
+      path.unshift(parent.name);
+      parentCategoryId = parent.parentCategoryId;
+    }
+
+    return path.join(" / ");
+  }
 
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -398,7 +417,13 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         }),
       });
 
-      const result = (await response.json()) as { id?: string; name?: string; storeId?: string; error?: string };
+      const result = (await response.json()) as {
+        id?: string;
+        name?: string;
+        storeId?: string;
+        parentCategoryId?: string | null;
+        error?: string;
+      };
 
       if (!response.ok || !result.id || !result.name || !result.storeId) {
         throw new Error(result.error ?? "Failed to create category");
@@ -408,6 +433,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         id: result.id,
         name: result.name,
         storeId: result.storeId,
+        parentCategoryId: result.parentCategoryId ?? null,
       };
 
       setAvailableCategories((current) => {
@@ -418,7 +444,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         return [...current, createdCategory];
       });
 
-      setProductForm((current) => ({ ...current, categoryId: createdCategory.id }));
+      setProductForm((current) => ({ ...current, categoryIds: [createdCategory.id] }));
       setNewCategoryName("");
       setIsCreatingNewCategoryMode(false);
     } catch (createError) {
@@ -513,7 +539,8 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         images: [...uploadedImages, ...galleryImages],
         status: productForm.status,
         productType: productForm.productType,
-        categoryId: productForm.categoryId || null,
+        categoryId: productForm.categoryIds[0] ?? null,
+        categoryIds: productForm.categoryIds,
         brandId: productForm.brandId || null,
         taxable: productForm.taxable,
         variants: variants
@@ -590,7 +617,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                 const newId = event.target.value;
                 setActiveStoreId(newId);
                 setStoredActiveStoreId(newId);
-                setProductForm((current) => ({ ...current, categoryId: "" }));
+                setProductForm((current) => ({ ...current, categoryIds: [] }));
                 setNewCategoryName("");
                 setIsCreatingNewCategoryMode(false);
               }}
@@ -656,7 +683,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           </label>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">{isEs ? "Categoría" : "Category"}</span>
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Categorías" : "Categories"}</span>
               {isCreatingNewCategoryMode ? (
                 <div className="flex items-center gap-2">
                   <button
@@ -711,16 +738,47 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                 className="w-full rounded-xl border border-blue-400 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
               />
             ) : (
-              <select
-                value={productForm.categoryId}
-                onChange={(event) => setProductForm((current) => ({ ...current, categoryId: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="">{isEs ? "Sin categoría" : "No category"}</option>
-                {activeStoreCategories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <details className="group relative">
+                <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400">
+                  <span className="truncate">
+                    {productForm.categoryIds.length === 0
+                      ? (isEs ? "Sin categoría" : "No category")
+                      : isEs
+                        ? `${productForm.categoryIds.length} seleccionada(s)`
+                        : `${productForm.categoryIds.length} selected`}
+                  </span>
+                  <span aria-hidden="true" className="ml-2 text-slate-400">⌄</span>
+                </summary>
+                <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                  {activeStoreCategories.length === 0 ? (
+                    <p className="px-2 py-3 text-sm text-slate-500">
+                      {isEs ? "Aún no hay categorías." : "No categories yet."}
+                    </p>
+                  ) : activeStoreCategories.map((category) => (
+                    <label key={category.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        checked={productForm.categoryIds.includes(category.id)}
+                        onChange={(event) => {
+                          setProductForm((current) => ({
+                            ...current,
+                            categoryIds: event.target.checked
+                              ? [...current.categoryIds, category.id]
+                              : current.categoryIds.filter((id) => id !== category.id),
+                          }));
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                      />
+                      <span>{getCategoryLabel(category, availableCategories)}</span>
+                    </label>
+                  ))}
+                </div>
+                </details>
+                <p className="text-xs text-slate-500">
+                  {isEs ? "Puedes seleccionar varias categorías." : "Select one or more categories."}
+                </p>
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-2">
