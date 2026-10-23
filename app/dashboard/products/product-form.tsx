@@ -205,7 +205,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
           price3: variant.price3 ?? "",
           costPrice: variant.costPrice ?? "",
           inventory: String(variant.inventory),
-          stockStatus: isNonPhysicalProduct ? "ON_BACKORDER" : variant.stockStatus,
+          stockStatus: productForm.productType !== "PHYSICAL" ? "ON_BACKORDER" : variant.stockStatus,
           options: typeof variant.options === "string" ? variant.options : JSON.stringify(variant.options ?? {}, null, 2),
         }))
       : [{ ...emptyVariant }],
