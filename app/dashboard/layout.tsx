@@ -1127,7 +1127,8 @@ export default function DashboardLayout({
               pathname.startsWith("/dashboard/procurement") ||
               pathname.startsWith("/dashboard/reports") ||
               pathname.startsWith("/dashboard/customers") ||
-              pathname.startsWith("/dashboard/help")
+              pathname.startsWith("/dashboard/help") ||
+              pathname.startsWith("/dashboard/settings/pos")
                 ? ""
                 : "mx-auto max-w-4xl"
             }`}
