@@ -34,6 +34,7 @@ export default function StorefrontNavbar({
 }: StorefrontNavbarProps) {
   const { t, language } = useLanguage();
   const isEs = language === "es";
+  const isMercado = theme === "mercado" || theme === "minimal";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -126,7 +127,7 @@ export default function StorefrontNavbar({
               </Link>
             </div>
 
-            <div className="hidden min-w-0 flex-1 max-w-md md:block">
+            <div className={`hidden min-w-0 flex-1 md:block ${isMercado ? "max-w-xl" : "max-w-md"}`}>
               <form action={activeCategoryHref} method="get" className="w-full">
                 <div className="relative">
                   <Search
@@ -165,7 +166,7 @@ export default function StorefrontNavbar({
             </div>
 
             <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-              <LanguageToggle variant="light" />
+              <LanguageToggle variant="light" simple={isMercado} />
 
               <Link
                 href={accountHref}
@@ -184,7 +185,7 @@ export default function StorefrontNavbar({
                 }`}
               >
                 <User size={18} className={theme !== "classic" ? "text-[#20201e]" : undefined} />
-                {theme !== "classic" && (
+                {theme !== "classic" && !isMercado && (
                   <span className="hidden sm:inline">{isEs ? "Mi cuenta" : "Account"}</span>
                 )}
               </Link>
@@ -202,7 +203,7 @@ export default function StorefrontNavbar({
                 }`}
               >
                 {theme === "classic" ? <ShoppingCart size={20} /> : <ShoppingBag size={18} className="text-[#20201e]" />}
-                {theme !== "classic" && (
+                {theme !== "classic" && !isMercado && (
                   <span className="hidden sm:inline">
                     {theme === "recinto" ? (isEs ? "Bolsa" : "Bag") : (isEs ? "Carrito" : "Cart")} (<span data-prado-cart-count className="inline">0</span>)
                   </span>
@@ -213,7 +214,14 @@ export default function StorefrontNavbar({
                     className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-[var(--store-main-color)] px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
                   />
                 )}
-                {theme !== "classic" && (
+                {isMercado && (
+                  <span
+                    data-prado-cart-count
+                    data-prado-cart-badge
+                    className="absolute -right-1.5 -top-1.5 hidden min-w-[16px] rounded-full bg-[#20201e] px-1 text-center text-[10px] font-bold leading-[16px] text-white [&:not(:empty)]:block"
+                  />
+                )}
+                {theme !== "classic" && !isMercado && (
                   <span
                     data-prado-cart-count
                     className="sm:hidden absolute -right-1 -top-1 hidden min-w-[16px] rounded-full bg-[#20201e] px-1 text-center text-[10px] font-bold leading-[16px] text-white [&:not(:empty)]:block"
@@ -263,7 +271,11 @@ export default function StorefrontNavbar({
             </div>
           ) : (
             categories.length > 0 && (
-              <nav className="hidden md:flex flex-wrap items-center gap-x-5 gap-y-1 mt-3">
+              <nav
+                className={`hidden md:flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 ${
+                  isMercado ? "justify-center" : ""
+                }`}
+              >
                 <Link
                   href={homeHref}
                   className={`text-sm font-medium transition-colors ${

@@ -362,7 +362,8 @@
     }, 0);
 
     document.querySelectorAll("[data-prado-cart-count]").forEach(function (el) {
-      el.textContent = String(totalCount);
+      el.textContent =
+        el.hasAttribute("data-prado-cart-badge") && totalCount === 0 ? "" : String(totalCount);
     });
 
     if (state.items.length === 0) {
