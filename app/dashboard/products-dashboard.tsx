@@ -56,8 +56,17 @@ type ProductsDashboardProps = {
   setupError?: string | null;
 };
 
-type SortKey = "name" | "sku" | "price" | "category" | "updated";
+type SortKey = "name" | "featured" | "sku" | "inventory" | "price" | "cost" | "stockValue" | "category" | "updated";
 type SortDirection = "asc" | "desc";
+
+function SortIndicator({ active, direction }: { active: boolean; direction: SortDirection }) {
+  return (
+    <span className="ml-1 flex flex-col leading-none text-[9px]">
+      <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
+      <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
+    </span>
+  );
+}
 
 export function ProductsDashboard({
   initialStores,
@@ -103,7 +112,8 @@ export function ProductsDashboard({
       return (
         product.title.toLowerCase().includes(normalizedQuery) ||
         product.slug.toLowerCase().includes(normalizedQuery) ||
-        product.status.toLowerCase().includes(normalizedQuery)
+        product.status.toLowerCase().includes(normalizedQuery) ||
+        product.variants.some((variant) => variant.sku?.toLowerCase().includes(normalizedQuery))
       );
     });
   }, [products, query, activeStoreId]);
@@ -116,8 +126,20 @@ export function ProductsDashboard({
       const rightCategory = right.categoryName ?? (right.categoryId ? "Assigned" : "Uncategorized");
       const leftSku = left.variants[0]?.sku ?? "";
       const rightSku = right.variants[0]?.sku ?? "";
+      const leftInventory = left.variants.reduce((total, variant) => total + variant.inventory, 0);
+      const rightInventory = right.variants.reduce((total, variant) => total + variant.inventory, 0);
       const leftPrice = Number(left.variants[0]?.price ?? 0);
       const rightPrice = Number(right.variants[0]?.price ?? 0);
+      const leftCost = Number(left.variants[0]?.costPrice ?? 0);
+      const rightCost = Number(right.variants[0]?.costPrice ?? 0);
+      const leftStockValue = left.variants.reduce(
+        (total, variant) => total + variant.inventory * (Number(variant.costPrice) || 0),
+        0,
+      );
+      const rightStockValue = right.variants.reduce(
+        (total, variant) => total + variant.inventory * (Number(variant.costPrice) || 0),
+        0,
+      );
       const leftUpdated = new Date(left.updatedAt).getTime();
       const rightUpdated = new Date(right.updatedAt).getTime();
 
@@ -127,11 +149,23 @@ export function ProductsDashboard({
         case "name":
           comparison = left.title.localeCompare(right.title);
           break;
+        case "featured":
+          comparison = Number(left.featured) - Number(right.featured);
+          break;
         case "sku":
           comparison = leftSku.localeCompare(rightSku);
           break;
+        case "inventory":
+          comparison = leftInventory - rightInventory;
+          break;
         case "price":
           comparison = leftPrice - rightPrice;
+          break;
+        case "cost":
+          comparison = leftCost - rightCost;
+          break;
+        case "stockValue":
+          comparison = leftStockValue - rightStockValue;
           break;
         case "category":
           comparison = leftCategory.localeCompare(rightCategory);
@@ -236,15 +270,6 @@ export function ProductsDashboard({
     setSortKey(key);
     setSortDirection("asc");
     setCurrentPage(1);
-  }
-
-  function SortIndicator({ active, direction }: { active: boolean; direction: SortDirection }) {
-    return (
-      <span className="ml-1 flex flex-col leading-none text-[9px]">
-        <span className={active && direction === "asc" ? "text-slate-950" : "text-slate-400"}>▲</span>
-        <span className={active && direction === "desc" ? "text-slate-950" : "text-slate-400"}>▼</span>
-      </span>
-    );
   }
 
   async function refreshProducts(storeId: string) {
@@ -558,7 +583,7 @@ export function ProductsDashboard({
                 setQuery(event.target.value);
                 setCurrentPage(1);
               }}
-              placeholder={isEs ? "Buscar por título, slug o estado" : "Search by title, slug, or status"}
+              placeholder={isEs ? "Buscar por título, slug, SKU o estado" : "Search by title, slug, SKU, or status"}
               className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
@@ -722,7 +747,7 @@ export function ProductsDashboard({
                     setQuery(event.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder={isEs ? "Buscar por título, slug o estado" : "Search by title, slug, or status"}
+                  placeholder={isEs ? "Buscar por título, slug, SKU o estado" : "Search by title, slug, SKU, or status"}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
                 {query && (
@@ -852,22 +877,42 @@ export function ProductsDashboard({
                           <SortIndicator active={sortKey === "name"} direction={sortDirection} />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Destacado" : "Featured"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("featured")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Destacado" : "Featured"}
+                          <SortIndicator active={sortKey === "featured"} direction={sortDirection} />
+                        </button>
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("sku")} className="flex items-center gap-1 transition hover:text-slate-950">
                           SKU
                           <SortIndicator active={sortKey === "sku"} direction={sortDirection} />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Inventario" : "Inventory"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("inventory")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Inventario" : "Inventory"}
+                          <SortIndicator active={sortKey === "inventory"} direction={sortDirection} />
+                        </button>
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("price")} className="flex items-center gap-1 transition hover:text-slate-950">
                           {isEs ? "Precio" : "Price"}
                           <SortIndicator active={sortKey === "price"} direction={sortDirection} />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Costo" : "Cost"}</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Valor Stock" : "Stock Value"}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("cost")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Costo" : "Cost"}
+                          <SortIndicator active={sortKey === "cost"} direction={sortDirection} />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        <button type="button" onClick={() => handleSort("stockValue")} className="flex items-center gap-1 transition hover:text-slate-950">
+                          {isEs ? "Valor Stock" : "Stock Value"}
+                          <SortIndicator active={sortKey === "stockValue"} direction={sortDirection} />
+                        </button>
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("category")} className="flex items-center gap-1 transition hover:text-slate-950">
                           {isEs ? "Categoría" : "Category"}
