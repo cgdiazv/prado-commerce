@@ -1138,7 +1138,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             {variants.map((variant, index) => (
               activeVariantIndex === index ? (
               <div
-                key={`${index}-${variant.title}`}
+                key={index}
                 id="product-variant-panel"
                 role="tabpanel"
                 aria-labelledby={`product-variant-tab-${index}`}

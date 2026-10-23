@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -56,6 +57,7 @@ export default function StorefrontProductClient({
   const { t, language } = useLanguage();
   const theme = normalizeStorefrontTheme(store.activeTheme);
   const themeClasses = getStorefrontThemeClasses(theme);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const primaryVariant = product.variants[0];
   const isSoldOut = primaryVariant
     ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
@@ -94,21 +96,42 @@ export default function StorefrontProductClient({
           </span>
         </nav>
 
-        <div className={`grid gap-10 rounded-lg border p-8 lg:grid-cols-[1.1fr_0.9fr] ${themeClasses.panel}`}>
+        <div className={`grid gap-10 rounded-lg border p-8 lg:grid-cols-[1.2fr_0.8fr] ${themeClasses.panel}`}>
           <div className="relative">
             {isSoldOut && (
               <span className="absolute top-3 left-3 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white shadow-sm">
                 {language === "es" ? "Agotado" : "Sold Out"}
               </span>
             )}
-            {product.images[0] ? (
+            {product.images[activeImageIndex] ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.images[0]} alt={product.title} className="h-80 w-full rounded-md object-cover" />
+              <img src={product.images[activeImageIndex]} alt={product.title} className="h-[26rem] w-full rounded-md object-cover lg:h-[34rem]" />
             ) : (
-              <div className="flex h-80 items-center justify-center rounded-md bg-slate-100 text-sm text-slate-400">
+              <div className="flex h-[26rem] items-center justify-center rounded-md bg-slate-100 text-sm text-slate-400 lg:h-[34rem]">
                 {t.storefront.noImageAvailable}
               </div>
             )}
+            {product.images.length > 1 ? (
+              <div className="mt-3 flex gap-3 overflow-x-auto pb-1" aria-label={language === "es" ? "Galería de productos" : "Product gallery"}>
+                {product.images.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() => setActiveImageIndex(index)}
+                    aria-label={language === "es" ? `Ver imagen ${index + 1}` : `View image ${index + 1}`}
+                    aria-pressed={activeImageIndex === index}
+                    className={`h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 transition ${
+                      activeImageIndex === index
+                        ? "border-[var(--store-main-color)]"
+                        : "border-transparent opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div>
@@ -128,6 +151,21 @@ export default function StorefrontProductClient({
               )}
             </div>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">{product.title}</h1>
+            <div className="mt-2">
+              <p className="text-sm font-medium text-slate-500">{t.storefront.startingAt}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {formatter.format(Number(primaryVariant?.price ?? 0))}
+              </p>
+            </div>
+            <div className={`mt-4 rounded-lg border p-5 ${themeClasses.mutedPanel}`}>
+              {primaryVariant ? (
+                <AddToCartWithQuantity
+                  variantId={primaryVariant.id}
+                  isSoldOut={isSoldOut}
+                  maxQuantity={primaryVariant.stockStatus === "IN_STOCK" ? primaryVariant.inventory : undefined}
+                />
+              ) : null}
+            </div>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
 
             {product.manufacturer || product.dimension || product.weight || product.condition || product.conditionNotes ? (
@@ -167,23 +205,6 @@ export default function StorefrontProductClient({
               </div>
             ) : null}
 
-            <div className={`mt-8 rounded-lg border p-5 ${themeClasses.mutedPanel}`}>
-              <div className="flex items-center justify-between">
-                {primaryVariant ? (
-                  <AddToCartWithQuantity
-                    variantId={primaryVariant.id}
-                    isSoldOut={isSoldOut}
-                    maxQuantity={primaryVariant.stockStatus === "IN_STOCK" ? primaryVariant.inventory : undefined}
-                  />
-                ) : null}
-                <div>
-                  <p className="text-sm font-medium text-slate-500">{t.storefront.startingAt}</p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-900">
-                    {formatter.format(Number(primaryVariant?.price ?? 0))}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </main>

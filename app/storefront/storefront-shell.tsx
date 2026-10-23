@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Script from "next/script";
 import type { StorefrontTheme } from "@prisma/client";
 import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
@@ -50,7 +51,9 @@ export default function StorefrontShell({
         mainColor={store.mainColor}
       />
       {children}
-      <script dangerouslySetInnerHTML={{ __html: `window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}` }} />
+      <Script id={`prado-store-config-${store.id}`} strategy="afterInteractive">
+        {`window.PRADO_STORE_CONFIG={storeId:${JSON.stringify(store.id)}};if(!window.__pradoCart){window.__pradoCart=1;var s=document.createElement('script');s.src='/cart.js';document.head.appendChild(s);}`}
+      </Script>
       <StorefrontFooter
         storeName={store.name}
         theme={theme}

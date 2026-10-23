@@ -32,7 +32,7 @@ export default function AddToCartWithQuantity({
 
   if (isSoldOut) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
         <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 opacity-60">
           <button
             type="button"
@@ -56,7 +56,7 @@ export default function AddToCartWithQuantity({
         <button
           type="button"
           disabled
-          className="w-full rounded-full bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-500 cursor-not-allowed"
+          className="flex-1 rounded-full bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-500 cursor-not-allowed"
         >
           {language === "es" ? "Agotado" : "Sold Out"}
         </button>
@@ -65,7 +65,7 @@ export default function AddToCartWithQuantity({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-3">
       <div className="inline-flex items-center rounded-full border border-slate-300 bg-white">
         <button
           type="button"
@@ -91,7 +91,7 @@ export default function AddToCartWithQuantity({
         data-prado-add={variantId}
         data-prado-add-to-cart={variantId}
         data-prado-qty={quantity}
-        className="w-full rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
+        className="flex-1 rounded-full bg-[var(--store-main-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--store-main-color-hover)]"
       >
         {t.storefront.addToCart}
       </button>
