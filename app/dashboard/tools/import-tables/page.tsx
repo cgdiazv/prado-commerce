@@ -28,7 +28,7 @@ type ImportResult = {
 };
 
 const MAX_IMPORT_REQUEST_BYTES = 3 * 1024 * 1024;
-const MAX_IMPORT_ROWS_PER_REQUEST = 500;
+const MAX_IMPORT_ROWS_PER_REQUEST = 5000;
 
 function escapeCsvCell(value: unknown) {
   const text = value === null || value === undefined ? "" : String(value);
@@ -203,52 +203,6 @@ function rowsFromJson(text: string): Array<Record<string, unknown>> {
   return [];
 }
 
-function chunkImportRows(
-  rows: Array<Record<string, unknown>>,
-  table: ImportTable,
-  storeId: string,
-  isEs: boolean,
-): Array<Array<Record<string, unknown>>> {
-  const encoder = new TextEncoder();
-  const emptyPayloadBytes = encoder.encode(JSON.stringify({ table, storeId, rows: [] })).byteLength - 2;
-  const chunks: Array<Array<Record<string, unknown>>> = [];
-  let chunk: Array<Record<string, unknown>> = [];
-  let chunkBytes = emptyPayloadBytes;
-
-  for (const row of rows) {
-    const serializedRow = JSON.stringify(row);
-    const rowBytes = encoder.encode(serializedRow).byteLength;
-    let nextBytes = chunkBytes + (chunk.length ? 1 : 0) + rowBytes;
-
-    if (
-      chunk.length &&
-      (chunk.length >= MAX_IMPORT_ROWS_PER_REQUEST || nextBytes > MAX_IMPORT_REQUEST_BYTES)
-    ) {
-      chunks.push(chunk);
-      chunk = [];
-      chunkBytes = emptyPayloadBytes;
-      nextBytes = chunkBytes + rowBytes;
-    }
-
-    if (nextBytes > MAX_IMPORT_REQUEST_BYTES) {
-      throw new Error(
-        isEs
-          ? "Una fila es demasiado grande para importar. Reduce el tamaño de sus campos de texto e inténtalo de nuevo."
-          : "A row is too large to import. Reduce the size of its text fields and try again.",
-      );
-    }
-
-    chunk.push(row);
-    chunkBytes = nextBytes;
-  }
-
-  if (chunk.length) {
-    chunks.push(chunk);
-  }
-
-  return chunks;
-}
-
 export default function ImportTablesPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
@@ -312,8 +266,6 @@ export default function ImportTablesPage() {
     }
 
     setIsImporting(true);
-    let submittedRows = 0;
-    let totalRows = 0;
 
     try {
       const text = await file.text();
@@ -330,90 +282,81 @@ export default function ImportTablesPage() {
         );
       }
 
-      totalRows = rows.length;
-      const chunks = chunkImportRows(rows, table, selectedStoreId, isEs);
-      const summary: ImportResult["summary"] = {
-        table,
-        totalRows: rows.length,
-        processed: 0,
-        created: 0,
-        updated: 0,
-        skipped: 0,
-        errors: [],
-      };
-
-      for (const chunk of chunks) {
-        const response = await fetch("/api/tools/import-tables", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            table,
-            storeId: selectedStoreId,
-            rows: chunk,
-          }),
-        });
-        const responseText = await response.text();
-        let payload: (ImportResult & { error?: string }) | null = null;
-
-        try {
-          payload = responseText ? JSON.parse(responseText) as ImportResult & { error?: string } : null;
-        } catch {
-          const message = response.status === 413
-            ? isEs
-              ? "La solicitud de importación es demasiado grande. Reduce el tamaño de algunas filas e inténtalo de nuevo."
-              : "The import request is too large. Reduce the size of some rows and try again."
-            : !response.ok && responseText
-              ? responseText.slice(0, 200)
-              : isEs
-                ? "El servidor devolvió una respuesta inesperada."
-                : "The server returned an unexpected response.";
-          throw new Error(message);
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            payload?.error ||
-              (response.status === 413
-                ? isEs
-                  ? "La solicitud de importación es demasiado grande. Reduce el tamaño de algunas filas e inténtalo de nuevo."
-                  : "The import request is too large. Reduce the size of some rows and try again."
-                : isEs
-                  ? "Error al importar"
-                  : "Import failed"),
-          );
-        }
-
-        if (!payload?.summary) {
-          throw new Error(
-            isEs ? "El servidor devolvió una respuesta de importación no válida." : "The server returned an invalid import response.",
-          );
-        }
-
-        summary.processed += payload.summary.processed;
-        summary.created += payload.summary.created;
-        summary.updated += payload.summary.updated;
-        summary.skipped += payload.summary.skipped;
-        summary.errors.push(...payload.summary.errors.map((item) => ({
-          ...item,
-          row: item.row + submittedRows,
-        })));
-        submittedRows += chunk.length;
+      if (rows.length > MAX_IMPORT_ROWS_PER_REQUEST) {
+        throw new Error(
+          isEs
+            ? `La importación admite hasta ${MAX_IMPORT_ROWS_PER_REQUEST.toLocaleString("es")} filas por archivo.`
+            : `Imports support up to ${MAX_IMPORT_ROWS_PER_REQUEST.toLocaleString("en")} rows per file.`,
+        );
       }
 
-      setResult({ summary });
+      const body = JSON.stringify({
+        table,
+        storeId: selectedStoreId,
+        rows,
+      });
+      const requestBytes = new TextEncoder().encode(body).byteLength;
+
+      if (requestBytes > MAX_IMPORT_REQUEST_BYTES) {
+        throw new Error(
+          isEs
+            ? "El archivo supera el límite de 3 MB para una importación en un solo lote. Reduce el tamaño o divídelo en archivos más pequeños."
+            : "The file exceeds the 3 MB limit for a single-batch import. Reduce its size or split it into smaller files.",
+        );
+      }
+
+      const response = await fetch("/api/tools/import-tables", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
+      });
+      const responseText = await response.text();
+      let payload: (ImportResult & { error?: string }) | null = null;
+
+      try {
+        payload = responseText ? JSON.parse(responseText) as ImportResult & { error?: string } : null;
+      } catch {
+        const message = response.status === 413
+          ? isEs
+            ? "La solicitud de importación es demasiado grande. Reduce el tamaño del archivo e inténtalo de nuevo."
+            : "The import request is too large. Reduce the file size and try again."
+          : !response.ok && responseText
+            ? responseText.slice(0, 200)
+            : isEs
+              ? "El servidor devolvió una respuesta inesperada."
+              : "The server returned an unexpected response.";
+        throw new Error(message);
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error ||
+            (response.status === 413
+              ? isEs
+                ? "La solicitud de importación es demasiado grande. Reduce el tamaño del archivo e inténtalo de nuevo."
+                : "The import request is too large. Reduce the file size and try again."
+              : isEs
+                ? "Error al importar"
+                : "Import failed"),
+        );
+      }
+
+      if (!payload?.summary) {
+        throw new Error(
+          isEs ? "El servidor devolvió una respuesta de importación no válida." : "The server returned an invalid import response.",
+        );
+      }
+
+      setResult(payload);
     } catch (submitError) {
       const message = submitError instanceof Error
         ? submitError.message
         : isEs
           ? "Error al importar"
           : "Import failed";
-      setError(
-        isEs
-          ? `${message}${submittedRows > 0 ? ` La importación se detuvo después de enviar ${submittedRows} de ${totalRows} filas; es posible que algunas ya se hayan importado.` : ""}`
-          : `${message}${submittedRows > 0 ? ` The import stopped after submitting ${submittedRows} of ${totalRows} rows; some may already have been imported.` : ""}`,
-      );
+      setError(message);
     } finally {
       setIsImporting(false);
     }
@@ -452,8 +395,8 @@ export default function ImportTablesPage() {
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
-              ? "Importa categorías, productos o clientes desde archivos CSV o JSON."
-              : "Import categories, products, or customers from CSV or JSON files."}
+              ? "Importa categorías, productos o clientes desde CSV o JSON en una sola solicitud (máximo 5,000 filas y 3 MB)."
+              : "Import categories, products, or customers from CSV or JSON in a single request (up to 5,000 rows and 3 MB)."}
           </p>
         </div>
       </div>
@@ -464,6 +407,7 @@ export default function ImportTablesPage() {
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={selectedStoreId}
+              disabled={isImporting}
               onChange={(event) => {
                 const newId = event.target.value;
                 setSelectedStoreId(newId);
@@ -483,6 +427,7 @@ export default function ImportTablesPage() {
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tabla" : "Table"}</span>
             <select
               value={table}
+              disabled={isImporting}
               onChange={(event) => setTable(event.target.value as ImportTable)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
             >
@@ -497,6 +442,7 @@ export default function ImportTablesPage() {
             <input
               type="file"
               accept=".csv,.json,text/csv,application/json"
+              disabled={isImporting}
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
             />
@@ -557,6 +503,12 @@ export default function ImportTablesPage() {
               </div>
             ) : null}
           </div>
+        ) : null}
+
+        {isImporting ? (
+          <p role="status" className="mt-4 text-sm text-slate-600">
+            {isEs ? "Importando en un solo lote. No cierres esta página..." : "Importing in a single batch. Keep this page open..."}
+          </p>
         ) : null}
 
         <div className="mt-6 flex justify-end">
