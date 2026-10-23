@@ -350,7 +350,7 @@ export async function POST(request: Request) {
 
     const createdProduct = await prisma.product.create({
       data: {
-        storeId,
+        store: { connect: { id: storeId } },
         title: title.trim(),
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
         description: description?.trim() || null,
@@ -364,11 +364,13 @@ export async function POST(request: Request) {
         featured: typeof featured === "boolean" ? featured : false,
         taxable: typeof taxable === "boolean" ? taxable : true,
         productType: productType ?? "PHYSICAL",
-        categoryId: parsedCategoryIds[0] ?? null,
+        category: parsedCategoryIds[0]
+          ? { connect: { id: parsedCategoryIds[0] } }
+          : undefined,
         categories: parsedCategoryIds.length
           ? { connect: parsedCategoryIds.map((id) => ({ id })) }
           : undefined,
-        brandId: brandId ?? null,
+        brand: brandId ? { connect: { id: brandId } } : undefined,
         variants: parsedVariants.length
           ? {
               create: parsedVariants.map((variant) => ({

@@ -277,7 +277,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     if (parsedCategoryIds) {
-      updates.categoryId = parsedCategoryIds[0] ?? null;
+      updates.category = parsedCategoryIds[0]
+        ? { connect: { id: parsedCategoryIds[0] } }
+        : { disconnect: true };
       updates.categories = {
         set: parsedCategoryIds.map((categoryId) => ({ id: categoryId })),
       };
