@@ -9,8 +9,8 @@ body > [data-route-kind="pricing"] ~ .public-footer footer {
 @import "tailwindcss";
 
 :root {
-  --background: #0c1624;
-  --foreground: #e2e8f0;
+  --background: #ffffff;
+  --foreground: #030618;
 }
 
 @theme inline {
@@ -20,8 +20,9 @@ body > [data-route-kind="pricing"] ~ .public-footer footer {
   --font-mono: var(--font-geist-mono);
 }
 
+html,
 body {
-  background: var(--background);
+  background: #ffffff;
   color: var(--foreground);
   font-family: var(--font-roboto), sans-serif;
 }

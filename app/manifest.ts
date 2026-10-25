@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Streamlined e-commerce, multi-store management, point of sale, and embeddable checkout flows.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#020617",
-    theme_color: "#020617",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     orientation: "any",
     categories: ["business", "shopping", "productivity"],
     icons: [
