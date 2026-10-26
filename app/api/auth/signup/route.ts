@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createOnboardingToken, hashSecret } from "@/lib/credentials";
+import { addMerchantToResend } from "@/lib/newsletter-sync";
 
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 48; // 48 hours
 
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
         onboardingTokenExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
       },
     });
+
+    // Auto-sync new merchant to Resend Audience in real-time
+    await addMerchantToResend({ email, name });
 
     const onboardUrl = `/onboard/${token}`;
 
