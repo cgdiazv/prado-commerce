@@ -27,7 +27,7 @@ export function LanguageToggle({
       className={
         simple
           ? `${hasDisplayOverride ? "" : "inline-flex "}items-center gap-1 text-slate-500 ${className}`
-          : `${hasDisplayOverride ? "" : "inline-flex "}items-center rounded-full border transition-colors ${
+          : `${hasDisplayOverride ? "" : "inline-flex "}items-center rounded-lg border transition-colors ${
               isDark
                 ? "border-cyan-200/30 bg-slate-950/50 text-cyan-100 shadow-[0_2px_10px_rgba(6,182,212,0.15)]"
                 : "border-slate-200 bg-slate-100/80 text-slate-700 shadow-xs"
@@ -50,7 +50,7 @@ export function LanguageToggle({
             ? `px-0.5 py-0.5 text-[11px] transition-colors ${
                 language === "es" ? "font-semibold text-slate-900" : "hover:text-slate-800"
               }`
-            : `rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wider transition-all duration-200 ${
+            : `rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wider transition-all duration-200 ${
                 language === "es"
                   ? isDark
                     ? "bg-cyan-300 text-slate-900 shadow-xs"
@@ -74,7 +74,7 @@ export function LanguageToggle({
             ? `px-0.5 py-0.5 text-[11px] transition-colors ${
                 language === "en" ? "font-semibold text-slate-900" : "hover:text-slate-800"
               }`
-            : `rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wider transition-all duration-200 ${
+            : `rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wider transition-all duration-200 ${
                 language === "en"
                   ? isDark
                     ? "bg-cyan-300 text-slate-900 shadow-xs"

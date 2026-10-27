@@ -154,3 +154,18 @@ body {
 [data-route-kind="dashboard"] textarea {
   border-radius: 8px !important;
 }
+
+
+/* Harmonize button and action link corner radius across all pages (8px) */
+button.rounded-full[class*="px-"],
+a.rounded-full[class*="px-"],
+button.rounded-3xl,
+a.rounded-3xl,
+button.rounded-2xl,
+a.rounded-2xl,
+button.rounded-xl,
+a.rounded-xl,
+button.rounded-lg,
+a.rounded-lg {
+  border-radius: 8px !important;
+}

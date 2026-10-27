@@ -382,7 +382,7 @@ export function OrdersDashboard({
           <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
             <Link
               href={posHref}
-              className="hidden items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm lg:inline-flex"
+              className="hidden items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm lg:inline-flex"
             >
               <Store className="h-4 w-4 text-cyan-600" />
               {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
@@ -390,7 +390,7 @@ export function OrdersDashboard({
 
             <Link
               href={createHref}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               {isEs ? "Nuevo pedido" : "New order"}
@@ -872,7 +872,7 @@ export function OrdersDashboard({
                   type="button"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage <= 1}
-                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isEs ? "Anterior" : "Previous"}
                 </button>
@@ -885,7 +885,7 @@ export function OrdersDashboard({
                   type="button"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage >= totalPages}
-                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isEs ? "Siguiente" : "Next"}
                 </button>

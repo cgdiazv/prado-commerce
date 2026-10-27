@@ -987,7 +987,7 @@ export default function DashboardLayout({
                     className="flex items-center gap-2.5 rounded-xl px-2 py-1 transition hover:bg-slate-100/70 focus:outline-none cursor-pointer"
                     aria-label="User profile menu"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-600 font-bold text-white text-xs shadow-xs ring-2 ring-cyan-600/20">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-700 text-xs shadow-xs ring-1 ring-slate-300/80">
                       {merchantInitial}
                     </div>
                     <div className="hidden text-left sm:block">

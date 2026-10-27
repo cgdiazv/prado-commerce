@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "sync:merchants": "npx tsx --env-file=.env.local scripts/sync-merchants.ts",
-    "send:newsletter": "npx tsx --env-file=.env.local scripts/send-newsletter.ts"
+    "send:newsletter": "npx tsx --env-file=.env.local scripts/send-newsletter.ts",
+    "import:woocommerce": "npx tsx --env-file=.env.local scripts/import-woocommerce.ts"
   },
   "dependencies": {
     "@pixelpay/sdk-core": "^2.5.8",
