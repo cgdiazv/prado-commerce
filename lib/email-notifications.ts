@@ -1,10 +1,6 @@
-import * as React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { buildEmailBrandingStyles } from "@/lib/branding";
-import { StoreWelcomeEmail } from "@/emails/store-welcome";
-import { MerchantWelcomeEmail } from "@/emails/merchant-welcome";
 
 export type StoreEmailConfig = {
   id: string;
@@ -193,23 +189,110 @@ export async function getStoreEmailConfig(storeId: string): Promise<StoreEmailCo
   }
 }
 
-export async function sendWelcomeEmail(input: WelcomeEmailInput) {
+function renderStoreWelcomeHtml(store: StoreEmailConfig, firstName?: string | null): string {
+  const brandColor = store.mainColor && /^#[0-9a-fA-F]{6}$/.test(store.mainColor) ? store.mainColor : "#0f172a";
+  const greeting = firstName?.trim() ? `Hi ${firstName.trim()},` : "Hi there,";
   const appBaseUrl = resolveAppBaseUrl();
-  const storefrontUrl = `${appBaseUrl}/storefront/${input.store.slug}`;
+  const storefrontUrl = `${appBaseUrl}/storefront/${store.slug}`;
   const accountUrl = `${storefrontUrl}/account`;
+  const supportEmail = store.replyToEmail || store.senderEmail || "";
 
-  const html = "<!DOCTYPE html>" + renderToStaticMarkup(
-    React.createElement(StoreWelcomeEmail, {
-      storeName: input.store.name,
-      storeSlug: input.store.slug,
-      customerName: input.firstName,
-      mainColor: input.store.mainColor,
-      storefrontUrl,
-      accountUrl,
-      supportEmail: input.store.replyToEmail || input.store.senderEmail || undefined,
-    })
-  );
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          @media only screen and (max-width: 600px) {
+            .mobile-outer { padding: 8px 4px !important; }
+            .mobile-card { padding: 22px 14px !important; border-radius: 12px !important; }
+            .mobile-heading { font-size: 21px !important; }
+            .mobile-button { width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
+          }
+        </style>
+      </head>
+      <body class="mobile-outer" style="margin:0;padding:16px 8px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+        <table role="presentation" class="mobile-card" style="max-width:580px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,0.03);overflow:hidden;border-collapse:collapse;">
+          <tr>
+            <td style="padding:28px 18px;">
+              <div style="text-align:center;padding-bottom:4px;">
+                <div style="display:inline-block;padding:4px 12px;border-radius:9999px;background-color:${brandColor}15;margin-bottom:10px;">
+                  <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${brandColor};">${store.name}</span>
+                </div>
+                <h1 class="mobile-heading" style="margin:6px 0 6px 0;font-size:23px;font-weight:800;line-height:1.28;color:#0f172a;">Welcome to ${store.name}!</h1>
+                <p style="margin:0;font-size:13px;color:#64748b;line-height:1.45;">Your customer account has been created successfully.</p>
+              </div>
 
+              <div style="border-top:1px solid #f1f5f9;margin:20px 0;"></div>
+
+              <div style="margin:0 0 14px 0;">
+                <p style="margin:0 0 8px 0;font-size:15px;font-weight:700;color:#0f172a;">${greeting}</p>
+                <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#334155;">
+                  Thank you for creating an account with <strong>${store.name}</strong>. You now have full access to your personalized shopping portal, faster checkouts, and seamless order management.
+                </p>
+              </div>
+
+              <div style="margin:18px 0 20px 0;">
+                <p style="margin:0 0 12px 0;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#475569;">Here is what you can do with your account:</p>
+                
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:17px;line-height:1;padding-top:2px;">⚡</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Faster One-Click Checkout</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Save your preferred shipping and billing details for seamless future purchases.</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:17px;line-height:1;padding-top:2px;">📦</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Live Order Tracking</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Monitor orders from processing to delivery with instant status notifications.</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:4px;">
+                  <span style="font-size:17px;line-height:1;padding-top:2px;">🧾</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Invoices & Order History</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Access detailed receipts, invoices, and reorder past favorites anytime.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:center;margin:24px 0 16px 0;">
+                <a href="${storefrontUrl}" class="mobile-button" style="background:${brandColor};color:#ffffff;border-radius:9999px;padding:13px 28px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block;box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                  Start Shopping at ${store.name} &rarr;
+                </a>
+                <div style="margin-top:12px;">
+                  <a href="${accountUrl}" style="font-size:12px;color:#64748b;text-decoration:underline;">
+                    Go to my account profile
+                  </a>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid #f1f5f9;margin:20px 0;"></div>
+
+              <div style="margin:0 0 14px 0;text-align:center;">
+                <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">
+                  Need help or have questions about an order? Simply reply directly to this email${supportEmail ? ` or contact us at <a href="mailto:${supportEmail}" style="color:${brandColor};text-decoration:underline;">${supportEmail}</a>` : ""}.
+                </p>
+              </div>
+
+              <div style="text-align:center;margin-top:14px;">
+                <p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:#64748b;">${store.name} • Powered by Prado Commerce</p>
+                <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.4;">You received this email because an account was registered with your email on ${store.name}.</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
+export async function sendWelcomeEmail(input: WelcomeEmailInput) {
+  const html = renderStoreWelcomeHtml(input.store, input.firstName);
   return await sendEmail(input.store, input.to, `Welcome to ${input.store.name}!`, html);
 }
 
@@ -323,6 +406,119 @@ export async function sendSupportTicketEmail(input: SupportTicketInput) {
   });
 }
 
+function renderMerchantWelcomeHtml(plan: "STARTER" | "PRO" | "ENTERPRISE", name?: string | null, dashboardUrl?: string): string {
+  const planDisplayNames = {
+    STARTER: "Starter",
+    PRO: "Pro",
+    ENTERPRISE: "Enterprise",
+  };
+  const planName = planDisplayNames[plan] || "Starter";
+  const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hi there,";
+  const targetDashboardUrl = dashboardUrl || "https://pradocommerce.com/dashboard";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          @media only screen and (max-width: 600px) {
+            .mobile-outer { padding: 8px 4px !important; }
+            .mobile-card { padding: 22px 14px !important; border-radius: 12px !important; }
+            .mobile-heading { font-size: 21px !important; }
+            .mobile-button { width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
+          }
+        </style>
+      </head>
+      <body class="mobile-outer" style="margin:0;padding:16px 8px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+        <table role="presentation" class="mobile-card" style="max-width:580px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,0.03);overflow:hidden;border-collapse:collapse;">
+          <tr>
+            <td style="padding:28px 18px;">
+              <!-- Header Badge -->
+              <div style="text-align:center;padding-bottom:4px;">
+                <div style="display:inline-block;padding:4px 12px;border-radius:9999px;background-color:#eff6ff;border:1px solid #dbeafe;margin-bottom:10px;">
+                  <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#2563eb;">${planName} Plan • Prado Commerce</span>
+                </div>
+                <h1 class="mobile-heading" style="margin:6px 0 6px 0;font-size:23px;font-weight:800;line-height:1.28;color:#0f172a;">Welcome to Prado Commerce</h1>
+                <p style="margin:0;font-size:13px;color:#64748b;line-height:1.45;">The unified commerce platform built to streamline your physical and digital store.</p>
+              </div>
+
+              <div style="border-top:1px solid #f1f5f9;margin:20px 0;"></div>
+
+              <!-- Intro -->
+              <div style="margin:0 0 14px 0;">
+                <p style="margin:0 0 8px 0;font-size:15px;font-weight:700;color:#0f172a;">${greeting}</p>
+                <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#334155;">
+                  Welcome aboard! Your Prado Commerce merchant account is fully activated on the <strong>${planName}</strong> plan. You are now equipped with enterprise-grade multi-location POS, automated inventory sync, customer management, and high-converting storefronts.
+                </p>
+              </div>
+
+              <!-- 4 Quick Steps (Plain numbers, no dark circles, open mobile-friendly rows) -->
+              <div style="margin:18px 0 20px 0;">
+                <p style="margin:0 0 12px 0;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#475569;">4 Quick Steps to Get Started</p>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:15px;font-weight:800;color:#0f172a;flex-shrink:0;min-width:14px;line-height:20px;">1</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Brand Your Storefront</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Customize your logo, brand colors, and contact info in <em>Settings &rarr; Store Details</em>.</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:15px;font-weight:800;color:#0f172a;flex-shrink:0;min-width:14px;line-height:20px;">2</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Set Up Inventory & Products</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Create products, import via CSV or WooCommerce, and manage multi-location stock levels.</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:15px;font-weight:800;color:#0f172a;flex-shrink:0;min-width:14px;line-height:20px;">3</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Configure Payment Gateways</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Accept card payments seamlessly with Stripe, PixelPay, or Authorize.Net in <em>Settings &rarr; Payments</em>.</p>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:flex-start;gap:12px;padding-bottom:4px;">
+                  <span style="font-size:15px;font-weight:800;color:#0f172a;flex-shrink:0;min-width:14px;line-height:20px;">4</span>
+                  <div style="flex:1;">
+                    <strong style="font-size:13px;font-weight:700;color:#0f172a;display:block;margin-bottom:2px;">Launch Your POS Terminal</strong>
+                    <p style="margin:0;font-size:12px;color:#64748b;line-height:1.45;">Ring up orders, scan barcodes, and handle cash/card payments directly from the integrated POS.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CTA -->
+              <div style="text-align:center;margin:24px 0 16px 0;">
+                <a href="${targetDashboardUrl}" class="mobile-button" style="background:#0f172a;color:#ffffff;border-radius:9999px;padding:13px 28px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block;box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                  Open Merchant Dashboard &rarr;
+                </a>
+              </div>
+
+              <div style="border-top:1px solid #f1f5f9;margin:20px 0;"></div>
+
+              <!-- Support -->
+              <div style="margin:0 0 14px 0;text-align:center;">
+                <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">
+                  Need assistance setting up your store? Reply to this email or reach our support team anytime at <a href="mailto:support@pradocommerce.com" style="color:#2563eb;text-decoration:underline;">support@pradocommerce.com</a>.
+                </p>
+              </div>
+
+              <!-- Footer with Prado Systems -->
+              <div style="text-align:center;margin-top:14px;">
+                <p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:#64748b;">Prado Systems • All Rights Reserved</p>
+                <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.4;">You received this email because you signed up or updated your account at pradocommerce.com.</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
 export type MerchantSubscriptionEmailInput = {
   email: string;
   name?: string | null;
@@ -347,13 +543,7 @@ export async function sendMerchantSubscriptionWelcomeEmail(input: MerchantSubscr
   };
   const planName = planDisplayNames[input.plan] || "Starter";
 
-  const html = "<!DOCTYPE html>" + renderToStaticMarkup(
-    React.createElement(MerchantWelcomeEmail, {
-      merchantName: input.name,
-      plan: input.plan,
-      dashboardUrl,
-    })
-  );
+  const html = renderMerchantWelcomeHtml(input.plan, input.name, dashboardUrl);
 
   return await resend.emails.send({
     from,
