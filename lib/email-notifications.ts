@@ -1,8 +1,12 @@
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { buildEmailBrandingStyles } from "@/lib/branding";
+import { StoreWelcomeEmail } from "@/emails/store-welcome";
+import { MerchantWelcomeEmail } from "@/emails/merchant-welcome";
 
-type StoreEmailConfig = {
+export type StoreEmailConfig = {
   id: string;
   name: string;
   slug: string;
@@ -15,7 +19,7 @@ type StoreEmailConfig = {
   replyToEmail: string | null;
 };
 
-type WelcomeEmailInput = {
+export type WelcomeEmailInput = {
   store: StoreEmailConfig;
   to: string;
   firstName?: string | null;
@@ -117,7 +121,7 @@ function baseHtmlShell(store: StoreEmailConfig, heading: string, bodyHtml: strin
 async function sendEmail(store: StoreEmailConfig, to: string, subject: string, html: string) {
   if (!resend) {
     console.warn("[EMAIL_NOTIFICATIONS_DISABLED] RESEND_API_KEY is not configured.");
-    return;
+    return { ok: true, simulated: true };
   }
 
   const payload: any = {
@@ -133,7 +137,7 @@ async function sendEmail(store: StoreEmailConfig, to: string, subject: string, h
     payload.reply_to = replyTo;
   }
 
-  await resend.emails.send(payload);
+  return await resend.emails.send(payload);
 }
 
 export async function getStoreEmailConfig(storeId: string): Promise<StoreEmailConfig | null> {
@@ -190,16 +194,23 @@ export async function getStoreEmailConfig(storeId: string): Promise<StoreEmailCo
 }
 
 export async function sendWelcomeEmail(input: WelcomeEmailInput) {
-  const html = baseHtmlShell(
-    input.store,
-    `Welcome to ${input.store.name}`,
-    `<p style="margin:0 0 12px 0;">Hi ${displayName(input.firstName)},</p>
-     <p style="margin:0 0 12px 0;">Your shopper account is ready. You can now sign in anytime and keep track of orders and account details.</p>
-     <p style="margin:0;"><span style="${buildEmailBrandingStyles(input.store.mainColor).accentText}">Thanks for joining us.</span></p>`,
-    "Open storefront",
+  const appBaseUrl = resolveAppBaseUrl();
+  const storefrontUrl = `${appBaseUrl}/storefront/${input.store.slug}`;
+  const accountUrl = `${storefrontUrl}/account`;
+
+  const html = "<!DOCTYPE html>" + renderToStaticMarkup(
+    React.createElement(StoreWelcomeEmail, {
+      storeName: input.store.name,
+      storeSlug: input.store.slug,
+      customerName: input.firstName,
+      mainColor: input.store.mainColor,
+      storefrontUrl,
+      accountUrl,
+      supportEmail: input.store.replyToEmail || input.store.senderEmail || undefined,
+    })
   );
 
-  await sendEmail(input.store, input.to, `Welcome to ${input.store.name}`, html);
+  return await sendEmail(input.store, input.to, `Welcome to ${input.store.name}!`, html);
 }
 
 export async function sendOrderConfirmationEmail(input: OrderConfirmationEmailInput) {
@@ -312,7 +323,7 @@ export async function sendSupportTicketEmail(input: SupportTicketInput) {
   });
 }
 
-type MerchantSubscriptionEmailInput = {
+export type MerchantSubscriptionEmailInput = {
   email: string;
   name?: string | null;
   plan: "STARTER" | "PRO" | "ENTERPRISE";
@@ -327,48 +338,27 @@ export async function sendMerchantSubscriptionWelcomeEmail(input: MerchantSubscr
     return { ok: true, simulated: true };
   }
 
-  const userDisplayName = input.name?.trim() || "there";
-  
+  const appBaseUrl = resolveAppBaseUrl();
+  const dashboardUrl = `${appBaseUrl}/dashboard`;
   const planDisplayNames = {
     STARTER: "Starter",
     PRO: "Pro",
     ENTERPRISE: "Enterprise",
   };
-  
   const planName = planDisplayNames[input.plan] || "Starter";
-  const isStarter = input.plan === "STARTER";
 
-  const html = `
-    <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-      <table role="presentation" style="max-width:620px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
-        <tr>
-          <td style="padding:24px 24px 8px 24px;">
-            <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">Prado Commerce</p>
-            <h1 style="margin:0;font-size:24px;line-height:1.3;color:#0f172a;">Welcome to the ${planName} Plan</h1>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px 24px 24px 24px;font-size:15px;line-height:1.6;color:#334155;">
-            <p style="margin:0 0 12px 0;">Hi ${userDisplayName},</p>
-            <p style="margin:0 0 12px 0;">
-              ${
-                isStarter
-                  ? "Welcome to Prado Commerce! Your new account is ready and you are now on the Starter plan. You can start setting up your store right away."
-                  : `Thank you for upgrading to the ${planName} plan! Your subscription is now active, and you have access to all the premium features.`
-              }
-            </p>
-            <p style="margin:0 0 12px 0;">If you have any questions, feel free to reach out to our support team.</p>
-            <p style="margin:0;"><strong>The Prado Commerce Team</strong></p>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
+  const html = "<!DOCTYPE html>" + renderToStaticMarkup(
+    React.createElement(MerchantWelcomeEmail, {
+      merchantName: input.name,
+      plan: input.plan,
+      dashboardUrl,
+    })
+  );
 
   return await resend.emails.send({
     from,
     to,
-    subject: `Welcome to the Prado Commerce ${planName} Plan`,
+    subject: `Welcome to Prado Commerce - ${planName} Plan Activated`,
     html,
   });
 }

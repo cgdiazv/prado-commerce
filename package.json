@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "sync:merchants": "npx tsx --env-file=.env.local scripts/sync-merchants.ts",
     "send:newsletter": "npx tsx --env-file=.env.local scripts/send-newsletter.ts",
+    "send:welcome-test": "npx tsx --env-file=.env.local scripts/send-welcome-test.ts",
     "import:woocommerce": "npx tsx --env-file=.env.local scripts/import-woocommerce.ts"
   },
   "dependencies": {
