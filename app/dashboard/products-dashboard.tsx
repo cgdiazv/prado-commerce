@@ -171,8 +171,8 @@ export function ProductsDashboard({
 
       if (e.key === "Enter") {
         const candidate =
-          barcodeBufferRef.current.trim() ||
-          (target === searchInputRef.current ? searchInputRef.current.value.trim() : query.trim());
+          (target === searchInputRef.current ? searchInputRef.current.value.trim() : barcodeBufferRef.current.trim()) ||
+          query.trim();
 
         barcodeBufferRef.current = "";
 
@@ -206,12 +206,8 @@ export function ProductsDashboard({
 
           if (match) {
             playScanBeep();
-            setScanNotice({
-              type: "success",
-              message: isEs
-                ? `Producto encontrado: "${match.title}" (código ${candidate})`
-                : `Product found: "${match.title}" (code ${candidate})`,
-            });
+            // Silence unnecessary success toast banner: the table already filters and displays the product
+            setScanNotice(null);
           } else {
             playScanErrorBeep();
             setScanNotice({
@@ -223,10 +219,20 @@ export function ProductsDashboard({
           }
         }
       } else if (e.key.length === 1) {
-        if (diff > 120) {
-          barcodeBufferRef.current = e.key;
-        } else {
-          barcodeBufferRef.current += e.key;
+        if (target !== searchInputRef.current) {
+          if (diff > 120) {
+            barcodeBufferRef.current = e.key;
+          } else {
+            barcodeBufferRef.current += e.key;
+          }
+        }
+      }
+
+      if (e.key === "Escape") {
+        if (query) {
+          setQuery("");
+          setCurrentPage(1);
+          setScanNotice(null);
         }
       }
 
@@ -768,7 +774,24 @@ export function ProductsDashboard({
               placeholder={isEs ? "Buscar por código de barra, SKU, título... (F2 o escanear)" : "Search by barcode, SKU, title... (F2 or scan)"}
               className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
-            <ScanBarcode className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setCurrentPage(1);
+                  setScanNotice(null);
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                title={isEs ? "Limpiar búsqueda (Esc)" : "Clear search (Esc)"}
+                aria-label={isEs ? "Limpiar búsqueda" : "Clear search"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : (
+              <ScanBarcode className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            )}
           </label>
 
           <div className="flex w-full items-center gap-3 shrink-0 lg:ml-auto lg:w-auto">
@@ -1140,10 +1163,32 @@ export function ProductsDashboard({
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {paginatedProducts.map((product) => {
                       const firstVariant = product.variants[0];
+                      const normalizedQ = query.trim().toLowerCase();
+                      const strippedQ = normalizedQ.replace(/^0+/, "");
+                      const matchedVariant = normalizedQ
+                        ? product.variants.find((v) => {
+                            const sku = v.sku?.toLowerCase().trim();
+                            const skuStripped = sku?.replace(/^0+/, "");
+                            if (sku === normalizedQ || (skuStripped && skuStripped === strippedQ)) return true;
+                            const barcode = v.barcode?.toLowerCase().trim();
+                            if (!barcode) return false;
+                            const codes = barcode.split(/[,;\s]+/).map((c) => c.trim()).filter(Boolean);
+                            return codes.some((code) => {
+                              const codeStripped = code.replace(/^0+/, "");
+                              return (
+                                code === normalizedQ ||
+                                code.includes(normalizedQ) ||
+                                (codeStripped !== "" && strippedQ !== "" && (codeStripped === strippedQ || codeStripped.includes(strippedQ) || strippedQ.includes(codeStripped))) ||
+                                (codeStripped.length >= 8 && strippedQ.length >= 8 && Math.abs(codeStripped.length - strippedQ.length) <= 1 && codeStripped.slice(0, 8) === strippedQ.slice(0, 8))
+                              );
+                            });
+                          })
+                        : null;
+                      const activeVariant = matchedVariant ?? firstVariant;
                       const thumbnailUrl = product.images[0];
                       const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
-                      const firstSku = firstVariant?.sku ?? "—";
-                      const firstBarcode = firstVariant?.barcode;
+                      const displaySku = activeVariant?.sku ?? "—";
+                      const displayBarcode = activeVariant?.barcode;
                       
                       const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
                       const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
@@ -1217,11 +1262,11 @@ export function ProductsDashboard({
                             </button>
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">
-                            <span className="font-medium text-slate-900">{firstSku}</span>
-                            {firstBarcode && (
+                            <span className="font-medium text-slate-900">{displaySku}</span>
+                            {displayBarcode && (
                               <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-500" title={isEs ? "Código de barra" : "Barcode"}>
                                 <ScanBarcode className="h-3 w-3 shrink-0 text-slate-400" />
-                                <span className="truncate max-w-[130px]">{firstBarcode}</span>
+                                <span className="truncate max-w-[130px]">{displayBarcode}</span>
                               </p>
                             )}
                           </td>
@@ -1243,10 +1288,32 @@ export function ProductsDashboard({
               <div className="flex flex-col gap-3 p-3 md:hidden">
                 {paginatedProducts.map((product) => {
                   const firstVariant = product.variants[0];
+                  const normalizedQ = query.trim().toLowerCase();
+                  const strippedQ = normalizedQ.replace(/^0+/, "");
+                  const matchedVariant = normalizedQ
+                    ? product.variants.find((v) => {
+                        const sku = v.sku?.toLowerCase().trim();
+                        const skuStripped = sku?.replace(/^0+/, "");
+                        if (sku === normalizedQ || (skuStripped && skuStripped === strippedQ)) return true;
+                        const barcode = v.barcode?.toLowerCase().trim();
+                        if (!barcode) return false;
+                        const codes = barcode.split(/[,;\s]+/).map((c) => c.trim()).filter(Boolean);
+                        return codes.some((code) => {
+                          const codeStripped = code.replace(/^0+/, "");
+                          return (
+                            code === normalizedQ ||
+                            code.includes(normalizedQ) ||
+                            (codeStripped !== "" && strippedQ !== "" && (codeStripped === strippedQ || codeStripped.includes(strippedQ) || strippedQ.includes(codeStripped))) ||
+                            (codeStripped.length >= 8 && strippedQ.length >= 8 && Math.abs(codeStripped.length - strippedQ.length) <= 1 && codeStripped.slice(0, 8) === strippedQ.slice(0, 8))
+                          );
+                        });
+                      })
+                    : null;
+                  const activeVariant = matchedVariant ?? firstVariant;
                   const thumbnailUrl = product.images[0];
                   const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
-                  const firstSku = firstVariant?.sku ?? "—";
-                  const firstBarcode = firstVariant?.barcode;
+                  const displaySku = activeVariant?.sku ?? "—";
+                  const displayBarcode = activeVariant?.barcode;
                   
                   const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
                   const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
@@ -1306,11 +1373,11 @@ export function ProductsDashboard({
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
-                          <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
-                          {firstBarcode && (
+                          <p className="mt-1 font-medium text-slate-700">{displaySku}</p>
+                          {displayBarcode && (
                             <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-500">
                               <ScanBarcode className="h-3 w-3 shrink-0 text-slate-400" />
-                              <span>{firstBarcode}</span>
+                              <span>{displayBarcode}</span>
                             </p>
                           )}
                         </div>
