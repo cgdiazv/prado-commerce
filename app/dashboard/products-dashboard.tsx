@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers } from "lucide-react";
+import { ChevronDown, Plus, Search, Star, Store, SlidersHorizontal, X, Boxes, DollarSign, TrendingUp, Layers, ScanBarcode, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
 
@@ -17,6 +17,7 @@ type Store = {
 type ProductVariant = {
   id: string;
   sku: string | null;
+  barcode?: string | null;
   title: string;
   price: string;
   compareAtPrice: string | null;
@@ -94,11 +95,155 @@ export function ProductsDashboard({
   const [updatingFeaturedIds, setUpdatingFeaturedIds] = useState<string[]>([]);
   const [mobileActiveFilter, setMobileActiveFilter] = useState<"store" | "search" | "actions" | null>(null);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const barcodeBufferRef = useRef<string>("");
+  const lastKeyTimeRef = useRef<number>(0);
   const isStarter = currentPlan === "STARTER";
   const hasReachedProductLimit = isStarter && products.length >= 50;
 
+  const [scanNotice, setScanNotice] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!scanNotice) return;
+    const timer = setTimeout(() => {
+      setScanNotice(null);
+    }, scanNotice.type === "error" ? 4500 : 2500);
+    return () => clearTimeout(timer);
+  }, [scanNotice]);
+
+  const playScanBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(950, ctx.currentTime);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch {}
+  };
+
+  const playScanErrorBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      [0, 0.12].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(220, now + offset);
+        gain.gain.setValueAtTime(0.2, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + offset + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.09);
+      });
+    } catch {}
+  };
+
+  // Barcode Auto-detection (USB / Bluetooth Scanners on Products screen)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") &&
+        target !== searchInputRef.current
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+      const diff = now - lastKeyTimeRef.current;
+      lastKeyTimeRef.current = now;
+
+      if (e.key === "Enter") {
+        const candidate =
+          barcodeBufferRef.current.trim() ||
+          (target === searchInputRef.current ? searchInputRef.current.value.trim() : query.trim());
+
+        barcodeBufferRef.current = "";
+
+        if (candidate.length >= 2) {
+          const candLower = candidate.toLowerCase();
+          const candStripped = candLower.replace(/^0+/, "");
+
+          const match = products.find((p) => {
+            if (activeStoreId !== "ALL" && p.storeId && p.storeId !== activeStoreId) return false;
+            return p.variants.some((v) => {
+              const sku = v.sku?.toLowerCase().trim();
+              const skuStripped = sku?.replace(/^0+/, "");
+              if (sku === candLower || (skuStripped && skuStripped === candStripped)) return true;
+
+              const barcode = v.barcode?.toLowerCase().trim();
+              if (!barcode) return false;
+              const codes = barcode.split(/[,;\s]+/).map((c) => c.trim()).filter(Boolean);
+              return codes.some((code) => {
+                const codeStripped = code.replace(/^0+/, "");
+                return (
+                  code === candLower ||
+                  (codeStripped !== "" && candStripped !== "" && codeStripped === candStripped) ||
+                  (codeStripped.length >= 8 && candStripped.length >= 8 && Math.abs(codeStripped.length - candStripped.length) <= 1 && codeStripped.slice(0, 8) === candStripped.slice(0, 8))
+                );
+              });
+            });
+          });
+
+          setQuery(candidate);
+          setCurrentPage(1);
+
+          if (match) {
+            playScanBeep();
+            setScanNotice({
+              type: "success",
+              message: isEs
+                ? `Producto encontrado: "${match.title}" (código ${candidate})`
+                : `Product found: "${match.title}" (code ${candidate})`,
+            });
+          } else {
+            playScanErrorBeep();
+            setScanNotice({
+              type: "error",
+              message: isEs
+                ? `Código no encontrado: "${candidate}"`
+                : `Barcode not found: "${candidate}"`,
+            });
+          }
+        }
+      } else if (e.key.length === 1) {
+        if (diff > 120) {
+          barcodeBufferRef.current = e.key;
+        } else {
+          barcodeBufferRef.current += e.key;
+        }
+      }
+
+      if (e.key === "F2") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeStoreId, isEs, products, query]);
+
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const strippedQuery = normalizedQuery.replace(/^0+/, "");
 
     return products.filter((product) => {
       if (activeStoreId !== "ALL" && product.storeId && product.storeId !== activeStoreId) {
@@ -109,12 +254,48 @@ export function ProductsDashboard({
         return true;
       }
 
-      return (
+      // Check title, slug, and status
+      if (
         product.title.toLowerCase().includes(normalizedQuery) ||
         product.slug.toLowerCase().includes(normalizedQuery) ||
-        product.status.toLowerCase().includes(normalizedQuery) ||
-        product.variants.some((variant) => variant.sku?.toLowerCase().includes(normalizedQuery))
-      );
+        product.status.toLowerCase().includes(normalizedQuery)
+      ) {
+        return true;
+      }
+
+      // Check variants: SKU and Barcodes (with leading-zero and check-digit tolerance)
+      return product.variants.some((variant) => {
+        // 1. Check SKU
+        const sku = variant.sku?.toLowerCase().trim();
+        if (sku) {
+          const skuStripped = sku.replace(/^0+/, "");
+          if (
+            sku.includes(normalizedQuery) ||
+            (skuStripped && strippedQuery && (skuStripped === strippedQuery || skuStripped.includes(strippedQuery) || strippedQuery.includes(skuStripped)))
+          ) {
+            return true;
+          }
+        }
+
+        // 2. Check Barcode / Lookups
+        const barcodeRaw = variant.barcode?.toLowerCase().trim();
+        if (barcodeRaw) {
+          const codes = barcodeRaw.split(/[,;\s]+/).map((c) => c.trim()).filter(Boolean);
+          for (const code of codes) {
+            const codeStripped = code.replace(/^0+/, "");
+            if (
+              code === normalizedQuery ||
+              code.includes(normalizedQuery) ||
+              (codeStripped !== "" && strippedQuery !== "" && (codeStripped === strippedQuery || codeStripped.includes(strippedQuery) || strippedQuery.includes(codeStripped))) ||
+              (codeStripped.length >= 8 && strippedQuery.length >= 8 && Math.abs(codeStripped.length - strippedQuery.length) <= 1 && codeStripped.slice(0, 8) === strippedQuery.slice(0, 8))
+            ) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      });
     });
   }, [products, query, activeStoreId]);
 
@@ -576,6 +757,7 @@ export function ProductsDashboard({
           <label className="relative flex w-full min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              ref={searchInputRef}
               type="search"
               aria-label={isEs ? "Buscar productos" : "Search products"}
               value={query}
@@ -583,9 +765,10 @@ export function ProductsDashboard({
                 setQuery(event.target.value);
                 setCurrentPage(1);
               }}
-              placeholder={isEs ? "Buscar por título, slug, SKU o estado" : "Search by title, slug, SKU, or status"}
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              placeholder={isEs ? "Buscar por código de barra, SKU, título... (F2 o escanear)" : "Search by barcode, SKU, title... (F2 or scan)"}
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
+            <ScanBarcode className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           </label>
 
           <div className="flex w-full items-center gap-3 shrink-0 lg:ml-auto lg:w-auto">
@@ -747,7 +930,7 @@ export function ProductsDashboard({
                     setQuery(event.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder={isEs ? "Buscar por título, slug, SKU o estado" : "Search by title, slug, SKU, or status"}
+                  placeholder={isEs ? "Buscar por código, SKU, título..." : "Search by barcode, SKU, title..."}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
                 {query && (
@@ -816,6 +999,33 @@ export function ProductsDashboard({
             {error}
           </div>
         ) : null}
+
+        {/* Barcode Scan Feedback Toast */}
+        {scanNotice && (
+          <div
+            className={`mt-4 rounded-xl p-3 text-xs font-semibold flex items-center justify-between shadow-sm transition-all duration-200 animate-in slide-in-from-top-1 ${
+              scanNotice.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-rose-50 text-rose-800 border border-rose-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {scanNotice.type === "success" ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+              )}
+              <span>{scanNotice.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setScanNotice(null)}
+              className="text-slate-500 hover:text-slate-700 underline text-xs ml-3 cursor-pointer"
+            >
+              {isEs ? "Cerrar" : "Dismiss"}
+            </button>
+          </div>
+        )}
 
         <div className="mt-8 overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
           {totalProducts === 0 ? (
@@ -933,6 +1143,7 @@ export function ProductsDashboard({
                       const thumbnailUrl = product.images[0];
                       const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                       const firstSku = firstVariant?.sku ?? "—";
+                      const firstBarcode = firstVariant?.barcode;
                       
                       const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
                       const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
@@ -1005,7 +1216,15 @@ export function ProductsDashboard({
                               <Star className={`h-4 w-4 ${product.featured ? "fill-current" : ""}`} />
                             </button>
                           </td>
-                          <td className="px-4 py-3 align-top text-xs text-slate-700">{firstSku}</td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">
+                            <span className="font-medium text-slate-900">{firstSku}</span>
+                            {firstBarcode && (
+                              <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-500" title={isEs ? "Código de barra" : "Barcode"}>
+                                <ScanBarcode className="h-3 w-3 shrink-0 text-slate-400" />
+                                <span className="truncate max-w-[130px]">{firstBarcode}</span>
+                              </p>
+                            )}
+                          </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{inventoryTotal}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{firstPrice}</td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{firstCost}</td>
@@ -1027,6 +1246,7 @@ export function ProductsDashboard({
                   const thumbnailUrl = product.images[0];
                   const inventoryTotal = product.variants.reduce((acc, variant) => acc + variant.inventory, 0);
                   const firstSku = firstVariant?.sku ?? "—";
+                  const firstBarcode = firstVariant?.barcode;
                   
                   const firstPrice = firstVariant ? currencyFormatter.format(Number(firstVariant.price)) : "—";
                   const firstCost = firstVariant?.costPrice ? currencyFormatter.format(Number(firstVariant.costPrice)) : "—";
@@ -1087,6 +1307,12 @@ export function ProductsDashboard({
                         <div>
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">SKU</p>
                           <p className="mt-1 font-medium text-slate-700">{firstSku}</p>
+                          {firstBarcode && (
+                            <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-500">
+                              <ScanBarcode className="h-3 w-3 shrink-0 text-slate-400" />
+                              <span>{firstBarcode}</span>
+                            </p>
+                          )}
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{isEs ? "Inventario" : "Inventory"}</p>
