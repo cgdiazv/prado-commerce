@@ -184,7 +184,44 @@ export default function POSModule({
   // Filtered Products
   const filteredProducts = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
+    if (!q) {
+      return inventory.filter((item) => {
+        return (
+          selectedCategory === "all" ||
+          (selectedCategory === "uncategorized" && (!item.category || item.category.trim() === "")) ||
+          (item.category && item.category.toLowerCase() === selectedCategory.toLowerCase())
+        );
+      });
+    }
+
+    const strippedQ = q.replace(/^0+/, "");
+
     return inventory.filter((item) => {
+      const skuClean = item.sku.toLowerCase().trim();
+      const skuStripped = skuClean.replace(/^0+/, "");
+
+      // Check if search matches a barcode or SKU (with or without leading zeros)
+      const isBarcodeOrSkuMatch =
+        skuClean === q ||
+        (skuStripped !== "" && strippedQ !== "" && skuStripped === strippedQ) ||
+        skuClean.includes(q) ||
+        item.lookupCodes?.some((code) => {
+          const c = code.toLowerCase().trim();
+          const cStripped = c.replace(/^0+/, "");
+          return (
+            c === q ||
+            (cStripped !== "" && strippedQ !== "" && cStripped === strippedQ) ||
+            c.includes(q) ||
+            (cStripped.length >= 6 && strippedQ.length >= 6 && (cStripped.includes(strippedQ) || strippedQ.includes(cStripped)))
+          );
+        });
+
+      // Bypasses category filter if the query matches a barcode or SKU
+      if (isBarcodeOrSkuMatch) {
+        return true;
+      }
+
+      // Title or description text search respects selected category
       const matchCat =
         selectedCategory === "all" ||
         (selectedCategory === "uncategorized" && (!item.category || item.category.trim() === "")) ||
@@ -192,12 +229,7 @@ export default function POSModule({
 
       if (!matchCat) return false;
 
-      if (!q) return true;
-      return (
-        item.sku.toLowerCase().includes(q) ||
-        item.lookupCodes?.some((code) => code.toLowerCase().includes(q)) ||
-        item.description.toLowerCase().includes(q)
-      );
+      return item.description.toLowerCase().includes(q);
     });
   }, [inventory, searchQuery, selectedCategory]);
 
@@ -251,11 +283,145 @@ export default function POSModule({
   }, [parkedTickets]);
 
   // ----------------------------------------------------
-  // Barcode Auto-detection (USB / Bluetooth Scanners)
+  // Barcode Auto-detection & Audio Feedback
   // ----------------------------------------------------
+  const [scanFeedback, setScanFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!scanFeedback) return;
+    const timer = setTimeout(() => {
+      setScanFeedback(null);
+    }, scanFeedback.type === "error" ? 4500 : 2500);
+    return () => clearTimeout(timer);
+  }, [scanFeedback]);
+
+  // Audio tone synthesizer for scanner feedback (pure Web Audio, zero external assets)
+  const playScanBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(950, ctx.currentTime);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch {}
+  };
+
+  const playScanErrorBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      [0, 0.12].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(220, now + offset);
+        gain.gain.setValueAtTime(0.2, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + offset + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.09);
+      });
+    } catch {}
+  };
+
+  // Helper to find a product by barcode or SKU with leading zero and check-digit tolerance
+  const findScannedProduct = useCallback(
+    (queryRaw: string): InventoryItem | undefined => {
+      const query = queryRaw.trim().toLowerCase();
+      if (!query) return undefined;
+      const queryStripped = query.replace(/^0+/, "");
+
+      // 1. Exact match on SKU or any lookupCode
+      const exact = inventory.find((item) => {
+        if (item.sku.trim().toLowerCase() === query) return true;
+        return item.lookupCodes?.some((code) => code.trim().toLowerCase() === query);
+      });
+      if (exact) return exact;
+
+      // 2. Normalized match with leading zeros stripped (e.g. UPC-A 12 vs EAN-13 13 digits)
+      if (queryStripped) {
+        const strippedMatch = inventory.find((item) => {
+          const skuStripped = item.sku.trim().toLowerCase().replace(/^0+/, "");
+          if (skuStripped && skuStripped === queryStripped) return true;
+          return item.lookupCodes?.some((code) => {
+            const codeStripped = code.trim().toLowerCase().replace(/^0+/, "");
+            return Boolean(codeStripped && codeStripped === queryStripped);
+          });
+        });
+        if (strippedMatch) return strippedMatch;
+      }
+
+      // 3. Check-digit tolerance (if barcode length >= 8 and differs only by 1 suffix digit)
+      if (queryStripped && queryStripped.length >= 8) {
+        const checkDigitMatch = inventory.find((item) => {
+          return item.lookupCodes?.some((code) => {
+            const codeStripped = code.trim().toLowerCase().replace(/^0+/, "");
+            if (codeStripped && Math.abs(codeStripped.length - queryStripped.length) === 1) {
+              const minLen = Math.min(codeStripped.length, queryStripped.length);
+              return codeStripped.slice(0, minLen) === queryStripped.slice(0, minLen);
+            }
+            return false;
+          });
+        });
+        if (checkDigitMatch) return checkDigitMatch;
+      }
+
+      return undefined;
+    },
+    [inventory]
+  );
+
   const barcodeBufferRef = useRef<string>("");
   const lastKeyTimeRef = useRef<number>(0);
   const handleAddToCartRef = useRef<(product: InventoryItem) => void>(() => {});
+
+  const handleProcessBarcode = useCallback(
+    (rawCandidate: string) => {
+      const candidate = rawCandidate.trim();
+      if (candidate.length < 2) return false;
+
+      const matchedItem = findScannedProduct(candidate);
+      if (matchedItem) {
+        handleAddToCartRef.current(matchedItem);
+        playScanBeep();
+        setScanFeedback({
+          type: "success",
+          message: isEs
+            ? `"${matchedItem.description}" agregado a la venta`
+            : `"${matchedItem.description}" added to sale`,
+        });
+        if (searchInputRef.current) {
+          searchInputRef.current.value = "";
+        }
+        setSearchQuery("");
+        return true;
+      } else {
+        playScanErrorBeep();
+        setScanFeedback({
+          type: "error",
+          message: isEs
+            ? `Código no encontrado: "${candidate}"`
+            : `Barcode not found: "${candidate}"`,
+        });
+        return false;
+      }
+    },
+    [findScannedProduct, isEs]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -272,28 +438,21 @@ export default function POSModule({
       const diff = now - lastKeyTimeRef.current;
       lastKeyTimeRef.current = now;
 
-      // Scanners send keys rapidly (< 50ms)
+      // Scanners send keys rapidly (< 80ms) and end with Enter
       if (e.key === "Enter") {
-        if (barcodeBufferRef.current.length >= 3) {
-          const scannedCode = barcodeBufferRef.current.trim().toLowerCase();
-          barcodeBufferRef.current = "";
+        const candidate =
+          barcodeBufferRef.current.trim() ||
+          (target === searchInputRef.current ? searchInputRef.current.value.trim() : (searchInputRef.current?.value || searchQuery).trim());
 
-          // A scanner sends one lookup code at a time; all aliases belong to one inventory item.
-          const matchedItem = inventory.find(
-            (item) =>
-              item.sku.trim().toLowerCase() === scannedCode ||
-              item.lookupCodes?.some((code) => code.trim().toLowerCase() === scannedCode)
-          );
-          if (matchedItem) {
-            handleAddToCartRef.current(matchedItem);
-            if (searchInputRef.current) {
-              searchInputRef.current.value = "";
-              setSearchQuery("");
-            }
-          }
+        barcodeBufferRef.current = "";
+
+        if (candidate.length >= 2) {
+          e.preventDefault();
+          handleProcessBarcode(candidate);
         }
       } else if (e.key.length === 1) {
-        if (diff > 80) {
+        // Scanners with inter-character delays up to 120ms
+        if (diff > 120) {
           barcodeBufferRef.current = e.key;
         } else {
           barcodeBufferRef.current += e.key;
@@ -310,7 +469,7 @@ export default function POSModule({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [inventory]);
+  }, [handleProcessBarcode, searchQuery]);
 
   // ----------------------------------------------------
   // Dynamic Tax Rate from Settings (Tax Settings & POS Settings)
@@ -1302,6 +1461,12 @@ export default function POSModule({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleProcessBarcode(searchQuery);
+                  }
+                }}
                 placeholder={isEs ? "Escanear código de barra o buscar producto (F2)..." : "Scan barcode or search product (F2)..."}
                 className="w-full bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-900 text-slate-100 placeholder:text-slate-400 text-xs rounded-md pl-9 pr-8 py-2 transition outline-none border border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
               />
@@ -1352,6 +1517,12 @@ export default function POSModule({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleProcessBarcode(searchQuery);
+                }
+              }}
               placeholder={isEs ? "Buscar producto o SKU..." : "Search product or SKU..."}
               className="w-full bg-slate-800/80 text-white placeholder:text-slate-400 text-xs rounded-md pl-8 pr-7 py-1.5 outline-none border border-slate-700 focus:border-cyan-500"
             />
@@ -1422,6 +1593,40 @@ export default function POSModule({
             className="underline hover:text-white cursor-pointer shrink-0 ml-2"
           >
             {isEs ? "Ver cola" : "View queue"} ({pendingSyncCount})
+          </button>
+        </div>
+      )}
+
+      {/* Barcode Scanner Feedback Alert Strip */}
+      {scanFeedback && (
+        <div
+          className={`px-4 py-2 text-xs font-semibold flex items-center justify-between shrink-0 shadow-sm transition-all duration-200 animate-in slide-in-from-top-1 ${
+            scanFeedback.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-rose-600 text-white"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {scanFeedback.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-200" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-200" />
+            )}
+            <span>{scanFeedback.message}</span>
+            {scanFeedback.type === "error" && (
+              <span className="text-[11px] text-rose-100 font-normal hidden sm:inline ml-2">
+                {isEs
+                  ? "— Comprueba que el código de barras esté asignado a la variante del producto."
+                  : "— Ensure the barcode is entered in the variant's Barcodes (Lookups) field."}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setScanFeedback(null)}
+            className="text-white/80 hover:text-white text-xs underline cursor-pointer ml-3 shrink-0"
+          >
+            {isEs ? "Cerrar" : "Dismiss"}
           </button>
         </div>
       )}

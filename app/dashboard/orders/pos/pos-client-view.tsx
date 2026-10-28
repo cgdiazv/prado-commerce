@@ -100,7 +100,7 @@ export function PosClientView({
                 id: variant.id,
                 sku: variant.sku || product.slug || variant.id.slice(-6).toUpperCase(),
                 lookupCodes: typeof variant.barcode === "string"
-                  ? variant.barcode.split(";").map((code: string) => code.trim()).filter(Boolean)
+                  ? variant.barcode.split(/[,;\s]+/).map((code: string) => code.trim()).filter(Boolean)
                   : [],
                 description: variantTitle,
                 quantity: Number(variant.inventory ?? 0),
@@ -119,6 +119,9 @@ export function PosClientView({
             flattenedItems.push({
               id: product.id,
               sku: product.slug || product.id.slice(-6).toUpperCase(),
+              lookupCodes: typeof (product as any).barcode === "string"
+                ? (product as any).barcode.split(/[,;\s]+/).map((code: string) => code.trim()).filter(Boolean)
+                : [],
               description: product.title,
               quantity: 999,
               cost: 0,
