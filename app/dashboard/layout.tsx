@@ -389,6 +389,7 @@ export default function DashboardLayout({
         { href: "/dashboard/reports?tab=customers", label: t.dashboard.salesByCustomer },
         { href: "/dashboard/reports?tab=brands", label: t.dashboard.salesByBrand },
         { href: "/dashboard/reports?tab=profit", label: t.dashboard.monthlyProfitAndCost },
+        { href: "/dashboard/reports?tab=inventory", label: t.dashboard.inventoryValuation },
         { href: "/dashboard/reports/day-end", label: t.dashboard.dayEndReport },
       ],
     },

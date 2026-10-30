@@ -5,6 +5,7 @@ import { resolveServerActiveStoreId } from "@/lib/server-active-store";
 import ReportsDashboardClient, {
   BrandReportItem,
   CustomerReportItem,
+  InventoryReportItem,
   ReportSummary,
 } from "./reports-dashboard-client";
 
@@ -17,7 +18,9 @@ export default async function ReportsPage(props: {
       ? "brands"
       : resolvedParams?.tab === "profit"
         ? "profit"
-        : "customers";
+        : resolvedParams?.tab === "inventory"
+          ? "inventory"
+          : "customers";
 
   const user = await getCurrentUser();
 
@@ -47,6 +50,7 @@ export default async function ReportsPage(props: {
         <ReportsDashboardClient
           initialCustomers={[]}
           initialBrands={[]}
+          initialInventory={[]}
           initialSummary={{
             totalRevenue: 0,
             totalCost: 0,
@@ -363,6 +367,76 @@ export default async function ReportsPage(props: {
     monthlyBreakdown,
   };
 
+  const rawProducts = await prisma.product.findMany({
+    where: {
+      storeId: { in: storeIds },
+    },
+    select: {
+      id: true,
+      storeId: true,
+      title: true,
+      store: { select: { name: true } },
+      category: { select: { name: true } },
+      variants: {
+        select: {
+          sku: true,
+          price: true,
+          costPrice: true,
+          inventory: true,
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const inventoryResult: InventoryReportItem[] = rawProducts
+    .map((p) => {
+      let unitsInStock = 0;
+      let costValue = 0;
+      let retailValue = 0;
+      let hasCostRecorded = false;
+
+      for (const v of p.variants) {
+        const qty = Number(v.inventory) || 0;
+        const cost = Number(v.costPrice) || 0;
+        const price = Number(v.price) || 0;
+        if (qty > 0) {
+          unitsInStock += qty;
+          costValue += qty * cost;
+          retailValue += qty * price;
+        }
+        if (cost > 0) {
+          hasCostRecorded = true;
+        }
+      }
+
+      const roundedCostValue = Number(costValue.toFixed(2));
+      const roundedRetailValue = Number(retailValue.toFixed(2));
+      const potentialProfit = Number(Math.max(0, roundedRetailValue - roundedCostValue).toFixed(2));
+      const potentialMargin =
+        roundedRetailValue > 0
+          ? Number(((potentialProfit / roundedRetailValue) * 100).toFixed(1))
+          : 0;
+
+      return {
+        productId: p.id,
+        storeId: p.storeId,
+        storeName: p.store.name,
+        title: p.title,
+        sku: p.variants[0]?.sku || null,
+        categoryName: p.category?.name || null,
+        unitsInStock,
+        unitPrice: Number(p.variants[0]?.price || 0),
+        unitCost: Number(p.variants[0]?.costPrice || 0),
+        costValue: roundedCostValue,
+        retailValue: roundedRetailValue,
+        potentialProfit,
+        potentialMargin,
+        hasCostRecorded,
+      };
+    })
+    .sort((a, b) => b.retailValue - a.retailValue || b.costValue - a.costValue);
+
   const initialSelectedStoreId = await resolveServerActiveStoreId(undefined, stores);
 
   return (
@@ -370,6 +444,7 @@ export default async function ReportsPage(props: {
       <ReportsDashboardClient
         initialCustomers={customersResult}
         initialBrands={brandsResult}
+        initialInventory={inventoryResult}
         initialSummary={summary}
         stores={JSON.parse(JSON.stringify(stores))}
         availableYears={availableYears}

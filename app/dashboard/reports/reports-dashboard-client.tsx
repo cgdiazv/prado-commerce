@@ -13,12 +13,11 @@ import {
   Store as StoreIcon,
   Tag,
   TrendingUp,
-  UserCheck,
   Users,
   X,
   Package,
   DollarSign,
-  Layers,
+  Boxes,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { getStoredActiveStoreId, setStoredActiveStoreId, subscribeToActiveStoreChange } from "@/lib/dashboard-store-selection";
@@ -79,6 +78,23 @@ export type MonthlyBreakdownItem = {
   orders: number;
 };
 
+export type InventoryReportItem = {
+  productId: string;
+  storeId: string;
+  storeName: string;
+  title: string;
+  sku: string | null;
+  categoryName: string | null;
+  unitsInStock: number;
+  unitPrice: number;
+  unitCost: number;
+  costValue: number;
+  retailValue: number;
+  potentialProfit: number;
+  potentialMargin: number;
+  hasCostRecorded: boolean;
+};
+
 export type ReportSummary = {
   totalRevenue: number;
   totalCost?: number;
@@ -91,19 +107,23 @@ export type ReportSummary = {
   monthlyBreakdown?: MonthlyBreakdownItem[];
 };
 
+type ReportTab = "customers" | "brands" | "profit" | "inventory";
+
 type ReportsDashboardClientProps = {
   initialCustomers: CustomerReportItem[];
   initialBrands: BrandReportItem[];
+  initialInventory?: InventoryReportItem[];
   initialSummary: ReportSummary;
   stores: Array<{ id: string; name: string; currency: string }>;
   availableYears: string[];
-  initialTab?: "customers" | "brands" | "profit";
+  initialTab?: ReportTab;
   initialSelectedStoreId?: string;
 };
 
 export default function ReportsDashboardClient({
   initialCustomers,
   initialBrands,
+  initialInventory = [],
   initialSummary,
   stores,
   availableYears,
@@ -118,27 +138,34 @@ export default function ReportsDashboardClient({
   const searchParams = useSearchParams();
 
   const tabParam = searchParams?.get("tab");
-  const resolvedTab: "customers" | "brands" | "profit" =
+  const resolvedTab: ReportTab =
     tabParam === "brands"
       ? "brands"
       : tabParam === "profit"
         ? "profit"
-        : tabParam === "customers"
-          ? "customers"
-          : initialTab;
+        : tabParam === "inventory"
+          ? "inventory"
+          : tabParam === "customers"
+            ? "customers"
+            : initialTab;
 
-  const [activeTab, setActiveTab] = useState<"customers" | "brands" | "profit">(resolvedTab);
+  const [activeTab, setActiveTab] = useState<ReportTab>(resolvedTab);
 
   // Sync state whenever the URL search param changes (e.g. clicking sidebar links or browser back/forward)
   useEffect(() => {
-    if (tabParam === "brands" || tabParam === "profit" || tabParam === "customers") {
+    if (
+      tabParam === "brands" ||
+      tabParam === "profit" ||
+      tabParam === "inventory" ||
+      tabParam === "customers"
+    ) {
       setActiveTab(tabParam);
     } else if (!tabParam && initialTab) {
       setActiveTab(initialTab);
     }
   }, [tabParam, initialTab]);
 
-  const handleTabChange = (newTab: "customers" | "brands" | "profit") => {
+  const handleTabChange = (newTab: ReportTab) => {
     setActiveTab(newTab);
     setSearchQuery("");
     const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
@@ -165,7 +192,8 @@ export default function ReportsDashboardClient({
     });
   }, [selectedStoreId]);
 
-  const activeCurrency = stores[0]?.currency || "USD";
+  const activeStore = stores.find((s) => s.id === selectedStoreId) ?? stores[0];
+  const activeCurrency = activeStore?.currency || "USD";
   const formatter = new Intl.NumberFormat(isEs ? "es-ES" : "en-US", {
     style: "currency",
     currency: activeCurrency,
@@ -205,6 +233,55 @@ export default function ReportsDashboardClient({
       return matchBrand || matchProds;
     });
   }, [initialBrands, searchQuery]);
+
+  // Filter Inventory by Store & Search
+  const storeScopedInventory = useMemo(() => {
+    return initialInventory.filter(
+      (item) => selectedStoreId === "ALL" || item.storeId === selectedStoreId,
+    );
+  }, [initialInventory, selectedStoreId]);
+
+  const filteredInventory = useMemo(() => {
+    if (!searchQuery.trim()) return storeScopedInventory;
+    const q = searchQuery.trim().toLowerCase();
+    return storeScopedInventory.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        (item.sku?.toLowerCase().includes(q) ?? false) ||
+        (item.categoryName?.toLowerCase().includes(q) ?? false) ||
+        item.storeName.toLowerCase().includes(q),
+    );
+  }, [storeScopedInventory, searchQuery]);
+
+  const inventoryStats = useMemo(() => {
+    let totalUnits = 0;
+    let totalCostValue = 0;
+    let totalRetailValue = 0;
+    let productsWithCost = 0;
+
+    for (const item of storeScopedInventory) {
+      totalUnits += item.unitsInStock;
+      totalCostValue += item.costValue;
+      totalRetailValue += item.retailValue;
+      if (item.hasCostRecorded) {
+        productsWithCost += 1;
+      }
+    }
+
+    const potentialProfit = Math.max(0, totalRetailValue - totalCostValue);
+    const potentialMargin =
+      totalRetailValue > 0 ? (potentialProfit / totalRetailValue) * 100 : 0;
+
+    return {
+      totalProducts: storeScopedInventory.length,
+      productsWithCost,
+      totalUnits,
+      totalCostValue,
+      totalRetailValue,
+      potentialProfit,
+      potentialMargin,
+    };
+  }, [storeScopedInventory]);
 
   function exportCustomersCsv() {
     const headers = [
@@ -282,6 +359,41 @@ export default function ReportsDashboardClient({
     );
   }
 
+  function exportInventoryCsv() {
+    const headers = [
+      "Producto",
+      "SKU",
+      "Categoría",
+      "Tienda",
+      "Unidades en Stock",
+      "Costo Unitario ($)",
+      "Precio Venta ($)",
+      "Inventario al Costo ($)",
+      "Valor Venta ($)",
+      "Ganancia Estimada ($)",
+      "Margen (%)",
+    ];
+
+    const rows = filteredInventory.map((item) => [
+      `"${item.title.replace(/"/g, '""')}"`,
+      `"${(item.sku || "").replace(/"/g, '""')}"`,
+      `"${(item.categoryName || "").replace(/"/g, '""')}"`,
+      `"${item.storeName.replace(/"/g, '""')}"`,
+      item.unitsInStock.toString(),
+      item.unitCost.toFixed(2),
+      item.unitPrice.toFixed(2),
+      item.costValue.toFixed(2),
+      item.retailValue.toFixed(2),
+      item.potentialProfit.toFixed(2),
+      `${item.potentialMargin}%`,
+    ]);
+
+    downloadCsv(
+      `reporte-valoracion-inventario-${new Date().toISOString().slice(0, 10)}.csv`,
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n"),
+    );
+  }
+
   function downloadCsv(filename: string, content: string) {
     const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -338,10 +450,22 @@ export default function ReportsDashboardClient({
               type="button"
               onClick={exportProfitCsv}
               disabled={!initialSummary.monthlyBreakdown || initialSummary.monthlyBreakdown.length === 0}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4 text-slate-500" />
               {isEs ? "Exportar Profit CSV" : "Export Profit CSV"}
+            </button>
+          )}
+
+          {activeTab === "inventory" && (
+            <button
+              type="button"
+              onClick={exportInventoryCsv}
+              disabled={filteredInventory.length === 0}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4 text-slate-500" />
+              {isEs ? "Exportar Inventario CSV" : "Export Inventory CSV"}
             </button>
           )}
         </div>
@@ -397,21 +521,6 @@ export default function ReportsDashboardClient({
         <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
-              {isEs ? "Pedidos" : "Orders Count"}
-            </span>
-            <FileText className="h-4 w-4 shrink-0 text-slate-400" />
-          </div>
-          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
-            {initialSummary.totalOrdersCount}
-          </p>
-          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-            {isEs ? "Órdenes procesadas" : "Completed orders"}
-          </p>
-        </div>
-
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
               {isEs ? "Ticket Promedio" : "Avg Order"}
             </span>
             <TrendingUp className="h-4 w-4 shrink-0 text-slate-400" />
@@ -424,18 +533,43 @@ export default function ReportsDashboardClient({
           </p>
         </div>
 
-        <div className="rounded-[8px] border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
+        <div className="rounded-[8px] border border-emerald-200 bg-emerald-50/50 p-3 sm:p-4 shadow-xs">
+          <div className="flex items-center justify-between text-emerald-800">
             <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
-              {isEs ? "Clientes" : "Customers"}
+              {isEs ? "Inventario al Costo" : "Inventory at Cost"}
             </span>
-            <UserCheck className="h-4 w-4 shrink-0 text-slate-400" />
+            <DollarSign className="h-4 w-4 shrink-0 text-emerald-600" />
           </div>
-          <p className="mt-1.5 text-base sm:text-xl font-bold text-slate-900 truncate">
-            {initialSummary.uniqueCustomers}
+          <p
+            className="mt-1.5 text-base sm:text-xl font-bold text-emerald-950 truncate"
+            title={formatter.format(inventoryStats.totalCostValue)}
+          >
+            {formatter.format(inventoryStats.totalCostValue)}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-            {isEs ? "Compradores únicos" : "Unique buyers"}
+          <p className="mt-0.5 text-[11px] font-medium text-emerald-700 truncate">
+            {isEs ? "Stock × Costo" : "Capital invested (Stock × Cost)"}
+          </p>
+        </div>
+
+        <div className="rounded-[8px] border border-cyan-200 bg-cyan-50/50 p-3 sm:p-4 shadow-xs">
+          <div className="flex items-center justify-between text-cyan-800">
+            <span className="text-[11px] font-semibold uppercase tracking-wider truncate pr-1">
+              {isEs ? "Valor Venta / Ganancia Est." : "Retail Value / Est. Profit"}
+            </span>
+            <TrendingUp className="h-4 w-4 shrink-0 text-cyan-600" />
+          </div>
+          <p
+            className="mt-1.5 text-base sm:text-xl font-bold text-cyan-950 truncate"
+            title={formatter.format(inventoryStats.totalRetailValue)}
+          >
+            {formatter.format(inventoryStats.totalRetailValue)}
+          </p>
+          <p className="mt-0.5 text-[11px] font-medium text-cyan-800 truncate">
+            {isEs ? "Ganancia pot.: " : "Pot. profit: "}
+            <span className="font-semibold text-emerald-700">
+              +{formatter.format(inventoryStats.potentialProfit)}
+            </span>{" "}
+            ({inventoryStats.potentialMargin.toFixed(0)}%)
           </p>
         </div>
       </div>
@@ -470,6 +604,8 @@ export default function ReportsDashboardClient({
             <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           ) : activeTab === "profit" ? (
             <TrendingUp className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          ) : activeTab === "inventory" ? (
+            <Boxes className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           ) : (
             <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           )}
@@ -480,7 +616,7 @@ export default function ReportsDashboardClient({
                 router.push("/dashboard/reports/day-end");
                 return;
               }
-              handleTabChange(e.target.value as "customers" | "brands" | "profit");
+              handleTabChange(e.target.value as ReportTab);
             }}
             className="h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
           >
@@ -492,6 +628,9 @@ export default function ReportsDashboardClient({
             </option>
             <option value="profit">
               {isEs ? "Ventas, Costo y Profit Mensual" : "Monthly Profit & Cost"}
+            </option>
+            <option value="inventory">
+              {isEs ? "Valoración de Inventario (Costo y Venta)" : "Inventory Valuation (Cost & Retail)"}
             </option>
             <option value="day-end">
               {isEs ? "Cierre de Día (Day End)" : "Day End Report"}
@@ -611,13 +750,15 @@ export default function ReportsDashboardClient({
               <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             ) : activeTab === "profit" ? (
               <TrendingUp className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            ) : activeTab === "inventory" ? (
+              <Boxes className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             ) : (
               <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             )}
             <select
               value={activeTab}
               onChange={(e) => {
-                handleTabChange(e.target.value as "customers" | "brands" | "profit");
+                handleTabChange(e.target.value as ReportTab);
               }}
               className="h-11 rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
             >
@@ -629,6 +770,9 @@ export default function ReportsDashboardClient({
               </option>
               <option value="profit">
                 {isEs ? "Profit" : "Profit"}
+              </option>
+              <option value="inventory">
+                {isEs ? "Inventario" : "Inventory"}
               </option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -1162,6 +1306,118 @@ export default function ReportsDashboardClient({
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 4: INVENTORY VALUATION REPORT (COST & RETAIL VALUE) */}
+      {activeTab === "inventory" && (
+        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
+          <div className="border-b border-slate-200 bg-slate-50/70 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {isEs
+                    ? "Valoración de Inventario por Producto (Costo vs. Precio de Venta)"
+                    : "Inventory Valuation by Product (Cost vs. Retail Price)"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isEs
+                    ? "Resumen financiero de existencias actuales por variante y ganancia potencial."
+                    : "Financial breakdown of current stock on hand by variant cost and retail price."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={exportInventoryCsv}
+                disabled={filteredInventory.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 self-start sm:self-auto"
+              >
+                <Download className="h-3.5 w-3.5 text-slate-500" />
+                {isEs ? "Exportar Inventario CSV" : "Export Inventory CSV"}
+              </button>
+            </div>
+
+            {filteredInventory.length === 0 ? (
+              <div className="p-12 text-center">
+                <Boxes className="mx-auto h-12 w-12 text-slate-300" />
+                <h3 className="mt-3 text-base font-semibold text-slate-900">
+                  {isEs ? "No se encontraron productos" : "No products found"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {isEs
+                    ? "Los productos del catálogo y su valoración de inventario aparecerán aquí."
+                    : "Catalog products and their inventory valuation will appear here."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="px-5 py-3.5">{isEs ? "Producto" : "Product"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Categoría" : "Category"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Stock" : "Stock"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Costo Unit." : "Unit Cost"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Precio Venta" : "Retail Price"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Valor al Costo" : "Value at Cost"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Valor Venta" : "Retail Value"}</th>
+                      <th className="px-5 py-3.5">{isEs ? "Ganancia Est." : "Est. Profit"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredInventory.map((item) => (
+                      <tr key={item.productId} className="hover:bg-slate-50/60 transition">
+                        <td className="px-5 py-4 text-xs text-slate-700">
+                          <Link
+                            href={`/dashboard/products/${item.productId}`}
+                            className="font-semibold text-slate-900 hover:text-cyan-700 hover:underline"
+                          >
+                            {item.title}
+                          </Link>
+                          <div className="text-slate-500 mt-0.5">
+                            {item.sku ? `SKU: ${item.sku}` : isEs ? "Sin SKU" : "No SKU"}
+                            {selectedStoreId === "ALL" && stores.length > 1 && (
+                              <span className="ml-1 text-slate-400">• {item.storeName}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600">
+                          {item.categoryName || (isEs ? "Sin categoría" : "Uncategorized")}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-700">
+                          {item.unitsInStock.toLocaleString()} {isEs ? "uds" : "units"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600">
+                          {item.unitCost > 0 ? formatter.format(item.unitCost) : "—"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-700">
+                          {formatter.format(item.unitPrice)}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-semibold text-emerald-800">
+                          {item.costValue > 0 ? formatter.format(item.costValue) : "—"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-semibold text-slate-900">
+                          {item.retailValue > 0 ? formatter.format(item.retailValue) : "—"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs">
+                          {item.retailValue > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-emerald-700">
+                                +{formatter.format(item.potentialProfit)}
+                              </span>
+                              <span className="inline-flex items-center rounded-md bg-cyan-50 px-1.5 py-0.5 text-[11px] font-semibold text-cyan-800">
+                                {item.potentialMargin}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
         </div>
       )}
     </section>
