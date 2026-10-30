@@ -78,7 +78,7 @@ export function PwaInstallPrompt() {
   if (!deferredPrompt && !isIos) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-cyan-500/30 bg-slate-900 p-4 text-white shadow-2xl backdrop-blur-md sm:left-auto">
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-cyan-500/30 bg-slate-900 p-4 text-white shadow-2xl backdrop-blur-md">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="shrink-0 overflow-hidden rounded-xl border border-cyan-500/40 shadow-sm">
