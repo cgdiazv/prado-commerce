@@ -40,6 +40,7 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
+  MoreHorizontal,
   Database,
   Lock,
   KeyRound,
@@ -168,7 +169,12 @@ export default function POSModule({
   // ----------------------------------------------------
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStockFilter, setSelectedStockFilter] = useState<"all" | "in-stock" | "out-of-stock">("all");
+  const [showMoreCategories, setShowMoreCategories] = useState(false);
+  const [showStockFilterMenu, setShowStockFilterMenu] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
+  const stockFilterMenuRef = useRef<HTMLDivElement>(null);
 
   // Extract categories dynamically
   const categories = useMemo(() => {
@@ -181,26 +187,76 @@ export default function POSModule({
     return Array.from(set);
   }, [inventory]);
 
+  const stockFilterCounts = useMemo(
+    () => ({
+      all: inventory.length,
+      "in-stock": inventory.filter((item) => item.quantity > 0).length,
+      "out-of-stock": inventory.filter((item) => item.quantity <= 0).length,
+    }),
+    [inventory]
+  );
+
+  useEffect(() => {
+    if (!showMoreCategories) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !categoryMenuRef.current?.contains(event.target)) {
+        setShowMoreCategories(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowMoreCategories(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showMoreCategories]);
+
+  useEffect(() => {
+    if (!showStockFilterMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !stockFilterMenuRef.current?.contains(event.target)) {
+        setShowStockFilterMenu(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowStockFilterMenu(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showStockFilterMenu]);
+
   // Filtered Products
   const filteredProducts = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) {
-      return inventory.filter((item) => {
-        return (
-          selectedCategory === "all" ||
-          (selectedCategory === "uncategorized" && (!item.category || item.category.trim() === "")) ||
-          (item.category && item.category.toLowerCase() === selectedCategory.toLowerCase())
-        );
-      });
-    }
-
-    const strippedQ = q.replace(/^0+/, "");
-
     return inventory.filter((item) => {
+      const matchesStockFilter =
+        selectedStockFilter === "all" ||
+        (selectedStockFilter === "in-stock" && item.quantity > 0) ||
+        (selectedStockFilter === "out-of-stock" && item.quantity <= 0);
+      if (!matchesStockFilter) return false;
+
+      const matchesCategory =
+        selectedCategory === "all" ||
+        (selectedCategory === "uncategorized" && (!item.category || item.category.trim() === "")) ||
+        (item.category && item.category.toLowerCase() === selectedCategory.toLowerCase());
+      if (!q) return matchesCategory;
+
+      const strippedQ = q.replace(/^0+/, "");
       const skuClean = item.sku.toLowerCase().trim();
       const skuStripped = skuClean.replace(/^0+/, "");
 
-      // Check if search matches a barcode or SKU (with or without leading zeros)
+      // Barcode and SKU matches bypass the category filter, but still respect stock status.
       const isBarcodeOrSkuMatch =
         skuClean === q ||
         (skuStripped !== "" && strippedQ !== "" && skuStripped === strippedQ) ||
@@ -216,22 +272,13 @@ export default function POSModule({
           );
         });
 
-      // Bypasses category filter if the query matches a barcode or SKU
       if (isBarcodeOrSkuMatch) {
         return true;
       }
 
-      // Title or description text search respects selected category
-      const matchCat =
-        selectedCategory === "all" ||
-        (selectedCategory === "uncategorized" && (!item.category || item.category.trim() === "")) ||
-        (item.category && item.category.toLowerCase() === selectedCategory.toLowerCase());
-
-      if (!matchCat) return false;
-
-      return item.description.toLowerCase().includes(q);
+      return matchesCategory && item.description.toLowerCase().includes(q);
     });
-  }, [inventory, searchQuery, selectedCategory]);
+  }, [inventory, searchQuery, selectedCategory, selectedStockFilter]);
 
   // ----------------------------------------------------
   // Live Ticket / Cart State
@@ -1347,10 +1394,6 @@ export default function POSModule({
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap text-cyan-400">
-                {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
-              </span>
-
               {/* Selector de Tienda Activa */}
               {!isCashier && stores && stores.length > 1 ? (
                 <div className="flex items-center gap-1.5 bg-slate-800/90 hover:bg-slate-700/90 px-2 py-1 rounded-md border border-slate-700 text-[11px] text-white">
@@ -1634,19 +1677,90 @@ export default function POSModule({
           }`}
         >
           {/* Category Chips Bar */}
-          <div className="p-2 sm:px-4 sm:py-2.5 bg-white border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto shrink-0 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory("all")}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                selectedCategory === "all"
-                  ? "bg-cyan-600 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              {isEs ? "Todos" : "All"} ({inventory.length})
-            </button>
-            {categories.map((cat) => (
+          <div className="relative z-20 p-2 sm:px-4 sm:py-2.5 bg-white border-b border-slate-200 flex items-center gap-1.5 overflow-visible shrink-0 shadow-2xs">
+            <div ref={stockFilterMenuRef} className="relative flex shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setSelectedStockFilter("all");
+                }}
+                className={`rounded-l-md px-3 py-1.5 text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  selectedCategory === "all"
+                    ? "bg-cyan-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {selectedStockFilter === "in-stock"
+                  ? isEs
+                    ? "En existencia"
+                    : "In Stock"
+                  : selectedStockFilter === "out-of-stock"
+                    ? isEs
+                      ? "Agotado"
+                      : "Out of Stock"
+                    : isEs
+                      ? "Todos"
+                      : "All"}{" "}
+                ({stockFilterCounts[selectedStockFilter]})
+              </button>
+              <button
+                type="button"
+                aria-label={isEs ? "Filtrar por existencia" : "Filter by stock status"}
+                aria-haspopup="menu"
+                aria-expanded={showStockFilterMenu}
+                onClick={() => setShowStockFilterMenu((open) => !open)}
+                className={`rounded-r-md border-l border-white/20 px-1.5 py-1.5 transition cursor-pointer ${
+                  selectedStockFilter !== "all"
+                    ? "bg-cyan-600 text-white shadow-xs"
+                    : selectedCategory === "all"
+                      ? "bg-cyan-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {showStockFilterMenu && (
+                <div
+                  role="menu"
+                  className="absolute left-0 top-full z-30 mt-1 min-w-44 rounded-md border border-slate-200 bg-white p-1 shadow-lg"
+                >
+                  {(["all", "in-stock", "out-of-stock"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selectedStockFilter === filter}
+                      onClick={() => {
+                        setSelectedStockFilter(filter);
+                        setShowStockFilterMenu(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded px-3 py-2 text-left text-xs font-semibold transition cursor-pointer ${
+                        selectedStockFilter === filter
+                          ? "bg-cyan-50 text-cyan-800"
+                          : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>
+                        {filter === "all"
+                          ? isEs
+                            ? "Todos"
+                            : "All"
+                          : filter === "in-stock"
+                            ? isEs
+                              ? "En existencia"
+                              : "In Stock"
+                            : isEs
+                              ? "Agotado"
+                              : "Out of Stock"}
+                      </span>
+                      <span className="text-slate-500">{stockFilterCounts[filter]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {categories.slice(0, 2).map((cat) => (
               <button
                 key={cat}
                 type="button"
@@ -1660,6 +1774,49 @@ export default function POSModule({
                 {cat}
               </button>
             ))}
+            {categories.length > 2 && (
+              <div ref={categoryMenuRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  aria-label={isEs ? "Más categorías" : "More categories"}
+                  aria-haspopup="menu"
+                  aria-expanded={showMoreCategories}
+                  onClick={() => setShowMoreCategories((open) => !open)}
+                  className={`p-1.5 rounded-md transition cursor-pointer ${
+                    categories.slice(2).some((cat) => cat.toLowerCase() === selectedCategory.toLowerCase())
+                      ? "bg-cyan-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {showMoreCategories && (
+                  <div
+                    role="menu"
+                    className="absolute left-0 top-full z-30 mt-1 max-h-60 min-w-40 overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg"
+                  >
+                    {categories.slice(2).map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setSelectedCategory(cat);
+                          setShowMoreCategories(false);
+                        }}
+                        className={`block w-full rounded px-3 py-2 text-left text-xs font-semibold transition cursor-pointer ${
+                          selectedCategory.toLowerCase() === cat.toLowerCase()
+                            ? "bg-cyan-600 text-white"
+                            : "text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Product Cards Grid */}
