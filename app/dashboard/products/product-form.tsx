@@ -873,6 +873,9 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
               rows={4}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
+            <span className="text-xs text-slate-500">
+              {isEs ? "Se admite formato HTML básico." : "Basic HTML formatting is supported."}
+            </span>
           </label>
           <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
             <Field

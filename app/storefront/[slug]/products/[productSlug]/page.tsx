@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { sanitizeProductDescription } from "@/lib/product-description";
 import StorefrontProductClient from "../../../storefront-product-client";
 
 type PageProps = {
@@ -77,6 +78,7 @@ export default async function StorefrontProductPage({ params }: PageProps) {
 
   const serializedProduct = {
     ...product,
+    description: sanitizeProductDescription(product.description),
     variants: product.variants.map((v) => ({
       ...v,
       price: v.price != null ? Number(v.price) : null,

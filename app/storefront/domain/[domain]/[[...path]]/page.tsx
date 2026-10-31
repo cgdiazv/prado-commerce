@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { sanitizeProductDescription } from "@/lib/product-description";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import PasswordResetForm from "../../../password-reset-form";
 import CategoryPageContent from "../../../category-page-content";
@@ -94,6 +95,7 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
 
     const serializedProduct = {
       ...product,
+      description: sanitizeProductDescription(product.description),
       variants: product.variants.map((v) => ({
         ...v,
         price: v.price != null ? Number(v.price) : null,

@@ -166,7 +166,10 @@ export default function StorefrontProductClient({
                 />
               ) : null}
             </div>
-            <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
+            <div
+              className="mt-4 text-base leading-7 text-slate-600 [&_a]:text-blue-700 [&_a]:underline [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-6"
+              dangerouslySetInnerHTML={{ __html: product.description ?? "" }}
+            />
 
             {product.manufacturer || product.dimension || product.weight || product.condition || product.conditionNotes ? (
               <div className="mt-4 flex flex-col gap-2 text-sm text-slate-600 border-t border-b border-slate-100 py-3">
