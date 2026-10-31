@@ -1387,13 +1387,6 @@ export default function POSModule({
                 <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-white transition-transform shrink-0" />
               </button>
               <a
-                href={`/dashboard/settings/pos${storeId ? `?storeId=${storeId}` : ""}`}
-                className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shrink-0"
-                title={isEs ? "Configuración de Cajas y Cajeros" : "POS Settings & Registers"}
-              >
-                <Settings className="w-3.5 h-3.5" />
-              </a>
-              <a
                 href={`/dashboard/reports/day-end${storeId ? `?storeId=${storeId}` : ""}`}
                 className="flex items-center gap-1.5 p-1.5 sm:px-2 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shrink-0"
                 title={isEs ? "Cierre de Día (Day End Report)" : "Day End Report"}
@@ -2905,8 +2898,7 @@ export default function POSModule({
             <div className="p-5 space-y-5 max-h-[75vh] overflow-y-auto">
               {/* 1. SELECCIÓN DE CAJA */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Store className="w-3.5 h-3.5 text-cyan-600" />
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   <span>{isEs ? "1. Seleccionar Caja / Terminal" : "1. Select Register / Terminal"}</span>
                 </label>
 
@@ -3005,8 +2997,7 @@ export default function POSModule({
 
               {/* 2. SELECCIÓN DE CAJERO */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-cyan-600" />
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   <span>{isEs ? "2. Seleccionar Cajero / Operador Activo" : "2. Select Active Cashier / Operator"}</span>
                 </label>
 

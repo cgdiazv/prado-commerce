@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { getDashboardSupportThread, sendDashboardSupportMessage } from '@/app/actions/messengerActions';
+import { isWithinSupportBusinessHours } from '@/lib/supportHours';
 
 type SupportMessage = {
   id: string;
@@ -23,6 +24,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId: initial
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isSupportOnline, setIsSupportOnline] = useState(() => isWithinSupportBusinessHours());
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId || null);
   const [ticketStatus, setTicketStatus] = useState<string | null>(null);
@@ -33,6 +35,13 @@ export default function SupportChatModal({ locale = 'en', currentUserId: initial
   const [isSending, startTransition] = useTransition();
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setIsSupportOnline(isWithinSupportBusinessHours());
+    }, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const loadThread = async () => {
     setIsLoadingThread(true);
@@ -215,8 +224,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId: initial
             </div>
             {/* Online Indicator Badge */}
             <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isSupportOnline ? 'bg-emerald-500' : 'bg-orange-500'} ring-2 ring-white`} />
             </span>
           </div>
         </button>
@@ -247,7 +255,7 @@ export default function SupportChatModal({ locale = 'en', currentUserId: initial
                     height={32}
                     className="h-full w-full object-cover object-center"
                   />
-                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+                  <span className={`absolute bottom-0 right-0 h-2 w-2 rounded-full ${isSupportOnline ? 'bg-emerald-500' : 'bg-orange-500'} ring-1 ring-white`} />
                 </div>
               </div>
 
@@ -269,6 +277,14 @@ export default function SupportChatModal({ locale = 'en', currentUserId: initial
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/70 px-4 py-4 space-y-2.5 text-slate-900">
+              {!isSupportOnline ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs text-amber-800">
+                  {isEs
+                    ? 'Nuestro horario de atención en vivo es de lunes a viernes de 9:00 AM a 6:00 PM CST. Déjanos tu mensaje y te responderemos tan pronto como lo veamos.'
+                    : "Our live support hours are Monday to Friday from 9:00 AM to 6:00 PM CST. Leave us a message and we'll get back to you as soon as we see it."}
+                </div>
+              ) : null}
+
               {isLoadingThread ? (
                 <div className="flex items-center justify-center py-6">
                   <p className="text-sm text-slate-600 font-medium">{isEs ? 'Cargando conversación...' : 'Loading conversation...'}</p>

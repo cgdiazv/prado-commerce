@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { getSupportAutoReplyMessage, isWithinSupportBusinessHours } from '@/lib/supportHours';
 
 const ACTIVE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked'];
 const VISIBLE_SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'blocked', 'resolved', 'closed'];
@@ -180,6 +181,7 @@ export async function sendDashboardSupportMessage({
   try {
     const user = await requireMerchantUser();
     const ticketId = await getOrCreateDashboardSupportTicket(user);
+    const isOnline = isWithinSupportBusinessHours();
 
     // Insert comment
     await prisma.helpdeskTicketComment.create({
@@ -223,8 +225,31 @@ export async function sendDashboardSupportMessage({
       },
     });
 
+    if (!isOnline) {
+      const autoReplyText = getSupportAutoReplyMessage(locale);
+      await prisma.helpdeskTicketComment.create({
+        data: {
+          ticketId,
+          authorUserId: null,
+          authorEmail: 'support@pradojob.com',
+          comment: autoReplyText,
+        },
+      });
+
+      await prisma.helpdeskTicketEvent.create({
+        data: {
+          ticketId,
+          eventType: 'comment',
+          eventNote: autoReplyText,
+          actorUserId: null,
+          actorEmail: 'support@pradojob.com',
+          metadata: { source: 'dashboard_chat_auto_reply', off_hours: true },
+        },
+      });
+    }
+
     revalidatePath('/dashboard');
-    return { success: true };
+    return { success: true, offHoursAutoReplied: !isOnline };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Failed to send message.';
     return { error: errorMsg };

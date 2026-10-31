@@ -15,8 +15,6 @@ import {
 import {
   Store,
   Users,
-  Shield,
-  ShoppingCart,
   Plus,
   Pencil,
   Trash2,
@@ -472,19 +470,18 @@ export function PosSettingsClient({
       )}
 
       {/* Main Tabs Container */}
-      <div className="flex flex-col overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs md:flex-row">
-        {/* Vertical Navigation Tabs */}
-        <nav aria-label={isEs ? "Configuración del POS" : "POS settings"} className="flex shrink-0 flex-col border-b border-slate-200 bg-slate-50/70 p-2 md:w-60 md:border-b-0 md:border-r">
+      <div className="flex flex-col overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xs">
+        {/* Horizontal Navigation Tabs */}
+        <nav aria-label={isEs ? "Configuración del POS" : "POS settings"} className="flex min-w-0 shrink-0 flex-row overflow-x-auto border-b border-slate-200 bg-slate-50/70">
           <button
             type="button"
             onClick={() => setActiveTab("terminals")}
-            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+            className={`flex shrink-0 items-center gap-2 border-b-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "terminals"
                 ? "border-cyan-600 bg-white text-cyan-700"
                 : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
-            <Store className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Cajas y Terminales" : "Registers & Terminals"}</span>
             <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] text-slate-700">
               {settings.terminals.length}
@@ -494,13 +491,12 @@ export function PosSettingsClient({
           <button
             type="button"
             onClick={() => setActiveTab("cashiers")}
-            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+            className={`flex shrink-0 items-center gap-2 border-b-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "cashiers"
                 ? "border-cyan-600 bg-white text-cyan-700"
                 : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
-            <Users className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Usuarios y equipo" : "Users & Team"}</span>
             <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] text-slate-700">
               {settings.cashiers.length}
@@ -510,39 +506,36 @@ export function PosSettingsClient({
           <button
             type="button"
             onClick={() => setActiveTab("access")}
-            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+            className={`flex shrink-0 items-center gap-2 border-b-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "access"
                 ? "border-cyan-600 bg-white text-cyan-700"
                 : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
-            <Shield className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Acceso a módulos" : "Module Access"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("generalSales")}
-            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+            className={`flex shrink-0 items-center gap-2 border-b-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "generalSales"
                 ? "border-cyan-600 bg-white text-cyan-700"
                 : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
-            <ShoppingCart className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Configuración general de ventas" : "General Sales Settings"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("preferences")}
-            className={`flex items-center gap-2 border-l-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
+            className={`flex shrink-0 items-center gap-2 border-b-4 px-4 py-3 text-left text-xs font-bold transition cursor-pointer ${
               activeTab === "preferences"
                 ? "border-cyan-600 bg-white text-cyan-700"
                 : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
             }`}
           >
-            <Shield className="h-4 w-4 text-cyan-600" />
             <span>{isEs ? "Preferencias y Seguridad" : "Preferences & Security"}</span>
           </button>
         </nav>
