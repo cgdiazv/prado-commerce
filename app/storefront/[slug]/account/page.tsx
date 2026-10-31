@@ -1,10 +1,6 @@
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import AuthPanel from "../auth-panel";
-import AccountSidebarLayout from "../account-sidebar-layout";
-
-const SHOPPER_SESSION_COOKIE = "prado_shop_session";
+import StorefrontAccountContent from "../../storefront-account-content";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -18,26 +14,5 @@ export default async function StorefrontAccountPage({ params }: PageProps) {
 
   if (!store) notFound();
 
-  const cookieStore = await cookies();
-  const sessionRaw = cookieStore.get(SHOPPER_SESSION_COOKIE)?.value ?? "";
-  const parts = decodeURIComponent(sessionRaw).split("::");
-  const isLoggedIn = parts.length === 3 && parts[0] === store.id && Boolean(parts[1]);
-
-  if (!isLoggedIn) {
-    return (
-      <div className="contents">
-        <main className="mx-auto w-full max-w-md flex-1 px-6 py-16">
-          <AuthPanel storeId={store.id} mainColor={store.mainColor} />
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="contents">
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-        <AccountSidebarLayout />
-      </main>
-    </div>
-  );
+  return <StorefrontAccountContent store={store} />;
 }

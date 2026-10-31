@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { sanitizeProductDescription } from "@/lib/product-description";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
+import StorefrontAccountContent from "../../../storefront-account-content";
 import PasswordResetForm from "../../../password-reset-form";
 import CategoryPageContent from "../../../category-page-content";
 import StorefrontProductClient from "../../../storefront-product-client";
@@ -55,6 +56,10 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
   }
 
   const theme = normalizeStorefrontTheme(store.activeTheme);
+
+  if (pathSegments?.length === 1 && pathSegments[0] === "account") {
+    return <StorefrontAccountContent store={store} />;
+  }
 
   // Handle /reset/[token] path for custom domain storefronts
   if (pathSegments?.[0] === "reset" && pathSegments[1]) {
