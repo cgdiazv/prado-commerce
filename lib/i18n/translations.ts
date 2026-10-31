@@ -138,6 +138,7 @@ export interface Translations {
     stores: string;
     allStores: string;
     themes: string;
+    pages: string;
     products: string;
     allProducts: string;
     addProduct: string;
@@ -487,6 +488,7 @@ export const translations: Record<Language, Translations> = {
       stores: "Tiendas",
       allStores: "Todas las tiendas",
       themes: "Temas",
+      pages: "Páginas",
       products: "Productos",
       allProducts: "Todos los productos",
       addProduct: "Añadir producto",
@@ -834,6 +836,7 @@ export const translations: Record<Language, Translations> = {
       stores: "Stores",
       allStores: "All Stores",
       themes: "Themes",
+      pages: "Pages",
       products: "Products",
       allProducts: "All Products",
       addProduct: "Add Product",

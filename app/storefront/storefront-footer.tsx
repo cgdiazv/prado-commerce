@@ -4,6 +4,13 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { StorefrontThemeId } from "@/lib/storefront-theme";
+import {
+  getPublishedStorefrontPageKeys,
+  getStorefrontPagePath,
+  getStorefrontPageTitle,
+  normalizeStorefrontPages,
+  type StorefrontPages,
+} from "@/lib/storefront-pages";
 import type { StorefrontCategory } from "./storefront-navbar";
 
 function InstagramIcon({ size = 15, className = "" }: { size?: number; className?: string }) {
@@ -30,6 +37,7 @@ type Props = {
   storeName: string;
   theme?: StorefrontThemeId;
   categories?: StorefrontCategory[];
+  pages?: StorefrontPages;
   basePath?: string;
 };
 
@@ -37,12 +45,19 @@ export default function StorefrontFooter({
   storeName,
   theme = "minimal",
   categories = [],
+  pages,
   basePath = "",
 }: Props) {
   const { t, language } = useLanguage();
   const isEs = language === "es";
   const year = new Date().getFullYear();
   const homeHref = basePath ? `${basePath}/` : "/";
+  const normalizedPages = normalizeStorefrontPages(pages);
+  const pageLinks = getPublishedStorefrontPageKeys(normalizedPages).map((key) => ({
+    key,
+    href: getStorefrontPagePath(basePath, key),
+    title: getStorefrontPageTitle(key, normalizedPages[key], language),
+  }));
 
   if (theme === "recinto") {
     return (
@@ -121,30 +136,17 @@ export default function StorefrontFooter({
                 {isEs ? "Ayuda y Soporte" : "Here to help"}
               </h3>
               <ul className="space-y-2 text-xs">
-                <li>
-                  <a href="#support" className="hover:text-white transition">
-                    {isEs ? "Contacto" : "Contact us"}
-                  </a>
-                </li>
-                <li>
-                  <a href="#support" className="hover:text-white transition">
-                    {isEs ? "Información de envíos" : "Shipping information"}
-                  </a>
-                </li>
-                <li>
-                  <a href="#support" className="hover:text-white transition">
-                    {isEs ? "Devoluciones y cambios" : "Returns & exchanges"}
-                  </a>
-                </li>
+                {pageLinks.map((link) => (
+                  <li key={link.key}>
+                    <Link href={link.href} className="hover:text-white transition">
+                      {link.title}
+                    </Link>
+                  </li>
+                ))}
                 <li>
                   <Link href={basePath ? `${basePath}/account` : "/account"} className="hover:text-white transition">
                     {isEs ? "Rastrea tu pedido" : "Track your order"}
                   </Link>
-                </li>
-                <li>
-                  <a href="#support" className="hover:text-white transition">
-                    {isEs ? "Preguntas frecuentes" : "Frequently asked questions"}
-                  </a>
                 </li>
               </ul>
             </div>
@@ -215,6 +217,15 @@ export default function StorefrontFooter({
       <footer className="border-t border-amber-200 bg-[#fffdf8] px-6 py-5">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
           <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
+          {pageLinks.length > 0 ? (
+            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+              {pageLinks.map((link) => (
+                <Link key={link.key} href={link.href} className="transition hover:text-slate-900">
+                  {link.title}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
           <a
             href="https://pradocommerce.com"
             target="_blank"
@@ -321,33 +332,22 @@ export default function StorefrontFooter({
               </ul>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#747470]">
-                {isEs ? "AYUDA" : "HELP"}
-              </p>
-              <ul className="space-y-2.5 text-[13px] text-[#20201e]">
-                <li>
-                  <a href="#faq" className="hover:opacity-70 transition">
-                    {isEs ? "Preguntas frecuentes" : "FAQ"}
-                  </a>
-                </li>
-                <li>
-                  <a href="mailto:soporte@pradocommerce.com" className="hover:opacity-70 transition">
-                    {isEs ? "Soporte" : "Support"}
-                  </a>
-                </li>
-                <li>
-                  <a href="#contact" className="hover:opacity-70 transition">
-                    {isEs ? "Contacto" : "Contact"}
-                  </a>
-                </li>
-                <li>
-                  <a href="#locations" className="hover:opacity-70 transition">
-                    {isEs ? "Puntos de venta" : "Locations"}
-                  </a>
-                </li>
-              </ul>
-            </div>
+            {pageLinks.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#747470]">
+                  {isEs ? "AYUDA" : "HELP"}
+                </p>
+                <ul className="space-y-2.5 text-[13px] text-[#20201e]">
+                  {pageLinks.map((link) => (
+                    <li key={link.key}>
+                      <Link href={link.href} className="hover:opacity-70 transition">
+                        {link.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </div>
 

@@ -379,6 +379,10 @@ export default function DashboardLayout({
           href: stores[0] ? `/dashboard/stores/${stores[0].id}/themes` : "/dashboard/stores",
           label: t.dashboard.themes,
         },
+        {
+          href: stores[0] ? `/dashboard/stores/${stores[0].id}/pages` : "/dashboard/stores",
+          label: t.dashboard.pages,
+        },
       ],
     },
     {
@@ -698,9 +702,11 @@ export default function DashboardLayout({
                                     ? pathname === "/dashboard/customers/new"
                                     : pathname === "/dashboard/customers"
                             : item.href === "/dashboard/stores"
-                              ? child.label === "Themes"
+                              ? child.href.endsWith("/themes")
                                 ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/themes")
-                                : pathname === "/dashboard/stores"
+                                : child.href.endsWith("/pages")
+                                  ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/pages")
+                                  : pathname === "/dashboard/stores"
                               : item.href === "/dashboard/tools"
                                 ? pathname === child.href
                               : pathname === child.href;

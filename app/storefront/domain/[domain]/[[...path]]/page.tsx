@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { sanitizeProductDescription } from "@/lib/product-description";
 import { normalizeStorefrontTheme } from "@/lib/storefront-theme";
 import StorefrontAccountContent from "../../../storefront-account-content";
+import StorefrontPageContent from "../../../storefront-page-content";
+import { getStorefrontContactInfo, hasStorefrontPageContent, isStorefrontPageKey, normalizeStorefrontPages } from "@/lib/storefront-pages";
 import PasswordResetForm from "../../../password-reset-form";
 import CategoryPageContent from "../../../category-page-content";
 import StorefrontProductClient from "../../../storefront-product-client";
@@ -48,6 +50,9 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
       activeTheme: true,
       mainColor: true,
       currency: true,
+      storefrontPages: true,
+      senderEmail: true,
+      shippingOrigin: true,
     },
   });
 
@@ -56,6 +61,17 @@ export default async function CustomDomainStorefrontPage({ params, searchParams 
   }
 
   const theme = normalizeStorefrontTheme(store.activeTheme);
+
+  if (pathSegments?.length === 2 && pathSegments[0] === "pages") {
+    const pageKey = pathSegments[1];
+    const page = isStorefrontPageKey(pageKey) ? normalizeStorefrontPages(store.storefrontPages)[pageKey] : null;
+
+    if (!isStorefrontPageKey(pageKey) || !page || !page.enabled || !hasStorefrontPageContent(pageKey, page)) {
+      notFound();
+    }
+
+    return <StorefrontPageContent pageKey={pageKey} page={page} homeHref="/" contact={getStorefrontContactInfo(store)} />;
+  }
 
   if (pathSegments?.length === 1 && pathSegments[0] === "account") {
     return <StorefrontAccountContent store={store} />;

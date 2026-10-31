@@ -3,6 +3,7 @@ import Script from "next/script";
 import type { StorefrontTheme } from "@prisma/client";
 import { getStoreBrandingCssVars } from "@/lib/branding";
 import { getStorefrontThemeClasses, normalizeStorefrontTheme } from "@/lib/storefront-theme";
+import type { StorefrontPages } from "@/lib/storefront-pages";
 import StorefrontFooter from "./storefront-footer";
 import StorefrontNavbar, { type StorefrontCategory } from "./storefront-navbar";
 
@@ -17,6 +18,7 @@ type StorefrontShellProps = {
     customCss?: string | null;
   };
   categories: StorefrontCategory[];
+  pages?: StorefrontPages;
   basePath?: string;
   allowCustomCss?: boolean;
 };
@@ -25,6 +27,7 @@ export default function StorefrontShell({
   children,
   store,
   categories,
+  pages,
   basePath = "",
   allowCustomCss = false,
 }: StorefrontShellProps) {
@@ -58,6 +61,7 @@ export default function StorefrontShell({
         storeName={store.name}
         theme={theme}
         categories={categories}
+        pages={pages}
         basePath={basePath}
       />
     </div>

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
+import { normalizeStorefrontPages } from "@/lib/storefront-pages";
 import StorefrontShell from "../storefront-shell";
 
 type StorefrontSlugLayoutProps = {
@@ -20,6 +21,7 @@ export default async function StorefrontSlugLayout({ children, params }: Storefr
       activeTheme: true,
       mainColor: true,
       customCss: true,
+      storefrontPages: true,
       ownerUser: {
         select: {
           plan: true,
@@ -45,6 +47,7 @@ export default async function StorefrontSlugLayout({ children, params }: Storefr
     <StorefrontShell
       store={store}
       categories={store.categories}
+      pages={normalizeStorefrontPages(store.storefrontPages)}
       basePath={basePath}
       allowCustomCss={limits.allowCustomCss}
     >

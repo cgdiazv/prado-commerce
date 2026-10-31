@@ -324,6 +324,64 @@ export async function sendInvoiceEmail(input: InvoiceEmailInput) {
   await sendEmail(input.store, input.to, `Invoice for order #${input.orderNumber}`, html);
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+type StoreContactMessageInput = {
+  storeName: string;
+  to: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone?: string | null;
+  message: string;
+};
+
+// Sends a storefront contact-form message to the tenant; replies go straight to the buyer.
+export async function sendStoreContactMessageEmail(input: StoreContactMessageInput) {
+  if (!resend) {
+    console.warn("[STORE_CONTACT_EMAIL_DISABLED] RESEND_API_KEY is not configured.");
+    return { ok: true, simulated: true };
+  }
+
+  const buyerName = escapeHtml(input.buyerName);
+  const buyerEmail = escapeHtml(input.buyerEmail);
+  const phoneRow = input.buyerPhone
+    ? `<p style="margin:0 0 6px 0;"><strong>Phone:</strong> ${escapeHtml(input.buyerPhone)}</p>`
+    : "";
+
+  const html = `
+    <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" style="max-width:620px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+        <tr>
+          <td style="padding:24px;">
+            <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">${escapeHtml(input.storeName)}</p>
+            <h1 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;color:#0f172a;">New message from your storefront</h1>
+            <p style="margin:0 0 6px 0;"><strong>Name:</strong> ${buyerName}</p>
+            <p style="margin:0 0 6px 0;"><strong>Email:</strong> ${buyerEmail}</p>
+            ${phoneRow}
+            <div style="margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#334155;">${escapeHtml(input.message)}</div>
+            <p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Reply to this email to respond directly to ${buyerName}.</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  return await resend.emails.send({
+    from: getFromHeader({ name: input.storeName }),
+    to: input.to,
+    replyTo: input.buyerEmail,
+    subject: `New contact message from ${input.buyerName}`,
+    html,
+  });
+}
+
 type SupportTicketInput = {
   userEmail: string;
   userName?: string | null;
