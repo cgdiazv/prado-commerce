@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Check, ExternalLink, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, ChevronDown, ExternalLink, Plus, Store, Trash2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import {
   MAX_FAQ_ANSWER_LENGTH,
@@ -21,6 +22,7 @@ import { saveStorefrontPages, type StorefrontPagesActionState } from "./actions"
 type StorePagesClientProps = {
   store: { id: string; name: string; slug: string };
   initialPages: StorefrontPages;
+  stores?: Array<{ id: string; name: string }>;
 };
 
 const initialState: StorefrontPagesActionState = { error: null, message: null };
@@ -128,7 +130,8 @@ function FaqItemsEditor({ initialItems, isEs }: { initialItems: FaqItem[]; isEs:
   );
 }
 
-export function StorePagesClient({ store, initialPages }: StorePagesClientProps) {
+export function StorePagesClient({ store, initialPages, stores = [] }: StorePagesClientProps) {
+  const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
   const [state, formAction, isPending] = useActionState(saveStorefrontPages, initialState);
@@ -144,12 +147,30 @@ export function StorePagesClient({ store, initialPages }: StorePagesClientProps)
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             {isEs
-              ? `Administra las páginas enlazadas en el pie de página de ${store.name}. Solo se muestran las páginas activadas que tengan contenido.`
-              : `Manage the pages linked from the ${store.name} storefront footer. Only enabled pages with content are shown.`}
+              ? `Administra las páginas enlazadas en el pie de página de ${store.name}.`
+              : `Manage the pages linked from the ${store.name} storefront footer.`}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {stores.length > 1 ? (
+            <div className="relative w-56 shrink-0">
+              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                value={store.id}
+                onChange={(event) => router.push(`/dashboard/stores/${event.target.value}/pages`)}
+                aria-label={isEs ? "Seleccionar tienda" : "Select store"}
+                className="w-full cursor-pointer appearance-none rounded-full border border-slate-200 bg-white py-2 pl-9 pr-9 text-sm font-medium text-slate-700 shadow-2xs outline-none transition hover:bg-slate-50 focus:border-slate-400"
+              >
+                {stores.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
+          ) : null}
           <Link
             href={`/storefront/${store.slug}`}
             target="_blank"

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ExternalLink, Store } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 import { activateStoreTheme } from "./actions";
@@ -28,9 +29,11 @@ interface StoreThemesClientProps {
   store: StoreData;
   activeTheme: ThemeId;
   userPlan?: "STARTER" | "PRO" | "ENTERPRISE";
+  stores?: Array<{ id: string; name: string }>;
 }
 
-export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: StoreThemesClientProps) {
+export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER", stores = [] }: StoreThemesClientProps) {
+  const router = useRouter();
   const plan = getPlanOrDefault(userPlan);
   const limits = getPlanLimits(plan);
   const isLocked = !limits.allowCustomCss;
@@ -81,12 +84,31 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER" }: 
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             {isEs
-              ? `Selecciona el diseño y estilo visual que tus clientes experimentarán en ${store.name}.`
-              : `Select the visual system customers experience in your storefront for ${store.name}.`}
+              ? "Selecciona el diseño y estilo visual que tus clientes experimentarán en tu tienda."
+              : "Select the visual system customers experience in your storefront."}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {stores.length > 1 ? (
+            <div className="relative w-56 shrink-0">
+              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                id="theme-store-select"
+                value={store.id}
+                onChange={(event) => router.push(`/dashboard/stores/${event.target.value}/themes`)}
+                aria-label={isEs ? "Seleccionar tienda" : "Select store"}
+                className="w-full cursor-pointer appearance-none rounded-full border border-slate-200 bg-white py-2 pl-9 pr-9 text-sm font-medium text-slate-700 shadow-2xs outline-none transition hover:bg-slate-50 focus:border-slate-400"
+              >
+                {stores.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
+          ) : null}
           <Link
             href={`/storefront/${store.slug}`}
             target="_blank"

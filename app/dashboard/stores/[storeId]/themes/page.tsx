@@ -56,6 +56,11 @@ export default async function StoreThemesPage({ params }: ThemesPageProps) {
   }
 
   const activeTheme = normalizeStorefrontTheme(store.activeTheme);
+  const userStores = await prisma.store.findMany({
+    where: { ownerUserId: user.id },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
-  return <StoreThemesClient store={store} activeTheme={activeTheme} userPlan={user.plan} />;
+  return <StoreThemesClient store={store} activeTheme={activeTheme} userPlan={user.plan} stores={userStores} />;
 }

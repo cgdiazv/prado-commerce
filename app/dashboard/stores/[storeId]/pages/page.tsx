@@ -41,9 +41,17 @@ export default async function StorePagesPage({ params }: PagesPageProps) {
     notFound();
   }
 
+  const userStores = await prisma.store.findMany({
+    where: { ownerUserId: user.id },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <StorePagesClient
+      key={store.id}
       store={{ id: store.id, name: store.name, slug: store.slug }}
+      stores={userStores}
       initialPages={normalizeStorefrontPages(store.storefrontPages)}
     />
   );
