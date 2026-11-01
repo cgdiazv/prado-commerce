@@ -10,7 +10,7 @@ import HeroImageManager from "./hero-image-manager";
 import HeroTextForm from "./hero-text-form";
 import CustomCssEditor from "./custom-css-editor";
 
-type ThemeId = "mercado" | "minimal" | "recinto" | "classic";
+type ThemeId = "mercado" | "minimal" | "recinto" | "calipso";
 
 type StoreData = {
   id: string;
@@ -66,12 +66,13 @@ export function StoreThemesClient({ store, activeTheme, userPlan = "STARTER", st
       thumbnail: "/storefront/recinto/recinto-thumb.png",
     },
     {
-      id: "classic",
-      title: isEs ? "Clásico" : "Classic",
+      id: "calipso",
+      title: "Calipso",
       description: isEs
-        ? "Estructura equilibrada con espaciado atemporal y jerarquía de tienda refinada."
-        : "Balanced structure with timeless spacing and refined storefront hierarchy.",
-      swatch: "from-amber-200 via-stone-100 to-slate-300",
+        ? "Una tienda editorial y luminosa con tonos cálidos, acentos cítricos y hallazgos cuidadosamente seleccionados para todos."
+        : "A sunlit editorial storefront with warm tones, citrus accents, and thoughtfully curated finds for everyone.",
+      swatch: "from-[#f4d45c] via-[#fff8e9] to-[#a43d1b]",
+      thumbnail: "/storefront/calipso-thumb.png",
     },
   ];
 

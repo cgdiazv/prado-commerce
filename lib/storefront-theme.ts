@@ -1,16 +1,16 @@
 import type { StorefrontTheme } from "@prisma/client";
 
-export type StorefrontThemeId = "mercado" | "minimal" | "recinto" | "classic";
+export type StorefrontThemeId = "mercado" | "minimal" | "recinto" | "calipso";
 
 export function normalizeStorefrontTheme(
-  value: StorefrontTheme | "recinto" | "minimal" | "mercado" | "classic" | null | undefined,
+  value: StorefrontTheme | "recinto" | "minimal" | "mercado" | "classic" | "calipso" | null | undefined,
 ): StorefrontThemeId {
   if (value === "RECINTO" || value === "recinto") {
     return "recinto";
   }
 
-  if (value === "CLASSIC" || value === "classic") {
-    return "classic";
+  if (value === "CLASSIC" || value === "classic" || value === "calipso") {
+    return "calipso";
   }
 
   return "mercado";
@@ -21,7 +21,7 @@ export function toStorefrontThemeEnum(value: StorefrontThemeId): StorefrontTheme
     return "RECINTO";
   }
 
-  if (value === "classic") {
+  if (value === "calipso") {
     return "CLASSIC";
   }
 
@@ -40,14 +40,14 @@ export function getStorefrontThemeClasses(theme: StorefrontThemeId) {
     };
   }
 
-  if (theme === "classic") {
+  if (theme === "calipso") {
     return {
-      shell: "bg-[#f8f3e8] text-slate-900",
-      panel: "border-amber-200 bg-[#fffdf8] shadow-sm",
-      mutedPanel: "border-amber-200 bg-amber-50/50",
-      productCard: "border-amber-200 bg-[#fffdf8] shadow-sm hover:shadow-md",
-      hero: "border-amber-200 bg-[linear-gradient(160deg,_#fffdf8,_#f8edd2)] text-slate-900 shadow-sm",
-      featuredWrap: "border-amber-200 bg-[#fffdf8]",
+      shell: "bg-[#fffaf2] text-[#352319] selection:bg-[#a43d1b] selection:text-white",
+      panel: "border-[#eadfce] bg-[#fffaf2] shadow-none",
+      mutedPanel: "border-[#eadfce] bg-[#fbf2df]",
+      productCard: "border-[#eadfce] bg-[#fffaf2] hover:border-[#a43d1b]/50 transition-all duration-200",
+      hero: "border-transparent bg-[#fbefca] text-[#352319]",
+      featuredWrap: "border-[#eadfce] bg-[#fffaf2]",
     };
   }
 
@@ -88,14 +88,14 @@ export function getStorefrontThemeHeroContentWithOverrides(
             : "Thoughtful pieces for the way you live. Discover a softer side of everyday essentials.",
           buttonText: isEs ? "Explorar colección" : "Shop the collection",
         }
-      : theme === "classic"
+      : theme === "calipso"
         ? {
-            eyebrow: isEs ? "Colección curada" : "Curated collection",
-            title: isEs ? `Bienvenido a ${storeName}` : `Welcome to ${storeName}`,
+            eyebrow: isEs ? "ENCUENTRA TU PRÓXIMO FAVORITO" : "FIND YOUR NEXT FAVORITE",
+            title: isEs ? "Un poco de sol. Mucho de ti." : "A little sunshine. A lot of you.",
             subtitle: isEs
-              ? "Un catálogo atemporal que resalta la calidad y productos destacados."
-              : "A timeless catalog layout that highlights quality picks and featured products first.",
-            buttonText: isEs ? "Ver productos destacados" : "View featured products",
+              ? "Accesorios, belleza y hallazgos cotidianos para darle un giro bonito a tu día."
+              : "Accessories, beauty, and everyday finds to bring a little brightness to your day.",
+            buttonText: isEs ? "Descubrir novedades" : "Discover new arrivals",
           }
         : {
             // Mercado theme defaults from Figma

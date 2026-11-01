@@ -7,7 +7,7 @@ export default async function DashboardPage() {
   const currentPlan = user?.plan ?? "STARTER";
   const isStarter = currentPlan === "STARTER";
 
-  let totalRevenue = 0;
+  let totalClients = 0;
   let totalOrders = 0;
   let totalProducts = 0;
   let totalStores = 0;
@@ -37,6 +37,10 @@ export default async function DashboardPage() {
         baseCurrency = stores[0].currency;
         const storeIds = stores.map((s) => s.id);
 
+        totalClients = await prisma.customer.count({
+          where: { storeId: { in: storeIds } },
+        });
+
         const products = await prisma.product.findMany({
           where: { storeId: { in: storeIds } },
           select: { id: true },
@@ -53,7 +57,6 @@ export default async function DashboardPage() {
         orders.forEach((order) => {
           if (order.status === "CANCELLED") return;
           const orderTotal = Number(order.total) || 0;
-          totalRevenue += orderTotal;
 
           const orderDate = new Date(order.createdAt);
           if (orderDate.getFullYear() === currentYear) {
@@ -76,7 +79,7 @@ export default async function DashboardPage() {
     <DashboardSummaryView
       totalStores={totalStores}
       totalProducts={totalProducts}
-      totalRevenue={totalRevenue}
+      totalClients={totalClients}
       totalOrders={totalOrders}
       baseCurrency={baseCurrency}
       currentPlan={currentPlan}

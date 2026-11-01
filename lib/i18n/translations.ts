@@ -179,6 +179,7 @@ export interface Translations {
     starterPlanNotice: string;
     totalStores: string;
     totalProducts: string;
+    totalClients: string;
     totalRevenue: string;
     totalOrders: string;
   };
@@ -529,6 +530,7 @@ export const translations: Record<Language, Translations> = {
       starterPlanNotice: "Estás en el plan Starter: 1 tienda, hasta 50 productos por tienda y sin dominios personalizados. Actualiza a Prado Commerce Pro para desbloquear mayor capacidad.",
       totalStores: "Tiendas totales",
       totalProducts: "Productos totales",
+      totalClients: "Clientes totales",
       totalRevenue: "Ingresos totales",
       totalOrders: "Pedidos totales",
     },
@@ -877,6 +879,7 @@ export const translations: Record<Language, Translations> = {
       starterPlanNotice: "You are on the Starter plan: 1 store, up to 50 products per store, and no custom domains. Upgrade to Prado Commerce Pro to unlock more growth capacity.",
       totalStores: "Total Stores",
       totalProducts: "Total Products",
+      totalClients: "Total Clients",
       totalRevenue: "Total Revenue",
       totalOrders: "Total Orders",
     },

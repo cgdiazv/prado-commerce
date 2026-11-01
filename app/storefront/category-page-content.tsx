@@ -123,6 +123,8 @@ export default function CategoryPageContent({
                           className={`relative z-10 px-4 py-1.5 text-xs font-medium transition ${
                             theme === "recinto"
                               ? "rounded-[4px] border border-[#344e41] text-[#344e41] hover:bg-[#344e41] hover:text-white"
+                              : theme === "calipso"
+                                ? "rounded-full bg-[#a43d1b] text-white hover:bg-[#873116]"
                               : "rounded-full bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
                           }`}
                         >

@@ -15,7 +15,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
-  getStorefrontThemeClasses,
   getStorefrontThemeHeroContentWithOverrides,
   normalizeStorefrontTheme,
 } from "@/lib/storefront-theme";
@@ -153,8 +152,6 @@ export default function StorefrontHomeClient({
   const { t, language } = useLanguage();
   const isEs = language === "es";
   const theme = normalizeStorefrontTheme(store.activeTheme);
-  const themeClasses = getStorefrontThemeClasses(theme);
-  const hasHeroImage = Boolean(store.heroImageUrl);
   const isMercado = theme === "mercado" || theme === "minimal";
 
   // Interactive state for Mercado theme
@@ -192,15 +189,6 @@ export default function StorefrontHomeClient({
     language,
   );
 
-  const productGroups = categories
-    .map((category) => ({
-      ...category,
-      products: products.filter((product) => product.category?.id === category.id),
-    }))
-    .filter((group) => group.products.length > 0);
-
-  const uncategorizedProducts = products.filter((product) => !product.category);
-
   const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
     style: "currency",
     currency: store.currency || "USD",
@@ -228,8 +216,73 @@ export default function StorefrontHomeClient({
       return 0;
     });
 
-  // New arrivals products for Recinto
+  // New arrivals products
   const newArrivalsList = products.slice(-4).reverse();
+  const renderCalipsoProducts = (items: FeaturedProduct[]) =>
+    items.slice(0, 4).map((product, index) => {
+      const variant = product.variants[0];
+      const isSoldOut = variant
+        ? isStockUnavailable(variant.stockStatus, variant.inventory)
+        : false;
+
+      return (
+        <article key={product.id} className="group min-w-0">
+          <div className="relative overflow-hidden rounded-[18px] bg-[#f4ead9]">
+            <Link href={`${base}/products/${product.id}`} aria-label={product.title} className="block">
+              {product.images[0] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={product.images[0]}
+                  alt={product.title}
+                  className="aspect-[0.86] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                />
+              ) : (
+                <div className="flex aspect-[0.86] items-center justify-center text-sm text-[#8b7b6c]">
+                  {t.storefront.noImage}
+                </div>
+              )}
+            </Link>
+            {index === 0 ? (
+              <span className="absolute left-3 top-3 rounded-full bg-[#f4d45c] px-3 py-1 text-[9px] font-medium text-[#493126]">
+                {isEs ? "La selección Calipso" : "The Calipso edit"}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => toggleWishlist(product.id)}
+              aria-label={wishlist[product.id]
+                ? (isEs ? "Quitar de favoritos" : "Remove from favorites")
+                : (isEs ? "Agregar a favoritos" : "Add to favorites")}
+              aria-pressed={Boolean(wishlist[product.id])}
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[#493126] transition hover:text-[#a43d1b]"
+            >
+              <Heart size={15} fill={wishlist[product.id] ? "currentColor" : "none"} />
+            </button>
+          </div>
+          <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.18em] text-[#a43d1b]">
+            {product.category?.name ?? (isEs ? "HALLAZGOS" : "FINDS")}
+          </p>
+          <Link href={`${base}/products/${product.id}`} className="mt-1 block font-serif text-lg text-[#352319] hover:text-[#a43d1b]">
+            {product.title}
+          </Link>
+          <p className="mt-1 text-xs text-[#8b7b6c]">
+            {variant ? formatter.format(Number(variant.price)) : t.storefront.selectOptions}
+          </p>
+          {variant?.id ? (
+            <button
+              type="button"
+              data-prado-add={variant.id}
+              data-prado-add-to-cart={variant.id}
+              disabled={isSoldOut}
+              className="mt-3 inline-flex w-full items-center justify-between rounded-full border border-[#e6d9c8] px-3 py-2 text-[10px] font-medium text-[#6d4735] transition hover:border-[#a43d1b] hover:text-[#a43d1b] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>{isSoldOut ? (isEs ? "Agotado" : "Sold out") : t.storefront.addToCart}</span>
+              <Plus size={13} />
+            </button>
+          ) : null}
+        </article>
+      );
+    });
 
   return (
     <div className="contents">
@@ -261,62 +314,291 @@ export default function StorefrontHomeClient({
             </div>
           </div>
         </section>
-      ) : theme === "classic" ? (
+      ) : theme === "calipso" ? (
         <section
-          className={`w-full border-b px-6 py-14 text-center ${themeClasses.hero}`}
-          style={
-            hasHeroImage
-              ? {
-                  backgroundImage: `linear-gradient(rgba(15,23,42,0.55), rgba(15,23,42,0.55)), url(${store.heroImageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : undefined
-          }
+          className="relative flex min-h-[480px] items-center justify-center overflow-hidden bg-[#493126] px-6 py-20 text-center sm:min-h-[560px] lg:min-h-[650px]"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(38, 21, 14, 0.62), rgba(38, 21, 14, 0.12)), url(${store.heroImageUrl || "/figma/17f163c69a1dbbdf5bc7ef51aa0ae0187f315991.png"})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          <div className="mx-auto w-full max-w-6xl">
-            <p
-              className={`text-xs font-semibold uppercase tracking-[0.22em] ${
-                hasHeroImage ? "text-white/90" : "opacity-80"
-              }`}
-            >
+          <div className="mx-auto max-w-3xl text-white">
+            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[#f4d45c] sm:text-[10px]">
               {heroContent.eyebrow}
             </p>
-            <h1
-              className={`mt-3 text-3xl font-semibold tracking-tight sm:text-4xl ${
-                hasHeroImage ? "text-white" : ""
-              }`}
-            >
+            <h1 className="mx-auto mt-5 max-w-2xl font-serif text-5xl leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
               {heroContent.title}
             </h1>
-            <p
-              className={`mx-auto mt-3 max-w-2xl text-sm sm:text-base ${
-                hasHeroImage ? "text-white/90" : ""
-              }`}
-            >
+            <p className="mx-auto mt-5 max-w-lg text-xs leading-relaxed text-white/90 sm:text-sm">
               {heroContent.subtitle}
             </p>
-            <a
-              href="#all-products"
-              className={`mt-6 inline-block rounded-full px-5 py-2 text-sm font-semibold transition ${
-                hasHeroImage
-                  ? "bg-white text-slate-900 hover:bg-slate-100"
-                  : "bg-[var(--store-main-color)] text-white hover:bg-[var(--store-main-color-hover)]"
-              }`}
-            >
-              {heroContent.buttonText}
-            </a>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="#new-arrivals"
+                className="inline-flex items-center gap-3 rounded-full bg-[#f4d45c] px-5 py-3 text-[11px] font-semibold text-[#352319] transition hover:bg-[#f8df7b]"
+              >
+                {heroContent.buttonText}
+                <ArrowRight size={14} />
+              </a>
+              <a
+                href="#all-products"
+                className="inline-flex items-center gap-3 rounded-full border border-white/75 px-5 py-3 text-[11px] font-medium text-white transition hover:bg-white/10"
+              >
+                {isEs ? "Explorar accesorios" : "Explore accessories"}
+                <ArrowUpRight size={14} />
+              </a>
+            </div>
+          </div>
+          <div className="absolute bottom-5 left-6 flex items-center gap-3 text-[9px] tracking-[0.2em] text-white/85 sm:left-10">
+            <span>01</span><span className="h-px w-9 bg-[#f4d45c]" /><span>03</span>
           </div>
         </section>
       ) : null}
 
       <main
-        className={`mx-auto w-full flex-1 pb-16 ${
-          isMercado
-            ? "max-w-7xl px-6 sm:px-10 lg:px-16 pt-8 sm:pt-10"
-            : "max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+        className={`w-full flex-1 ${
+          theme === "calipso"
+            ? "pb-0"
+            : `mx-auto pb-16 ${
+                isMercado
+                  ? "max-w-7xl px-6 sm:px-10 lg:px-16 pt-8 sm:pt-10"
+                  : "max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+              }`
         }`}
       >
+        {theme === "calipso" ? (
+          <div className="space-y-16 pb-16 pt-12 sm:space-y-24 sm:pt-16">
+            <section id="all-products" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+              <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+                <div>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                    {isEs ? "UN MUNDO DE PEQUEÑOS HALLAZGOS" : "A WORLD OF LITTLE FINDS"}
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#352319] sm:text-4xl">
+                    {isEs ? "¿Qué te inspira hoy?" : "What inspires you today?"}
+                  </h2>
+                </div>
+                <Link href="#new-arrivals" className="hidden items-center gap-1 text-[10px] font-medium text-[#a43d1b] hover:underline sm:inline-flex">
+                  {isEs ? "Ver todas las categorías" : "Explore all categories"}
+                  <ArrowUpRight size={13} />
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+                {(categories.length > 0
+                  ? categories.slice(0, 4).map((category, index) => ({
+                      id: category.id,
+                      name: category.name,
+                      href: `${base}/category/${category.slug}`,
+                      image: DEFAULT_CATEGORY_TILES[index % DEFAULT_CATEGORY_TILES.length].image,
+                    }))
+                  : DEFAULT_CATEGORY_TILES.slice(0, 4).map((category) => ({
+                      id: category.name,
+                      name: isEs ? category.nameEs : category.name,
+                      href: "#new-arrivals",
+                      image: category.image,
+                    }))
+                ).map((category) => (
+                  <Link key={category.id} href={category.href} className="group relative overflow-hidden rounded-[14px] bg-[#f4ead9]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={category.image} alt="" className="aspect-[0.88] w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                    <span className="absolute inset-0 bg-gradient-to-t from-[#352319]/70 via-transparent to-transparent" />
+                    <span className="absolute bottom-4 left-4 font-serif text-xl text-white sm:bottom-5 sm:left-5 sm:text-2xl">
+                      {category.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <section id="new-arrivals" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+              <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+                <div>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                    {isEs ? "PARA TI, CON CARIÑO" : "A LITTLE SOMETHING FOR YOU"}
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#352319] sm:text-4xl">
+                    {isEs ? "Nuevos hallazgos" : "New discoveries"}
+                  </h2>
+                </div>
+                <Link href="#featured-products" className="inline-flex items-center gap-1 text-[10px] font-medium text-[#a43d1b] hover:underline">
+                  {isEs ? "Ver todo" : "See all"}
+                  <ArrowUpRight size={13} />
+                </Link>
+              </div>
+              {newArrivalsList.length > 0 ? (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-x-5">
+                  {renderCalipsoProducts(newArrivalsList)}
+                </div>
+              ) : (
+                <p className="py-12 text-center text-sm text-[#8b7b6c]">{t.storefront.noProductsAvailable}</p>
+              )}
+            </section>
+
+            <section className="mx-auto grid max-w-7xl overflow-hidden bg-[#f8ecc4] sm:grid-cols-2">
+              <div className="relative min-h-[300px] sm:min-h-[420px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/figma/154ac87d24c15baf7bbd03b72c36cc957d8ccc6f.png"
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col justify-center px-7 py-12 sm:px-10 lg:px-16">
+                <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                  {isEs ? "EL MUNDO CALIPSO" : "THE CALIPSO WORLD"}
+                </p>
+                <h2 className="mt-3 max-w-md font-serif text-4xl leading-tight text-[#352319] sm:text-5xl">
+                  {isEs ? "Un universo hecho para disfrutar." : "A universe made for the joy of it."}
+                </h2>
+                <p className="mt-4 max-w-md text-xs leading-6 text-[#725b49]">
+                  {isEs
+                    ? "Piezas especiales, ideas bonitas y pequeños rituales para acompañarte todos los días."
+                    : "Special pieces, lovely ideas, and little rituals to bring a bit of joy to every day."}
+                </p>
+                <a href="#journal" className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-[#a43d1b] px-5 py-3 text-[10px] font-semibold text-white transition hover:bg-[#873116]">
+                  {isEs ? "Conoce nuestro universo" : "Discover our world"}
+                  <ArrowRight size={13} />
+                </a>
+              </div>
+            </section>
+
+            <section id="featured-products" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+              <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+                <div>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                    {isEs ? "LA SELECCIÓN CALIPSO" : "THE CALIPSO EDIT"}
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#352319] sm:text-4xl">
+                    {isEs ? "Para volver a elegir" : "The ones you’ll choose again"}
+                  </h2>
+                </div>
+                <Link href="#new-arrivals" className="inline-flex items-center gap-1 text-[10px] font-medium text-[#a43d1b] hover:underline">
+                  {isEs ? "Explorar la selección" : "Explore the edit"}
+                  <ArrowUpRight size={13} />
+                </Link>
+              </div>
+              {featuredProducts.length > 0 || products.length > 0 ? (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-x-5">
+                  {renderCalipsoProducts(
+                    featuredProducts.length > 0 ? featuredProducts : products,
+                  )}
+                </div>
+              ) : (
+                <p className="py-12 text-center text-sm text-[#8b7b6c]">{t.storefront.noProductsAvailable}</p>
+              )}
+            </section>
+
+            <section className="mx-auto grid max-w-7xl overflow-hidden bg-[#a43d1b] text-white sm:grid-cols-[0.85fr_1.15fr]">
+              <div className="flex flex-col justify-center px-7 py-12 sm:px-10 lg:px-14">
+                <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#f4d45c]">
+                  {isEs ? "PORQUE SÍ TAMBIÉN ES UN MOTIVO" : "JUST BECAUSE IS A REASON"}
+                </p>
+                <h2 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">
+                  {isEs ? "El detalle perfecto existe." : "The perfect little gift exists."}
+                </h2>
+                <p className="mt-4 max-w-sm text-xs leading-6 text-white/85">
+                  {isEs
+                    ? "Encuentra algo especial para alguien que quieres — o para ti."
+                    : "Find something special for someone you love — or for yourself."}
+                </p>
+                <a href="#all-products" className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-[#f4d45c] px-5 py-3 text-[10px] font-semibold text-[#352319] transition hover:bg-[#f8df7b]">
+                  {isEs ? "Encontrar un regalo" : "Find a gift"}
+                  <ArrowRight size={13} />
+                </a>
+              </div>
+              <div className="relative min-h-[280px] sm:min-h-[390px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/storefront/recinto/c512551358ec113f2ea35762868750f85667bbfa.png"
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </div>
+            </section>
+
+            <section id="journal" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+              <div className="mb-6">
+                <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                  {isEs ? "HISTORIAS PARA DISFRUTAR" : "STORIES TO SAVOR"}
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-[#352319] sm:text-4xl">
+                  {isEs ? "Los pequeños de lo especial" : "Little things, lovely stories"}
+                </h2>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {[
+                  {
+                    image: "/figma/1d65e0bc13c8619a307d0d2a1391a14a58d3f82d.png",
+                    title: isEs ? "Una forma más bonita de elegir" : "A more thoughtful way to choose",
+                  },
+                  {
+                    image: "/figma/038d0c7a5e52a1b8469dc780a9428181cfae655d.png",
+                    title: isEs ? "Inspiración para todos los días" : "Everyday inspiration",
+                  },
+                ].map((story) => (
+                  <a key={story.image} href="#all-products" className="group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={story.image} alt="" className="aspect-[1.9] w-full rounded-[14px] object-cover transition duration-500 group-hover:brightness-95" />
+                    <p className="mt-3 font-serif text-xl text-[#352319]">{story.title}</p>
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#a43d1b]">
+                      {isEs ? "Leer historia" : "Read the story"} <ArrowRight size={12} />
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-[#493126] px-5 py-8 text-[#fffaf2] sm:px-8">
+              <div className="mx-auto grid max-w-7xl gap-6 text-center sm:grid-cols-3">
+                {[
+                  isEs ? "Envíos con cariño" : "Thoughtful delivery",
+                  isEs ? "Pagos seguros" : "Secure payments",
+                  isEs ? "Estamos aquí para ayudarte" : "Here when you need us",
+                ].map((benefit, index) => (
+                  <div key={benefit} className="flex flex-col items-center gap-2">
+                    <span className="font-serif text-2xl text-[#f4d45c]">{["✳", "♡", "↗"][index]}</span>
+                    <p className="text-[10px] tracking-wide">{benefit}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mx-auto grid max-w-7xl items-center gap-6 bg-[#f4d45c] px-6 py-10 sm:grid-cols-[1fr_1fr] sm:px-10 lg:px-16">
+              <div>
+                <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-[#a43d1b]">
+                  {isEs ? "UN POCO DE CALIPSO EN TU INBOX" : "A LITTLE CALIPSO IN YOUR INBOX"}
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-[#352319] sm:text-4xl">
+                  {isEs ? "Cosas bonitas, de vez en cuando." : "Lovely things, every now and then."}
+                </h2>
+              </div>
+              <div>
+                {newsletterSubscribed ? (
+                  <p className="text-sm font-medium text-[#493126]">
+                    {isEs ? "¡Gracias por suscribirte!" : "Thank you for subscribing!"}
+                  </p>
+                ) : (
+                  <form onSubmit={handleNewsletterSubmit} className="flex rounded-full bg-[#fffaf2] p-1">
+                    <input
+                      type="email"
+                      required
+                      value={newsletterEmail}
+                      onChange={(event) => setNewsletterEmail(event.target.value)}
+                      placeholder={isEs ? "Tu correo electrónico" : "Your email address"}
+                      className="min-w-0 flex-1 bg-transparent px-4 text-xs text-[#352319] outline-none placeholder:text-[#8b7b6c]"
+                    />
+                    <button type="submit" className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#a43d1b] px-5 py-3 text-[10px] font-semibold text-white transition hover:bg-[#873116]">
+                      {isEs ? "Suscribirme" : "Subscribe"}
+                      <ArrowRight size={13} />
+                    </button>
+                  </form>
+                )}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
         {/* ================================================================ */}
         {/* THEME: RECINTO (NEW FIGMA STOREFRONT THEME)                      */}
         {/* ================================================================ */}
@@ -881,52 +1163,6 @@ export default function StorefrontHomeClient({
         ) : null}
 
         {/* ================================================================ */}
-        {/* THEME: CLASSIC HERO                                              */}
-        {/* ================================================================ */}
-        {theme === "classic" ? (
-          <section className={`mb-10 rounded-3xl border px-8 py-10 ${themeClasses.hero}`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">
-              {heroContent.eyebrow}
-            </p>
-            <div className="mt-5 grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  {heroContent.title}
-                </h1>
-                <p className="mt-4 max-w-2xl text-sm text-slate-700 sm:text-base">
-                  {heroContent.subtitle}
-                </p>
-              </div>
-              {hasHeroImage ? (
-                <div className="overflow-hidden rounded-2xl border border-amber-200 bg-white/70">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={store.heroImageUrl!}
-                    alt={`${store.name} hero`}
-                    className="h-52 w-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-amber-200 bg-white/70 p-5">
-                  <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
-                    {t.storefront.featuredSelection}
-                  </p>
-                  <p className="mt-3 text-sm text-slate-700">
-                    {t.storefront.featuredSelectionDesc}
-                  </p>
-                  <a
-                    href="#featured-products"
-                    className="mt-5 inline-block text-sm font-semibold text-[var(--store-main-color)] hover:underline"
-                  >
-                    {heroContent.buttonText}
-                  </a>
-                </div>
-              )}
-            </div>
-          </section>
-        ) : null}
-
-        {/* ================================================================ */}
         {/* THEME: MERCADO CATALOG (FIGMA STOREFRONT TEMPLATE)               */}
         {/* ================================================================ */}
         {isMercado ? (
@@ -1094,178 +1330,6 @@ export default function StorefrontHomeClient({
           </section>
         ) : null}
 
-        {/* ================================================================ */}
-        {/* CLASSIC FEATURED PRODUCTS GRID                                   */}
-        {/* ================================================================ */}
-        {theme === "classic" && featuredProducts.length > 0 ? (
-          <section
-            id="featured-products"
-            className={`mb-10 rounded-3xl border px-6 py-6 ${themeClasses.featuredWrap}`}
-          >
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">{t.storefront.featuredProducts}</h2>
-            </div>
-            <div className="grid gap-3">
-              {featuredProducts.map((product, index) => {
-                const featuredPrice = product.variants[0]?.price;
-                const isSoldOut = product.variants[0]
-                  ? isStockUnavailable(product.variants[0].stockStatus, product.variants[0].inventory)
-                  : false;
-                return (
-                  <Link
-                    key={product.id}
-                    href={`${base}/products/${product.id}`}
-                    className={`relative grid items-center gap-4 rounded-lg border p-3 transition sm:grid-cols-[90px_1fr_auto] ${themeClasses.productCard}`}
-                  >
-                    {isSoldOut && (
-                      <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-                        {language === "es" ? "Agotado" : "Sold Out"}
-                      </span>
-                    )}
-                    {product.images[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        className="h-20 w-full rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-20 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
-                        {t.storefront.noImage}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
-                        No. {index + 1}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {product.title}
-                      </p>
-                    </div>
-                    <p className="text-xs font-semibold text-slate-700">
-                      {featuredPrice != null
-                        ? formatter.format(Number(featuredPrice))
-                        : t.storefront.selectOptions}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        {/* ================================================================ */}
-        {/* CLASSIC ALL PRODUCTS CATALOG GRID                                */}
-        {/* ================================================================ */}
-        {theme === "classic" ? (
-          <section id="all-products" className="pt-6">
-            <div className="mb-6 flex items-baseline justify-between border-b border-slate-200 pb-3">
-              <h2 className="text-xl font-semibold text-slate-900">
-                {isEs ? "Catálogo completo" : "Complete Catalog"}
-              </h2>
-              <span className="text-xs text-slate-500">
-                {products.length} {isEs ? "productos" : "products"}
-              </span>
-            </div>
-
-            {products.length === 0 ? (
-              <p className="text-center text-slate-500 py-12">{t.storefront.noProductsAvailable}</p>
-            ) : (
-              <div className="space-y-12">
-                {[
-                  ...productGroups,
-                  ...(uncategorizedProducts.length > 0
-                    ? [
-                        {
-                          id: "uncategorized",
-                          name: t.storefront.otherProducts,
-                          slug: "uncategorized",
-                          products: uncategorizedProducts,
-                        },
-                      ]
-                    : []),
-                ].map((group) => (
-                  <section key={group.id} aria-labelledby={`category-${group.id}`}>
-                    <h3 id={`category-${group.id}`} className="mb-4 text-lg font-medium text-slate-900">
-                      {group.name}
-                    </h3>
-                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {group.products.map((product) => {
-                        const primaryVariant = product.variants[0];
-                        const isSoldOut = primaryVariant
-                          ? isStockUnavailable(primaryVariant.stockStatus, primaryVariant.inventory)
-                          : false;
-                        const price = primaryVariant?.price;
-                        const variantId = primaryVariant?.id;
-                        return (
-                          <div
-                            key={product.id}
-                            className={`relative overflow-hidden rounded-[4px] border transition ${themeClasses.productCard}`}
-                          >
-                            <Link
-                              href={`${base}/products/${product.id}`}
-                              className="absolute inset-0 z-0"
-                              aria-label={product.title}
-                            />
-                            {isSoldOut && (
-                              <span className="absolute top-2 left-2 z-10 rounded-full bg-red-600/90 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
-                                {language === "es" ? "Agotado" : "Sold Out"}
-                              </span>
-                            )}
-                            {product.images[0] ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={product.images[0]}
-                                alt={product.title}
-                                className="h-48 w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-48 items-center justify-center bg-[#f3f3ee] text-slate-400 text-xs">
-                                {t.storefront.noImage}
-                              </div>
-                            )}
-                            <div className="p-4">
-                              <h4 className="font-medium text-slate-900 text-sm">{product.title}</h4>
-                              <div className="mt-3 flex items-center justify-between">
-                                {price != null ? (
-                                  <span className="text-sm font-semibold text-slate-700">
-                                    {formatter.format(Number(price))}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-slate-400">
-                                    {t.storefront.selectOptions}
-                                  </span>
-                                )}
-                                {isSoldOut ? (
-                                  <button
-                                    type="button"
-                                    disabled
-                                    className="relative z-10 rounded-[4px] bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
-                                  >
-                                    {language === "es" ? "Agotado" : "Sold Out"}
-                                  </button>
-                                ) : variantId ? (
-                                  <button
-                                    type="button"
-                                    data-prado-add={variantId}
-                                    data-prado-add-to-cart={variantId}
-                                    className="relative z-10 rounded-full bg-[var(--store-main-color)] px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--store-main-color-hover)]"
-                                  >
-                                    {t.storefront.addToCart}
-                                  </button>
-                                ) : null}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            )}
-          </section>
-        ) : null}
       </main>
     </div>
   );

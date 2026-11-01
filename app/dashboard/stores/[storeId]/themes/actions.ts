@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { toStorefrontThemeEnum } from "@/lib/storefront-theme";
 import { getPlanLimits, getPlanOrDefault } from "@/lib/subscription";
 
-type ThemeId = "mercado" | "minimal" | "recinto" | "classic";
+type ThemeId = "mercado" | "minimal" | "recinto" | "calipso";
 
 export type HeroContentActionState = {
   error: string | null;
@@ -27,7 +27,7 @@ export async function activateStoreTheme(formData: FormData) {
     throw new Error("storeId is required");
   }
 
-  if (!["mercado", "minimal", "recinto", "classic"].includes(themeId)) {
+  if (!["mercado", "minimal", "recinto", "calipso"].includes(themeId)) {
     throw new Error("Invalid theme");
   }
 

@@ -669,7 +669,7 @@ export function ProductsDashboard({
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs leading-tight">
                 {isEs ? "Unidades en Stock" : "Units in Stock"}
               </span>
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 sm:h-8 sm:w-8">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 sm:h-8 sm:w-8">
                 <Boxes className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>

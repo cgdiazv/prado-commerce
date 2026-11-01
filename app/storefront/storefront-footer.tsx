@@ -212,28 +212,76 @@ export default function StorefrontFooter({
     );
   }
 
-  if (theme === "classic") {
+  if (theme === "calipso") {
     return (
-      <footer className="border-t border-amber-200 bg-[#fffdf8] px-6 py-5">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
-          <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
-          {pageLinks.length > 0 ? (
-            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-              {pageLinks.map((link) => (
-                <Link key={link.key} href={link.href} className="transition hover:text-slate-900">
-                  {link.title}
+      <footer className="w-full bg-[#352319] px-6 pb-7 pt-12 text-[#e8d8c6] sm:px-10 lg:px-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-10 border-b border-[#765640] pb-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+            <div className="max-w-xs">
+              <Link href={homeHref} className="font-serif text-3xl tracking-tight text-[#f4d45c]">
+                {storeName.toLowerCase()}.
+              </Link>
+              <p className="mt-3 text-[11px] leading-5 text-[#c8b49f]">
+                {isEs
+                  ? "Pequeños hallazgos, grandes momentos. Gracias por formar parte del universo Calipso."
+                  : "Little discoveries, lovely moments. Thank you for being part of the Calipso world."}
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#f4d45c]">
+                {isEs ? "Tienda" : "Shop"}
+              </h3>
+              <nav className="mt-4 flex flex-col gap-2 text-[10px]">
+                <Link href={`${homeHref}#all-products`} className="transition hover:text-white">
+                  {isEs ? "Todo el catálogo" : "Shop all"}
                 </Link>
-              ))}
-            </nav>
-          ) : null}
-          <a
-            href="https://pradocommerce.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition hover:text-slate-900"
-          >
-            {t.storefront.poweredBy}
-          </a>
+                <Link href={`${homeHref}#new-arrivals`} className="transition hover:text-white">
+                  {isEs ? "Novedades" : "New arrivals"}
+                </Link>
+                {categories.slice(0, 4).map((category) => (
+                  <Link key={category.id} href={basePath ? `${basePath}/category/${category.slug}` : `/category/${category.slug}`} className="transition hover:text-white">
+                    {category.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            <div>
+              <h3 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#f4d45c]">
+                {isEs ? "Ayuda" : "Help"}
+              </h3>
+              <nav className="mt-4 flex flex-col gap-2 text-[10px]">
+                <Link href={basePath ? `${basePath}/account` : "/account"} className="transition hover:text-white">
+                  {isEs ? "Mi cuenta" : "My account"}
+                </Link>
+                {pageLinks.map((link) => (
+                  <Link key={link.key} href={link.href} className="transition hover:text-white">
+                    {link.title}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            <div>
+              <h3 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#f4d45c]">
+                {isEs ? "Síguenos" : "Follow along"}
+              </h3>
+              <p className="mt-4 text-[10px] leading-5">
+                {isEs ? "Inspiración bonita para todos los días." : "A little everyday inspiration."}
+              </p>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-[10px] transition hover:text-white">
+                Instagram <ArrowUpRight size={12} />
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-3 pt-5 text-[9px] text-[#c8b49f] sm:flex-row">
+            <span>© {year} {storeName}. {t.storefront.allRightsReserved}</span>
+            <a href="https://pradocommerce.com" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">
+              {isEs ? "Desarrollado por Prado Commerce" : t.storefront.poweredBy}
+            </a>
+          </div>
         </div>
       </footer>
     );

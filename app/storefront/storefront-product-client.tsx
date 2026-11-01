@@ -136,7 +136,7 @@ export default function StorefrontProductClient({
 
           <div>
             <div className="flex items-center gap-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--store-main-color)]">
+              <p className={`text-sm font-semibold uppercase tracking-[0.24em] ${theme === "calipso" ? "text-[#a43d1b]" : "text-[var(--store-main-color)]"}`}>
                 {t.storefront.productDetails}
               </p>
               {isSoldOut && (

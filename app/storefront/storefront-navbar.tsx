@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, type CSSProperties } from "react";
-import { Menu, Search, ShoppingBag, ShoppingCart, User, X, ArrowRight } from "lucide-react";
+import { Menu, Search, ShoppingBag, User, X, ArrowRight } from "lucide-react";
 import { getStoreBrandingCssVars, normalizeMainColor } from "@/lib/branding";
 import type { StorefrontThemeId } from "@/lib/storefront-theme";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -53,12 +53,177 @@ export default function StorefrontNavbar({
   const headerClass =
     theme === "recinto"
       ? "border-b border-[#e3e5de] bg-white px-4 sm:px-8 lg:px-12 py-3.5"
-      : theme === "classic"
-        ? "border-b border-amber-200 bg-[#fffdf8] px-6 py-4"
-        : "border-b border-[#e5e5e0] bg-white px-6 sm:px-10 lg:px-16 py-3.5";
+      : "border-b border-[#e5e5e0] bg-white px-6 sm:px-10 lg:px-16 py-3.5";
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
+  }
+
+  if (theme === "calipso") {
+    return (
+      <>
+        <aside className="bg-[#a43d1b] px-4 py-2 text-center text-[10px] tracking-wide text-white sm:text-[11px]">
+          {isEs ? "Pequeños detalles. Grandes descubrimientos." : "Little details. Big discoveries."}
+          <a href={`${homeHref}#new-arrivals`} className="ml-2 underline underline-offset-2">
+            {isEs ? "Descubre lo nuevo" : "Discover what’s new"}
+          </a>
+        </aside>
+        <header
+          style={getStoreBrandingCssVars(resolvedMainColor) as CSSProperties}
+          className="border-b border-[#eadfce] bg-[#fffaf2]"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
+            <div className="flex min-h-[76px] items-center justify-between gap-4 py-3">
+              <div className="flex items-center gap-2">
+                {categories.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#493126] transition hover:bg-[#f4ead9] md:hidden"
+                    aria-label={t.storefront.openCategoriesMenu}
+                    aria-expanded={isMobileMenuOpen}
+                    aria-controls="storefront-mobile-categories"
+                  >
+                    <Menu size={19} />
+                  </button>
+                ) : null}
+                <Link
+                  href={homeHref}
+                  onClick={closeMobileMenu}
+                  className="font-serif text-[27px] leading-none tracking-tight text-[#a43d1b] sm:text-[32px]"
+                >
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={logoUrl} alt={storeName} className="h-9 w-auto max-w-[180px] object-contain" />
+                  ) : (
+                    <span>{storeName.toLowerCase()}.</span>
+                  )}
+                </Link>
+              </div>
+
+              <form action={activeCategoryHref} method="get" className="hidden min-w-0 max-w-xl flex-1 md:block">
+                <div className="flex h-10 items-center overflow-hidden rounded-full bg-[#f5efe3] pl-4">
+                  <Search className="h-4 w-4 shrink-0 text-[#8b7b6c]" />
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={searchQuery}
+                    placeholder={isEs ? "¿Qué quieres descubrir hoy?" : "What would you like to discover today?"}
+                    className="h-full min-w-0 flex-1 bg-transparent px-3 text-xs text-[#352319] outline-none placeholder:text-[#8b7b6c]"
+                  />
+                  <button
+                    type="submit"
+                    className="h-full shrink-0 bg-[#a43d1b] px-5 text-[11px] font-semibold text-white transition hover:bg-[#873116]"
+                  >
+                    {isEs ? "Buscar" : "Search"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="flex shrink-0 items-center gap-3 text-[#493126] sm:gap-5">
+                <LanguageToggle variant="light" />
+                <Link
+                  href={accountHref}
+                  aria-label={t.storefront.account}
+                  onClick={closeMobileMenu}
+                  className="hidden items-center gap-1.5 text-xs transition hover:text-[#a43d1b] sm:inline-flex"
+                >
+                  <User size={16} />
+                  <span>{isEs ? "Mi cuenta" : "My account"}</span>
+                </Link>
+                <button
+                  type="button"
+                  data-prado-cart-toggle
+                  aria-label={t.storefront.cart}
+                  className="inline-flex items-center gap-1.5 text-xs transition hover:text-[#a43d1b]"
+                >
+                  <ShoppingBag size={17} />
+                  <span className="hidden sm:inline">{isEs ? "Bolsa" : "Bag"}</span>
+                  <span data-prado-cart-count className="text-[10px]">(0)</span>
+                </button>
+              </div>
+            </div>
+
+            <form action={activeCategoryHref} method="get" className="pb-3 md:hidden">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b7b6c]" />
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={searchQuery}
+                  placeholder={isEs ? "¿Qué quieres descubrir hoy?" : "What would you like to discover today?"}
+                  className="h-10 w-full rounded-full bg-[#f5efe3] pl-9 pr-4 text-xs text-[#352319] outline-none"
+                />
+              </div>
+            </form>
+          </div>
+
+          <nav className="hidden items-center gap-7 overflow-x-auto bg-[#f4d45c] px-6 py-3 text-[11px] font-medium text-[#352319] md:flex lg:px-12">
+            <Link href={`${homeHref}#all-products`} className="shrink-0">{isEs ? "Todo el catálogo" : "Shop all"}</Link>
+            <Link href={`${homeHref}#new-arrivals`} className="shrink-0">{isEs ? "Novedades" : "New arrivals"}</Link>
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                href={basePath ? `${basePath}/category/${category.slug}` : `/category/${category.slug}`}
+                className="shrink-0 transition hover:text-[#a43d1b]"
+              >
+                {category.name}
+              </Link>
+            ))}
+          </nav>
+
+          {categories.length > 0 ? (
+            <>
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                aria-label={t.storefront.closeCategoriesMenu}
+                className={`fixed inset-0 z-40 bg-[#352319]/40 transition-opacity md:hidden ${
+                  isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              />
+              <aside
+                id="storefront-mobile-categories"
+                className={`fixed left-0 top-0 z-50 flex h-full w-[82vw] max-w-sm flex-col border-r border-[#eadfce] bg-[#fffaf2] shadow-xl transition-transform duration-300 md:hidden ${
+                  isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                }`}
+                aria-hidden={!isMobileMenuOpen}
+              >
+                <div className="flex items-center justify-between border-b border-[#eadfce] px-5 py-4">
+                  <p className="font-serif text-lg text-[#a43d1b]">{storeName}.</p>
+                  <button
+                    type="button"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#493126] hover:bg-[#f4ead9]"
+                    aria-label={t.storefront.closeCategoriesMenu}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-3">
+                  <Link href={`${homeHref}#all-products`} onClick={closeMobileMenu} className="rounded-xl px-3 py-2.5 text-sm text-[#493126]">
+                    {isEs ? "Todo el catálogo" : "Shop all"}
+                  </Link>
+                  <Link href={`${homeHref}#new-arrivals`} onClick={closeMobileMenu} className="rounded-xl px-3 py-2.5 text-sm text-[#493126]">
+                    {isEs ? "Novedades" : "New arrivals"}
+                  </Link>
+                  {categories.map((category) => (
+                    <Link
+                      key={category.id}
+                      href={basePath ? `${basePath}/category/${category.slug}` : `/category/${category.slug}`}
+                      onClick={closeMobileMenu}
+                      className="rounded-xl px-3 py-2.5 text-sm text-[#493126] hover:bg-[#f5efe3]"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                </nav>
+              </aside>
+            </>
+          ) : null}
+        </header>
+      </>
+    );
   }
 
   return (
@@ -113,8 +278,6 @@ export default function StorefrontNavbar({
                   <span className="text-2xl sm:text-[30px] font-semibold tracking-tight text-[#252b27] lowercase">
                     {storeName}.
                   </span>
-                ) : theme === "classic" ? (
-                  <span className="text-xl font-semibold tracking-tight">{storeName}</span>
                 ) : (
                   // Mercado template brand mark from Figma
                   <div className="flex items-center gap-3">
@@ -132,7 +295,7 @@ export default function StorefrontNavbar({
                 <div className="relative">
                   <Search
                     className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
-                      theme === "recinto" ? "text-[#73766f]" : theme === "classic" ? "text-slate-400" : "text-[#20201e]"
+                      theme === "recinto" ? "text-[#73766f]" : "text-[#20201e]"
                     }`}
                   />
                   <input
@@ -151,9 +314,7 @@ export default function StorefrontNavbar({
                     className={`h-9 w-full pl-9 pr-12 text-xs outline-none transition ${
                       theme === "recinto"
                         ? "rounded-[4px] border border-transparent bg-[#f3f3ee] text-[#252b27] placeholder-[#73766f] focus:border-[#344e41] focus:bg-white"
-                        : theme === "classic"
-                          ? "rounded-full border border-slate-200 bg-white text-slate-900 focus:border-[var(--store-main-color)]"
-                          : "rounded-[4px] border border-transparent bg-[#f6f6f3] text-[#20201e] placeholder-[#747470] focus:border-[#20201e] focus:bg-white"
+                        : "rounded-[4px] border border-transparent bg-[#f6f6f3] text-[#20201e] placeholder-[#747470] focus:border-[#20201e] focus:bg-white"
                     }`}
                   />
                   {theme === "recinto" && (
@@ -177,15 +338,11 @@ export default function StorefrontNavbar({
                     ? isAccountActive
                       ? "text-[#344e41] font-semibold"
                       : "text-[#252b27] hover:text-[#344e41]"
-                    : theme === "classic"
-                      ? isAccountActive
-                        ? "bg-slate-100 text-slate-900 rounded-full h-9 w-9 justify-center"
-                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
-                      : "text-[#20201e] font-normal hover:opacity-75"
+                    : "text-[#20201e] font-normal hover:opacity-75"
                 }`}
               >
-                <User size={18} className={theme !== "classic" ? "text-[#20201e]" : undefined} />
-                {theme !== "classic" && !isMercado && (
+                <User size={18} className="text-[#20201e]" />
+                {!isMercado && (
                   <span className="hidden sm:inline">{isEs ? "Mi cuenta" : "Account"}</span>
                 )}
               </Link>
@@ -197,22 +354,14 @@ export default function StorefrontNavbar({
                 className={`relative inline-flex items-center gap-2 transition text-xs ${
                   theme === "recinto"
                     ? "text-[#252b27] hover:text-[#344e41]"
-                    : theme === "classic"
-                      ? "text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-full h-9 w-9 justify-center"
-                      : "text-[#20201e] font-normal hover:opacity-75"
+                    : "text-[#20201e] font-normal hover:opacity-75"
                 }`}
               >
-                {theme === "classic" ? <ShoppingCart size={20} /> : <ShoppingBag size={18} className="text-[#20201e]" />}
-                {theme !== "classic" && !isMercado && (
+                <ShoppingBag size={18} className="text-[#20201e]" />
+                {!isMercado && (
                   <span className="hidden sm:inline">
                     {theme === "recinto" ? (isEs ? "Bolsa" : "Bag") : (isEs ? "Carrito" : "Cart")} (<span data-prado-cart-count className="inline">0</span>)
                   </span>
-                )}
-                {theme === "classic" && (
-                  <span
-                    data-prado-cart-count
-                    className="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-[var(--store-main-color)] px-1 text-center text-[10px] font-bold leading-[18px] text-white [&:not(:empty)]:block"
-                  />
                 )}
                 {isMercado && (
                   <span
@@ -221,7 +370,7 @@ export default function StorefrontNavbar({
                     className="absolute -right-1.5 -top-1.5 hidden min-w-[16px] rounded-full bg-[#20201e] px-1 text-center text-[10px] font-bold leading-[16px] text-white [&:not(:empty)]:block"
                   />
                 )}
-                {theme !== "classic" && !isMercado && (
+                {!isMercado && (
                   <span
                     data-prado-cart-count
                     className="sm:hidden absolute -right-1 -top-1 hidden min-w-[16px] rounded-full bg-[#20201e] px-1 text-center text-[10px] font-bold leading-[16px] text-white [&:not(:empty)]:block"

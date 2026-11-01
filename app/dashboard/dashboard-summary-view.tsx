@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import { DollarSign, ShoppingCart, TrendingUp, Store } from "lucide-react";
+import { ShoppingCart, TrendingUp, Store, Users } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { DashboardMonthlyChart, MonthlyDataPoint } from "./dashboard-monthly-chart";
 
 interface DashboardSummaryViewProps {
   totalStores: number;
   totalProducts: number;
-  totalRevenue: number;
+  totalClients: number;
   totalOrders: number;
   baseCurrency: string;
   currentPlan: string;
@@ -21,7 +21,7 @@ interface DashboardSummaryViewProps {
 export function DashboardSummaryView({
   totalStores,
   totalProducts,
-  totalRevenue,
+  totalClients,
   totalOrders,
   baseCurrency,
   currentPlan,
@@ -32,11 +32,6 @@ export function DashboardSummaryView({
 }: DashboardSummaryViewProps) {
   const { t, language } = useLanguage();
   const isEs = language === "es";
-
-  const formatter = new Intl.NumberFormat(language === "es" ? "es-ES" : "en-US", {
-    style: "currency",
-    currency: baseCurrency,
-  });
 
   const summaryCards = [
     {
@@ -52,10 +47,10 @@ export function DashboardSummaryView({
       icon: ShoppingCart,
     },
     {
-      label: t.dashboard.totalRevenue,
-      value: formatter.format(totalRevenue),
-      subtext: isEs ? "Ingresos generados" : "Total generated revenue",
-      icon: DollarSign,
+      label: t.dashboard.totalClients,
+      value: totalClients.toString(),
+      subtext: isEs ? "Clientes registrados" : "Registered clients",
+      icon: Users,
     },
     {
       label: t.dashboard.totalOrders,

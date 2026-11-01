@@ -66,9 +66,9 @@ const THEMES = [
   },
   {
     id: "CLASSIC" as const,
-    label: "Classic",
-    tagline: "Structured e-commerce grid with extensive metadata filters.",
-    colorClass: "from-emerald-50 to-teal-50/50 border-emerald-300",
+    label: "Calipso",
+    tagline: "Sunlit editorial storefront with warm tones and thoughtfully curated finds.",
+    colorClass: "from-amber-100 to-orange-50 border-orange-300",
   },
 ];
 
