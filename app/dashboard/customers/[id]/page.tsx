@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { parseTaxSettings } from "@/lib/tax";
 import { EditCustomerForm } from "./edit-customer-form";
 
 type CustomerPageProps = {
@@ -51,6 +52,9 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
         },
       },
       include: {
+        store: {
+          select: { taxSettings: true },
+        },
         payments: {
           orderBy: { paidAt: "desc" },
           include: {
@@ -114,6 +118,8 @@ export default async function CustomerEditPage({ params }: CustomerPageProps) {
           lastName: customer.lastName,
           phone: customer.phone,
           groupId: customer.groupId,
+          taxExempt: customer.taxExempt,
+          taxExemptEnabled: parseTaxSettings(customer.store.taxSettings).taxExemptEnabled,
           shippingAddress: customer.shippingAddress,
           billingAddress: customer.billingAddress,
           allowCredit: customer.allowCredit,

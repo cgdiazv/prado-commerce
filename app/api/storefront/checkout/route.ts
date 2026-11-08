@@ -9,6 +9,7 @@ import { findSensitivePaymentField } from "@/lib/payment-pci-guard";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 import { getPlanLimits, getPlanOrDefault, type SubscriptionPlan } from "@/lib/subscription";
 import { isStockUnavailable } from "@/lib/product-stock";
+import { calculateTax } from "@/lib/tax";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -52,6 +53,7 @@ type FinalizeOrderInput = {
   subtotal: number;
   shipping: number;
   tax: number;
+  taxIncluded: boolean;
   total: number;
   currency: string;
   paymentMethod: string;
@@ -59,6 +61,7 @@ type FinalizeOrderInput = {
   gatewayTransactionId: string | null;
   items: Array<{
     quantity: number;
+    tax: number;
     variant: {
       id: string;
       title: string;
@@ -81,6 +84,7 @@ async function finalizeOrder({
   subtotal,
   shipping,
   tax,
+  taxIncluded,
   total,
   currency,
   paymentMethod,
@@ -124,6 +128,7 @@ async function finalizeOrder({
         paymentStatus: paymentProvider === "manual" ? "UNPAID" : "PAID",
         subtotal,
         tax,
+        taxIncluded,
         shipping,
         total,
         currency,
@@ -138,6 +143,7 @@ async function finalizeOrder({
             price: Number(item.variant.price),
             quantity: item.quantity,
             variantId: item.variant.id,
+            tax: item.tax,
             costPrice: (item.variant as { costPrice?: unknown }).costPrice
               ? Number((item.variant as { costPrice?: unknown }).costPrice)
               : null,
@@ -233,7 +239,6 @@ export async function POST(request: Request) {
     const shippingAddress = body?.shippingAddress ?? null;
     const billingAddress = body?.billingAddress ?? null;
     const shippingAmount = Number(body?.shippingAmount ?? 0);
-    const taxAmount = Number(body?.taxAmount ?? 0);
     const paymentMethod = String(body?.paymentMethod || "card").trim().toLowerCase();
     const paymentProvider = String(body?.paymentProvider || "").trim().toLowerCase();
     const authorizeNetOpaqueData = body?.authorizeNetOpaqueData ?? null;
@@ -260,6 +265,7 @@ export async function POST(request: Request) {
         authNetEnv: string;
         cardFeeEnabled?: boolean;
         cardFeePercentage?: unknown;
+        taxSettings: unknown;
         ownerUser?: {
           plan: SubscriptionPlan;
         } | null;
@@ -272,6 +278,10 @@ export async function POST(request: Request) {
           price: unknown;
           inventory: number;
           stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "ON_BACKORDER";
+          product: {
+            taxable: boolean;
+            taxCategoryCode: string | null;
+          };
         };
       }[];
     } | null = null;
@@ -302,6 +312,7 @@ export async function POST(request: Request) {
               authNetEnv: true,
               cardFeePercentage: true,
               cardFeeEnabled: true,
+              taxSettings: true,
               ownerUser: {
                 select: {
                   plan: true,
@@ -320,6 +331,9 @@ export async function POST(request: Request) {
                   costPrice: true,
                   inventory: true,
                   stockStatus: true,
+                  product: {
+                    select: { taxable: true, taxCategoryCode: true },
+                  },
                 },
               },
             },
@@ -357,6 +371,9 @@ export async function POST(request: Request) {
                     costPrice: true,
                     inventory: true,
                     stockStatus: true,
+                    product: {
+                      select: { taxable: true, taxCategoryCode: true },
+                    },
                   },
                 },
               },
@@ -375,6 +392,7 @@ export async function POST(request: Request) {
                 authNetClientKey: null,
                 authNetTransKeyEncrypted: null,
                 authNetEnv: "sandbox",
+                taxSettings: null,
                 ownerUser: null,
               },
             }
@@ -408,17 +426,43 @@ export async function POST(request: Request) {
       cart.items.reduce((sum, item) => sum + Number(item.variant.price) * item.quantity, 0),
     );
     const shipping = toDecimal(Math.max(0, shippingAmount));
-    const tax = toDecimal(Math.max(0, taxAmount));
+    const taxCustomer = await prisma.customer.findFirst({
+      where: { id: shopperSession.customerId, storeId: cart.storeId },
+      select: { taxExempt: true },
+    });
+    const taxDestination = shippingAddress && typeof shippingAddress === "object"
+      ? shippingAddress as { country?: unknown; state?: unknown }
+      : billingAddress && typeof billingAddress === "object"
+        ? billingAddress as { country?: unknown; state?: unknown }
+        : {};
+    const calculatedTax = calculateTax(
+      cart.store?.taxSettings,
+      { country: taxDestination.country, region: taxDestination.state },
+      cart.items.map((item) => ({
+        price: Number(item.variant.price),
+        quantity: item.quantity,
+        taxable: item.variant.product.taxable,
+        taxCategoryCode: item.variant.product.taxCategoryCode,
+      })),
+      shipping,
+      taxCustomer?.taxExempt ?? false,
+    );
+    const tax = toDecimal(calculatedTax.total);
+    const additionalTax = toDecimal(calculatedTax.additionalTax);
+    const taxedItems = cart.items.map((item, index) => ({
+      ...item,
+      tax: calculatedTax.lineTaxes[index],
+    }));
 
     let cardFee = 0;
     if (paymentMethod === "card" && cart.store?.cardFeeEnabled && cart.store?.cardFeePercentage) {
       const feePercent = Number(cart.store.cardFeePercentage);
       if (feePercent > 0) {
-        cardFee = toDecimal((subtotal + shipping + tax) * (feePercent / 100));
+        cardFee = toDecimal((subtotal + shipping + additionalTax) * (feePercent / 100));
       }
     }
 
-    const total = toDecimal(subtotal + shipping + tax + cardFee);
+    const total = toDecimal(subtotal + shipping + additionalTax + cardFee);
 
     const stripeReady = Boolean(
       cart.store?.stripeConnectAccountId && cart.store?.stripeChargesEnabled && cart.store?.stripePayoutsEnabled,
@@ -476,12 +520,12 @@ export async function POST(request: Request) {
           });
         }
 
-        if (tax > 0) {
+        if (additionalTax > 0) {
           lineItems.push({
             quantity: 1,
             price_data: {
               currency: currencyCode,
-              unit_amount: Math.round(tax * 100),
+              unit_amount: Math.round(additionalTax * 100),
               product_data: {
                 name: "Tax",
               },
@@ -508,6 +552,12 @@ export async function POST(request: Request) {
         const platformFeeAmountCents = limits.platformFeeRate > 0
           ? Math.round(total * 100 * limits.platformFeeRate)
           : 0;
+        const lineTaxBreakdown = JSON.stringify(
+          cart.items.map((item, index) => ({
+            variantId: item.variant.id,
+            tax: calculatedTax.lineTaxes[index],
+          })),
+        );
 
         const session = await stripe.checkout.sessions.create({
           mode: "payment",
@@ -526,7 +576,10 @@ export async function POST(request: Request) {
             subtotal: subtotal.toFixed(2),
             shipping: shipping.toFixed(2),
             tax: tax.toFixed(2),
+            taxIncluded: String(calculatedTax.pricesIncludeTax),
+            taxExempt: String(calculatedTax.taxExempt),
             total: total.toFixed(2),
+            ...(lineTaxBreakdown.length <= 500 ? { lineTaxBreakdown } : {}),
             ...addressMetadata(shippingAddress, "shipping"),
             ...addressMetadata(billingAddress, "billing"),
           },
@@ -581,12 +634,13 @@ export async function POST(request: Request) {
           subtotal,
           shipping,
           tax,
+          taxIncluded: calculatedTax.pricesIncludeTax,
           total,
           currency: cart.currency || "USD",
           paymentMethod: "card",
           paymentProvider: "authorize_net",
           gatewayTransactionId: charge.transactionId,
-          items: cart.items,
+          items: taxedItems,
         });
 
         return NextResponse.json({
@@ -619,12 +673,13 @@ export async function POST(request: Request) {
       subtotal,
       shipping,
       tax,
+      taxIncluded: calculatedTax.pricesIncludeTax,
       total,
       currency: cart.currency || "USD",
       paymentMethod,
       paymentProvider: "manual",
       gatewayTransactionId: null,
-      items: cart.items,
+      items: taxedItems,
     });
 
     return NextResponse.json({

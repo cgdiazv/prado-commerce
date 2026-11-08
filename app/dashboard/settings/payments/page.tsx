@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { CreditCard, Percent, Clock, ShieldAlert, CheckCircle2, Save, Loader2 } from "lucide-react";
 
@@ -36,9 +36,12 @@ type StoreSummary = {
   pixelpayConfigured?: boolean;
 };
 
+type PaymentTab = "online" | "offline" | "cards";
+
 export default function PaymentsPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
+  const [activeTab, setActiveTab] = useState<PaymentTab>("online");
 
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [store, setStore] = useState<StoreSummary | null>(null);
@@ -551,6 +554,34 @@ export default function PaymentsPage() {
   const showStripePending = stripeStatus.stripeConnectAccountId && !isStripeReady;
   const disableStripeDisconnect = isStripeActionPending || !stripeStatus.stripeConnectAccountId;
 
+  function handlePaymentTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    const tabs: PaymentTab[] = ["online", "offline", "cards"];
+    const currentIndex = tabs.indexOf(activeTab);
+    let nextIndex: number;
+
+    switch (event.key) {
+      case "ArrowRight":
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab);
+    document.getElementById(`payments-tab-${nextTab}`)?.focus();
+  }
+
   return (
     <section className="space-y-4">
       <div className="w-full">
@@ -596,8 +627,8 @@ export default function PaymentsPage() {
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             {isEs
-              ? "Conecta Stripe o Authorize.net para recibir pagos con tarjeta de crédito/débito y transferir los fondos a tu cuenta bancaria."
-              : "Connect Stripe to accept online card payments and transfer payouts to your business."}
+              ? "Administra los pagos en línea, métodos de pago fuera de línea y la configuración de tarjetas."
+              : "Manage online payments, offline payment methods, and card settings."}
           </p>
         </div>
       </div>
@@ -617,7 +648,50 @@ export default function PaymentsPage() {
             </p>
           )}
 
-          <div className="grid gap-4">
+          <div
+            role="tablist"
+            aria-label={isEs ? "Configuración de pagos" : "Payment settings"}
+            className="flex min-w-0 flex-row overflow-x-auto border-b border-slate-200 bg-slate-50/70"
+          >
+            {(["online", "offline", "cards"] as const).map((tab) => (
+              <button
+                key={tab}
+                id={`payments-tab-${tab}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`payments-panel-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
+                onClick={() => setActiveTab(tab)}
+                onKeyDown={handlePaymentTabKeyDown}
+                className={`flex shrink-0 items-center border-b-4 px-4 py-3 text-left text-xs font-bold transition ${
+                  activeTab === tab
+                    ? "border-cyan-600 bg-white text-cyan-700"
+                    : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
+                }`}
+              >
+                {tab === "online"
+                  ? isEs
+                    ? "Pagos en línea"
+                    : "Online Payments"
+                  : tab === "offline"
+                    ? isEs
+                      ? "Pagos fuera de línea"
+                      : "Offline Payments"
+                    : isEs
+                      ? "Configuración de tarjetas"
+                      : "Cards Settings"}
+              </button>
+            ))}
+          </div>
+
+          <div
+            id="payments-panel-online"
+            role="tabpanel"
+            aria-labelledby="payments-tab-online"
+            hidden={activeTab !== "online"}
+            className="grid gap-4"
+          >
             <article
               className={`rounded-xl border p-5 shadow-sm ${
                 isStripeReady ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"
@@ -1121,7 +1195,13 @@ export default function PaymentsPage() {
             </article>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div
+            id="payments-panel-offline"
+            role="tabpanel"
+            aria-labelledby="payments-tab-offline"
+            hidden={activeTab !== "offline"}
+            className="rounded-xl border border-slate-200 bg-slate-50 p-5"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-900">
@@ -1195,6 +1275,12 @@ export default function PaymentsPage() {
             </div>
           </div>
 
+          <div
+            id="payments-panel-cards"
+            role="tabpanel"
+            aria-labelledby="payments-tab-cards"
+            hidden={activeTab !== "cards"}
+          >
           {/* CARD SURCHARGE (T/C) & DEFAULT OVERDUE INTEREST POLICIES */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1359,6 +1445,7 @@ export default function PaymentsPage() {
                 )}
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>

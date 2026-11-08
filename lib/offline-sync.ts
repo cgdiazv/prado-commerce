@@ -134,7 +134,7 @@ class OfflineSyncManager {
     invoicePayload: any,
     customerName: string,
     total: number
-  ): Promise<{ ticketNumber: string; isOffline: boolean; offlineId?: string }> {
+  ): Promise<{ ticketNumber: string; isOffline: boolean; offlineId?: string; subtotal?: number; tax?: number; total?: number }> {
     // 1. Try online first if navigator says we are online
     const hasConnection = await this.verifyConnectivity();
 
@@ -156,6 +156,7 @@ class OfflineSyncManager {
       }
 
       if (response?.ok) {
+        const result = await response.json();
         if (Array.isArray(invoicePayload.lines)) {
           await deductLocalInventoryStock(
             invoicePayload.lines.map((line: any) => ({
@@ -166,7 +167,13 @@ class OfflineSyncManager {
         }
         this.lastSyncTime = new Date();
         this.notifyListeners();
-        return { ticketNumber, isOffline: false };
+        return {
+          ticketNumber,
+          isOffline: false,
+          subtotal: Number(result.subtotal),
+          tax: Number(result.tax),
+          total: Number(result.total),
+        };
       }
     }
 

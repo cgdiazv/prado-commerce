@@ -83,6 +83,8 @@ type Customer = {
   lastName: string | null;
   phone: string | null;
   groupId?: string | null;
+  taxExempt?: boolean;
+  taxExemptEnabled?: boolean;
   shippingAddress: AddressRecord | null;
   billingAddress: AddressRecord | null;
   allowCredit?: boolean;
@@ -109,6 +111,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
   const [firstName, setFirstName] = useState(customer.firstName ?? "");
   const [lastName, setLastName] = useState(customer.lastName ?? "");
   const [phone, setPhone] = useState(customer.phone ?? "");
+  const [taxExempt, setTaxExempt] = useState(customer.taxExempt ?? false);
 
   const [allowCredit, setAllowCredit] = useState(customer.allowCredit ?? false);
   const [creditLimit, setCreditLimit] = useState(String(customer.creditLimit ?? 0));
@@ -171,6 +174,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           lastName,
           phone,
           groupId: groupId || null,
+          taxExempt,
           shippingAddress,
           billingAddress,
           allowCredit,
@@ -343,6 +347,24 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               </select>
             </label>
           </div>
+          {customer.taxExemptEnabled ? (
+            <label className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <span>
+                <span className="block font-medium">{isEs ? "Cliente exento de impuestos" : "Tax-exempt customer"}</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  {isEs
+                    ? "No se cobrará impuesto automáticamente en los pedidos de este cliente."
+                    : "Automatic tax will not be charged on this customer’s orders."}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={taxExempt}
+                onChange={(event) => setTaxExempt(event.target.checked)}
+                className="h-4 w-4 accent-slate-900"
+              />
+            </label>
+          ) : null}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

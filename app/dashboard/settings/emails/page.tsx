@@ -460,7 +460,7 @@ export default function EmailSettingsPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  {isEs ? "👋 Bienvenida" : "👋 Welcome"}
+                  {isEs ? "Bienvenida" : "Welcome"}
                 </button>
                 <button
                   type="button"
@@ -471,7 +471,7 @@ export default function EmailSettingsPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  {isEs ? "📦 Pedido" : "📦 Order"}
+                  {isEs ? "Pedido" : "Order"}
                 </button>
                 <button
                   type="button"
@@ -482,7 +482,7 @@ export default function EmailSettingsPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  {isEs ? "🧾 Factura" : "🧾 Invoice"}
+                  {isEs ? "Factura" : "Invoice"}
                 </button>
               </div>
             </div>
@@ -546,14 +546,14 @@ export default function EmailSettingsPage() {
                         : `Thank you for creating an account with ${previewSenderName}. You now have full access to your personalized shopping portal, faster checkouts, and seamless order management.`}
                     </p>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-5 space-y-2 text-xs">
-                      <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                        <span>⚡</span> {isEs ? "Pago rápido en 1 clic" : "Faster 1-Click Checkout"}
+                      <div className="text-slate-800 font-semibold">
+                        {isEs ? "Pago rápido en 1 clic" : "Faster 1-Click Checkout"}
                       </div>
-                      <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                        <span>📦</span> {isEs ? "Seguimiento en vivo de tus envíos" : "Live Real-Time Order Tracking"}
+                      <div className="text-slate-800 font-semibold">
+                        {isEs ? "Seguimiento en vivo de tus envíos" : "Live Real-Time Order Tracking"}
                       </div>
-                      <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                        <span>🎁</span> {isEs ? "Acceso prioritario a novedades y ofertas" : "Priority Member Perks & Drops"}
+                      <div className="text-slate-800 font-semibold">
+                        {isEs ? "Acceso prioritario a novedades y ofertas" : "Priority Member Perks & Drops"}
                       </div>
                     </div>
                     <button
@@ -614,8 +614,8 @@ export default function EmailSettingsPage() {
             <div className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50/50 p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                    <span>📨</span> {isEs ? "Enviar correo de prueba real" : "Send live test email"}
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {isEs ? "Enviar correo de prueba real" : "Send live test email"}
                   </h3>
                   <p className="text-xs text-slate-600 mt-0.5">
                     {isEs

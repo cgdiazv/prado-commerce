@@ -8,6 +8,7 @@ import { InventoryItem, Customer, SalesRep, CompanySettings, PosStoreSettings } 
 import { Loader2, ArrowLeft, Store, RefreshCw, AlertCircle, Settings, LogOut } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { offlineSync } from "@/lib/offline-sync";
+import type { TaxSettings } from "@/lib/tax";
 import type { CashierSessionData } from "@/lib/session";
 import {
   getLocalInventory,
@@ -55,6 +56,7 @@ export function PosClientView({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [posSettings, setPosSettings] = useState<PosStoreSettings | undefined>(undefined);
+  const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -69,9 +71,10 @@ export function PosClientView({
     }
 
     setError(null);
+    setTaxSettings(null);
     try {
       // 1. Fetch products, customers and POS settings from active store API
-      const [productsRes, customersRes, posSettingsRes] = await Promise.all([
+      const [productsRes, customersRes, posSettingsRes, taxSettingsRes] = await Promise.all([
         fetch(`/api/products?storeId=${storeId}`, { cache: "no-store" })
           .then((r) => (r.ok ? r.json() : []))
           .catch(() => null),
@@ -81,7 +84,11 @@ export function PosClientView({
         fetch(`/api/pos/settings?storeId=${storeId}`, { cache: "no-store" })
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null),
+        fetch(`/api/stores/${storeId}/tax-settings`, { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
       ]);
+      setTaxSettings(taxSettingsRes?.settings ?? null);
 
       let finalInventory: InventoryItem[] | null = null;
       let finalCustomers: Customer[] | null = null;
@@ -112,6 +119,7 @@ export function PosClientView({
                 imageUrl: product.images?.[0] || null,
                 trackingType: "NONE",
                 taxable: isProductTaxable,
+                taxCategoryCode: product.taxCategoryCode ?? null,
               });
             }
           } else {
@@ -130,6 +138,7 @@ export function PosClientView({
               imageUrl: product.images?.[0] || null,
               trackingType: "NONE",
               taxable: isProductTaxable,
+              taxCategoryCode: product.taxCategoryCode ?? null,
             });
           }
         }
@@ -147,6 +156,7 @@ export function PosClientView({
           address: c.shippingAddress ? (typeof c.shippingAddress === "string" ? c.shippingAddress : JSON.stringify(c.shippingAddress)) : null,
           currency: activeStore?.currency || "USD",
           allowCredit: Boolean(c.allowCredit),
+          taxExempt: Boolean(c.taxExempt),
           creditLimit: Number(c.creditLimit || 0),
           creditDays: Number(c.creditDays || 30),
           creditInterestRate: Number(c.creditInterestRate || 0),
@@ -455,6 +465,7 @@ export function PosClientView({
           customers={customers}
           salesReps={salesReps}
           posSettings={posSettings}
+          taxSettings={taxSettings}
           companySettings={companySettings}
           companyLogo={activeStore?.logoUrl || null}
           storeId={activeStore?.id}

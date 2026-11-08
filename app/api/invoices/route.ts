@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { resolvePosSettings } from "@/lib/pos/settings";
+import { calculateTax } from "@/lib/tax";
 
 class InsufficientInventoryError extends Error {}
 
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
     const store = await prisma.store.findUnique({
       where: { id: storeId },
-      select: { id: true, currency: true, posSettings: true },
+      select: { id: true, currency: true, posSettings: true, taxSettings: true },
     });
 
     if (!store) {
@@ -41,9 +42,6 @@ export async function POST(request: Request) {
     }
     const allowZeroInventorySales = resolvePosSettings(store.posSettings).allowZeroInventorySales === true;
 
-    const subtotal = Math.max(0, Number(body.subtotal) || 0);
-    const tax = Math.max(0, Number(body.isv15) || 0);
-    const total = Math.max(0, Number(body.total) || subtotal + tax);
     const rawPaymentMethod = String(body.paymentMethod || "Efectivo").trim();
     const isCredit = body.status === "Pendiente" || rawPaymentMethod.toLowerCase() === "crédito" || rawPaymentMethod.toLowerCase() === "credito";
 
@@ -58,11 +56,13 @@ export async function POST(request: Request) {
     const lines = rawLines.map((line) => ({
       ...line,
       quantity: Math.trunc(Number(line.quantity)),
+      rate: Number(line.rate),
     }));
 
-    if (lines.some((line) => !line.productId || !Number.isFinite(line.quantity) || line.quantity < 1)) {
+    if (lines.some((line) => !line.productId || !Number.isFinite(line.quantity) || line.quantity < 1 || !Number.isFinite(line.rate) || line.rate < 0)) {
       return NextResponse.json({ error: "Each invoice line must have a product and a positive whole-number quantity." }, { status: 400 });
     }
+    const subtotal = Math.round(lines.reduce((sum, line) => sum + line.rate * line.quantity, 0) * 100) / 100;
 
     // Verify variants to attach and deduct inventory
     const variantIds = lines.map((l) => l.productId).filter(Boolean);
@@ -72,18 +72,45 @@ export async function POST(request: Request) {
         id: true,
         stockStatus: true,
         inventory: true,
-        product: { select: { storeId: true } },
+        product: { select: { storeId: true, taxable: true, taxCategoryCode: true } },
       },
     });
     if (existingVariants.some((variant) => variant.product.storeId !== storeId)) {
       return NextResponse.json({ error: "Invoice items must belong to the selected store." }, { status: 400 });
     }
     const validVariantMap = new Map(
-      existingVariants.map(({ id, stockStatus, inventory }) => [
+      existingVariants.map(({ id, stockStatus, inventory, product }) => [
         id,
-        { id, stockStatus, inventory },
+        { id, stockStatus, inventory, taxable: product.taxable, taxCategoryCode: product.taxCategoryCode },
       ]),
     );
+    const taxCustomer = typeof body.customerId === "string"
+      ? await prisma.customer.findFirst({
+          where: { id: body.customerId, storeId },
+          select: { id: true, email: true, taxExempt: true },
+        })
+      : null;
+    const taxDestination = body.taxDestination && typeof body.taxDestination === "object"
+      ? body.taxDestination as { country?: unknown; region?: unknown }
+      : {};
+    const calculatedTax = calculateTax(
+      store.taxSettings,
+      taxDestination,
+      lines.map((line) => {
+        const product = validVariantMap.get(line.productId);
+        return {
+          price: line.rate,
+          quantity: line.quantity,
+          taxable: product?.taxable ?? true,
+          taxCategoryCode: product?.taxCategoryCode,
+        };
+      }),
+      0,
+      taxCustomer?.taxExempt ?? false,
+    );
+    const tax = calculatedTax.total;
+    const convenienceFee = Math.max(0, Number(body.convenienceFee) || 0);
+    const total = Math.round((subtotal + calculatedTax.additionalTax + convenienceFee) * 100) / 100;
     const requestedQuantities = new Map<string, number>();
     for (const line of lines) {
       if (validVariantMap.has(line.productId)) {
@@ -110,15 +137,9 @@ export async function POST(request: Request) {
     let customerId: string | null = null;
     let customerEmail = "walkin@pos.local";
 
-    if (body.customerId) {
-      const existing = await prisma.customer.findFirst({
-        where: { id: body.customerId, storeId },
-        select: { id: true, email: true },
-      });
-      if (existing) {
-        customerId = existing.id;
-        customerEmail = existing.email;
-      }
+    if (taxCustomer) {
+      customerId = taxCustomer.id;
+      customerEmail = taxCustomer.email;
     }
 
     if (!customerId) {
@@ -192,16 +213,18 @@ export async function POST(request: Request) {
             fulfillmentStatus: "SHIPPED",
             subtotal,
             tax,
+            taxIncluded: calculatedTax.pricesIncludeTax,
             shipping: 0,
             total,
             dueDate,
             currency: store.currency || "USD",
             items: {
-              create: lines.map((line) => ({
+              create: lines.map((line, index) => ({
                 variantId: validVariantMap.has(line.productId) ? line.productId : null,
                 title: line.productName || line.description || "POS Item",
                 price: Number(line.rate) || 0,
                 quantity: line.quantity,
+                tax: calculatedTax.lineTaxes[index],
               })),
             },
           },
@@ -226,6 +249,8 @@ export async function POST(request: Request) {
       orderId: order.id,
       orderNumber: order.orderNumber,
       total: order.total.toString(),
+      subtotal,
+      tax,
     }, { status: 201 });
   } catch (error) {
     console.error("[POS_INVOICE_CREATE_ERROR]", error);
