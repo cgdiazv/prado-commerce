@@ -301,7 +301,15 @@ export default function POSModule({
   });
   const [taxRegionOverride, setTaxRegionOverride] = useState<{ customerId: string | null; regionKey: string } | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [newCustomerForm, setNewCustomerForm] = useState({ name: "", rtn: "", phone: "", email: "" });
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLocaleLowerCase();
+    return customers.filter((customer) =>
+      customer.email?.toLowerCase() !== WALK_IN_EMAIL &&
+      customer.name.toLocaleLowerCase().includes(query),
+    );
+  }, [customers, customerSearch]);
   const activeCustomerRecord = useMemo(() => {
     if (!selectedCustomer.id || selectedCustomer.id === "default") return null;
     return customers.find((customer) => customer.id === selectedCustomer.id) || null;
@@ -1990,7 +1998,10 @@ export default function POSModule({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowCustomerModal(true)}
+                onClick={() => {
+                  setCustomerSearch("");
+                  setShowCustomerModal(true);
+                }}
                 className="flex-1 px-3 py-2 rounded-md bg-white border border-slate-200 hover:border-cyan-500 flex items-center justify-between transition cursor-pointer shadow-2xs text-left"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -3218,6 +3229,17 @@ export default function POSModule({
             </div>
 
             <div className="p-4 space-y-3">
+              <label className="relative block">
+                <span className="sr-only">{isEs ? "Buscar cliente por nombre" : "Search customers by name"}</span>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={customerSearch}
+                  onChange={(event) => setCustomerSearch(event.target.value)}
+                  placeholder={isEs ? "Buscar cliente por nombre..." : "Search customers by name..."}
+                  className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-cyan-500"
+                />
+              </label>
               {/* Default Option: Consumidor Final */}
               <button
                 type="button"
@@ -3247,7 +3269,7 @@ export default function POSModule({
                 {isEs ? "Clientes Registrados:" : "Registered Customers:"}
               </div>
               <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-                {customers.filter((c) => c.email?.toLowerCase() !== WALK_IN_EMAIL).map((c) => (
+                {filteredCustomers.map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -3270,6 +3292,11 @@ export default function POSModule({
                     )}
                   </button>
                 ))}
+                {filteredCustomers.length === 0 && (
+                  <p className="py-2 text-xs text-slate-500" role="status">
+                    {isEs ? "No se encontraron clientes." : "No customers found."}
+                  </p>
+                )}
               </div>
             </div>
           </div>
