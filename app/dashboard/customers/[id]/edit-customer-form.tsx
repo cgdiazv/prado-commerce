@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Calendar, ArrowUpRight, DollarSign, Package } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 import { CustomerCreditModule } from "./customer-credit-module";
@@ -101,10 +100,16 @@ type EditCustomerFormProps = {
   groups?: CustomerGroup[];
 };
 
+const customerTabs = ["details", "addresses", "credit", "accounts", "history"] as const;
+type CustomerTab = (typeof customerTabs)[number];
+
 export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomerFormProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
+  const [activeTab, setActiveTab] = useState<CustomerTab>("details");
+  const [historyYear, setHistoryYear] = useState("");
+  const [historyProduct, setHistoryProduct] = useState("");
 
   const [groupId, setGroupId] = useState(customer.groupId ?? "");
   const [email, setEmail] = useState(customer.email);
@@ -138,11 +143,28 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
 
   const [shippingAddress, setShippingAddress] = useState<AddressForm>(initShipping);
   const [billingAddress, setBillingAddress] = useState<AddressForm>(initBilling);
+  const [sameAsShipping, setSameAsShipping] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const activeStore = stores.find((s) => s.id === customer.storeId);
+  const effectiveBillingAddress = sameAsShipping ? shippingAddress : billingAddress;
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+    event.preventDefault();
+    const currentIndex = customerTabs.indexOf(activeTab);
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? customerTabs.length - 1
+        : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + customerTabs.length) % customerTabs.length;
+    const nextTab = customerTabs[nextIndex];
+    setActiveTab(nextTab);
+    document.getElementById(`customer-tab-${nextTab}`)?.focus();
+  }
 
   function updateShippingAddress(field: keyof AddressForm, value: string) {
     setShippingAddress((current) => ({ ...current, [field]: value }));
@@ -154,6 +176,16 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const invalidField = event.currentTarget.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(":invalid");
+    if (invalidField) {
+      const panel = invalidField.closest<HTMLElement>("[data-customer-tab]");
+      const tab = customerTabs.find((candidate) => candidate === panel?.dataset.customerTab);
+      if (tab) setActiveTab(tab);
+      setSuccess(null);
+      setError(invalidField.validationMessage);
+      requestAnimationFrame(() => invalidField.focus());
+      return;
+    }
     setIsSaving(true);
     setError(null);
     setSuccess(null);
@@ -176,7 +208,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
           groupId: groupId || null,
           taxExempt,
           shippingAddress,
-          billingAddress,
+          billingAddress: effectiveBillingAddress,
           allowCredit,
           creditLimit: parseFloat(creditLimit) || 0,
           creditDays: parseInt(creditDays, 10) || 30,
@@ -209,39 +241,28 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
   }
 
   const orders = customer.orders || [];
-  const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
-  const avgOrder = orders.length > 0 ? totalSpent / orders.length : 0;
-  const currencySymbol = activeStore?.currency || "USD";
-
-  const annualSalesMap: Record<number, { count: number; total: number }> = {};
-  for (const ord of orders) {
-    const yr = new Date(ord.createdAt).getFullYear();
-    if (!annualSalesMap[yr]) {
-      annualSalesMap[yr] = { count: 0, total: 0 };
-    }
-    annualSalesMap[yr].count += 1;
-    annualSalesMap[yr].total += ord.total;
-  }
-  const annualSalesList = Object.entries(annualSalesMap)
-    .map(([year, data]) => ({ year: Number(year), ...data }))
-    .sort((a, b) => b.year - a.year);
-
-  const aggregatedProducts = useMemo(() => {
-    const map = new Map<string, { title: string; totalUnits: number; totalSpent: number; lastDate: string }>();
-    for (const ord of orders) {
-      for (const it of ord.items || []) {
-        const title = it.title || "Producto";
-        const entry = map.get(title) || { title, totalUnits: 0, totalSpent: 0, lastDate: ord.createdAt };
-        entry.totalUnits += it.quantity;
-        entry.totalSpent += it.price * it.quantity;
-        if (new Date(ord.createdAt) > new Date(entry.lastDate)) {
-          entry.lastDate = ord.createdAt;
-        }
-        map.set(title, entry);
+  const historyYears = [...new Set(orders.map((order) => new Date(order.createdAt).getFullYear()))].sort((a, b) => b - a);
+  const historyProducts = [...new Set(orders.flatMap((order) => order.items.map((item) => item.title)))].sort((a, b) => a.localeCompare(b));
+  const filteredOrders = orders.filter((order) =>
+    (!historyYear || String(new Date(order.createdAt).getFullYear()) === historyYear) &&
+    (!historyProduct || order.items.some((item) => item.title === historyProduct)),
+  );
+  const currencyCode = activeStore?.currency || (isEs ? "Moneda desconocida" : "Unknown currency");
+  const tabLabels: Record<CustomerTab, string> = isEs
+    ? {
+        details: "Detalles del cliente",
+        addresses: "Direcciones",
+        credit: "Condiciones de crédito",
+        accounts: "Cuentas por cobrar",
+        history: "Historial de compras",
       }
-    }
-    return Array.from(map.values()).sort((a, b) => b.totalUnits - a.totalUnits);
-  }, [orders]);
+    : {
+        details: "Customer Details",
+        addresses: "Addresses",
+        credit: "Credit & Collection Terms",
+        accounts: "Accounts Receivable",
+        history: "Purchase History",
+      };
 
   return (
     <section className="min-w-0 space-y-6">
@@ -266,7 +287,35 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div
+        role="tablist"
+        aria-label={isEs ? "Secciones del perfil de cliente" : "Customer profile sections"}
+        className="flex min-w-0 flex-row overflow-x-auto border-b border-slate-200 bg-slate-50/70"
+      >
+        {customerTabs.map((tab) => (
+            <button
+              key={tab}
+              id={`customer-tab-${tab}`}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`customer-panel-${tab}`}
+              tabIndex={activeTab === tab ? 0 : -1}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={handleTabKeyDown}
+              className={`flex shrink-0 items-center border-b-4 px-4 py-3 text-left text-xs font-bold transition ${
+                activeTab === tab
+                  ? "border-cyan-600 bg-white text-cyan-700"
+                  : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
+              }`}
+            >
+              {tabLabels[tab]}
+            </button>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate hidden={activeTab === "accounts" || activeTab === "history"} className="space-y-6">
+        <div id="customer-panel-details" role="tabpanel" aria-labelledby="customer-tab-details" data-customer-tab="details" hidden={activeTab !== "details"}>
         {/* Customer Details Card */}
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -366,9 +415,10 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
             </label>
           ) : null}
         </div>
+        </div>
 
+        <div id="customer-panel-addresses" role="tabpanel" aria-labelledby="customer-tab-addresses" data-customer-tab="addresses" hidden={activeTab !== "addresses"}>
         <div className="grid gap-6 lg:grid-cols-2">
-
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isEs ? "Dirección de envío" : "Shipping address"}
@@ -435,16 +485,33 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               </label>
             </div>
           </div>
-
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {isEs ? "Dirección de facturación" : "Billing address"}
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                {isEs ? "Dirección de facturación" : "Billing address"}
+              </p>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={sameAsShipping}
+                  onChange={(event) => setSameAsShipping(event.target.checked)}
+                  className="h-4 w-4 accent-slate-900"
+                />
+                {isEs ? "Igual a la dirección de envío" : "Same as shipping address"}
+              </label>
+            </div>
+            {sameAsShipping && (
+              <p className="text-xs text-slate-500">
+                {isEs
+                  ? "Desmarca la casilla para recuperar la dirección de facturación anterior."
+                  : "Uncheck to restore the previous billing address."}
+              </p>
+            )}
+            <fieldset disabled={sameAsShipping} className="grid gap-4 sm:grid-cols-2 disabled:opacity-60">
               <label className="flex flex-col gap-2 sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "Dirección línea 1" : "Address line 1"}</span>
                 <input
-                  value={billingAddress.line1}
+                  value={effectiveBillingAddress.line1}
                   onChange={(event) => updateBillingAddress("line1", event.target.value)}
                   placeholder="123 Main St"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -454,7 +521,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               <label className="flex flex-col gap-2 sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "Dirección línea 2" : "Address line 2"}</span>
                 <input
-                  value={billingAddress.line2}
+                  value={effectiveBillingAddress.line2}
                   onChange={(event) => updateBillingAddress("line2", event.target.value)}
                   placeholder={isEs ? "Apartamento, suite, etc." : "Apartment, suite, etc."}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -464,7 +531,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "Ciudad" : "City"}</span>
                 <input
-                  value={billingAddress.city}
+                  value={effectiveBillingAddress.city}
                   onChange={(event) => updateBillingAddress("city", event.target.value)}
                   placeholder="New York"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -474,7 +541,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "Estado / Región" : "State / Region"}</span>
                 <input
-                  value={billingAddress.state}
+                  value={effectiveBillingAddress.state}
                   onChange={(event) => updateBillingAddress("state", event.target.value)}
                   placeholder="NY"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -484,7 +551,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "Código postal" : "Postal code"}</span>
                 <input
-                  value={billingAddress.postalCode}
+                  value={effectiveBillingAddress.postalCode}
                   onChange={(event) => updateBillingAddress("postalCode", event.target.value)}
                   placeholder="10001"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -494,15 +561,18 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">{isEs ? "País" : "Country"}</span>
                 <input
-                  value={billingAddress.country}
+                  value={effectiveBillingAddress.country}
                   onChange={(event) => updateBillingAddress("country", event.target.value)}
                   placeholder={isEs ? "Estados Unidos" : "United States"}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 />
               </label>
-            </div>
+            </fieldset>
           </div>
+          </div>
+        </div>
 
+        <div id="customer-panel-credit" role="tabpanel" aria-labelledby="customer-tab-credit" data-customer-tab="credit" hidden={activeTab !== "credit"}>
           {/* Condiciones Comerciales y Línea de Crédito */}
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -532,7 +602,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
             <div className="grid gap-4 sm:grid-cols-3 pt-1">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">
-                  {isEs ? "Límite de Crédito ($)" : "Credit Limit ($)"}
+                  {isEs ? "Límite de Crédito" : "Credit Limit"}{currencyCode ? ` (${currencyCode})` : ""}
                 </span>
                 <input
                   type="number"
@@ -591,7 +661,7 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         )}
@@ -618,198 +688,114 @@ export function EditCustomerForm({ stores, customer, groups = [] }: EditCustomer
         </div>
       </form>
 
+      <div id="customer-panel-accounts" role="tabpanel" aria-labelledby="customer-tab-accounts" hidden={activeTab !== "accounts"}>
       {/* Módulo de Cuentas por Cobrar (CxC), Abonos e Intereses por Mora */}
       <CustomerCreditModule
         customerId={customer.id}
         storeId={customer.storeId}
         customerName={[firstName, lastName].filter(Boolean).join(" ") || email}
         customerEmail={email}
-        currencySymbol={currencySymbol}
+        currencyCode={currencyCode}
         isEs={isEs}
         initialAllowCredit={allowCredit}
-        initialCreditLimit={parseFloat(creditLimit) || 0}
-        initialCreditDays={parseInt(creditDays, 10) || 30}
-        initialCreditInterestRate={parseFloat(creditInterestRate) || 0}
         onCreditConfigUpdated={() => router.refresh()}
       />
+      </div>
 
-      {/* Amber POS: Historial de Compras por Producto y Ventas Anuales */}
+      <div id="customer-panel-history" role="tabpanel" aria-labelledby="customer-tab-history" hidden={activeTab !== "history"}>
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-cyan-600" />
             {isEs ? "Historial de Compras y Ventas Anuales" : "Purchase & Annual Sales History"}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {isEs
-              ? "Registro de facturas emitidas, pedidos y desglose anual de compras del cliente."
-              : "Invoices, orders placed, and annual purchase breakdown for this customer."}
+              ? "Consulta los pedidos y filtra por año o producto. Cada total corresponde al pedido completo."
+              : "Review orders and filter by year or product. Totals reflect each entire order."}
           </p>
         </div>
-
-        {/* Top KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium text-slate-500">{isEs ? "Gasto Total Histórico" : "Lifetime Total Spend"}</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">
-              ${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              <span className="text-xs font-normal text-slate-500 ml-1">{currencySymbol}</span>
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium text-slate-500">{isEs ? "Total de Facturas / Pedidos" : "Total Orders / Invoices"}</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">{orders.length}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium text-slate-500">{isEs ? "Ticket Promedio" : "Average Order Value"}</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">
-              ${avgOrder.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              <span className="text-xs font-normal text-slate-500 ml-1">{currencySymbol}</span>
-            </p>
-          </div>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            {isEs ? "Año" : "Year"}
+            <select value={historyYear} onChange={(event) => setHistoryYear(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900">
+              <option value="">{isEs ? "Todos los años" : "All years"}</option>
+              {historyYears.map((year) => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-slate-700">
+            {isEs ? "Producto" : "Product"}
+            <select value={historyProduct} onChange={(event) => setHistoryProduct(event.target.value)} className="max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900">
+              <option value="">{isEs ? "Todos los productos" : "All products"}</option>
+              {historyProducts.map((product) => <option key={product} value={product}>{product}</option>)}
+            </select>
+          </label>
         </div>
 
-        {/* Resumen Anual */}
-        {annualSalesList.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-cyan-600" />
-              {isEs ? "Desglose de Ventas por Año" : "Sales Breakdown by Year"}
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {annualSalesList.map((an) => (
-                <div key={an.year} className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-3">
-                  <div className="flex items-center justify-between text-xs font-medium text-cyan-700">
-                    <span>{an.year}</span>
-                    <span>{an.count} {isEs ? (an.count === 1 ? "pedido" : "pedidos") : (an.count === 1 ? "order" : "orders")}</span>
-                  </div>
-                  <div className="text-base font-bold text-slate-900 mt-1">
-                    ${an.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Vista Agregada: Historial de Compras por Producto */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <Package className="w-4 h-4 text-cyan-600" />
-              {isEs ? "Productos Comprados (Vista Agregada)" : "Products Purchased (Aggregated View)"}
-            </h3>
-            <span className="text-xs text-slate-500 font-medium">
-              {aggregatedProducts.length} {isEs ? "artículos diferentes" : "distinct items"}
-            </span>
-          </div>
-
-          {aggregatedProducts.length === 0 ? (
-            <div className="text-center py-6 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-              {isEs ? "Sin productos individuales registrados." : "No product purchases recorded."}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {aggregatedProducts.map((p) => (
-                <div
-                  key={p.title}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs"
-                >
-                  <div className="min-w-0 pr-2">
-                    <p className="font-semibold text-slate-900 truncate" title={p.title}>
-                      {p.title}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">
-                      {isEs ? "Última compra: " : "Last bought: "}
-                      {new Date(p.lastDate).toLocaleDateString(isEs ? "es-ES" : "en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="inline-flex items-center rounded-md bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-900">
-                      {p.totalUnits} {isEs ? "uds" : "units"}
-                    </span>
-                    <p className="mt-1 text-[11px] font-semibold text-slate-700">
-                      ${p.totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* List of Orders and Purchased Products */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-cyan-600" />
-            {isEs ? "Facturas y Pedidos por Fecha" : "Invoices & Orders by Date"}
-          </h3>
-
-          {orders.length === 0 ? (
-            <div className="text-center py-8 rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
-              {isEs ? "Este cliente aún no registra facturas ni pedidos." : "This customer has no orders or invoices yet."}
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
-              {orders.map((ord) => (
-                <div key={ord.id} className="p-4 bg-white hover:bg-slate-50/70 transition space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/dashboard/orders/${ord.id}`}
-                        className="font-semibold text-cyan-700 hover:text-cyan-800 hover:underline text-sm"
-                      >
-                        #{ord.orderNumber}
-                      </Link>
-                      <span className="text-xs text-slate-500">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="min-w-full text-left text-xs">
+                <caption className="sr-only">{isEs ? "Facturas y Pedidos por Fecha" : "Invoices & Orders by Date"}</caption>
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th scope="col" className="px-4 py-3">{isEs ? "Factura / Pedido" : "Invoice / Order"}</th>
+                    <th scope="col" className="px-4 py-3">{isEs ? "Fecha" : "Date"}</th>
+                    <th scope="col" className="px-4 py-3">{isEs ? "Estado de pago" : "Payment status"}</th>
+                    <th scope="col" className="px-4 py-3">{isEs ? "Productos" : "Items"}</th>
+                    <th scope="col" className="px-4 py-3 text-right">{isEs ? "Total" : "Total"}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredOrders.map((ord) => (
+                    <tr key={ord.id} className="align-top hover:bg-slate-50/70">
+                      <td className="px-4 py-3">
+                        <Link href={`/dashboard/orders/${ord.id}`} className="font-semibold text-cyan-700 hover:text-cyan-800 hover:underline">
+                          #{ord.orderNumber}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {new Date(ord.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
+                          year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                         })}
-                      </span>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded border px-2 py-0.5 font-medium ${
                           ord.paymentStatus === "PAID"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                        }`}
-                      >
-                        {ord.paymentStatus}
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold text-slate-900">
-                      ${ord.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-                      <span className="text-xs font-normal text-slate-500">{ord.currency}</span>
-                    </div>
-                  </div>
-
-                  {/* Purchased items list */}
-                  {ord.items && ord.items.length > 0 && (
-                    <div className="mt-2 pl-3 border-l-2 border-cyan-100 space-y-1">
-                      {ord.items.map((it) => (
-                        <div key={it.id} className="flex items-center justify-between text-xs text-slate-600">
-                          <span className="truncate pr-2">
-                            • {it.quantity}x {it.title}
-                          </span>
-                          <span className="font-medium shrink-0">
-                            ${(it.quantity * it.price).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-amber-200 bg-amber-50 text-amber-700"
+                        }`}>
+                          {ord.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="min-w-56 px-4 py-3 text-slate-600">
+                        {ord.items.length > 0 && (
+                          <ul className="space-y-1">
+                            {ord.items.map((it) => (
+                              <li key={it.id}>
+                                {it.quantity}x {it.title} — {(it.quantity * it.price).toFixed(2)} {ord.currency}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-900">
+                        {ord.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ord.currency}
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredOrders.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                        {orders.length === 0
+                          ? (isEs ? "Este cliente aún no registra facturas ni pedidos." : "This customer has no orders or invoices yet.")
+                          : (isEs ? "No hay pedidos que coincidan con los filtros." : "No orders match the selected filters.")}
+                      </td>
+                    </tr>
                   )}
-                </div>
-              ))}
+                </tbody>
+              </table>
             </div>
-          )}
         </div>
+      </div>
       </div>
     </section>
   );

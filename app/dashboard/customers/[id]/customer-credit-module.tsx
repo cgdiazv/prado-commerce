@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  CreditCard,
-  DollarSign,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -13,9 +11,7 @@ import {
   X,
   Receipt,
   ArrowDownCircle,
-  FileText,
   ShieldAlert,
-  Percent,
 } from "lucide-react";
 import type { CustomerCreditSummary, CustomerCreditInvoice, CustomerPayment } from "@/types/dashboard";
 
@@ -24,12 +20,9 @@ type CustomerCreditModuleProps = {
   storeId: string;
   customerName: string;
   customerEmail: string;
-  currencySymbol: string;
+  currencyCode: string;
   isEs: boolean;
   initialAllowCredit?: boolean;
-  initialCreditLimit?: number;
-  initialCreditDays?: number;
-  initialCreditInterestRate?: number;
   onCreditConfigUpdated?: () => void;
 };
 
@@ -38,12 +31,9 @@ export function CustomerCreditModule({
   storeId,
   customerName,
   customerEmail,
-  currencySymbol,
+  currencyCode,
   isEs,
   initialAllowCredit = false,
-  initialCreditLimit = 0,
-  initialCreditDays = 30,
-  initialCreditInterestRate = 0,
   onCreditConfigUpdated,
 }: CustomerCreditModuleProps) {
   const [loading, setLoading] = useState(true);
@@ -167,20 +157,18 @@ export function CustomerCreditModule({
   };
 
   // Calculations
-  const creditLimit = data ? data.creditLimit : initialCreditLimit;
   const allowCredit = data ? data.allowCredit : initialAllowCredit;
-  const totalDebt = data ? data.totalDebt : 0;
-  const totalInterestDue = data ? data.totalInterestDue : 0;
-  const availableCredit = data ? data.availableCredit : Math.max(0, creditLimit - totalDebt);
   const overdueCount = data ? data.overdueInvoicesCount : 0;
-
-  const usagePercent = creditLimit > 0 ? Math.min(100, Math.round((totalDebt / creditLimit) * 100)) : 0;
 
   // Selected invoice for modal helper
   const activeSelectedInvoice = useMemo(() => {
     if (!selectedOrderId || !data) return null;
     return data.invoices.find((inv) => inv.orderId === selectedOrderId) || null;
   }, [selectedOrderId, data]);
+  const unknownCurrency = isEs ? "Moneda desconocida" : "Unknown currency";
+  const paymentCurrency = activeSelectedInvoice?.currency ?? (selectedOrderId ? unknownCurrency : currencyCode);
+  const getPaymentCurrency = (payment: CustomerPayment) =>
+    payment.orderId ? data?.invoices.find((invoice) => invoice.orderId === payment.orderId)?.currency ?? unknownCurrency : currencyCode;
 
   return (
     <div className="space-y-6">
@@ -189,7 +177,6 @@ export function CustomerCreditModule({
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-indigo-600" />
               {isEs ? "Línea de Crédito y Cuentas por Cobrar (CxC)" : "Credit Line & Accounts Receivable"}
             </h2>
             <span
@@ -224,7 +211,7 @@ export function CustomerCreditModule({
           <button
             type="button"
             onClick={handleOpenGeneralPayment}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition"
           >
             <Plus className="w-4 h-4" />
             {isEs ? "Registrar Abono" : "Record Payment"}
@@ -238,99 +225,6 @@ export function CustomerCreditModule({
           <span>{fetchError}</span>
         </div>
       )}
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Límite de Crédito */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>{isEs ? "Límite de Crédito" : "Credit Limit"}</span>
-            <DollarSign className="w-4 h-4 text-slate-400" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 mt-2">
-            ${creditLimit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-xs font-normal text-slate-500 ml-1">{currencySymbol}</span>
-          </p>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
-            <span>{isEs ? "Plazo otorgado:" : "Terms:"}</span>
-            <span className="font-semibold text-slate-700">
-              {data ? data.creditDays : initialCreditDays} {isEs ? "días" : "days"}
-            </span>
-          </div>
-        </div>
-
-        {/* Saldo Pendiente (Deuda Actual) */}
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-medium text-amber-800">
-            <span>{isEs ? "Saldo Pendiente (CxC)" : "Outstanding Balance"}</span>
-            <Clock className="w-4 h-4 text-amber-600" />
-          </div>
-          <p className="text-2xl font-black text-amber-950 mt-2">
-            ${totalDebt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-xs font-normal text-amber-700 ml-1">{currencySymbol}</span>
-          </p>
-          <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-amber-800">{isEs ? "Uso de línea:" : "Credit usage:"}</span>
-            <span className="font-bold text-amber-900">{usagePercent}%</span>
-          </div>
-          <div className="mt-1 h-1.5 w-full rounded-full bg-amber-200 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                usagePercent > 90 ? "bg-rose-500" : usagePercent > 70 ? "bg-amber-500" : "bg-emerald-500"
-              }`}
-              style={{ width: `${usagePercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Crédito Disponible */}
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-medium text-emerald-800">
-            <span>{isEs ? "Crédito Disponible" : "Available Credit"}</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-2xl font-black text-emerald-950 mt-2">
-            ${availableCredit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-xs font-normal text-emerald-700 ml-1">{currencySymbol}</span>
-          </p>
-          <div className="mt-3 text-[11px] text-emerald-800 flex items-center justify-between">
-            <span>{isEs ? "Capacidad libre:" : "Free capacity:"}</span>
-            <span className="font-bold text-emerald-900">{100 - usagePercent}%</span>
-          </div>
-        </div>
-
-        {/* Intereses por Mora (> 30 días) */}
-        <div
-          className={`rounded-2xl border p-4 shadow-sm relative overflow-hidden ${
-            totalInterestDue > 0
-              ? "border-rose-300 bg-rose-50/70 text-rose-950"
-              : "border-slate-200 bg-white text-slate-900"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className={totalInterestDue > 0 ? "text-rose-800 font-semibold" : "text-slate-500"}>
-              {isEs ? "Mora (>30 días)" : "Late Fee / Interest"}
-            </span>
-            <Percent className={`w-4 h-4 ${totalInterestDue > 0 ? "text-rose-600" : "text-slate-400"}`} />
-          </div>
-          <p className="text-2xl font-black mt-2">
-            ${totalInterestDue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-xs font-normal opacity-70 ml-1">{currencySymbol}</span>
-          </p>
-          <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className={totalInterestDue > 0 ? "text-rose-800" : "text-slate-500"}>
-              {isEs ? "Tasa mensual:" : "Monthly rate:"}
-            </span>
-            <span className="font-bold">
-              {data && data.creditInterestRate > 0
-                ? `${data.creditInterestRate}% (Específica)`
-                : (data?.storeDefaultLateRate ?? 0) > 0
-                ? `${data?.storeDefaultLateRate}% (Tienda)`
-                : `${initialCreditInterestRate}%`}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Alerta de Facturas Vencidas si aplica */}
       {overdueCount > 0 && (
@@ -355,7 +249,6 @@ export function CustomerCreditModule({
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-600" />
             {isEs ? "Facturas a Crédito y Pendientes de Pago" : "Credit Invoices & Pending Receivables"}
           </h3>
           <span className="text-xs text-slate-500">
@@ -419,19 +312,19 @@ export function CustomerCreditModule({
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right text-slate-600 font-mono">
-                        ${inv.total.toFixed(2)}
+                        {inv.total.toFixed(2)} {inv.currency}
                       </td>
                       <td className="px-3 py-2.5 text-right text-emerald-700 font-mono">
-                        ${inv.totalPaid.toFixed(2)}
+                        {inv.totalPaid.toFixed(2)} {inv.currency}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
-                        ${inv.balance.toFixed(2)}
+                        {inv.balance.toFixed(2)} {inv.currency}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-bold text-rose-600">
-                        {inv.interestDue > 0 ? `+$${inv.interestDue.toFixed(2)}` : "$0.00"}
+                        {inv.interestDue > 0 ? "+" : ""}{inv.interestDue.toFixed(2)} {inv.currency}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-bold text-indigo-950 bg-indigo-50/50">
-                        ${inv.totalDue.toFixed(2)}
+                        {inv.totalDue.toFixed(2)} {inv.currency}
                       </td>
                       <td className="px-3 py-2.5 text-center whitespace-nowrap">
                         <button
@@ -455,8 +348,7 @@ export function CustomerCreditModule({
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-emerald-600" />
-            {isEs ? "Historial de Abonos y Pagos Registrados" : "Payments & Abonos History"}
+            {isEs ? "Historial de Abonos y Pagos Registrados" : "Payments History"}
           </h3>
           <span className="text-xs text-slate-500">
             {data?.payments?.length || 0} {isEs ? "pagos" : "records"}
@@ -513,13 +405,13 @@ export function CustomerCreditModule({
                         {p.reference || "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-700">
-                        ${p.amount.toFixed(2)}
+                        {p.amount.toFixed(2)} {getPaymentCurrency(p)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-rose-600 font-medium">
-                        ${p.interestAmount.toFixed(2)}
+                        {p.interestAmount.toFixed(2)} {getPaymentCurrency(p)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
-                        ${totalPaid.toFixed(2)}
+                        {totalPaid.toFixed(2)} {getPaymentCurrency(p)}
                       </td>
                       <td className="px-3 py-2.5 text-slate-600">
                         {p.receivedBy || "—"}
@@ -615,16 +507,16 @@ export function CustomerCreditModule({
                     ?.filter((inv) => inv.balance > 0)
                     .map((inv) => (
                       <option key={inv.orderId} value={inv.orderId}>
-                        Factura #{inv.orderNumber} - Saldo: ${inv.balance.toFixed(2)}
-                        {inv.interestDue > 0 ? ` (+Mora: $${inv.interestDue.toFixed(2)})` : ""}
+                        Factura #{inv.orderNumber} - Saldo: {inv.balance.toFixed(2)} {inv.currency}
+                        {inv.interestDue > 0 ? ` (+Mora: ${inv.interestDue.toFixed(2)} ${inv.currency})` : ""}
                       </option>
                     ))}
                 </select>
                 {activeSelectedInvoice && (
                   <p className="mt-1 text-[11px] text-indigo-700 font-medium">
                     {isEs
-                      ? `Factura #${activeSelectedInvoice.orderNumber} • Saldo: $${activeSelectedInvoice.balance.toFixed(2)} ${activeSelectedInvoice.interestDue > 0 ? `• Mora devengada: $${activeSelectedInvoice.interestDue.toFixed(2)}` : ""}`
-                      : `Invoice #${activeSelectedInvoice.orderNumber} • Balance: $${activeSelectedInvoice.balance.toFixed(2)}`}
+                      ? `Factura #${activeSelectedInvoice.orderNumber} • Saldo: ${activeSelectedInvoice.balance.toFixed(2)} ${activeSelectedInvoice.currency} ${activeSelectedInvoice.interestDue > 0 ? `• Mora devengada: ${activeSelectedInvoice.interestDue.toFixed(2)} ${activeSelectedInvoice.currency}` : ""}`
+                      : `Invoice #${activeSelectedInvoice.orderNumber} • Balance: ${activeSelectedInvoice.balance.toFixed(2)} ${activeSelectedInvoice.currency}`}
                   </p>
                 )}
               </div>
@@ -632,7 +524,7 @@ export function CustomerCreditModule({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {isEs ? "Abono a Capital ($)" : "Principal Amount ($)"} *
+                    {isEs ? "Abono a Capital" : "Principal Amount"}{paymentCurrency ? ` (${paymentCurrency})` : ""} *
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
@@ -651,7 +543,7 @@ export function CustomerCreditModule({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {isEs ? "Pago a Interés por Mora ($)" : "Late Interest ($)"}
+                    {isEs ? "Pago a Interés por Mora" : "Late Interest"}{paymentCurrency ? ` (${paymentCurrency})` : ""}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
@@ -719,8 +611,8 @@ export function CustomerCreditModule({
                   {isEs ? "Total a Cobrar / Recibir:" : "Total to Receive:"}
                 </span>
                 <span className="font-mono text-base font-black text-indigo-900">
-                  ${((parseFloat(paymentAmount) || 0) + (parseFloat(interestAmount) || 0)).toFixed(2)}{" "}
-                  <span className="text-xs font-normal text-indigo-700">{currencySymbol}</span>
+                  {((parseFloat(paymentAmount) || 0) + (parseFloat(interestAmount) || 0)).toFixed(2)}{" "}
+                  <span className="text-xs font-normal text-indigo-700">{paymentCurrency}</span>
                 </span>
               </div>
 
@@ -797,18 +689,18 @@ export function CustomerCreditModule({
               )}
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-500">{isEs ? "Abono a Capital:" : "Principal:"}</span>
-                <span className="font-mono font-bold text-emerald-700">${receiptPayment.amount.toFixed(2)}</span>
+                <span className="font-mono font-bold text-emerald-700">{receiptPayment.amount.toFixed(2)} {getPaymentCurrency(receiptPayment)}</span>
               </div>
               {receiptPayment.interestAmount > 0 && (
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">{isEs ? "Interés por Mora:" : "Late Fee:"}</span>
-                  <span className="font-mono font-bold text-rose-700">+${receiptPayment.interestAmount.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-rose-700">+{receiptPayment.interestAmount.toFixed(2)} {getPaymentCurrency(receiptPayment)}</span>
                 </div>
               )}
               <div className="flex justify-between py-2 bg-slate-50 px-2 rounded-lg font-bold text-sm">
                 <span className="text-slate-900">{isEs ? "Total Recibido:" : "Total Paid:"}</span>
                 <span className="font-mono text-indigo-900">
-                  ${(receiptPayment.amount + receiptPayment.interestAmount).toFixed(2)} {currencySymbol}
+                  {(receiptPayment.amount + receiptPayment.interestAmount).toFixed(2)} {getPaymentCurrency(receiptPayment)}
                 </span>
               </div>
               {receiptPayment.receivedBy && (
