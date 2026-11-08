@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { resolvePosSettings } from "@/lib/pos/settings";
+import { WALK_IN_EMAIL } from "@/lib/pos/customer";
 import { calculateTax } from "@/lib/tax";
 
 class InsufficientInventoryError extends Error {}
@@ -87,9 +88,12 @@ export async function POST(request: Request) {
     const taxCustomer = typeof body.customerId === "string"
       ? await prisma.customer.findFirst({
           where: { id: body.customerId, storeId },
-          select: { id: true, email: true, taxExempt: true },
+          select: { id: true, email: true, taxExempt: true, creditDays: true },
         })
       : null;
+    if (body.customerId && !taxCustomer) {
+      return NextResponse.json({ error: "Customer not found in the selected store." }, { status: 400 });
+    }
     const taxDestination = body.taxDestination && typeof body.taxDestination === "object"
       ? body.taxDestination as { country?: unknown; region?: unknown }
       : {};
@@ -133,45 +137,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // Resolve or upsert customer only after validating inventory.
-    let customerId: string | null = null;
-    let customerEmail = "walkin@pos.local";
-
-    if (taxCustomer) {
-      customerId = taxCustomer.id;
-      customerEmail = taxCustomer.email;
-    }
-
-    if (!customerId) {
-      const cleanName = String(body.customerName || "Consumidor Final").trim();
-      const slugName = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const generatedEmail = `${slugName || "pos"}-${Date.now().toString().slice(-6)}@pos.local`;
-      customerEmail = generatedEmail;
-
-      const newCustomer = await prisma.customer.create({
-        data: {
-          storeId,
-          email: customerEmail,
-          firstName: cleanName,
-          phone: body.customerPhone || null,
-        },
-        select: { id: true },
-      });
-      customerId = newCustomer.id;
-    }
-
     let dueDate: Date | null = null;
     if (isCredit) {
       if (body.dueDate) {
         dueDate = new Date(body.dueDate);
       } else {
-        const custRecord = customerId
-          ? await prisma.customer.findUnique({
-              where: { id: customerId },
-              select: { creditDays: true },
-            })
-          : null;
-        const days = custRecord?.creditDays || 30;
+        const days = taxCustomer?.creditDays || 30;
         dueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
       }
     }
@@ -180,6 +151,18 @@ export async function POST(request: Request) {
     let order;
     try {
       order = await prisma.$transaction(async (tx) => {
+        let customer = taxCustomer;
+        if (!customer) {
+          await tx.customer.createMany({
+            data: [{ storeId, email: WALK_IN_EMAIL, firstName: "Walk-in Customer" }],
+            skipDuplicates: true,
+          });
+          customer = await tx.customer.findUniqueOrThrow({
+            where: { storeId_email: { storeId, email: WALK_IN_EMAIL } },
+            select: { id: true, email: true, taxExempt: true, creditDays: true },
+          });
+        }
+
         for (const [variantId, quantity] of requestedQuantities) {
           const variant = validVariantMap.get(variantId)!;
           if (variant.stockStatus !== "IN_STOCK") continue;
@@ -204,8 +187,8 @@ export async function POST(request: Request) {
         return tx.order.create({
           data: {
             storeId,
-            customerId,
-            customerEmail,
+            customerId: customer.id,
+            customerEmail: customer.email,
             status: "COMPLETED",
             paymentStatus: isCredit ? "UNPAID" : "PAID",
             paymentProvider: "pos",

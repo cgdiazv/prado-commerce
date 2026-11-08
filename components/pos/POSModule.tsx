@@ -51,6 +51,7 @@ import { InventoryItem, Customer, SalesRep, CompanySettings, PosStoreSettings } 
 import { offlineSync } from "@/lib/offline-sync";
 import { getSyncQueue, clearSyncedTickets, OfflineSyncTicket } from "@/lib/offline-db";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { WALK_IN_EMAIL } from "@/lib/pos/customer";
 import type { TaxSettings } from "@/lib/tax";
 
 export interface CartItem {
@@ -3225,7 +3226,7 @@ export default function POSModule({
                   setShowCustomerModal(false);
                 }}
                 className={`w-full p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer ${
-                  selectedCustomer.name === defaultCustomerName
+                  !selectedCustomer.id || selectedCustomer.id === "default"
                     ? "bg-cyan-50/70 border-cyan-500 text-cyan-950 font-bold"
                     : "border-slate-200 hover:bg-slate-50 text-slate-800"
                 }`}
@@ -3236,7 +3237,7 @@ export default function POSModule({
                     {isEs ? "Sin RTN / Venta Rápida" : "No Tax ID / Direct Sale"}
                   </div>
                 </div>
-                {selectedCustomer.name === defaultCustomerName && (
+                {(!selectedCustomer.id || selectedCustomer.id === "default") && (
                   <CheckCircle2 className="w-4 h-4 text-cyan-600" />
                 )}
               </button>
@@ -3246,7 +3247,7 @@ export default function POSModule({
                 {isEs ? "Clientes Registrados:" : "Registered Customers:"}
               </div>
               <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-                {customers.map((c) => (
+                {customers.filter((c) => c.email?.toLowerCase() !== WALK_IN_EMAIL).map((c) => (
                   <button
                     key={c.id}
                     type="button"
