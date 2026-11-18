@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PradoLogo } from "@/components/PradoLogo";
-import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function ForgotPasswordPage() {
@@ -28,15 +27,14 @@ export default function ForgotPasswordPage() {
 
       const result = (await response.json()) as {
         error?: string;
-        resetPath?: string;
       };
 
-      if (!response.ok || !result.resetPath) {
+      if (!response.ok) {
         throw new Error(result.error ?? t.forgotPassword.errorMessage);
       }
 
       setStatus("success");
-      setMessage(`${t.forgotPassword.successMessage}: ${new URL(result.resetPath, window.location.origin).toString()}`);
+      setMessage(t.forgotPassword.successMessage);
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : t.forgotPassword.errorMessage);
@@ -49,12 +47,9 @@ export default function ForgotPasswordPage() {
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <section className="relative w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 md:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="inline-block transition hover:opacity-85">
-            <PradoLogo theme="light" />
-          </Link>
-          <LanguageToggle variant="light" />
-        </div>
+        <Link href="/" className="inline-block transition hover:opacity-85">
+          <PradoLogo theme="light" />
+        </Link>
 
         <h1 className="mt-4 text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t.forgotPassword.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
