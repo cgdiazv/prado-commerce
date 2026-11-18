@@ -148,6 +148,7 @@ export interface Translations {
     allOrders: string;
     newOrder: string;
     pointOfSale: string;
+    quotes: string;
     posSettings: string;
     procurement: string;
     procurementOverview: string;
@@ -499,6 +500,7 @@ export const translations: Record<Language, Translations> = {
       allOrders: "Todos los pedidos",
       newOrder: "Nuevo pedido",
       pointOfSale: "Punto de Venta (POS)",
+      quotes: "Cotizaciones",
       posSettings: "Configuración POS",
       procurement: "Compras",
       procurementOverview: "Resumen",
@@ -848,6 +850,7 @@ export const translations: Record<Language, Translations> = {
       allOrders: "All Orders",
       newOrder: "New Order",
       pointOfSale: "Point of Sale (POS)",
+      quotes: "Quotes",
       posSettings: "POS Settings",
       procurement: "Procurement",
       procurementOverview: "Overview",

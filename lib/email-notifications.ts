@@ -74,6 +74,97 @@ function displayName(firstName?: string | null) {
   return firstName?.trim() || "there";
 }
 
+type QuoteEmailInput = {
+  to: string;
+  customerName?: string | null;
+  store: {
+    name: string;
+    senderName?: string | null;
+    senderEmail?: string | null;
+    replyToEmail?: string | null;
+  };
+  quoteNumber: number;
+  currency: string;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  total: number;
+  validUntil?: Date | null;
+  notes?: string | null;
+  items: Array<{ title: string; quantity: number; price: number }>;
+};
+
+export async function sendQuoteEmail(input: QuoteEmailInput) {
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+
+  const customerName = escapeHtml(input.customerName?.trim() || "there");
+  const itemRows = input.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(item.title)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.quantity}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:right;">${formatMoney(input.currency, item.price)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:right;">${formatMoney(input.currency, item.price * item.quantity)}</td>
+        </tr>`,
+    )
+    .join("");
+  const validity = input.validUntil
+    ? `<p style="margin:0 0 16px;color:#64748b;font-size:13px;">Valid until ${input.validUntil.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      })}.</p>`
+    : "";
+  const notes = input.notes?.trim()
+    ? `<div style="margin:20px 0 0;padding:14px;background:#f8fafc;border-radius:10px;white-space:pre-wrap;">${escapeHtml(input.notes.trim())}</div>`
+    : "";
+
+  const result = await resend.emails.send({
+    from: getFromHeader(input.store),
+    to: input.to,
+    ...(getReplyTo(input.store) ? { replyTo: getReplyTo(input.store) } : {}),
+    subject: `Quote #${input.quoteNumber} from ${input.store.name}`,
+    html: `
+      <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+        <table role="presentation" style="max-width:680px;width:100%;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+          <tr><td style="padding:28px;">
+            <p style="margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;">${escapeHtml(input.store.name)}</p>
+            <h1 style="margin:0 0 8px;font-size:24px;">Quote #${input.quoteNumber}</h1>
+            <p style="margin:0 0 4px;color:#334155;">Hello ${customerName},</p>
+            <p style="margin:0 0 16px;color:#334155;">Please review the quote below. Reply to this email if you have questions or would like to proceed.</p>
+            ${validity}
+            <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">
+              <thead><tr style="background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;">
+                <th style="padding:10px 8px;text-align:left;">Item</th>
+                <th style="padding:10px 8px;text-align:center;">Qty</th>
+                <th style="padding:10px 8px;text-align:right;">Price</th>
+                <th style="padding:10px 8px;text-align:right;">Total</th>
+              </tr></thead>
+              <tbody>${itemRows}</tbody>
+            </table>
+            <table role="presentation" style="width:100%;margin-top:18px;font-size:14px;">
+              <tr><td style="padding:4px 0;text-align:right;">Subtotal</td><td style="width:130px;padding:4px 0;text-align:right;">${formatMoney(input.currency, input.subtotal)}</td></tr>
+              <tr><td style="padding:4px 0;text-align:right;">Tax</td><td style="padding:4px 0;text-align:right;">${formatMoney(input.currency, input.tax)}</td></tr>
+              <tr><td style="padding:4px 0;text-align:right;">Shipping</td><td style="padding:4px 0;text-align:right;">${formatMoney(input.currency, input.shipping)}</td></tr>
+              <tr style="font-size:17px;font-weight:700;"><td style="padding:10px 0 4px;text-align:right;border-top:1px solid #cbd5e1;">Total</td><td style="padding:10px 0 4px;text-align:right;border-top:1px solid #cbd5e1;">${formatMoney(input.currency, input.total)}</td></tr>
+            </table>
+            ${notes}
+          </td></tr>
+        </table>
+      </div>
+    `,
+  });
+
+  if (result.error) {
+    throw new Error(result.error.message || "Could not send quote email");
+  }
+  return result;
+}
+
 export type PasswordResetEmailInput = {
   to: string;
   resetUrl: string;
