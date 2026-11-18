@@ -471,15 +471,15 @@ export const translations: Record<Language, Translations> = {
     forgotPassword: {
       title: "Restablece tu contraseña",
       subtitle:
-        "Ingresa el correo electrónico de tu cuenta de Prado Commerce y generaremos un enlace de restablecimiento.",
+        "Ingresa el correo electrónico de tu cuenta de Prado Commerce y te enviaremos un enlace de restablecimiento.",
       emailLabel: "Correo electrónico",
       emailPlaceholder: "propietario@marca.com",
-      submitButton: "Crear enlace de restablecimiento",
-      submitting: "Creando enlace...",
+      submitButton: "Enviar enlace de restablecimiento",
+      submitting: "Enviando enlace...",
       rememberedPassword: "¿Recordaste tu contraseña?",
       signIn: "Iniciar sesión",
-      successMessage: "Enlace de restablecimiento generado con éxito",
-      errorMessage: "No se pudo generar el enlace de restablecimiento",
+      successMessage: "Revisa tu correo electrónico para encontrar el enlace de restablecimiento de contraseña.",
+      errorMessage: "No se pudo enviar el enlace de restablecimiento",
     },
     dashboard: {
       merchantDashboard: "Panel",
@@ -820,15 +820,15 @@ export const translations: Record<Language, Translations> = {
     forgotPassword: {
       title: "Reset your password",
       subtitle:
-        "Enter the email for your Prado Commerce account and we will generate a reset link.",
+        "Enter the email for your Prado Commerce account and we will send you a reset link.",
       emailLabel: "Email",
       emailPlaceholder: "owner@brand.com",
-      submitButton: "Create reset link",
-      submitting: "Creating link...",
+      submitButton: "Send reset link",
+      submitting: "Sending link...",
       rememberedPassword: "Remembered your password?",
       signIn: "Sign in",
-      successMessage: "Password reset link created successfully",
-      errorMessage: "Could not create reset link",
+      successMessage: "Check your email for the password reset link.",
+      errorMessage: "Could not send reset link",
     },
     dashboard: {
       merchantDashboard: "Dashboard",

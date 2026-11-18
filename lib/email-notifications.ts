@@ -74,6 +74,60 @@ function displayName(firstName?: string | null) {
   return firstName?.trim() || "there";
 }
 
+export type PasswordResetEmailInput = {
+  to: string;
+  resetUrl: string;
+  brandName?: string;
+  senderName?: string | null;
+  replyTo?: string | null;
+};
+
+export async function sendPasswordResetEmail(input: PasswordResetEmailInput) {
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+
+  const brandName = input.brandName?.trim() || "Prado Commerce";
+  const fromName = input.senderName?.trim() || brandName;
+  const resetUrl = escapeHtml(input.resetUrl);
+  const replyTo = input.replyTo?.trim().toLowerCase();
+  const payload = {
+    from: `${fromName} <${SENDER_FROM_EMAIL}>`,
+    to: input.to,
+    subject: `Reset your ${brandName} password`,
+    html: `
+      <div style="margin:0;padding:24px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+        <table role="presentation" style="max-width:620px;width:100%;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+          <tr>
+            <td style="padding:24px 24px 8px 24px;">
+              <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">${escapeHtml(brandName)}</p>
+              <h1 style="margin:0;font-size:24px;line-height:1.3;color:#0f172a;">Reset your password</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 24px 24px 24px;font-size:15px;line-height:1.6;color:#334155;">
+              <p style="margin:0 0 16px 0;">We received a request to reset your password. Use the button below to choose a new password.</p>
+              <p style="margin:24px 0;">
+                <a href="${resetUrl}" style="display:inline-block;border-radius:8px;background:#0891b2;color:#ffffff;font-size:14px;font-weight:600;padding:12px 20px;text-decoration:none;">Reset password</a>
+              </p>
+              <p style="margin:0 0 8px 0;">This link expires in two hours.</p>
+              <p style="margin:0;color:#64748b;font-size:12px;">If you did not request a password reset, you can safely ignore this email.</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `,
+    ...(replyTo ? { replyTo } : {}),
+  };
+  const result = await resend.emails.send(payload);
+
+  if (result.error) {
+    throw new Error(result.error.message || "Could not send password reset email");
+  }
+
+  return result;
+}
+
 function getFromHeader(store: { name: string; senderName?: string | null }) {
   const fromName = store.senderName?.trim() || store.name;
   return `${fromName} <${SENDER_FROM_EMAIL}>`;
