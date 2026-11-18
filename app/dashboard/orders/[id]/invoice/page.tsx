@@ -71,6 +71,7 @@ export default async function OrderInvoicePage({
       fulfillmentStatus: order.fulfillmentStatus,
       subtotal: order.subtotal.toString(),
       tax: order.tax.toString(),
+      taxIncluded: order.taxIncluded,
       shipping: order.shipping.toString(),
       total: order.total.toString(),
       currency: order.currency,
@@ -82,6 +83,7 @@ export default async function OrderInvoicePage({
         title: item.title,
         price: item.price.toString(),
         quantity: item.quantity,
+        tax: item.tax.toString(),
       })),
       store: {
         name: order.store.name,

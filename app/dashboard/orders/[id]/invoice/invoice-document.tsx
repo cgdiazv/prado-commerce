@@ -44,6 +44,7 @@ export type InvoiceOrder = {
   fulfillmentStatus: "UNFULFILLED" | "SHIPPED";
   subtotal: string;
   tax: string;
+  taxIncluded: boolean;
   shipping: string;
   total: string;
   currency: string;
@@ -55,6 +56,7 @@ export type InvoiceOrder = {
     title: string;
     price: string;
     quantity: number;
+    tax: string;
   }>;
   store: {
     name: string;
@@ -122,6 +124,8 @@ export function InvoiceDocument({
   const parsedBilling = parseAddress(order.billingAddress);
   const parsedShipping = parseAddress(order.shippingAddress);
   const storeContact = parseOriginContact(order.store.shippingOrigin);
+  const itemTaxTotal = order.items.reduce((sum, item) => sum + Number(item.tax), 0);
+  const shippingTax = Math.max(0, Number(order.tax) - itemTaxTotal);
 
   const invoiceNumber = `${(order.store.invoicePrefix || "INV-").trim()}${order.orderNumber}`;
   const orderDate = new Date(order.createdAt).toLocaleDateString(
@@ -292,6 +296,11 @@ export function InvoiceDocument({
                 <th className="py-3 px-3">{isEs ? "Descripción del Artículo" : "Item Description"}</th>
                 <th className="py-3 px-3 text-center w-20">{isEs ? "Cant." : "Qty"}</th>
                 <th className="py-3 px-3 text-right w-28">{isEs ? "Precio Unit." : "Unit Price"}</th>
+                <th className="py-3 px-3 text-right w-24">
+                  {order.taxIncluded
+                    ? (isEs ? "Impuesto incl." : "Tax incl.")
+                    : (isEs ? "Impuesto" : "Tax")}
+                </th>
                 <th className="py-3 px-3 text-right w-28">{isEs ? "Importe" : "Amount"}</th>
               </tr>
             </thead>
@@ -307,6 +316,7 @@ export function InvoiceDocument({
                     </td>
                     <td className="py-3 px-3 text-center font-medium text-slate-700">{item.quantity}</td>
                     <td className="py-3 px-3 text-right text-slate-700">{formatter.format(unitPrice)}</td>
+                    <td className="py-3 px-3 text-right text-slate-700">{formatter.format(Number(item.tax))}</td>
                     <td className="py-3 px-3 text-right font-semibold text-slate-900">
                       {formatter.format(lineTotal)}
                     </td>
@@ -321,7 +331,11 @@ export function InvoiceDocument({
         <div className="mt-8 flex justify-end">
           <div className="w-full sm:w-72 space-y-2 text-xs">
             <div className="flex justify-between text-slate-600">
-              <span>{isEs ? "Subtotal" : "Subtotal"}</span>
+              <span>
+                {order.taxIncluded
+                  ? (isEs ? "Subtotal (impuestos incluidos)" : "Subtotal (tax included)")
+                  : "Subtotal"}
+              </span>
               <span className="font-medium text-slate-800">{formatter.format(Number(order.subtotal))}</span>
             </div>
 
@@ -332,12 +346,27 @@ export function InvoiceDocument({
               </div>
             )}
 
-            {Number(order.tax) > 0 && (
+            {order.taxIncluded ? (
+              <>
+                {itemTaxTotal > 0 && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>{isEs ? "Impuesto incluido en artículos" : "Tax included in items"}</span>
+                    <span className="font-medium text-slate-800">{formatter.format(itemTaxTotal)}</span>
+                  </div>
+                )}
+                {shippingTax > 0 && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>{isEs ? "Impuesto de envío" : "Shipping tax"}</span>
+                    <span className="font-medium text-slate-800">{formatter.format(shippingTax)}</span>
+                  </div>
+                )}
+              </>
+            ) : Number(order.tax) > 0 ? (
               <div className="flex justify-between text-slate-600">
                 <span>{isEs ? "Impuestos" : "Tax"}</span>
                 <span className="font-medium text-slate-800">{formatter.format(Number(order.tax))}</span>
               </div>
-            )}
+            ) : null}
 
             <div className="border-t-2 border-slate-900 pt-3 flex justify-between text-sm sm:text-base font-black text-slate-950">
               <span>{isEs ? "TOTAL" : "TOTAL"}</span>

@@ -214,6 +214,7 @@ export async function GET(request: Request) {
         lastName: true,
         phone: true,
         groupId: true,
+        taxExempt: true,
         group: {
           select: {
             id: true,
@@ -429,4 +430,3 @@ export async function POST(request: Request) {
     return corsJson({ error: "Failed to create customer" }, { status: 500 });
   }
 }
-

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getCurrentUserFromRequest } from "@/lib/session";
 import { corsJson, withCorsHeaders } from "@/lib/api-cors";
+import { parseTaxSettings } from "@/lib/tax";
 
 export async function OPTIONS() {
   return withCorsHeaders(new Response(null, { status: 204 }));
@@ -94,7 +95,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       where: { id },
       include: {
         store: {
-          select: { id: true, ownerUserId: true },
+          select: { id: true, ownerUserId: true, taxSettings: true },
         },
       },
     });
@@ -132,6 +133,13 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     if (groupId !== undefined) {
       updateData.groupId = groupId;
+    }
+
+    if (
+      typeof body?.taxExempt === "boolean" &&
+      parseTaxSettings(customer.store.taxSettings).taxExemptEnabled
+    ) {
+      updateData.taxExempt = body.taxExempt;
     }
 
     if (body?.allowCredit !== undefined) {
@@ -182,6 +190,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         phone: updatedCustomer.phone,
         groupId: updatedCustomer.groupId,
         group: updatedCustomer.group,
+        taxExempt: updatedCustomer.taxExempt,
         allowCredit: updatedCustomer.allowCredit,
         creditLimit: Number(updatedCustomer.creditLimit),
         creditDays: updatedCustomer.creditDays,
@@ -228,4 +237,3 @@ export async function DELETE(req: Request, { params }: RouteContext) {
     return corsJson({ error: "Failed to delete customer" }, { status: 500 });
   }
 }
-

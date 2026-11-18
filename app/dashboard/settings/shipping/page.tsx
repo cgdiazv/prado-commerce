@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
@@ -21,11 +21,14 @@ type StoreShippingSettings = {
   shippingZones?: unknown;
 };
 
+type ShippingTab = "origin" | "methods" | "carriers";
+
 export default function ShippingPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
 
+  const [activeTab, setActiveTab] = useState<ShippingTab>("origin");
   const [stores, setStores] = useState<StoreShippingSettings[]>([]);
   const [storeId, setStoreId] = useState("");
   const [zones, setZones] = useState<ShippingZone[]>([]);
@@ -45,6 +48,25 @@ export default function ShippingPage() {
   const [newZoneValue, setNewZoneValue] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleShippingTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") {
+      return;
+    }
+
+    event.preventDefault();
+    const tabs: ShippingTab[] = ["origin", "methods", "carriers"];
+    const currentIndex = tabs.indexOf(activeTab);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab);
+    document.getElementById(`shipping-tab-${nextTab}`)?.focus();
+  }
 
   function normalizeShippingZones(value: unknown): ShippingZone[] {
     if (!Array.isArray(value)) {
@@ -410,6 +432,49 @@ export default function ShippingPage() {
             </div>
           ) : null}
 
+          <div
+            role="tablist"
+            aria-label={isEs ? "Configuración de envíos" : "Shipping settings"}
+            className="flex min-w-0 flex-row overflow-x-auto border-b border-slate-200 bg-slate-50/70"
+          >
+            {(["origin", "methods", "carriers"] as const).map((tab) => (
+              <button
+                key={tab}
+                id={`shipping-tab-${tab}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`shipping-panel-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
+                onClick={() => setActiveTab(tab)}
+                onKeyDown={handleShippingTabKeyDown}
+                className={`flex shrink-0 items-center border-b-4 px-4 py-3 text-left text-xs font-bold transition ${
+                  activeTab === tab
+                    ? "border-cyan-600 bg-white text-cyan-700"
+                    : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-800"
+                }`}
+              >
+                {tab === "origin"
+                  ? isEs
+                    ? "Ubicación de origen"
+                    : "Origin Location"
+                  : isEs
+                    ? tab === "methods"
+                      ? "Métodos y zonas"
+                      : "Transportistas"
+                    : tab === "methods"
+                      ? "Shipping Methods"
+                      : "Carrier Connections"}
+              </button>
+            ))}
+          </div>
+
+          <div
+            id="shipping-panel-origin"
+            role="tabpanel"
+            aria-labelledby="shipping-tab-origin"
+            hidden={activeTab !== "origin"}
+          >
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isEs ? "Ubicación de origen" : "Origin location"}
@@ -464,7 +529,14 @@ export default function ShippingPage() {
               </label>
             </div>
           </article>
+          </div>
 
+          <div
+            id="shipping-panel-methods"
+            role="tabpanel"
+            aria-labelledby="shipping-tab-methods"
+            hidden={activeTab !== "methods"}
+          >
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -592,7 +664,14 @@ export default function ShippingPage() {
               ))}
             </div>
           </article>
+          </div>
 
+          <div
+            id="shipping-panel-carriers"
+            role="tabpanel"
+            aria-labelledby="shipping-tab-carriers"
+            hidden={activeTab !== "carriers"}
+          >
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isEs ? "Conexiones con transportistas" : "Carrier connections"}
@@ -749,6 +828,7 @@ export default function ShippingPage() {
               )}
             </div>
           </article>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

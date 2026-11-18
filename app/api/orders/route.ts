@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
+import { calculateTax } from "@/lib/tax";
 
 function parseAmount(value: unknown): number {
   const numericValue =
@@ -228,6 +229,8 @@ export async function POST(request: Request) {
     const currency = String(body?.currency || "USD").trim().toUpperCase();
     const status = String(body?.status || "PENDING").trim().toUpperCase();
     const paymentStatus = String(body?.paymentStatus || "UNPAID").trim().toUpperCase();
+    const shippingAddress = body?.shippingAddress ?? null;
+    const billingAddress = body?.billingAddress ?? null;
 
     if (!storeId || !customerEmail) {
       return NextResponse.json({ error: "storeId and customerEmail are required" }, { status: 400 });
@@ -250,9 +253,7 @@ export async function POST(request: Request) {
           parsedItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100,
         ) / 100
       : parseAmount(body?.subtotal ?? 0);
-    const tax = parseAmount(body?.tax ?? 0);
     const shipping = parseAmount(body?.shipping ?? 0);
-    const total = Math.round((subtotal + tax + shipping) * 100) / 100;
 
     if (parsedItems.length === 0 && (body?.items !== undefined || subtotal === 0)) {
       return NextResponse.json(
@@ -265,7 +266,7 @@ export async function POST(request: Request) {
       where: cashier
         ? { id: cashier.storeId }
         : { id: storeId, ownerUserId: user!.id },
-      select: { id: true },
+      select: { id: true, taxSettings: true },
     });
 
     if (!ownedStore) {
@@ -279,12 +280,17 @@ export async function POST(request: Request) {
           email: customerEmail,
         },
       },
-      update: {},
+      update: {
+        shippingAddress: shippingAddress ?? undefined,
+        billingAddress: billingAddress ?? undefined,
+      },
       create: {
         storeId,
         email: customerEmail,
+        shippingAddress: shippingAddress ?? undefined,
+        billingAddress: billingAddress ?? undefined,
       },
-      select: { id: true },
+      select: { id: true, shippingAddress: true, taxExempt: true },
     });
 
     const variantIds = parsedItems
@@ -294,11 +300,62 @@ export async function POST(request: Request) {
     const variants = variantIds.length > 0
       ? await prisma.productVariant.findMany({
           where: { id: { in: variantIds } },
-          select: { id: true, costPrice: true },
+          select: {
+            id: true,
+            costPrice: true,
+            product: { select: { storeId: true, taxable: true, taxCategoryCode: true } },
+          },
         })
       : [];
 
-    const variantCostMap = new Map(variants.map((v) => [v.id, v.costPrice]));
+    if (variants.some((variant) => variant.product.storeId !== storeId)) {
+      return NextResponse.json({ error: "Order items must belong to the selected store." }, { status: 400 });
+    }
+    if (new Set(variantIds).size !== variants.length) {
+      return NextResponse.json({ error: "One or more selected order products could not be found." }, { status: 400 });
+    }
+
+    const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+    const addressValue = body?.taxDestination ?? shippingAddress ?? customer.shippingAddress;
+    let taxDestination: Record<string, unknown> = {};
+    if (typeof addressValue === "string") {
+      try {
+        const parsed: unknown = JSON.parse(addressValue);
+        if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+          taxDestination = parsed as Record<string, unknown>;
+        }
+      } catch {
+        taxDestination = {};
+      }
+    } else if (typeof addressValue === "object" && addressValue !== null && !Array.isArray(addressValue)) {
+      taxDestination = addressValue as Record<string, unknown>;
+    }
+    const calculatedTax = calculateTax(
+      ownedStore.taxSettings,
+      { country: taxDestination.country, region: taxDestination.state ?? taxDestination.region },
+      parsedItems.map((item) => {
+        const variant = item.variantId ? variantMap.get(item.variantId) : undefined;
+        return {
+          price: item.price,
+          quantity: item.quantity,
+          taxable: variant?.product.taxable ?? true,
+          taxCategoryCode: variant?.product.taxCategoryCode,
+        };
+      }),
+      shipping,
+      customer.taxExempt,
+    );
+    const tax = variantIds.length > 0
+      ? calculatedTax.total
+      : parseAmount(body?.tax ?? 0);
+    const hasCatalogItems = variantIds.length > 0;
+    const taxIncluded = hasCatalogItems && calculatedTax.pricesIncludeTax;
+    const taxToAdd = hasCatalogItems
+      ? calculatedTax.additionalTax
+      : taxIncluded
+        ? 0
+        : tax;
+    const total = Math.round((subtotal + shipping + taxToAdd) * 100) / 100;
 
     const createdOrder = await prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
@@ -310,18 +367,22 @@ export async function POST(request: Request) {
           paymentStatus: paymentStatus as "UNPAID" | "PAID" | "REFUNDED" | "FAILED",
           subtotal,
           tax,
+          taxIncluded,
           shipping,
           total,
           currency: currency.length === 3 ? currency : "USD",
+          shippingAddress: shippingAddress ?? undefined,
+          billingAddress: billingAddress ?? undefined,
           ...(parsedItems.length
             ? {
                 items: {
-                  create: parsedItems.map((item) => ({
+                  create: parsedItems.map((item, index) => ({
                     title: item.title,
                     price: item.price,
                     quantity: item.quantity,
                     variantId: item.variantId,
-                    costPrice: item.variantId ? (variantCostMap.get(item.variantId) ?? null) : null,
+                    tax: variantIds.length > 0 ? calculatedTax.lineTaxes[index] : 0,
+                    costPrice: item.variantId ? (variantMap.get(item.variantId)?.costPrice ?? null) : null,
                   })),
                 },
               }
@@ -373,7 +434,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "Invalid amount") {
       return NextResponse.json(
-        { error: "subtotal, tax, and shipping must be valid non-negative numbers" },
+        { error: "subtotal and shipping must be valid non-negative numbers" },
         { status: 400 },
       );
     }

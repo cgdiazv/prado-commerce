@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getStoreEmailConfig, sendOrderConfirmationEmail, sendMerchantSubscriptionWelcomeEmail } from "@/lib/email-notifications";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
 import { STRIPE_PRICE_MAP } from "@/lib/stripe-pricing";
+import { calculateTax } from "@/lib/tax";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -193,6 +194,9 @@ export async function POST(request: Request) {
         select: {
           id: true,
           currency: true,
+          store: {
+            select: { taxSettings: true },
+          },
           items: {
             select: {
               quantity: true,
@@ -203,6 +207,9 @@ export async function POST(request: Request) {
                   price: true,
                   costPrice: true,
                   stockStatus: true,
+                  product: {
+                    select: { taxable: true, taxCategoryCode: true },
+                  },
                 },
               },
             },
@@ -219,6 +226,64 @@ export async function POST(request: Request) {
       const subtotal = parseMetadataAmount(metadata.subtotal, subtotalFallback);
       const shipping = parseMetadataAmount(metadata.shipping, 0);
       const tax = parseMetadataAmount(metadata.tax, 0);
+      const taxIncluded = metadata.taxIncluded === "true";
+      let lineTaxBreakdown: number[] | null = null;
+      if (metadata.lineTaxBreakdown) {
+        try {
+          const parsed: unknown = JSON.parse(metadata.lineTaxBreakdown);
+          if (
+            Array.isArray(parsed) &&
+            parsed.length === cart.items.length &&
+            parsed.every((entry) =>
+              typeof entry === "object" &&
+              entry !== null &&
+              "variantId" in entry &&
+              typeof entry.variantId === "string" &&
+              "tax" in entry &&
+              typeof entry.tax === "number" &&
+              Number.isFinite(entry.tax) &&
+              entry.tax >= 0,
+            )
+          ) {
+            const taxesByVariantId = new Map(
+              parsed.map((entry) => [entry.variantId, entry.tax] as const),
+            );
+            if (cart.items.every((item) => taxesByVariantId.has(item.variant.id))) {
+              lineTaxBreakdown = cart.items.map((item) => taxesByVariantId.get(item.variant.id)!);
+            }
+          }
+        } catch {
+          lineTaxBreakdown = null;
+        }
+      }
+      if (!lineTaxBreakdown) {
+        if (metadata.taxExempt === "true") {
+          lineTaxBreakdown = cart.items.map(() => 0);
+        }
+      }
+      if (!lineTaxBreakdown) {
+        const taxCustomer = await prisma.customer.findUnique({
+          where: { storeId_email: { storeId, email } },
+          select: { taxExempt: true },
+        });
+        const destination = (shippingAddress ?? billingAddress ?? {}) as {
+          country?: unknown;
+          state?: unknown;
+        };
+        const estimatedTaxes = calculateTax(
+          cart.store?.taxSettings,
+          { country: destination.country, region: destination.state },
+          cart.items.map((item) => ({
+            price: Number(item.variant.price),
+            quantity: item.quantity,
+            taxable: item.variant.product.taxable,
+            taxCategoryCode: item.variant.product.taxCategoryCode,
+          })),
+          shipping,
+          taxCustomer?.taxExempt ?? false,
+        );
+        lineTaxBreakdown = estimatedTaxes.lineTaxes;
+      }
       const currency = (session.currency || cart.currency || "usd").toUpperCase();
 
       const customer = await prisma.customer.upsert({
@@ -261,6 +326,7 @@ export async function POST(request: Request) {
             paymentStatus: "PAID",
             subtotal,
             tax,
+            taxIncluded,
             shipping,
             total,
             currency,
@@ -272,11 +338,12 @@ export async function POST(request: Request) {
             shippingAddress: shippingAddress ?? undefined,
             billingAddress: billingAddress ?? undefined,
             items: {
-              create: cart.items.map((item) => ({
+              create: cart.items.map((item, index) => ({
                 title: item.variant.title,
                 price: Number(item.variant.price),
                 quantity: item.quantity,
                 variantId: item.variant.id,
+                tax: lineTaxBreakdown[index],
                 costPrice: item.variant.costPrice ?? null,
               })),
             },

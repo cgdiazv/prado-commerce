@@ -101,6 +101,7 @@ model Store {
   invoicePrefix  String?    @default("INV-")
   nextInvoiceNumber Int     @default(1001)
   posSettings    Json?
+  taxSettings    Json?
   customCss      String?
   storefrontPages Json?
  
@@ -211,6 +212,7 @@ model Product {
   images      String[]
   featured    Boolean        @default(false)
   taxable     Boolean        @default(true)
+  taxCategoryCode String?
   status      ProductStatus  @default(DRAFT)
   productType ProductType    @default(PHYSICAL)
 
@@ -342,6 +344,7 @@ model Customer {
   firstName String?
   lastName  String?
   phone     String?
+  taxExempt Boolean  @default(false)
   passwordHash    String?
   passwordResetTokenId     String? @unique
   passwordResetTokenHash    String?
@@ -404,6 +407,7 @@ model Order {
   total           Decimal       @db.Decimal(10, 2)
   subtotal        Decimal       @db.Decimal(10, 2)
   tax             Decimal       @default(0.00) @db.Decimal(10, 2)
+  taxIncluded     Boolean       @default(false)
   shipping        Decimal       @default(0.00) @db.Decimal(10, 2)
   currency        String        @default("USD")
   paymentProvider String?       @default("manual")
@@ -497,6 +501,7 @@ model OrderItem {
   title     String
   price     Decimal         @db.Decimal(10, 2)
   costPrice Decimal?        @db.Decimal(10, 2)
+  tax       Decimal         @default(0.00) @db.Decimal(10, 2)
   quantity  Int
 
   @@index([orderId])

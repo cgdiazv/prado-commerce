@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Store as StoreIcon } from "lucide-react";
 import { upload } from "@vercel/blob/client";
@@ -41,6 +41,7 @@ type Product = {
   images: string[];
   featured?: boolean;
   taxable?: boolean;
+  taxCategoryCode?: string | null;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   productType: "PHYSICAL" | "DIGITAL" | "SERVICE";
   categoryId: string | null;
@@ -66,6 +67,7 @@ type ProductFormState = {
   categoryIds: string[];
   brandId: string;
   taxable: boolean;
+  taxCategoryCode: string;
 };
 
 type VariantFormState = {
@@ -112,7 +114,10 @@ const emptyProduct: ProductFormState = {
   categoryIds: [],
   brandId: "",
   taxable: true,
+  taxCategoryCode: "",
 };
+
+type TaxCategoryOption = { code: string; name: string };
 
 async function parseUploadResponse(response: Response): Promise<{ url?: string; error?: string }> {
   if (response.status === 413) {
@@ -172,6 +177,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
   const [isCreatingNewCategoryMode, setIsCreatingNewCategoryMode] = useState(false);
 
   const [availableBrands, setAvailableBrands] = useState<Brand[]>(brands);
+  const [taxCategories, setTaxCategories] = useState<TaxCategoryOption[]>([]);
   const [newBrandName, setNewBrandName] = useState("");
   const [isCreatingBrand, setIsCreatingBrand] = useState(false);
   const [isCreatingNewBrandMode, setIsCreatingNewBrandMode] = useState(false);
@@ -194,6 +200,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
             (initialProduct.categoryId ? [initialProduct.categoryId] : []),
           brandId: initialProduct.brandId ?? "",
           taxable: initialProduct.taxable !== undefined ? Boolean(initialProduct.taxable) : true,
+          taxCategoryCode: initialProduct.taxCategoryCode ?? "",
         }
       : emptyProduct,
   );
@@ -235,6 +242,32 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
     .filter((brand) => brand.storeId === activeStoreId)
     .sort((left, right) => left.name.localeCompare(right.name));
   const isNonPhysicalProduct = productForm.productType !== "PHYSICAL";
+
+  useEffect(() => {
+    if (!activeStoreId) {
+      return;
+    }
+
+    let cancelled = false;
+    fetch(`/api/stores/${activeStoreId}/tax-settings`, { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Unable to load tax categories.");
+        if (!cancelled) {
+          const categories = result.settings?.taxCategories;
+          setTaxCategories(Array.isArray(categories) ? categories : []);
+        }
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load tax categories.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeStoreId]);
 
   function getCategoryLabel(category: Category, allCategories: Category[]) {
     const path = [category.name];
@@ -543,6 +576,7 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
         categoryIds: productForm.categoryIds,
         brandId: productForm.brandId || null,
         taxable: productForm.taxable,
+        taxCategoryCode: productForm.taxCategoryCode || null,
         variants: variants
           .filter((variant) => variant.price.trim())
           .map((variant) => ({
@@ -1047,6 +1081,30 @@ export function ProductForm({ stores, categories = [], brands = [], initialProdu
                   : "If unchecked, this product will be treated as tax-exempt (0% tax) during checkout and POS sales."}
               </p>
             </div>
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">
+              {isEs ? "Categoría fiscal" : "Product tax category"}
+            </span>
+            <select
+              value={productForm.taxCategoryCode}
+              onChange={(event) =>
+                setProductForm((current) => ({ ...current, taxCategoryCode: event.target.value }))
+              }
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="">{isEs ? "Usar tasa de la región" : "Use region tax rate"}</option>
+              {taxCategories.map((category) => (
+                <option key={category.code} value={category.code}>
+                  {category.name} ({category.code})
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-slate-500">
+              {isEs
+                ? "La tasa de la categoría reemplaza la tasa predeterminada de la región."
+                : "A category rate overrides the destination region's default rate."}
+            </span>
           </label>
         </div>
 

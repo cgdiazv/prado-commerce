@@ -51,6 +51,8 @@ import { InventoryItem, Customer, SalesRep, CompanySettings, PosStoreSettings } 
 import { offlineSync } from "@/lib/offline-sync";
 import { getSyncQueue, clearSyncedTickets, OfflineSyncTicket } from "@/lib/offline-db";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { WALK_IN_EMAIL } from "@/lib/pos/customer";
+import type { TaxSettings } from "@/lib/tax";
 
 export interface CartItem {
   id: string; // unique cart line id
@@ -62,6 +64,7 @@ export interface CartItem {
   quantity: number;
   taxRate: number; // calculated tax rate (0 for exempt)
   taxable?: boolean; // false if marked as exempt/no-tax (overrides general settings)
+  taxCategoryCode?: string | null;
   trackingType?: string;
   selectedLot?: string;
   selectedSerial?: string;
@@ -98,6 +101,7 @@ export interface POSModuleProps {
   storeId?: string;
   language?: "es" | "en";
   posSettings?: PosStoreSettings;
+  taxSettings?: TaxSettings | null;
   activeCashierName?: string;
   isCashier?: boolean;
   stores?: Array<{ id: string; name: string; currency: string }>;
@@ -120,6 +124,7 @@ export default function POSModule({
   storeId,
   language: propLanguage,
   posSettings,
+  taxSettings,
   activeCashierName,
   isCashier = false,
   stores = [],
@@ -294,8 +299,45 @@ export default function POSModule({
     name: defaultCustomerName,
     rtn: "",
   });
+  const [taxRegionOverride, setTaxRegionOverride] = useState<{ customerId: string | null; regionKey: string } | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [newCustomerForm, setNewCustomerForm] = useState({ name: "", rtn: "", phone: "", email: "" });
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLocaleLowerCase();
+    return customers.filter((customer) =>
+      customer.email?.toLowerCase() !== WALK_IN_EMAIL &&
+      customer.name.toLocaleLowerCase().includes(query),
+    );
+  }, [customers, customerSearch]);
+  const activeCustomerRecord = useMemo(() => {
+    if (!selectedCustomer.id || selectedCustomer.id === "default") return null;
+    return customers.find((customer) => customer.id === selectedCustomer.id) || null;
+  }, [selectedCustomer.id, customers]);
+
+  const autoTaxRegionKey = useMemo(() => {
+    const rawAddress = activeCustomerRecord?.address;
+    if (!rawAddress || !taxSettings?.nexusRegions.length) return "";
+
+    try {
+      const address: unknown = JSON.parse(rawAddress);
+      if (!address || typeof address !== "object") return "";
+      const record = address as Record<string, unknown>;
+      const country = typeof record.country === "string" ? record.country : "";
+      const region = typeof record.state === "string" ? record.state : "";
+      const match = taxSettings.nexusRegions.find(
+        (candidate) =>
+          candidate.country.trim().toLowerCase() === country.trim().toLowerCase() &&
+          candidate.region.trim().toLowerCase() === region.trim().toLowerCase(),
+      );
+      return match ? `${match.country}::${match.region}` : "";
+    } catch {
+      return "";
+    }
+  }, [activeCustomerRecord, taxSettings]);
+  const taxRegionKey = taxRegionOverride?.customerId === (activeCustomerRecord?.id ?? null)
+    ? taxRegionOverride.regionKey
+    : autoTaxRegionKey;
 
   // Update default customer name when language changes if still on default
   useEffect(() => {
@@ -570,12 +612,9 @@ export default function POSModule({
     return 15;
   }, [posSettings, localTaxPercent]);
 
-  const displayTaxPercent = useMemo(() => {
-    const rounded = Math.round(configuredTaxPercent * 100) / 100;
-    return rounded.toString();
-  }, [configuredTaxPercent]);
-
-  const configuredTaxRate = configuredTaxPercent / 100;
+  const selectedTaxRegion = taxSettings?.nexusRegions.find(
+    (region) => `${region.country}::${region.region}` === taxRegionKey,
+  );
 
   const isProductTaxable = useCallback((product?: { taxable?: boolean | string | number | null } | null): boolean => {
     if (!product) return true;
@@ -591,39 +630,32 @@ export default function POSModule({
   }, []);
 
   const getProductTaxRate = useCallback(
-    (product: { taxable?: boolean | string | number | null; category?: string | null }) => {
-      // INDIVIDUAL OVERRIDE: If product is marked as no tax, tax is strictly 0%
-      if (!isProductTaxable(product)) {
+    (product: { taxable?: boolean | string | number | null; taxCategoryCode?: string | null }) => {
+      if (
+        !isProductTaxable(product) ||
+        taxSettings?.automaticTax === false ||
+        (taxSettings?.taxExemptEnabled !== false && activeCustomerRecord?.taxExempt)
+      ) {
         return 0;
       }
 
-      // Check if category has a matching rate in taxCategories
-      if (product.category && typeof window !== "undefined") {
-        try {
-          const saved = localStorage.getItem("prado_tax_settings");
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed.taxCategories)) {
-              const matched = parsed.taxCategories.find(
-                (c: any) =>
-                  c.name?.toLowerCase() === product.category?.toLowerCase() ||
-                  c.code?.toLowerCase() === product.category?.toLowerCase()
-              );
-              if (matched) {
-                const r = parseFloat(matched.defaultRate);
-                if (!isNaN(r) && r >= 0) return r / 100;
-              }
-            }
-          }
-        } catch {}
+      if (selectedTaxRegion) {
+        const category = product.taxCategoryCode
+          ? taxSettings?.taxCategories.find(
+              (candidate) => candidate.code.toLowerCase() === product.taxCategoryCode?.toLowerCase(),
+            )
+          : undefined;
+        const rate = category?.defaultRate ?? selectedTaxRegion.defaultRate;
+        const parsedRate = Number(rate);
+        return Number.isFinite(parsedRate) && parsedRate >= 0 ? parsedRate / 100 : 0;
       }
 
-      return configuredTaxRate;
+      return 0;
     },
-    [configuredTaxRate, isProductTaxable]
+    [activeCustomerRecord?.taxExempt, isProductTaxable, selectedTaxRegion, taxSettings]
   );
 
-  // Sync active cart line items whenever configuredTaxRate or inventory updates
+  // Keep active cart lines in sync with the selected jurisdiction and product tax data.
   useEffect(() => {
     setCart((prev) => {
       let changed = false;
@@ -639,7 +671,7 @@ export default function POSModule({
       });
       return changed ? updated : prev;
     });
-  }, [configuredTaxRate, inventory, getProductTaxRate, isProductTaxable]);
+  }, [inventory, getProductTaxRate, isProductTaxable]);
 
   // ----------------------------------------------------
   // Cart Actions
@@ -671,6 +703,7 @@ export default function POSModule({
         selectedTier: "P1",
         quantity: 1,
         taxable: itemTaxable,
+        taxCategoryCode: product.taxCategoryCode ?? null,
         taxRate: itemTaxable ? getProductTaxRate(product) : 0,
         trackingType: product.trackingType,
         imageUrl: product.imageUrl,
@@ -825,20 +858,25 @@ export default function POSModule({
       const lineSubtotal = item.price * item.quantity;
       subtotal += lineSubtotal;
       if (item.taxable !== false && item.taxRate > 0) {
-        isv15 += lineSubtotal * item.taxRate;
+        const lineTax = taxSettings?.pricesIncludeTax
+          ? lineSubtotal * item.taxRate / (1 + item.taxRate)
+          : lineSubtotal * item.taxRate;
+        isv15 += Math.round(lineTax * 100) / 100;
       }
     });
 
-    const total = subtotal + isv15;
+    const taxTotal = Math.round(isv15 * 100) / 100;
+    const total = Math.round((subtotal + (taxSettings?.pricesIncludeTax ? 0 : taxTotal)) * 100) / 100;
     const totalItems = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
     return {
       subtotal,
-      isv15,
+      isv15: taxTotal,
       total,
       totalItems,
+      taxIncluded: Boolean(taxSettings?.pricesIncludeTax),
     };
-  }, [cart]);
+  }, [cart, taxSettings?.pricesIncludeTax]);
 
   // ----------------------------------------------------
   // Checkout & Payment Modal State
@@ -1128,11 +1166,6 @@ export default function POSModule({
     return cartTotals.total + cardFee;
   }, [cartTotals.total, cardFee]);
 
-  const activeCustomerRecord = useMemo(() => {
-    if (!selectedCustomer.id || selectedCustomer.id === "default") return null;
-    return customers.find((c) => c.id === selectedCustomer.id) || null;
-  }, [selectedCustomer.id, customers]);
-
   const creditValidation = useMemo(() => {
     if (paymentMethod !== "CREDITO") {
       return { isValid: true, error: null };
@@ -1235,6 +1268,9 @@ export default function POSModule({
         customerId: selectedCustomer.id !== "default" ? selectedCustomer.id : undefined,
         invoiceNumber: ticketNumber,
         customerName: selectedCustomer.name || defaultCustomerName,
+        taxDestination: selectedTaxRegion
+          ? { country: selectedTaxRegion.country, region: selectedTaxRegion.region }
+          : null,
         customerRtn: selectedCustomer.rtn || null,
         salesRepId: rep ? rep.id : null,
         salesRepName: selectedSalesRep,
@@ -1299,11 +1335,12 @@ export default function POSModule({
         register: activeRegister,
         cashier: selectedSalesRep,
         items: [...cart],
-        subtotal: cartTotals.subtotal,
-        isv15: cartTotals.isv15,
+        subtotal: saleResult.subtotal ?? cartTotals.subtotal,
+        isv15: saleResult.tax ?? cartTotals.isv15,
+        taxIncluded: Boolean(taxSettings?.pricesIncludeTax),
         convenienceFee: cardFee > 0 ? cardFee : 0,
         convenienceFeePercent: paymentMethod === "TARJETA" && cardFee > 0 ? (parseFloat(convenienceFeePercent) || 0) : 0,
-        total: finalTotal,
+        total: saleResult.total ?? finalTotal,
         paymentMethod,
         taxRatePercent: configuredTaxPercent,
         amountReceived: paymentMethod === "EFECTIVO" ? (parseFloat(amountReceived) || finalTotal) : finalTotal,
@@ -1961,7 +1998,10 @@ export default function POSModule({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowCustomerModal(true)}
+                onClick={() => {
+                  setCustomerSearch("");
+                  setShowCustomerModal(true);
+                }}
                 className="flex-1 px-3 py-2 rounded-md bg-white border border-slate-200 hover:border-cyan-500 flex items-center justify-between transition cursor-pointer shadow-2xs text-left"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -2137,12 +2177,42 @@ export default function POSModule({
           <div className="p-3 sm:px-4 bg-slate-50 border-t border-slate-200 shrink-0 space-y-3">
             {/* Totals Breakdown */}
             <div className="space-y-1 text-xs text-slate-600">
+              {taxSettings?.nexusRegions.length ? (
+                <label className="flex items-center justify-between gap-2 pb-1">
+                  <span>{isEs ? "Región fiscal:" : "Tax region:"}</span>
+                  <select
+                    value={taxRegionKey}
+                    onChange={(event) =>
+                      setTaxRegionOverride({
+                        customerId: activeCustomerRecord?.id ?? null,
+                        regionKey: event.target.value,
+                      })
+                    }
+                    className="max-w-[65%] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+                  >
+                    <option value="">{isEs ? "Seleccionar región" : "Select destination"}</option>
+                    {taxSettings.nexusRegions.map((region) => (
+                      <option key={`${region.country}::${region.region}`} value={`${region.country}::${region.region}`}>
+                        {region.region}, {region.country}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <div className="flex justify-between">
-                <span>{isEs ? "Subtotal:" : "Subtotal:"}</span>
+                <span>
+                  {cartTotals.taxIncluded
+                    ? (isEs ? "Subtotal (impuesto incluido):" : "Subtotal (tax included):")
+                    : (isEs ? "Subtotal:" : "Subtotal:")}
+                </span>
                 <span className="font-mono font-medium">{formatCurrency(cartTotals.subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>{isEs ? `Impuestos (${displayTaxPercent}%):` : `Tax (${displayTaxPercent}%):`}</span>
+                <span>
+                  {cartTotals.taxIncluded
+                    ? (isEs ? "Impuestos incluidos:" : "Tax included:")
+                    : (isEs ? "Impuestos:" : "Tax:")}
+                </span>
                 <span className="font-mono font-medium">{formatCurrency(cartTotals.isv15)}</span>
               </div>
               <div className="flex justify-between text-base font-bold text-slate-900 pt-1.5 border-t border-slate-200">
@@ -2251,7 +2321,7 @@ export default function POSModule({
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-cyan-800">{isEs ? `Impuestos (${displayTaxPercent}%):` : `Taxes (${displayTaxPercent}%):`}</div>
+                  <div className="text-[11px] text-cyan-800">{isEs ? "Impuestos:" : "Taxes:"}</div>
                   <div className="font-mono font-bold text-cyan-900">
                     {formatCurrency(cartTotals.isv15)}
                   </div>
@@ -2618,11 +2688,19 @@ export default function POSModule({
                 {/* Totals */}
                 <div className="pt-2 border-t border-dashed border-slate-300 space-y-0.5 text-[10px]">
                   <div className="flex justify-between">
-                    <span>{isEs ? "Subtotal:" : "Subtotal:"}</span>
+                    <span>
+                      {completedSale.taxIncluded
+                        ? (isEs ? "Subtotal (impuesto incluido):" : "Subtotal (tax included):")
+                        : (isEs ? "Subtotal:" : "Subtotal:")}
+                    </span>
                     <span>{formatCurrency(completedSale.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>{isEs ? `Impuestos (${completedSale.taxRatePercent ?? displayTaxPercent}%):` : `Tax (${completedSale.taxRatePercent ?? displayTaxPercent}%):`}</span>
+                    <span>
+                      {completedSale.taxIncluded
+                        ? (isEs ? "Impuestos incluidos:" : "Tax included:")
+                        : (isEs ? "Impuestos:" : "Tax:")}
+                    </span>
                     <span>{formatCurrency(completedSale.isv15)}</span>
                   </div>
                   {completedSale.convenienceFee && completedSale.convenienceFee > 0 ? (
@@ -2775,14 +2853,18 @@ export default function POSModule({
 
               <section className="mt-6 ml-auto w-72 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>{isEs ? "Subtotal" : "Subtotal"}</span>
+                  <span>
+                    {completedSale.taxIncluded
+                      ? (isEs ? "Subtotal (impuesto incluido)" : "Subtotal (tax included)")
+                      : "Subtotal"}
+                  </span>
                   <span>{formatCurrency(completedSale.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>
                     {isEs
-                      ? `Impuestos (${completedSale.taxRatePercent ?? displayTaxPercent}%)`
-                      : `Tax (${completedSale.taxRatePercent ?? displayTaxPercent}%)`}
+                      ? (completedSale.taxIncluded ? "Impuestos incluidos" : "Impuestos")
+                        : (completedSale.taxIncluded ? "Tax included" : "Tax")}
                   </span>
                   <span>{formatCurrency(completedSale.isv15)}</span>
                 </div>
@@ -3147,6 +3229,17 @@ export default function POSModule({
             </div>
 
             <div className="p-4 space-y-3">
+              <label className="relative block">
+                <span className="sr-only">{isEs ? "Buscar cliente por nombre" : "Search customers by name"}</span>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={customerSearch}
+                  onChange={(event) => setCustomerSearch(event.target.value)}
+                  placeholder={isEs ? "Buscar cliente por nombre..." : "Search customers by name..."}
+                  className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-cyan-500"
+                />
+              </label>
               {/* Default Option: Consumidor Final */}
               <button
                 type="button"
@@ -3155,7 +3248,7 @@ export default function POSModule({
                   setShowCustomerModal(false);
                 }}
                 className={`w-full p-2.5 rounded-md border text-left flex items-center justify-between transition cursor-pointer ${
-                  selectedCustomer.name === defaultCustomerName
+                  !selectedCustomer.id || selectedCustomer.id === "default"
                     ? "bg-cyan-50/70 border-cyan-500 text-cyan-950 font-bold"
                     : "border-slate-200 hover:bg-slate-50 text-slate-800"
                 }`}
@@ -3166,7 +3259,7 @@ export default function POSModule({
                     {isEs ? "Sin RTN / Venta Rápida" : "No Tax ID / Direct Sale"}
                   </div>
                 </div>
-                {selectedCustomer.name === defaultCustomerName && (
+                {(!selectedCustomer.id || selectedCustomer.id === "default") && (
                   <CheckCircle2 className="w-4 h-4 text-cyan-600" />
                 )}
               </button>
@@ -3176,7 +3269,7 @@ export default function POSModule({
                 {isEs ? "Clientes Registrados:" : "Registered Customers:"}
               </div>
               <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-                {customers.map((c) => (
+                {filteredCustomers.map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -3199,6 +3292,11 @@ export default function POSModule({
                     )}
                   </button>
                 ))}
+                {filteredCustomers.length === 0 && (
+                  <p className="py-2 text-xs text-slate-500" role="status">
+                    {isEs ? "No se encontraron clientes." : "No customers found."}
+                  </p>
+                )}
               </div>
             </div>
           </div>

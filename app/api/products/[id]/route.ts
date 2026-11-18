@@ -167,6 +167,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       status,
       featured,
       taxable,
+      taxCategoryCode,
       productType,
       categoryId,
       categoryIds,
@@ -185,6 +186,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
       featured?: boolean;
       taxable?: boolean;
+      taxCategoryCode?: string | null;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       categoryIds?: unknown;
@@ -193,6 +195,27 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     };
 
     const updates = {} as Parameters<typeof prisma.product.update>[0]["data"];
+    if (taxCategoryCode !== undefined) {
+      if (taxCategoryCode !== null && typeof taxCategoryCode !== "string") {
+        return NextResponse.json({ error: "taxCategoryCode must be a string or null" }, { status: 400 });
+      }
+      const code = typeof taxCategoryCode === "string" ? taxCategoryCode.trim() : "";
+      if (code) {
+        const store = await prisma.store.findUnique({
+          where: { id: existingProduct.storeId },
+          select: { taxSettings: true },
+        });
+        const categories = (store?.taxSettings as { taxCategories?: Array<{ code?: unknown }> } | null)?.taxCategories;
+        if (!Array.isArray(categories) || !categories.some(
+          (category) => typeof category.code === "string" && category.code.toLowerCase() === code.toLowerCase(),
+        )) {
+          return NextResponse.json({ error: "Select a valid tax category for this store." }, { status: 400 });
+        }
+        updates.taxCategoryCode = code;
+      } else {
+        updates.taxCategoryCode = null;
+      }
+    }
     const shouldUpdateCategories = categoryIds !== undefined || categoryId !== undefined;
     const parsedCategoryIds = shouldUpdateCategories
       ? parseCategoryIds(categoryIds, categoryId)

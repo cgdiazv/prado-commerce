@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultAddress } from "@/lib/address-utils";
 import { getAvailablePaymentMethods } from "@/lib/payment-options";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 declare global {
   interface Window {
@@ -77,6 +78,8 @@ export default function CheckoutForm({
   authorizeNetConfig = null,
   isCartEmpty = false,
 }: CheckoutFormProps) {
+  const { language } = useLanguage();
+  const isEs = language === "es";
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -104,6 +107,14 @@ export default function CheckoutForm({
     }
     return parseRateValue(zones[0].rateValue, zones[0].rateType);
   });
+  const [estimatedTax, setEstimatedTax] = useState(0);
+  const [estimatedTaxIncludedAmount, setEstimatedTaxIncludedAmount] = useState(0);
+  const [estimatedTaxToAdd, setEstimatedTaxToAdd] = useState(0);
+  const [estimatedTaxIncluded, setEstimatedTaxIncluded] = useState(false);
+  const [estimatedTaxAddressKey, setEstimatedTaxAddressKey] = useState("");
+  const [isTaxEstimateLoading, setIsTaxEstimateLoading] = useState(false);
+  const [taxEstimateError, setTaxEstimateError] = useState<string | null>(null);
+  const [taxEstimateErrorAddressKey, setTaxEstimateErrorAddressKey] = useState("");
   const [paymentMethod, setPaymentMethod] = useState(
     onlinePaymentProvider ? "card" : offlinePaymentsEnabled ? "offline" : "card"
   );
@@ -131,17 +142,27 @@ export default function CheckoutForm({
   const activePaymentProvider = activePaymentMethod === "card"
     ? (onlinePaymentProvider ?? (stripeOnlinePaymentsEnabled ? "stripe" : null))
     : "manual";
+  const taxAddressKey = `${country.trim().toLowerCase()}|${state.trim().toLowerCase()}`;
+  const hasTaxDestination = Boolean(country.trim() && state.trim());
+  const currentEstimatedTax = hasTaxDestination && estimatedTaxAddressKey === taxAddressKey ? estimatedTax : 0;
+  const currentEstimatedTaxToAdd = hasTaxDestination && estimatedTaxAddressKey === taxAddressKey ? estimatedTaxToAdd : 0;
+  const currentEstimatedTaxIncluded = hasTaxDestination &&
+    estimatedTaxAddressKey === taxAddressKey &&
+    estimatedTaxIncluded;
+  const currentTaxEstimateError = taxEstimateErrorAddressKey === taxAddressKey ? taxEstimateError : null;
+  const taxEstimatePending = hasTaxDestination &&
+    (isTaxEstimateLoading || estimatedTaxAddressKey !== taxAddressKey);
 
   const cardFeeAmount = useMemo(() => {
     if (activePaymentMethod !== "card" || !cardFeeEnabled || !cardFeePercentage || cardFeePercentage <= 0) {
       return 0;
     }
-    return Math.round(((subtotal + shippingAmount) * (cardFeePercentage / 100)) * 100) / 100;
-  }, [activePaymentMethod, cardFeeEnabled, cardFeePercentage, subtotal, shippingAmount]);
+    return Math.round(((subtotal + shippingAmount + currentEstimatedTaxToAdd) * (cardFeePercentage / 100)) * 100) / 100;
+  }, [activePaymentMethod, cardFeeEnabled, cardFeePercentage, subtotal, shippingAmount, currentEstimatedTaxToAdd]);
 
   const payableTotal = useMemo(() => {
-    return subtotal + shippingAmount + cardFeeAmount;
-  }, [subtotal, shippingAmount, cardFeeAmount]);
+    return subtotal + shippingAmount + currentEstimatedTaxToAdd + cardFeeAmount;
+  }, [subtotal, shippingAmount, currentEstimatedTaxToAdd, cardFeeAmount]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -157,6 +178,46 @@ export default function CheckoutForm({
     void checkAuth();
 
   }, []);
+
+  useEffect(() => {
+    if (!country.trim() || !state.trim()) return;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setIsTaxEstimateLoading(true);
+      setTaxEstimateError(null);
+      try {
+        const response = await fetch("/api/storefront/tax-estimate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            cartId,
+            shippingAddress: { country, state },
+            shippingAmount,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Unable to estimate tax.");
+        setEstimatedTax(Number(payload.tax) || 0);
+        setEstimatedTaxIncludedAmount(Number(payload.includedTax) || 0);
+        setEstimatedTaxToAdd(Number(payload.taxToAdd) || 0);
+        setEstimatedTaxIncluded(payload.pricesIncludeTax === true);
+        setEstimatedTaxAddressKey(taxAddressKey);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setTaxEstimateError(error instanceof Error ? error.message : "Unable to estimate tax.");
+        setTaxEstimateErrorAddressKey(taxAddressKey);
+      } finally {
+        if (!controller.signal.aborted) setIsTaxEstimateLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [cartId, country, state, shippingAmount, taxAddressKey]);
 
   useEffect(() => {
     async function loadCustomerProfile() {
@@ -278,7 +339,7 @@ export default function CheckoutForm({
             country,
           },
           shippingAmount,
-          taxAmount: 0,
+          taxAmount: currentEstimatedTax,
           cardFeeAmount: cardFeeAmount > 0 ? cardFeeAmount : undefined,
           paymentMethod: activePaymentMethod,
           paymentProvider: activePaymentProvider,
@@ -419,7 +480,19 @@ export default function CheckoutForm({
         </div>
         <div className="text-left sm:text-right">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Estimated total</p>
-          <p className="text-lg font-bold text-slate-900">{currency} {(subtotal + shippingAmount).toFixed(2)}</p>
+          <p className="text-lg font-bold text-slate-900">{currency} {payableTotal.toFixed(2)}</p>
+          {taxEstimatePending ? (
+            <p className="text-xs text-slate-500">{isEs ? "Calculando impuestos…" : "Calculating tax…"}</p>
+          ) : (
+            <p className="text-xs text-slate-500">
+              {currentEstimatedTaxIncluded
+                ? (isEs
+                    ? `Impuestos estimados: ${currency} ${currentEstimatedTax.toFixed(2)} (${currency} ${estimatedTaxIncludedAmount.toFixed(2)} incluidos; ${currency} ${currentEstimatedTaxToAdd.toFixed(2)} adicionales)`
+                    : `Estimated tax: ${currency} ${currentEstimatedTax.toFixed(2)} (${currency} ${estimatedTaxIncludedAmount.toFixed(2)} included; ${currency} ${currentEstimatedTaxToAdd.toFixed(2)} added)`)
+                : `${isEs ? "Impuestos estimados:" : "Estimated tax:"} ${currency} ${currentEstimatedTax.toFixed(2)}`}
+            </p>
+          )}
+          {currentTaxEstimateError ? <p className="text-xs text-rose-600">{currentTaxEstimateError}</p> : null}
         </div>
       </div>
 
@@ -685,6 +758,8 @@ export default function CheckoutForm({
         disabled={
           isSubmitting ||
           isCartEmpty ||
+          taxEstimatePending ||
+          Boolean(currentTaxEstimateError) ||
           availablePaymentMethods.length === 0 ||
           (activePaymentProvider === "authorize_net" && !isAcceptJsReady)
         }

@@ -162,6 +162,7 @@ export async function GET(request: Request) {
         images: true,
         featured: true,
         taxable: true,
+        taxCategoryCode: true,
         status: true,
         productType: true,
         categoryId: true,
@@ -250,6 +251,7 @@ export async function POST(request: Request) {
       status,
       featured,
       taxable,
+      taxCategoryCode,
       productType,
       categoryId,
       categoryIds,
@@ -269,6 +271,7 @@ export async function POST(request: Request) {
       status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
       featured?: boolean;
       taxable?: boolean;
+      taxCategoryCode?: string | null;
       productType?: "PHYSICAL" | "DIGITAL" | "SERVICE";
       categoryId?: string | null;
       categoryIds?: unknown;
@@ -289,6 +292,9 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (taxCategoryCode !== undefined && taxCategoryCode !== null && typeof taxCategoryCode !== "string") {
+      return NextResponse.json({ error: "taxCategoryCode must be a string or null" }, { status: 400 });
+    }
 
     const parsedCategoryIds = parseCategoryIds(categoryIds, categoryId);
     if (!parsedCategoryIds) {
@@ -306,6 +312,7 @@ export async function POST(request: Request) {
           },
       select: {
         id: true,
+        taxSettings: true,
         ownerUser: {
           select: {
             plan: true,
@@ -316,6 +323,17 @@ export async function POST(request: Request) {
 
     if (!ownedStore) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    const normalizedTaxCategoryCode = typeof taxCategoryCode === "string" ? taxCategoryCode.trim() : "";
+    if (
+      normalizedTaxCategoryCode &&
+      !(Array.isArray((ownedStore.taxSettings as { taxCategories?: unknown[] } | null)?.taxCategories) &&
+        (ownedStore.taxSettings as { taxCategories: Array<{ code?: unknown }> }).taxCategories.some(
+          (category) => typeof category.code === "string" && category.code.toLowerCase() === normalizedTaxCategoryCode.toLowerCase(),
+        ))
+    ) {
+      return NextResponse.json({ error: "Select a valid tax category for this store." }, { status: 400 });
     }
 
     if (parsedCategoryIds.length > 0) {
@@ -363,6 +381,7 @@ export async function POST(request: Request) {
         status: status ?? "DRAFT",
         featured: typeof featured === "boolean" ? featured : false,
         taxable: typeof taxable === "boolean" ? taxable : true,
+        taxCategoryCode: normalizedTaxCategoryCode || null,
         productType: productType ?? "PHYSICAL",
         category: parsedCategoryIds[0]
           ? { connect: { id: parsedCategoryIds[0] } }

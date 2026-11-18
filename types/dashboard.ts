@@ -21,6 +21,7 @@ export type Customer = {
   salesRepName?: string | null;
   zone?: string | null;
   allowCredit?: boolean;
+  taxExempt?: boolean;
   creditLimit?: number;
   creditDays?: number;
   creditInterestRate?: number;
@@ -117,6 +118,7 @@ export type InventoryItem = {
   category?: string | null;
   imageUrl?: string | null;
   taxable?: boolean;
+  taxCategoryCode?: string | null;
   lots?: ItemLot[];
   serials?: ItemSerial[];
 };
