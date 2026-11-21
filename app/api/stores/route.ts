@@ -47,6 +47,10 @@ export async function GET(request: Request) {
           pixelpaySecretEncrypted: true,
           pixelpayEnv: true,
           pixelpayEndpoint: true,
+          squareApplicationId: true,
+          squareLocationId: true,
+          squareAccessTokenEncrypted: true,
+          squareEnv: true,
           mainColor: true,
           currency: true,
           timezone: true,
@@ -128,6 +132,9 @@ export async function GET(request: Request) {
           pixelpayAppId: null,
           pixelpayEnv: "sandbox",
           pixelpayEndpoint: null,
+          squareApplicationId: null,
+          squareLocationId: null,
+          squareEnv: "sandbox",
           welcomeEmailEnabled: false,
           orderConfirmationEmailEnabled: false,
           invoiceEmailEnabled: false,
@@ -149,20 +156,26 @@ export async function GET(request: Request) {
         const pixelpaySecretEncrypted = "pixelpaySecretEncrypted" in store
           ? (store as any).pixelpaySecretEncrypted
           : null;
+        const squareAccessTokenEncrypted = "squareAccessTokenEncrypted" in store
+          ? (store as any).squareAccessTokenEncrypted
+          : null;
         const safeStore = {
           ...store,
         } as typeof store & {
           authNetTransKeyEncrypted?: string | null;
           pixelpaySecretEncrypted?: string | null;
+          squareAccessTokenEncrypted?: string | null;
         };
 
         delete safeStore.authNetTransKeyEncrypted;
         delete safeStore.pixelpaySecretEncrypted;
+        delete safeStore.squareAccessTokenEncrypted;
 
         return {
           ...safeStore,
           authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
           pixelpayConfigured: Boolean((store as any).pixelpayKey && (store as any).pixelpayAppId && pixelpaySecretEncrypted),
+          squareConfigured: Boolean((store as any).squareApplicationId && (store as any).squareLocationId && squareAccessTokenEncrypted),
         };
       }),
     );

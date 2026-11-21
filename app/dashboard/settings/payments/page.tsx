@@ -34,6 +34,10 @@ type StoreSummary = {
   pixelpayEnv?: "sandbox" | "production" | string;
   pixelpayEndpoint?: string | null;
   pixelpayConfigured?: boolean;
+  squareApplicationId?: string | null;
+  squareLocationId?: string | null;
+  squareEnv?: "sandbox" | "production" | string;
+  squareConfigured?: boolean;
 };
 
 type PaymentTab = "online" | "offline" | "cards";
@@ -77,6 +81,13 @@ export default function PaymentsPage() {
   const [isPixelpayExpanded, setIsPixelpayExpanded] = useState(false);
   const [isDisconnectingPixelpay, setIsDisconnectingPixelpay] = useState(false);
   const [isSavingPixelpay, setIsSavingPixelpay] = useState(false);
+  const [squareApplicationId, setSquareApplicationId] = useState("");
+  const [squareLocationId, setSquareLocationId] = useState("");
+  const [squareAccessToken, setSquareAccessToken] = useState("");
+  const [squareEnv, setSquareEnv] = useState<"sandbox" | "production">("sandbox");
+  const [isSquareExpanded, setIsSquareExpanded] = useState(false);
+  const [isDisconnectingSquare, setIsDisconnectingSquare] = useState(false);
+  const [isSavingSquare, setIsSavingSquare] = useState(false);
   const [isSavingOfflinePayments, setIsSavingOfflinePayments] = useState(false);
 
   async function refreshStripeStatus(storeId: string) {
@@ -115,6 +126,10 @@ export default function PaymentsPage() {
     setPixelpaySecret("");
     setPixelpayEnv(selected.pixelpayEnv === "production" ? "production" : "sandbox");
     setPixelpayEndpoint(selected.pixelpayEndpoint ?? "");
+    setSquareApplicationId(selected.squareApplicationId ?? "");
+    setSquareLocationId(selected.squareLocationId ?? "");
+    setSquareAccessToken("");
+    setSquareEnv(selected.squareEnv === "production" ? "production" : "sandbox");
 
     if (selected.stripeConnectAccountId) {
       await refreshStripeStatus(selected.id);
@@ -550,6 +565,113 @@ export default function PaymentsPage() {
     }
   }
 
+  async function handleSaveSquare() {
+    setIsSavingSquare(true);
+
+    try {
+      await patchStorePaymentsSettings({
+        squareApplicationId,
+        squareLocationId,
+        squareAccessToken: squareAccessToken || undefined,
+        squareEnv,
+      });
+
+      const hasCredentials = Boolean(squareApplicationId.trim() && squareLocationId.trim());
+      const hasTokenInput = Boolean(squareAccessToken.trim());
+
+      setStore((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          squareApplicationId: squareApplicationId.trim() || null,
+          squareLocationId: squareLocationId.trim() || null,
+          squareEnv,
+          squareConfigured:
+            hasCredentials && (hasTokenInput || Boolean(current.squareConfigured)),
+        };
+      });
+
+      setSquareAccessToken("");
+      alert(
+        isEs
+          ? "Configuración de Square guardada."
+          : "Square settings saved."
+      );
+    } catch (error) {
+      console.error("[PAYMENTS_SQUARE_SAVE_ERROR]", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : isEs
+          ? "No se pudo guardar la configuración de Square."
+          : "Unable to save Square settings."
+      );
+    } finally {
+      setIsSavingSquare(false);
+    }
+  }
+
+  async function handleDisconnectSquare() {
+    if (!store?.id) {
+      alert(isEs ? "Tienda no encontrada" : "Store not found");
+      return;
+    }
+
+    setIsDisconnectingSquare(true);
+
+    try {
+      const response = await fetch(`/api/stores/${store.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          squareApplicationId: null,
+          squareLocationId: null,
+          squareAccessToken: null,
+          squareEnv: "sandbox",
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ||
+            (isEs ? "No se pudo desconectar Square." : "Unable to disconnect Square.")
+        );
+      }
+
+      setSquareApplicationId("");
+      setSquareLocationId("");
+      setSquareAccessToken("");
+      setSquareEnv("sandbox");
+      setStore((current) =>
+        current
+          ? {
+              ...current,
+              squareConfigured: false,
+              squareApplicationId: null,
+              squareLocationId: null,
+              squareEnv: "sandbox",
+            }
+          : current
+      );
+    } catch (error) {
+      console.error("[PAYMENTS_SQUARE_DISCONNECT_ERROR]", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : isEs
+          ? "No se pudo desconectar Square."
+          : "Unable to disconnect Square."
+      );
+    } finally {
+      setIsDisconnectingSquare(false);
+    }
+  }
+
   const isStripeReady = stripeStatus.stripeChargesEnabled && stripeStatus.stripePayoutsEnabled;
   const showStripePending = stripeStatus.stripeConnectAccountId && !isStripeReady;
   const disableStripeDisconnect = isStripeActionPending || !stripeStatus.stripeConnectAccountId;
@@ -819,6 +941,182 @@ export default function PaymentsPage() {
                       className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isEs ? "Desconectar Stripe" : "Disconnect Stripe"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+
+            <article
+              className={`rounded-xl border p-5 shadow-sm ${
+                store?.squareConfigured ? "border-cyan-200 bg-cyan-50" : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-950">Square</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    {isEs
+                      ? "Conecta Square Web Payments SDK para procesar tarjetas de crédito, débito y billeteras digitales de forma segura."
+                      : "Connect Square Web Payments SDK to securely process credit cards, debit cards, and digital wallets."}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <span
+                    className={`inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
+                      store?.squareConfigured
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {store?.squareConfigured
+                      ? isEs
+                        ? "Configurado"
+                        : "Configured"
+                      : isEs
+                      ? "No conectado"
+                      : "Not connected"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isSquareExpanded}
+                    aria-controls="square-settings"
+                    onClick={() => setIsSquareExpanded((current) => !current)}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {isSquareExpanded
+                      ? isEs
+                        ? "Listo"
+                        : "Done"
+                      : isEs
+                      ? "Gestionar"
+                      : "Manage"}
+                  </button>
+                </div>
+              </div>
+
+              {isSquareExpanded ? (
+                <div id="square-settings">
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">Application ID</span>
+                      <input
+                        value={squareApplicationId}
+                        onChange={(event) => setSquareApplicationId(event.target.value)}
+                        placeholder="sq0idp-... / sandbox-sq0idb-..."
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-slate-700">Location ID</span>
+                      <input
+                        value={squareLocationId}
+                        onChange={(event) => setSquareLocationId(event.target.value)}
+                        placeholder="L..."
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        {isEs ? "Access Token (Token de Acceso)" : "Access Token"}
+                      </span>
+                      <input
+                        type="password"
+                        value={squareAccessToken}
+                        onChange={(event) => setSquareAccessToken(event.target.value)}
+                        placeholder={
+                          store?.squareConfigured
+                            ? isEs
+                              ? "Dejar en blanco para mantener el token actual"
+                              : "Leave blank to keep the current access token"
+                            : isEs
+                            ? "Ingresar Access Token de Square"
+                            : "Enter Square Access Token"
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        {isEs ? "Entorno" : "Environment"}
+                      </span>
+                      <select
+                        value={squareEnv}
+                        onChange={(event) =>
+                          setSquareEnv(
+                            event.target.value === "production" ? "production" : "sandbox"
+                          )
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                      >
+                        <option value="sandbox">
+                          {isEs ? "Sandbox (Pruebas)" : "Sandbox (testing)"}
+                        </option>
+                        <option value="production">
+                          {isEs ? "Producción (En vivo)" : "Production (live)"}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-900">
+                      {isEs ? "Cómo funciona" : "How this works"}
+                    </p>
+                    <ul className="mt-2 space-y-2 leading-6">
+                      <li>
+                        {isEs
+                          ? "• Square Web Payments SDK tokeniza los datos de la tarjeta en el navegador del comprador sin exponer números de tarjeta."
+                          : "• Square Web Payments SDK tokenizes card details in the buyer's browser without exposing raw card numbers."}
+                      </li>
+                      <li>
+                        {isEs
+                          ? "• Tu Access Token se almacena cifrado con AES-256-GCM en la base de datos."
+                          : "• Your Access Token is stored encrypted with AES-256-GCM in the database."}
+                      </li>
+                      <li>
+                        {isEs
+                          ? "• Obtén tu Application ID, Location ID y Access Token desde el Square Developer Dashboard."
+                          : "• Find your Application ID, Location ID, and Access Token in your Square Developer Dashboard."}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={!store || isSavingSquare}
+                      onClick={() => void handleSaveSquare()}
+                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingSquare
+                        ? isEs
+                          ? "Guardando..."
+                          : "Saving..."
+                        : isEs
+                        ? "Guardar Square"
+                        : "Save Square"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!store?.squareConfigured || isDisconnectingSquare}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            isEs
+                              ? "¿Desconectar Square de esta tienda?"
+                              : "Disconnect Square from this store?"
+                          )
+                        ) {
+                          void handleDisconnectSquare();
+                        }
+                      }}
+                      className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isEs ? "Desconectar Square" : "Disconnect Square"}
                     </button>
                   </div>
                 </div>

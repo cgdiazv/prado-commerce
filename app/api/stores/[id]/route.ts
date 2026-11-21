@@ -96,6 +96,10 @@ export async function GET(_req: Request, { params }: RouteContext) {
           pixelpaySecretEncrypted: true,
           pixelpayEnv: true,
           pixelpayEndpoint: true,
+          squareApplicationId: true,
+          squareLocationId: true,
+          squareAccessTokenEncrypted: true,
+          squareEnv: true,
           mainColor: true,
           ownerId: true,
           currency: true,
@@ -208,12 +212,13 @@ export async function GET(_req: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, ...safeStore } = store as any;
+    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, squareAccessTokenEncrypted, ...safeStore } = store as any;
 
     return NextResponse.json({
       ...safeStore,
       authNetConfigured: Boolean(store.authNetLoginId && store.authNetClientKey && authNetTransKeyEncrypted),
       pixelpayConfigured: Boolean((store as any).pixelpayKey && (store as any).pixelpayAppId && pixelpaySecretEncrypted),
+      squareConfigured: Boolean((store as any).squareApplicationId && (store as any).squareLocationId && squareAccessTokenEncrypted),
     });
   } catch (error) {
     console.error("[STORE_GET_ERROR]", error);
@@ -249,6 +254,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         pixelpaySecretEncrypted: true,
         pixelpayEnv: true,
         pixelpayEndpoint: true,
+        squareApplicationId: true,
+        squareLocationId: true,
+        squareAccessTokenEncrypted: true,
+        squareEnv: true,
         ownerUser: {
           select: {
             plan: true,
@@ -291,6 +300,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       pixelpaySecret,
       pixelpayEnv,
       pixelpayEndpoint,
+      squareApplicationId,
+      squareLocationId,
+      squareAccessToken,
+      squareEnv,
       welcomeEmailEnabled,
       orderConfirmationEmailEnabled,
       invoiceEmailEnabled,
@@ -332,6 +345,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       pixelpaySecret?: string | null;
       pixelpayEnv?: "sandbox" | "production" | string;
       pixelpayEndpoint?: string | null;
+      squareApplicationId?: string | null;
+      squareLocationId?: string | null;
+      squareAccessToken?: string | null;
+      squareEnv?: "sandbox" | "production" | string;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -376,6 +393,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       pixelpaySecretEncrypted?: string | null;
       pixelpayEnv?: string;
       pixelpayEndpoint?: string | null;
+      squareApplicationId?: string | null;
+      squareLocationId?: string | null;
+      squareAccessTokenEncrypted?: string | null;
+      squareEnv?: string;
       welcomeEmailEnabled?: boolean;
       orderConfirmationEmailEnabled?: boolean;
       invoiceEmailEnabled?: boolean;
@@ -610,6 +631,60 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       }
     }
 
+    if (squareApplicationId !== undefined) {
+      updates.squareApplicationId = typeof squareApplicationId === "string" && squareApplicationId.trim()
+        ? squareApplicationId.trim()
+        : null;
+    }
+
+    if (squareLocationId !== undefined) {
+      updates.squareLocationId = typeof squareLocationId === "string" && squareLocationId.trim()
+        ? squareLocationId.trim()
+        : null;
+    }
+
+    if (squareAccessToken !== undefined) {
+      updates.squareAccessTokenEncrypted = typeof squareAccessToken === "string" && squareAccessToken.trim()
+        ? encryptStoredSecret(squareAccessToken.trim())
+        : null;
+    }
+
+    if (squareEnv !== undefined) {
+      const normalizedSquareEnv = String(squareEnv).trim().toLowerCase();
+      if (normalizedSquareEnv !== "sandbox" && normalizedSquareEnv !== "production") {
+        return NextResponse.json(
+          { error: "Square environment must be sandbox or production." },
+          { status: 400 },
+        );
+      }
+      updates.squareEnv = normalizedSquareEnv;
+    }
+
+    const hasSquarePartialConfig = [
+      updates.squareApplicationId !== undefined ? updates.squareApplicationId : (owned as any).squareApplicationId,
+      updates.squareLocationId !== undefined ? updates.squareLocationId : (owned as any).squareLocationId,
+      updates.squareAccessTokenEncrypted !== undefined ? updates.squareAccessTokenEncrypted : (owned as any).squareAccessTokenEncrypted,
+    ].some((value) => value !== null && value !== undefined && value !== "");
+
+    if (hasSquarePartialConfig) {
+      const nextSquareAppId = updates.squareApplicationId !== undefined ? updates.squareApplicationId : (owned as any).squareApplicationId;
+      const nextSquareLocId = updates.squareLocationId !== undefined ? updates.squareLocationId : (owned as any).squareLocationId;
+      const nextSquareTokenEncrypted = updates.squareAccessTokenEncrypted !== undefined
+        ? updates.squareAccessTokenEncrypted
+        : (owned as any).squareAccessTokenEncrypted;
+
+      const squareFieldCount = [nextSquareAppId, nextSquareLocId, nextSquareTokenEncrypted]
+        .filter(Boolean)
+        .length;
+
+      if (squareFieldCount > 0 && squareFieldCount < 3) {
+        return NextResponse.json(
+          { error: "Square setup requires Application ID, Location ID, and Access Token." },
+          { status: 400 },
+        );
+      }
+    }
+
     if (typeof cardFeeEnabled === "boolean") {
       updates.cardFeeEnabled = cardFeeEnabled;
     }
@@ -732,6 +807,10 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         pixelpaySecretEncrypted: true,
         pixelpayEnv: true,
         pixelpayEndpoint: true,
+        squareApplicationId: true,
+        squareLocationId: true,
+        squareAccessTokenEncrypted: true,
+        squareEnv: true,
         mainColor: true,
         ownerId: true,
         currency: true,
@@ -769,7 +848,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       ? await getVercelDomainStatus(updatedStore.customDomain)
       : null;
 
-    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, ...safeUpdatedStore } = updatedStore as any;
+    const { authNetTransKeyEncrypted, pixelpaySecretEncrypted, squareAccessTokenEncrypted, ...safeUpdatedStore } = updatedStore as any;
 
     return NextResponse.json({
       ...safeUpdatedStore,
@@ -778,6 +857,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       ),
       pixelpayConfigured: Boolean(
         (updatedStore as any).pixelpayKey && (updatedStore as any).pixelpayAppId && pixelpaySecretEncrypted,
+      ),
+      squareConfigured: Boolean(
+        (updatedStore as any).squareApplicationId && (updatedStore as any).squareLocationId && squareAccessTokenEncrypted,
       ),
       domainStatus,
     });

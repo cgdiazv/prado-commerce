@@ -77,6 +77,10 @@ model Store {
   pixelpaySecretEncrypted String?
   pixelpayEnv    String     @default("sandbox")
   pixelpayEndpoint String?
+  squareApplicationId String?
+  squareLocationId String?
+  squareAccessTokenEncrypted String?
+  squareEnv      String     @default("sandbox")
   shipStationApiKeyEncrypted String?
   shipStationApiSecretEncrypted String?
   shipStationWebhookId String?
