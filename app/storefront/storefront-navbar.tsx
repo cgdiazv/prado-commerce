@@ -43,6 +43,7 @@ export default function StorefrontNavbar({
   const activeCategory = categorySegmentIndex >= 0 ? pathSegments[categorySegmentIndex + 1] : searchParams.get("category") ?? undefined;
   const searchQuery = searchParams.get("q") ?? "";
   const isAccountActive = pathSegments.at(-1) === "account";
+  const isPasswordReset = pathSegments.includes("reset");
   const homeHref = basePath ? `${basePath}/` : "/";
   const accountHref = basePath ? `${basePath}/account` : "/account";
   const activeCategoryHref = activeCategory
@@ -121,7 +122,7 @@ export default function StorefrontNavbar({
               </form>
 
               <div className="flex shrink-0 items-center gap-3 text-[#493126] sm:gap-5">
-                <LanguageToggle variant="light" />
+                {!isPasswordReset && <LanguageToggle variant="light" />}
                 <Link
                   href={accountHref}
                   aria-label={t.storefront.account}
@@ -327,7 +328,7 @@ export default function StorefrontNavbar({
             </div>
 
             <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-              <LanguageToggle variant="light" simple={isMercado} />
+              {!isPasswordReset && <LanguageToggle variant="light" simple={isMercado} />}
 
               <Link
                 href={accountHref}

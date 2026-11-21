@@ -13,7 +13,6 @@ type AuthPanelProps = {
 
 type PasswordResetRequestResponse = {
   error?: string;
-  resetPath?: string;
 };
 
 type StorefrontAuthResponse = {
@@ -54,12 +53,7 @@ export default function AuthPanel({ storeId, mainColor }: AuthPanelProps) {
           throw new Error(payload.error || t.login.errorMessage);
         }
 
-        if (!payload.resetPath) {
-          throw new Error(t.login.errorMessage);
-        }
-
-        const resetUrl = new URL(payload.resetPath, window.location.origin).toString();
-        setStatus(`${t.storefront.resetPassword}: ${resetUrl}`);
+        setStatus(t.forgotPassword.successMessage);
         return;
       }
 

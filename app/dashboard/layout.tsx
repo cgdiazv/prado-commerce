@@ -333,6 +333,7 @@ export default function DashboardLayout({
         { href: "/dashboard/orders", label: t.dashboard.allOrders },
         { href: "/dashboard/orders/new", label: t.dashboard.newOrder },
         { href: "/dashboard/orders/pos", label: t.dashboard.pointOfSale },
+        { href: "/dashboard/orders/quotes", label: t.dashboard.quotes },
         { href: "/dashboard/orders/consignments", label: t.dashboard.consignments },
       ],
     },
@@ -682,9 +683,11 @@ export default function DashboardLayout({
                             ? pathname === "/dashboard/orders/new"
                             : child.href === "/dashboard/orders/pos"
                               ? pathname.startsWith("/dashboard/orders/pos")
-                              : child.href === "/dashboard/orders/consignments"
-                                ? pathname.startsWith("/dashboard/orders/consignments") || pathname.startsWith("/dashboard/consignments")
-                                : pathname === "/dashboard/orders"
+                              : child.href === "/dashboard/orders/quotes"
+                                ? pathname.startsWith("/dashboard/orders/quotes")
+                                : child.href === "/dashboard/orders/consignments"
+                                  ? pathname.startsWith("/dashboard/orders/consignments") || pathname.startsWith("/dashboard/consignments")
+                                  : pathname === "/dashboard/orders"
                           : item.href === "/dashboard/products"
                             ? child.href === "/dashboard/products/new"
                               ? pathname === "/dashboard/products/new"
