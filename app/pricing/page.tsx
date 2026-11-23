@@ -32,6 +32,25 @@ function PricingPageContent() {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuOpen]);
+
   const handleUpgrade = useCallback(
     async (
       event: MouseEvent<HTMLButtonElement | HTMLAnchorElement> | null,
@@ -226,7 +245,9 @@ function PricingPageContent() {
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex h-10 w-10 items-center justify-center rounded-[5px] border border-[#d8dcd6] text-[#030618]"
-              aria-label="Abrir menú"
+              aria-label={isMobileMenuOpen ? (isEs ? "Cerrar menú" : "Close menu") : (isEs ? "Abrir menú" : "Open menu")}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
             >
               {isMobileMenuOpen ? (
                 <X className="h-5 w-5" />
@@ -236,50 +257,123 @@ function PricingPageContent() {
             </button>
           </div>
         </div>
-
-        {/* Mobile Dropdown Menu */}
-        {isMobileMenuOpen && (
-          <div className="border-b border-[#d8dcd6] bg-white px-6 py-4 md:hidden">
-            <nav className="flex flex-col gap-3 text-sm">
-              <Link
-                href="/#plataforma"
-                onClick={closeMobileMenu}
-                className="py-1 text-[#030618]"
-              >
-                {isEs ? "Plataforma" : "Platform"}
-              </Link>
-              <Link
-                href="/#negocio"
-                onClick={closeMobileMenu}
-                className="py-1 text-[#030618]"
-              >
-                {isEs ? "Para tu negocio" : "For your business"}
-              </Link>
-              <Link
-                href="/pricing"
-                onClick={closeMobileMenu}
-                className="py-1 font-semibold text-[#0bb7dc]"
-              >
-                {isEs ? "Precios" : "Pricing"}
-              </Link>
-              <Link
-                href="/"
-                onClick={closeMobileMenu}
-                className="py-1 font-medium text-[#030618]"
-              >
-                {isEs ? "Inicio" : "Home"}
-              </Link>
-              <Link
-                href="/signup"
-                onClick={closeMobileMenu}
-                className="mt-2 inline-flex items-center justify-center rounded-[5px] bg-[#030618] py-3 text-center text-sm font-semibold text-white"
-              >
-                {isEs ? "Comenzar gratis" : "Start free"}
-              </Link>
-            </nav>
-          </div>
-        )}
       </header>
+
+      {/* Mobile Slide-Over Sidebar (Right) */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${
+          isMobileMenuOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        aria-hidden={!isMobileMenuOpen}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={closeMobileMenu}
+          className={`fixed inset-0 bg-[#030618]/40 backdrop-blur-[2px] transition-opacity duration-300 ${
+            isMobileMenuOpen ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Drawer Panel */}
+        <aside
+          id="mobile-nav-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isEs ? "Menú de navegación" : "Navigation menu"}
+          className={`fixed top-0 right-0 flex h-dvh w-[min(85vw,320px)] flex-col border-l border-[#d8dcd6] bg-white shadow-2xl transition-[transform,visibility] duration-300 ease-out ${
+            isMobileMenuOpen ? "translate-x-0 visible" : "translate-x-full invisible"
+          }`}
+        >
+          <div className="flex h-20 items-center justify-between border-b border-[#d8dcd6] px-6">
+            <Link
+              href="/"
+              onClick={closeMobileMenu}
+              className="inline-flex items-center gap-2.5"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/figma/logo-symbol.png"
+                alt="Prado Commerce Logo"
+                className="h-7 w-7 object-contain"
+              />
+              <span className="text-[16px] font-semibold tracking-tight text-[#030618]">
+                Prado Commerce
+              </span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={closeMobileMenu}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[5px] border border-[#d8dcd6] text-[#030618] transition hover:bg-slate-50"
+              aria-label={isEs ? "Cerrar menú" : "Close menu"}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-6 py-6 text-base">
+            <Link
+              href="/#plataforma"
+              onClick={closeMobileMenu}
+              className="rounded-[5px] px-2 py-3 font-medium text-[#030618] transition hover:bg-slate-50 hover:text-[#0bb7dc]"
+            >
+              {isEs ? "Plataforma" : "Platform"}
+            </Link>
+            <Link
+              href="/#negocio"
+              onClick={closeMobileMenu}
+              className="rounded-[5px] px-2 py-3 font-medium text-[#030618] transition hover:bg-slate-50 hover:text-[#0bb7dc]"
+            >
+              {isEs ? "Para tu negocio" : "For your business"}
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={closeMobileMenu}
+              className="rounded-[5px] px-2 py-3 font-semibold text-[#0bb7dc] transition hover:bg-slate-50"
+            >
+              {isEs ? "Precios" : "Pricing"}
+            </Link>
+            <Link
+              href="/"
+              onClick={closeMobileMenu}
+              className="rounded-[5px] px-2 py-3 font-medium text-[#030618] transition hover:bg-slate-50 hover:text-[#0bb7dc]"
+            >
+              {isEs ? "Inicio" : "Home"}
+            </Link>
+          </nav>
+
+          <div className="border-t border-[#d8dcd6] px-6 py-5">
+            <div className="mb-4 flex items-center justify-between text-xs text-[#626763]">
+              <span>{isEs ? "Idioma" : "Language"}</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setLanguage("es")}
+                  className={isEs ? "font-bold text-[#030618]" : "text-[#626763]"}
+                >
+                  ES
+                </button>
+                <span>/</span>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("en")}
+                  className={!isEs ? "font-bold text-[#030618]" : "text-[#626763]"}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+
+            <Link
+              href="/signup"
+              onClick={closeMobileMenu}
+              className="inline-flex w-full items-center justify-center rounded-[5px] bg-[#030618] py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              {isEs ? "Comenzar gratis" : "Start free"}
+            </Link>
+          </div>
+        </aside>
+      </div>
 
       {/* ================================================================ */}
       {/* SECTION 1: PLANES QUE ESCALAN (HERO)                            */}
