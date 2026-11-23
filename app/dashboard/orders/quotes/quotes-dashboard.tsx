@@ -126,7 +126,7 @@ export function QuotesDashboard({
 
   return (
     <section className="min-w-0 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-950">{isEs ? "Cotizaciones" : "Quotes"}</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -135,7 +135,7 @@ export function QuotesDashboard({
         </div>
         <Link
           href={`/dashboard/orders/quotes/new${activeStoreId && activeStoreId !== "ALL" ? `?storeId=${encodeURIComponent(activeStoreId)}` : ""}`}
-          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           {isEs ? "Nueva cotización" : "New quote"}
