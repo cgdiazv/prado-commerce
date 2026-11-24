@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Loader2, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CURRENCIES } from "../../../stores/store-form-controls";
 
@@ -40,6 +40,26 @@ export function QuoteForm({
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
+  const [newCustomerFirstName, setNewCustomerFirstName] = useState("");
+  const [newCustomerLastName, setNewCustomerLastName] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [newCustomerError, setNewCustomerError] = useState<string | null>(null);
+
+  const activeStoreName = stores.find((store) => store.id === storeId)?.name ?? "";
+
+  useEffect(() => {
+    if (!isNewCustomerModalOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isCreatingCustomer) {
+        setIsNewCustomerModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isNewCustomerModalOpen, isCreatingCustomer]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -105,6 +125,93 @@ export function QuoteForm({
   function customerLabel(entry: CustomerOption) {
     const name = [entry.firstName, entry.lastName].filter(Boolean).join(" ");
     return `${name || (isEs ? "Cliente" : "Customer")} — ${entry.email}`;
+  }
+
+  function openNewCustomerModal(prefill?: string) {
+    const raw = (prefill ?? (customer ? "" : customerQuery)).trim();
+    if (raw.includes("@") && !/\s/.test(raw)) {
+      setNewCustomerFirstName("");
+      setNewCustomerLastName("");
+      setNewCustomerEmail(raw);
+    } else if (raw) {
+      const parts = raw.split(/\s+/);
+      setNewCustomerFirstName(parts[0] ?? "");
+      setNewCustomerLastName(parts.slice(1).join(" "));
+      setNewCustomerEmail("");
+    } else {
+      setNewCustomerFirstName("");
+      setNewCustomerLastName("");
+      setNewCustomerEmail("");
+    }
+    setNewCustomerPhone("");
+    setNewCustomerError(null);
+    setIsCustomerSearchOpen(false);
+    setIsNewCustomerModalOpen(true);
+  }
+
+  async function handleCreateCustomer(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNewCustomerError(null);
+
+    if (!storeId) {
+      setNewCustomerError(isEs ? "Selecciona una tienda primero." : "Select a store first.");
+      return;
+    }
+
+    const email = newCustomerEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNewCustomerError(isEs ? "Ingresa un correo electrónico válido." : "Enter a valid email address.");
+      return;
+    }
+
+    setIsCreatingCustomer(true);
+    try {
+      const response = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeId,
+          email,
+          firstName: newCustomerFirstName.trim() || undefined,
+          lastName: newCustomerLastName.trim() || undefined,
+          phone: newCustomerPhone.trim() || undefined,
+        }),
+      });
+      const result = (await response.json()) as Partial<CustomerOption> & { error?: string };
+      if (!response.ok || !result.id || !result.email) {
+        throw new Error(
+          result.error || (isEs ? "No se pudo crear el cliente." : "Could not create customer."),
+        );
+      }
+
+      const created: CustomerOption = {
+        id: result.id,
+        email: result.email,
+        firstName: result.firstName ?? null,
+        lastName: result.lastName ?? null,
+        phone: result.phone ?? null,
+      };
+
+      setCustomers((current) => [
+        created,
+        ...current.filter((entry) => entry.id !== created.id),
+      ]);
+      setCustomer(created);
+      setCustomerQuery(customerLabel(created));
+      setIsCustomerSearchOpen(false);
+      setError(null);
+      setIsNewCustomerModalOpen(false);
+    } catch (createError) {
+      setNewCustomerError(
+        createError instanceof Error
+          ? createError.message
+          : isEs
+            ? "No se pudo crear el cliente."
+            : "Could not create customer.",
+      );
+    } finally {
+      setIsCreatingCustomer(false);
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -186,7 +293,18 @@ export function QuoteForm({
               }
             }}
           >
-            <label htmlFor="quote-customer" className="text-sm font-medium text-slate-700">{isEs ? "Cliente" : "Customer"}</label>
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="quote-customer" className="text-sm font-medium text-slate-700">{isEs ? "Cliente" : "Customer"}</label>
+              <button
+                type="button"
+                disabled={!storeId}
+                onClick={() => openNewCustomerModal()}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 transition hover:text-cyan-800 disabled:opacity-50"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                {isEs ? "Nuevo cliente" : "New customer"}
+              </button>
+            </div>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -213,13 +331,32 @@ export function QuoteForm({
                     setCustomerQuery("");
                     setIsCustomerSearchOpen(true);
                   }}
-                  className="absolute right-2.5 top-1/2 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                   aria-label={isEs ? "Limpiar cliente" : "Clear customer"}
                 >
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
             </div>
+            {!isCustomerSearchOpen && customerQuery.trim() && !customer ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <span>
+                  {isEs
+                    ? "Selecciona un cliente de la lista o crea uno nuevo."
+                    : "Select a customer from the list or create a new one."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openNewCustomerModal()}
+                  className="inline-flex items-center gap-1 font-semibold text-cyan-800 underline underline-offset-2 hover:text-cyan-950"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {isEs
+                    ? `Crear "${customerQuery.trim()}"`
+                    : `Create "${customerQuery.trim()}"`}
+                </button>
+              </div>
+            ) : null}
             {isCustomerSearchOpen ? (
               <div
                 id="quote-customer-results"
@@ -239,6 +376,7 @@ export function QuoteForm({
                         setCustomer(entry);
                         setCustomerQuery(customerLabel(entry));
                         setIsCustomerSearchOpen(false);
+                        setError(null);
                       }}
                       className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50"
                     >
@@ -252,6 +390,25 @@ export function QuoteForm({
                 }) : (
                   <p className="px-4 py-3 text-sm text-slate-500">{isEs ? "No se encontraron clientes." : "No customers found."}</p>
                 )}
+                <div className="border-t border-slate-100 p-1.5">
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => openNewCustomerModal()}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50"
+                  >
+                    <UserPlus className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {customerQuery.trim() && !customer
+                        ? isEs
+                          ? `Crear "${customerQuery.trim()}" como nuevo cliente`
+                          : `Create "${customerQuery.trim()}" as new customer`
+                        : isEs
+                          ? "Crear nuevo cliente"
+                          : "Create new customer"}
+                    </span>
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
@@ -306,7 +463,7 @@ export function QuoteForm({
                         <button
                           type="button"
                           onClick={() => updateItem(index, { ...newItem, quantity: item.quantity, isSearchOpen: true })}
-                          className="absolute right-2.5 top-1/2 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                           aria-label={isEs ? "Limpiar producto" : "Clear product"}
                         >
                           <X className="h-4 w-4" />
@@ -364,6 +521,129 @@ export function QuoteForm({
           <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? (isEs ? "Guardando..." : "Saving...") : isEs ? "Crear cotización" : "Create quote"}</button>
         </div>
       </form>
+
+      {isNewCustomerModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          onClick={() => {
+            if (!isCreatingCustomer) setIsNewCustomerModalOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-quote-customer-title"
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+              <div>
+                <h2 id="new-quote-customer-title" className="text-base font-semibold text-slate-950">
+                  {isEs ? "Nuevo cliente" : "New customer"}
+                </h2>
+                {activeStoreName ? (
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {isEs ? `Se agregará a ${activeStoreName}` : `Will be added to ${activeStoreName}`}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                disabled={isCreatingCustomer}
+                onClick={() => setIsNewCustomerModalOpen(false)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                aria-label={isEs ? "Cerrar" : "Close"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomer} className="space-y-4 p-5">
+              {newCustomerError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
+                  {newCustomerError}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-slate-700">{isEs ? "Nombre" : "First name"}</span>
+                  <input
+                    type="text"
+                    value={newCustomerFirstName}
+                    onChange={(event) => setNewCustomerFirstName(event.target.value)}
+                    placeholder={isEs ? "Ej. Bryan" : "e.g. Bryan"}
+                    className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-slate-400"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-slate-700">{isEs ? "Apellido" : "Last name"}</span>
+                  <input
+                    type="text"
+                    value={newCustomerLastName}
+                    onChange={(event) => setNewCustomerLastName(event.target.value)}
+                    placeholder={isEs ? "Ej. Daryl" : "e.g. Daryl"}
+                    className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-slate-400"
+                  />
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">
+                  {isEs ? "Correo electrónico" : "Email"} <span className="text-rose-500">*</span>
+                </span>
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={newCustomerEmail}
+                  onChange={(event) => setNewCustomerEmail(event.target.value)}
+                  placeholder="customer@example.com"
+                  className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-slate-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">
+                  {isEs ? "Teléfono (opcional)" : "Phone (optional)"}
+                </span>
+                <input
+                  type="tel"
+                  value={newCustomerPhone}
+                  onChange={(event) => setNewCustomerPhone(event.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-slate-400"
+                />
+              </label>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={isCreatingCustomer}
+                  onClick={() => setIsNewCustomerModalOpen(false)}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isEs ? "Cancelar" : "Cancel"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingCustomer}
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {isCreatingCustomer ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {isEs ? "Creando..." : "Creating..."}
+                    </>
+                  ) : (
+                    isEs ? "Crear cliente" : "Create customer"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
