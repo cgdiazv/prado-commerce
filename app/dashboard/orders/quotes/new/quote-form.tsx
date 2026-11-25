@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Plus, Printer, Search, Trash2, UserPlus, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CURRENCIES } from "../../../stores/store-form-controls";
 
@@ -10,34 +11,90 @@ type StoreOption = { id: string; name: string; currency: string };
 type CustomerOption = { id: string; email: string; firstName: string | null; lastName: string | null; phone: string | null };
 type ProductOption = { variantId: string; title: string; sku: string | null; barcode: string | null; price: number };
 type Item = { title: string; price: string; quantity: string; variantId: string | null; query: string; isSearchOpen: boolean };
+type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CONVERTED";
+
+export type InitialQuote = {
+  id: string;
+  quoteNumber: number;
+  storeId: string;
+  status: QuoteStatus;
+  customer: CustomerOption | null;
+  customerEmail: string;
+  currency: string;
+  tax: string;
+  shipping: string;
+  validUntil: string;
+  notes: string;
+  convertedOrderId: string | null;
+  items: Array<{
+    title: string;
+    price: string;
+    quantity: string;
+    variantId: string | null;
+  }>;
+};
 
 const newItem: Item = { title: "", price: "0.00", quantity: "1", variantId: null, query: "", isSearchOpen: false };
+
+function formatCustomerLabel(entry: CustomerOption, isEs: boolean) {
+  const name = [entry.firstName, entry.lastName].filter(Boolean).join(" ");
+  return `${name || (isEs ? "Cliente" : "Customer")} — ${entry.email}`;
+}
 
 export function QuoteForm({
   stores,
   selectedStoreId,
   setupError = null,
+  initialQuote = null,
 }: {
   stores: StoreOption[];
   selectedStoreId: string | null;
   setupError?: string | null;
+  initialQuote?: InitialQuote | null;
 }) {
   const router = useRouter();
   const { language } = useLanguage();
   const isEs = language === "es";
-  const initialStore = stores.find((store) => store.id === selectedStoreId) ?? stores[0];
-  const [storeId, setStoreId] = useState(initialStore?.id ?? "");
-  const [currency, setCurrency] = useState(initialStore?.currency ?? "USD");
-  const [customer, setCustomer] = useState<CustomerOption | null>(null);
-  const [customerQuery, setCustomerQuery] = useState("");
+  const isEditing = Boolean(initialQuote);
+  const isReadOnly = initialQuote?.status === "CONVERTED";
+
+  const initialStore = stores.find((store) => store.id === (initialQuote?.storeId ?? selectedStoreId)) ?? stores[0];
+  const initialCustomer: CustomerOption | null = initialQuote
+    ? (initialQuote.customer ?? {
+        id: "",
+        email: initialQuote.customerEmail,
+        firstName: null,
+        lastName: null,
+        phone: null,
+      })
+    : null;
+
+  const [storeId, setStoreId] = useState(initialQuote?.storeId ?? initialStore?.id ?? "");
+  const [currency, setCurrency] = useState(initialQuote?.currency ?? initialStore?.currency ?? "USD");
+  const [status, setStatus] = useState<QuoteStatus>(initialQuote?.status ?? "DRAFT");
+  const [customer, setCustomer] = useState<CustomerOption | null>(initialCustomer);
+  const [customerQuery, setCustomerQuery] = useState(
+    initialCustomer ? formatCustomerLabel(initialCustomer, isEs) : "",
+  );
   const [isCustomerSearchOpen, setIsCustomerSearchOpen] = useState(false);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
-  const [items, setItems] = useState<Item[]>([{ ...newItem }]);
-  const [tax, setTax] = useState("0.00");
-  const [shipping, setShipping] = useState("0.00");
-  const [validUntil, setValidUntil] = useState("");
-  const [notes, setNotes] = useState("");
+  const [items, setItems] = useState<Item[]>(
+    initialQuote?.items.length
+      ? initialQuote.items.map((item) => ({
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+          variantId: item.variantId,
+          query: item.title,
+          isSearchOpen: false,
+        }))
+      : [{ ...newItem }],
+  );
+  const [tax, setTax] = useState(initialQuote?.tax ?? "0.00");
+  const [shipping, setShipping] = useState(initialQuote?.shipping ?? "0.00");
+  const [validUntil, setValidUntil] = useState(initialQuote?.validUntil ?? "");
+  const [notes, setNotes] = useState(initialQuote?.notes ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -216,37 +273,53 @@ export function QuoteForm({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isReadOnly) return;
     setError(null);
     if (!customer) {
       setError(isEs ? "Selecciona un cliente." : "Select a customer.");
       return;
     }
-    if (items.some((item) => !item.variantId || !item.title.trim())) {
+    if (items.some((item) => !item.title.trim() || (!isEditing && !item.variantId))) {
       setError(isEs ? "Selecciona un producto para cada artículo." : "Select a product for each line item.");
       return;
     }
 
     setIsSaving(true);
     try {
-      const response = await fetch("/api/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId,
-          customerEmail: customer.email,
-          currency,
-          tax,
-          shipping,
-          validUntil,
-          notes,
-          items,
-        }),
-      });
+      const response = await fetch(
+        isEditing ? `/api/quotes/${initialQuote!.id}` : "/api/quotes",
+        {
+          method: isEditing ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(isEditing ? { status } : { storeId }),
+            customerEmail: customer.email,
+            currency,
+            tax,
+            shipping,
+            validUntil,
+            notes,
+            items,
+          }),
+        },
+      );
       const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not create quote");
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            (isEditing ? "Could not update quote" : "Could not create quote"),
+        );
+      }
       router.push(`/dashboard/orders/quotes?storeId=${encodeURIComponent(storeId)}`);
+      router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Could not create quote");
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : isEditing
+            ? "Could not update quote"
+            : "Could not create quote",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -254,13 +327,70 @@ export function QuoteForm({
 
   return (
     <section className="min-w-0 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-950">{isEs ? "Nueva cotización" : "New quote"}</h1>
-          <p className="mt-1 text-sm text-slate-500">{isEs ? "Selecciona un cliente y los productos a cotizar." : "Select a customer and the products to quote."}</p>
+          <h1 className="text-2xl font-semibold text-slate-950">
+            {isEditing
+              ? isEs
+                ? `Cotización #${initialQuote!.quoteNumber}`
+                : `Quote #${initialQuote!.quoteNumber}`
+              : isEs
+                ? "Nueva cotización"
+                : "New quote"}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {isReadOnly
+              ? isEs
+                ? "Esta cotización ya fue convertida en un pedido y es de solo lectura."
+                : "This quote has already been converted into an order and is read-only."
+              : isEditing
+                ? isEs
+                  ? "Actualiza el cliente, los artículos, impuestos o notas de esta cotización."
+                  : "Update the customer, line items, totals, or notes for this quote."
+                : isEs
+                  ? "Selecciona un cliente y los productos a cotizar."
+                  : "Select a customer and the products to quote."}
+          </p>
         </div>
-        <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-3 py-2 text-sm text-slate-600">{isEs ? "Volver" : "Back"}</button>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  `/dashboard/orders/quotes/${initialQuote!.id}/print?autoPrint=true`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <Printer className="h-4 w-4" />
+              {isEs ? "Imprimir" : "Print"}
+            </button>
+          ) : null}
+          <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-3.5 py-2 text-sm text-slate-600 transition hover:bg-slate-50">{isEs ? "Volver" : "Back"}</button>
+        </div>
       </div>
+
+      {isReadOnly ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <span>
+            {isEs
+              ? "Cotización convertida en pedido. No se puede editar."
+              : "Quote converted to order. It can no longer be edited."}
+          </span>
+          {initialQuote?.convertedOrderId ? (
+            <Link
+              href={`/dashboard/orders/${initialQuote.convertedOrderId}`}
+              className="inline-flex items-center gap-1.5 font-semibold text-emerald-900 underline underline-offset-2 hover:text-emerald-950"
+            >
+              {isEs ? "Ver pedido" : "View order"}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
 
       {setupError || error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{setupError || error}</div> : null}
 
@@ -270,6 +400,7 @@ export function QuoteForm({
             <span className="text-sm font-medium text-slate-700">{isEs ? "Tienda" : "Store"}</span>
             <select
               value={storeId}
+              disabled={isEditing || isReadOnly}
               onChange={(event) => {
                 const selected = stores.find((store) => store.id === event.target.value);
                 setStoreId(event.target.value);
@@ -278,7 +409,7 @@ export function QuoteForm({
                 setCustomerQuery("");
                 setItems([{ ...newItem }]);
               }}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
               required
             >
               {stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
@@ -295,35 +426,40 @@ export function QuoteForm({
           >
             <div className="flex items-center justify-between gap-2">
               <label htmlFor="quote-customer" className="text-sm font-medium text-slate-700">{isEs ? "Cliente" : "Customer"}</label>
-              <button
-                type="button"
-                disabled={!storeId}
-                onClick={() => openNewCustomerModal()}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 transition hover:text-cyan-800 disabled:opacity-50"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                {isEs ? "Nuevo cliente" : "New customer"}
-              </button>
+              {!isReadOnly ? (
+                <button
+                  type="button"
+                  disabled={!storeId}
+                  onClick={() => openNewCustomerModal()}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 transition hover:text-cyan-800 disabled:opacity-50"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {isEs ? "Nuevo cliente" : "New customer"}
+                </button>
+              ) : null}
             </div>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="quote-customer"
                 value={customerQuery}
+                disabled={isReadOnly}
                 onChange={(event) => {
                   setCustomerQuery(event.target.value);
                   setCustomer(null);
                   setIsCustomerSearchOpen(true);
                 }}
                 placeholder={isEs ? "Buscar cliente..." : "Search customer..."}
-                className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-10 text-sm outline-none focus:border-slate-400"
+                className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-10 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50 disabled:text-slate-500"
                 required
                 role="combobox"
                 aria-expanded={isCustomerSearchOpen}
                 aria-controls="quote-customer-results"
-                onFocus={() => setIsCustomerSearchOpen(true)}
+                onFocus={() => {
+                  if (!isReadOnly) setIsCustomerSearchOpen(true);
+                }}
               />
-              {customerQuery ? (
+              {customerQuery && !isReadOnly ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -338,7 +474,7 @@ export function QuoteForm({
                 </button>
               ) : null}
             </div>
-            {!isCustomerSearchOpen && customerQuery.trim() && !customer ? (
+            {!isReadOnly && !isCustomerSearchOpen && customerQuery.trim() && !customer ? (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 <span>
                   {isEs
@@ -357,7 +493,7 @@ export function QuoteForm({
                 </button>
               </div>
             ) : null}
-            {isCustomerSearchOpen ? (
+            {!isReadOnly && isCustomerSearchOpen ? (
               <div
                 id="quote-customer-results"
                 role="listbox"
@@ -415,20 +551,38 @@ export function QuoteForm({
 
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Moneda" : "Currency"}</span>
-            <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+            <select value={currency} disabled={isReadOnly} onChange={(event) => setCurrency(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500">
               {CURRENCIES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">{isEs ? "Válida hasta" : "Valid until"}</span>
-            <input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+            <input type="date" value={validUntil} disabled={isReadOnly} onChange={(event) => setValidUntil(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500" />
           </label>
+          {isEditing && !isReadOnly ? (
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">{isEs ? "Estado" : "Status"}</span>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value as QuoteStatus)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+              >
+                <option value="DRAFT">{isEs ? "Borrador" : "Draft"}</option>
+                <option value="SENT">{isEs ? "Enviada" : "Sent"}</option>
+                <option value="ACCEPTED">{isEs ? "Aceptada" : "Accepted"}</option>
+                <option value="REJECTED">{isEs ? "Rechazada" : "Rejected"}</option>
+                <option value="EXPIRED">{isEs ? "Vencida" : "Expired"}</option>
+              </select>
+            </label>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">{isEs ? "Artículos" : "Line items"}</h2>
-            <button type="button" onClick={() => setItems((current) => [...current, { ...newItem }])} className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-sm text-slate-700"><Plus className="h-4 w-4" />{isEs ? "Agregar artículo" : "Add item"}</button>
+            {!isReadOnly ? (
+              <button type="button" onClick={() => setItems((current) => [...current, { ...newItem }])} className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-sm text-slate-700"><Plus className="h-4 w-4" />{isEs ? "Agregar artículo" : "Add item"}</button>
+            ) : null}
           </div>
           <div className="space-y-3 p-5">
             {items.map((item, index) => {
@@ -450,16 +604,19 @@ export function QuoteForm({
                       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         value={item.query}
+                        disabled={isReadOnly}
                         onChange={(event) => updateItem(index, { query: event.target.value, title: "", variantId: null, price: "0.00", isSearchOpen: true })}
-                        onFocus={() => updateItem(index, { isSearchOpen: true })}
+                        onFocus={() => {
+                          if (!isReadOnly) updateItem(index, { isSearchOpen: true });
+                        }}
                         role="combobox"
                         aria-expanded={item.isSearchOpen}
                         aria-controls={`quote-products-${index}`}
                         placeholder={isEs ? "Buscar producto, SKU o código..." : "Search product, SKU, or barcode..."}
-                        className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-10 text-sm outline-none focus:border-slate-400"
+                        className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-10 text-sm outline-none focus:border-slate-400 disabled:bg-slate-50 disabled:text-slate-500"
                         required
                       />
-                      {item.query ? (
+                      {item.query && !isReadOnly ? (
                         <button
                           type="button"
                           onClick={() => updateItem(index, { ...newItem, quantity: item.quantity, isSearchOpen: true })}
@@ -470,7 +627,7 @@ export function QuoteForm({
                         </button>
                       ) : null}
                     </div>
-                    {item.isSearchOpen ? (
+                    {!isReadOnly && item.isSearchOpen ? (
                       <div
                         id={`quote-products-${index}`}
                         role="listbox"
@@ -498,9 +655,9 @@ export function QuoteForm({
                       </div>
                     ) : null}
                   </div>
-                  <input type="number" min="0" step="0.01" value={item.price} onChange={(event) => updateItem(index, { price: event.target.value })} className="col-span-12 rounded-xl border border-slate-200 px-4 py-3 text-sm sm:col-span-3" placeholder={isEs ? "Precio" : "Price"} />
-                  <input type="number" min="1" step="1" value={item.quantity} onChange={(event) => updateItem(index, { quantity: event.target.value })} className="col-span-9 rounded-xl border border-slate-200 px-4 py-3 text-sm sm:col-span-2" placeholder={isEs ? "Cant." : "Qty"} />
-                  <button type="button" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="col-span-3 inline-flex items-center justify-center rounded-xl border border-rose-200 text-rose-700 disabled:opacity-50 sm:col-span-1" aria-label={isEs ? "Eliminar artículo" : "Remove item"}><Trash2 className="h-4 w-4" /></button>
+                  <input type="number" min="0" step="0.01" value={item.price} disabled={isReadOnly} onChange={(event) => updateItem(index, { price: event.target.value })} className="col-span-12 rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500 sm:col-span-3" placeholder={isEs ? "Precio" : "Price"} />
+                  <input type="number" min="1" step="1" value={item.quantity} disabled={isReadOnly} onChange={(event) => updateItem(index, { quantity: event.target.value })} className="col-span-9 rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500 sm:col-span-2" placeholder={isEs ? "Cant." : "Qty"} />
+                  <button type="button" disabled={isReadOnly || items.length === 1} onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="col-span-3 inline-flex items-center justify-center rounded-xl border border-rose-200 text-rose-700 disabled:opacity-50 sm:col-span-1" aria-label={isEs ? "Eliminar artículo" : "Remove item"}><Trash2 className="h-4 w-4" /></button>
                 </div>
               );
             })}
@@ -509,16 +666,30 @@ export function QuoteForm({
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Impuesto" : "Tax"}</span><input type="number" min="0" step="0.01" value={tax} onChange={(event) => setTax(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm" /></label>
-            <label className="flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Envío" : "Shipping"}</span><input type="number" min="0" step="0.01" value={shipping} onChange={(event) => setShipping(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm" /></label>
+            <label className="flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Impuesto" : "Tax"}</span><input type="number" min="0" step="0.01" value={tax} disabled={isReadOnly} onChange={(event) => setTax(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500" /></label>
+            <label className="flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Envío" : "Shipping"}</span><input type="number" min="0" step="0.01" value={shipping} disabled={isReadOnly} onChange={(event) => setShipping(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500" /></label>
           </div>
-          <label className="mt-4 flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Notas" : "Notes"}</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} className="rounded-xl border border-slate-200 px-4 py-3 text-sm" /></label>
+          <label className="mt-4 flex flex-col gap-2"><span className="text-sm font-medium text-slate-700">{isEs ? "Notas" : "Notes"}</span><textarea value={notes} disabled={isReadOnly} onChange={(event) => setNotes(event.target.value)} rows={3} className="rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500" /></label>
           <p className="mt-5 text-right text-lg font-semibold text-slate-950">{currency} {total.toFixed(2)}</p>
         </div>
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">{isEs ? "Cancelar" : "Cancel"}</button>
-          <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? (isEs ? "Guardando..." : "Saving...") : isEs ? "Crear cotización" : "Create quote"}</button>
+          <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">{isReadOnly ? (isEs ? "Volver" : "Back") : (isEs ? "Cancelar" : "Cancel")}</button>
+          {!isReadOnly ? (
+            <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {isSaving
+                ? isEs
+                  ? "Guardando..."
+                  : "Saving..."
+                : isEditing
+                  ? isEs
+                    ? "Guardar cambios"
+                    : "Save changes"
+                  : isEs
+                    ? "Crear cotización"
+                    : "Create quote"}
+            </button>
+          ) : null}
         </div>
       </form>
 

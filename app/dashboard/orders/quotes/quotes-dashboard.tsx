@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, FileText, Mail, MoreVertical, Plus, Printer, Search, Store, Trash2 } from "lucide-react";
+import { ArrowRightLeft, FileText, Mail, MoreVertical, Pencil, Plus, Printer, Search, Store, Trash2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type StoreOption = { id: string; name: string; currency: string };
@@ -187,9 +187,22 @@ export function QuotesDashboard({
           <tbody className="divide-y divide-slate-100">
             {visibleQuotes.map((quote) => {
               const store = initialStores.find((item) => item.id === quote.storeId);
+              const quoteHref = `/dashboard/orders/quotes/${quote.id}`;
               return (
-                <tr key={quote.id} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3 font-semibold text-slate-900">#{quote.quoteNumber}</td>
+                <tr
+                  key={quote.id}
+                  onClick={() => router.push(quoteHref)}
+                  className="cursor-pointer transition hover:bg-slate-50/70"
+                >
+                  <td className="px-4 py-3 font-semibold text-slate-900">
+                    <Link
+                      href={quoteHref}
+                      onClick={(event) => event.stopPropagation()}
+                      className="hover:text-cyan-700 hover:underline"
+                    >
+                      #{quote.quoteNumber}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-900">{quote.customerName || quote.customerEmail}</p>
                     {quote.customerName ? <p className="text-xs text-slate-500">{quote.customerEmail}</p> : null}
@@ -198,7 +211,7 @@ export function QuotesDashboard({
                   <td className="px-4 py-3 text-slate-600">
                     {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString(isEs ? "es" : "en") : "—"}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                     {quote.status === "CONVERTED" ? (
                       <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{isEs ? "Convertida" : "Converted"}</span>
                     ) : (
@@ -217,7 +230,7 @@ export function QuotesDashboard({
                     )}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-900">{quote.currency} {Number(quote.total).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(event) => event.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {quote.status !== "CONVERTED" ? (
                         <>
@@ -274,6 +287,19 @@ export function QuotesDashboard({
                                 }}
                                 className="fixed z-[100] mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl"
                               >
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    router.push(quoteHref);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                  <Pencil className="h-4 w-4 text-slate-500" />
+                                  {isEs ? "Editar cotización" : "Edit quote"}
+                                </button>
                                 <button
                                   type="button"
                                   role="menuitem"
