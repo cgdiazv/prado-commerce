@@ -38,6 +38,7 @@ export function QuoteForm({
   const [shipping, setShipping] = useState("0.00");
   const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
+  const [sendEmailNow, setSendEmailNow] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -242,8 +243,22 @@ export function QuoteForm({
           items,
         }),
       });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not create quote");
+      const result = (await response.json()) as { id?: string; error?: string };
+      if (!response.ok || !result.id) throw new Error(result.error || "Could not create quote");
+      if (sendEmailNow) {
+        const sendResponse = await fetch(`/api/quotes/${encodeURIComponent(result.id)}/send`, {
+          method: "POST",
+        });
+        if (!sendResponse.ok) {
+          const sendResult = (await sendResponse.json().catch(() => ({}))) as { error?: string };
+          throw new Error(
+            sendResult.error ||
+              (isEs
+                ? "La cotización se creó, pero no se pudo enviar por correo."
+                : "Quote was created, but the email could not be sent."),
+          );
+        }
+      }
       router.push(`/dashboard/orders/quotes?storeId=${encodeURIComponent(storeId)}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not create quote");
@@ -516,9 +531,53 @@ export function QuoteForm({
           <p className="mt-5 text-right text-lg font-semibold text-slate-950">{currency} {total.toFixed(2)}</p>
         </div>
 
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm select-none">
+          <input
+            type="checkbox"
+            checked={sendEmailNow}
+            onChange={(event) => setSendEmailNow(event.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-900">
+              {isEs
+                ? "Enviar correo de cotización al cliente inmediatamente"
+                : "Send quote email to customer immediately"}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {customer?.email ? (
+                <>
+                  {isEs ? "Se enviará a: " : "Will be sent to: "}
+                  <span className="font-semibold text-slate-700">{customer.email}</span>
+                </>
+              ) : isEs ? (
+                "Selecciona un cliente arriba para definir el destinatario"
+              ) : (
+                "Select a customer above to set the recipient"
+              )}
+            </p>
+          </div>
+        </label>
+
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">{isEs ? "Cancelar" : "Cancel"}</button>
-          <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? (isEs ? "Guardando..." : "Saving...") : isEs ? "Crear cotización" : "Create quote"}</button>
+          <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+            {isSaving
+              ? sendEmailNow
+                ? isEs
+                  ? "Creando y enviando..."
+                  : "Creating & sending..."
+                : isEs
+                  ? "Guardando..."
+                  : "Saving..."
+              : sendEmailNow
+                ? isEs
+                  ? "Crear y enviar cotización"
+                  : "Create & send quote"
+                : isEs
+                  ? "Crear cotización"
+                  : "Create quote"}
+          </button>
         </div>
       </form>
 

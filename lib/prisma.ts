@@ -57,7 +57,9 @@ const isStalePrisma =
   Boolean(existingPrisma) &&
   (typeof (existingPrisma as unknown as Record<string, unknown>).customerGroup === "undefined" ||
     typeof (existingPrisma as unknown as Record<string, unknown>).purchaseOrder === "undefined" ||
-    typeof (existingPrisma as unknown as Record<string, unknown>).vendor === "undefined");
+    typeof (existingPrisma as unknown as Record<string, unknown>).vendor === "undefined" ||
+    typeof (existingPrisma as unknown as Record<string, unknown>).consignment === "undefined" ||
+    typeof (existingPrisma as unknown as Record<string, unknown>).quote === "undefined");
 
 if (isStalePrisma) {
   (existingPrisma as unknown as { $disconnect?: () => Promise<void> }).$disconnect?.().catch(() => {});
