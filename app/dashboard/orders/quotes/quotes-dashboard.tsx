@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, FileText, Mail, MoreVertical, Plus, Printer, Search, Store, Trash2 } from "lucide-react";
+import { ArrowRightLeft, FileText, Loader2, Mail, MoreVertical, Plus, Printer, Search, Store, Trash2, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type StoreOption = { id: string; name: string; currency: string };
@@ -43,6 +43,8 @@ export function QuotesDashboard({
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [convertPromptQuote, setConvertPromptQuote] = useState<Quote | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
 
   const visibleQuotes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -66,7 +68,12 @@ export function QuotesDashboard({
       });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Could not update quote");
-      setQuotes((current) => current.map((item) => item.id === quote.id ? { ...item, status } : item));
+      const updatedQuote: Quote = { ...quote, status };
+      setQuotes((current) => current.map((item) => item.id === quote.id ? updatedQuote : item));
+
+      if (status === "ACCEPTED") {
+        setConvertPromptQuote(updatedQuote);
+      }
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Could not update quote");
     } finally {
@@ -74,20 +81,26 @@ export function QuotesDashboard({
     }
   }
 
-  async function convertQuote(quote: Quote) {
-    if (!window.confirm(isEs
-      ? "¿Convertir esta cotización en un pedido no pagado? Se descontará el inventario de los productos incluidos."
-      : "Convert this quote into an unpaid order? Inventory will be deducted for the included products.")) return;
-    setWorkingId(quote.id);
+  function convertQuote(quote: Quote) {
+    setConvertPromptQuote(quote);
+  }
+
+  async function confirmConvertQuote() {
+    if (!convertPromptQuote) return;
+    setIsConverting(true);
+    setWorkingId(convertPromptQuote.id);
     setError(null);
     try {
-      const response = await fetch(`/api/quotes/${quote.id}/convert`, { method: "POST" });
+      const response = await fetch(`/api/quotes/${convertPromptQuote.id}/convert`, { method: "POST" });
       const result = (await response.json()) as { id?: string; error?: string };
       if (!response.ok || !result.id) throw new Error(result.error || "Could not convert quote");
+      setConvertPromptQuote(null);
       router.push(`/dashboard/orders/${result.id}`);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Could not convert quote");
+      setConvertPromptQuote(null);
     } finally {
+      setIsConverting(false);
       setWorkingId(null);
     }
   }
@@ -336,6 +349,82 @@ export function QuotesDashboard({
           </tbody>
         </table>
       </div>
+
+      {convertPromptQuote ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          onClick={() => {
+            if (!isConverting) setConvertPromptQuote(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="convert-quote-modal-title"
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
+                  <ArrowRightLeft className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 id="convert-quote-modal-title" className="text-base font-semibold text-slate-950">
+                    {isEs ? "Convertir cotización en pedido" : "Convert quote to order"}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    #{convertPromptQuote.quoteNumber} · {convertPromptQuote.customerName || convertPromptQuote.customerEmail}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isConverting}
+                onClick={() => setConvertPromptQuote(null)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                aria-label={isEs ? "Cerrar" : "Close"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <p className="text-sm leading-relaxed text-slate-600">
+                {isEs
+                  ? "¿Deseas convertir esta cotización en un pedido ahora? Se creará un pedido pendiente de pago y se descontará el inventario de los productos incluidos."
+                  : "Would you like to convert this quote into an order now? An unpaid order will be created and inventory will be deducted for the included products."}
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-1">
+                <button
+                  type="button"
+                  disabled={isConverting}
+                  onClick={() => setConvertPromptQuote(null)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isEs ? "No" : "No"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isConverting}
+                  onClick={() => void confirmConvertQuote()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {isConverting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {isEs ? "Convirtiendo..." : "Converting..."}
+                    </>
+                  ) : (
+                    isEs ? "Sí" : "Yes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
