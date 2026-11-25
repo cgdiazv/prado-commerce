@@ -95,6 +95,7 @@ export function QuoteForm({
   const [shipping, setShipping] = useState(initialQuote?.shipping ?? "0.00");
   const [validUntil, setValidUntil] = useState(initialQuote?.validUntil ?? "");
   const [notes, setNotes] = useState(initialQuote?.notes ?? "");
+  const [sendEmailNow, setSendEmailNow] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -303,12 +304,31 @@ export function QuoteForm({
           }),
         },
       );
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) {
+      const result = (await response.json()) as { id?: string; error?: string };
+      const savedQuoteId = isEditing ? initialQuote!.id : result.id;
+      if (!response.ok || !savedQuoteId) {
         throw new Error(
           result.error ||
             (isEditing ? "Could not update quote" : "Could not create quote"),
         );
+      }
+      if (sendEmailNow) {
+        const sendResponse = await fetch(`/api/quotes/${encodeURIComponent(savedQuoteId)}/send`, {
+          method: "POST",
+        });
+        if (!sendResponse.ok) {
+          const sendResult = (await sendResponse.json().catch(() => ({}))) as { error?: string };
+          throw new Error(
+            sendResult.error ||
+              (isEditing
+                ? isEs
+                  ? "La cotización se actualizó, pero no se pudo enviar por correo."
+                  : "Quote was updated, but the email could not be sent."
+                : isEs
+                  ? "La cotización se creó, pero no se pudo enviar por correo."
+                  : "Quote was created, but the email could not be sent."),
+          );
+        }
       }
       router.push(`/dashboard/orders/quotes?storeId=${encodeURIComponent(storeId)}`);
       router.refresh();
@@ -673,21 +693,67 @@ export function QuoteForm({
           <p className="mt-5 text-right text-lg font-semibold text-slate-950">{currency} {total.toFixed(2)}</p>
         </div>
 
+        {!isReadOnly ? (
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm select-none">
+            <input
+              type="checkbox"
+              checked={sendEmailNow}
+              onChange={(event) => setSendEmailNow(event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-900">
+                {isEs
+                  ? "Enviar correo de cotización al cliente inmediatamente"
+                  : "Send quote email to customer immediately"}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {customer?.email ? (
+                  <>
+                    {isEs ? "Se enviará a: " : "Will be sent to: "}
+                    <span className="font-semibold text-slate-700">{customer.email}</span>
+                  </>
+                ) : isEs ? (
+                  "Selecciona un cliente arriba para definir el destinatario"
+                ) : (
+                  "Select a customer above to set the recipient"
+                )}
+              </p>
+            </div>
+          </label>
+        ) : null}
+
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => router.back()} className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">{isReadOnly ? (isEs ? "Volver" : "Back") : (isEs ? "Cancelar" : "Cancel")}</button>
           {!isReadOnly ? (
             <button type="submit" disabled={isSaving || !storeId} className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
               {isSaving
-                ? isEs
-                  ? "Guardando..."
-                  : "Saving..."
-                : isEditing
-                  ? isEs
-                    ? "Guardar cambios"
-                    : "Save changes"
+                ? sendEmailNow
+                  ? isEditing
+                    ? isEs
+                      ? "Guardando y enviando..."
+                      : "Saving & sending..."
+                    : isEs
+                      ? "Creando y enviando..."
+                      : "Creating & sending..."
                   : isEs
-                    ? "Crear cotización"
-                    : "Create quote"}
+                    ? "Guardando..."
+                    : "Saving..."
+                : sendEmailNow
+                  ? isEditing
+                    ? isEs
+                      ? "Guardar y enviar cotización"
+                      : "Save & send quote"
+                    : isEs
+                      ? "Crear y enviar cotización"
+                      : "Create & send quote"
+                  : isEditing
+                    ? isEs
+                      ? "Guardar cambios"
+                      : "Save changes"
+                    : isEs
+                      ? "Crear cotización"
+                      : "Create quote"}
             </button>
           ) : null}
         </div>
