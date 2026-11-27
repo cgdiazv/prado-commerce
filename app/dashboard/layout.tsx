@@ -331,10 +331,11 @@ export default function DashboardLayout({
       icon: ShoppingCart,
       children: [
         { href: "/dashboard/orders", label: t.dashboard.allOrders },
+        { href: "/dashboard/orders/quotes", label: t.dashboard.quotes },
         { href: "/dashboard/orders/new", label: t.dashboard.newOrder },
         { href: "/dashboard/orders/pos", label: t.dashboard.pointOfSale },
-        { href: "/dashboard/orders/quotes", label: t.dashboard.quotes },
         { href: "/dashboard/orders/consignments", label: t.dashboard.consignments },
+        { href: "/dashboard/orders/refunds", label: t.dashboard.refunds },
       ],
     },
     {

@@ -1,5 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { insertRefundRecord } from "@/lib/refunds-db";
 import { getCurrentUserFromRequest, getCurrentCashierFromRequest } from "@/lib/session";
 import { getStoreEmailConfig, sendInvoiceEmail } from "@/lib/email-notifications";
 import { syncPaidOrderToShipStation } from "@/lib/shipstation";
@@ -28,6 +29,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         },
         items: {
           select: {
+            id: true,
+            title: true,
+            price: true,
             variantId: true,
             quantity: true,
             variant: {
@@ -62,6 +66,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       paymentStatus,
       fulfillmentStatus,
       restock,
+      restockItems,
+      refundAmount,
+      refundReason,
       shippingAddress,
       billingAddress,
       shipping,
@@ -73,6 +80,13 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       paymentStatus?: string;
       fulfillmentStatus?: string;
       restock?: boolean;
+      restockItems?: Array<{
+        itemId?: string;
+        variantId?: string | null;
+        quantity?: number | string;
+      }>;
+      refundAmount?: number | string;
+      refundReason?: string;
       shippingAddress?: unknown;
       billingAddress?: unknown;
       shipping?: number | string;
@@ -304,8 +318,57 @@ export async function PATCH(req: Request, { params }: RouteContext) {
             include: { items: true },
           });
 
-      if (restock) {
+      const refundedItemsLog: Array<{
+        itemId: string;
+        variantId: string | null;
+        title: string;
+        quantity: number;
+        price: number;
+      }> = [];
+
+      if (Array.isArray(restockItems)) {
+        for (const entry of restockItems) {
+          const rawQty = Math.trunc(Number(entry.quantity) || 0);
+          if (rawQty <= 0) continue;
+          const matchedItem =
+            (entry.itemId ? order.items.find((i) => i.id === entry.itemId) : undefined) ??
+            (entry.variantId ? order.items.find((i) => i.variantId === entry.variantId) : undefined);
+          if (!matchedItem) continue;
+          const qtyToRestock = Math.min(Math.max(0, rawQty), matchedItem.quantity);
+          if (qtyToRestock > 0) {
+            refundedItemsLog.push({
+              itemId: matchedItem.id,
+              variantId: matchedItem.variantId ?? null,
+              title: matchedItem.title,
+              quantity: qtyToRestock,
+              price: Number(matchedItem.price),
+            });
+          }
+          if (
+            qtyToRestock > 0 &&
+            matchedItem.variantId &&
+            matchedItem.variant?.stockStatus !== "ON_BACKORDER"
+          ) {
+            await tx.productVariant.update({
+              where: { id: matchedItem.variantId },
+              data: {
+                inventory: {
+                  increment: qtyToRestock,
+                },
+              },
+            });
+            restockedCount += qtyToRestock;
+          }
+        }
+      } else if (restock) {
         for (const item of order.items) {
+          refundedItemsLog.push({
+            itemId: item.id,
+            variantId: item.variantId ?? null,
+            title: item.title,
+            quantity: item.quantity,
+            price: Number(item.price),
+          });
           if (item.variantId && item.variant?.stockStatus !== "ON_BACKORDER") {
             await tx.productVariant.update({
               where: { id: item.variantId },
@@ -318,6 +381,41 @@ export async function PATCH(req: Request, { params }: RouteContext) {
             restockedCount += item.quantity;
           }
         }
+      }
+
+      const shouldRecordRefund =
+        refundAmount !== undefined ||
+        Array.isArray(restockItems) ||
+        (updates.paymentStatus === "REFUNDED" &&
+          (order.paymentStatus !== "REFUNDED" || Boolean(restock)));
+
+      if (shouldRecordRefund && (updates.paymentStatus === "REFUNDED" || order.paymentStatus === "REFUNDED")) {
+        const orderTotalNum = Number(saved.total);
+        const parsedRefundNum =
+          refundAmount !== undefined && Number.isFinite(Number(refundAmount))
+            ? Math.min(Math.max(0, Number(refundAmount)), orderTotalNum)
+            : orderTotalNum;
+        const totalOrderedUnits = order.items.reduce((sum, i) => sum + i.quantity, 0);
+        const isPartial =
+          parsedRefundNum < orderTotalNum - 0.009 ||
+          (Array.isArray(restockItems) &&
+            restockedCount > 0 &&
+            restockedCount < totalOrderedUnits);
+
+        await insertRefundRecord(tx, {
+          storeId: order.storeId,
+          orderId: order.id,
+          type: isPartial ? "PARTIAL" : "FULL",
+          amount: parsedRefundNum,
+          currency: saved.currency,
+          restockedUnits: restockedCount,
+          reason:
+            typeof refundReason === "string" && refundReason.trim()
+              ? refundReason.trim()
+              : null,
+          items: refundedItemsLog,
+          processedBy: cashier?.cashierEmail ?? user?.email ?? null,
+        });
       }
 
       return saved;
@@ -388,8 +486,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           quantity: item.quantity,
         })),
       },
-      restocked: Boolean(restock),
+      restocked: restockedCount > 0 || Boolean(restock),
       restockedCount,
+      refundAmount:
+        refundAmount !== undefined && Number.isFinite(Number(refundAmount))
+          ? Number(refundAmount)
+          : undefined,
     });
   } catch (error) {
     console.error("[ORDER_PATCH_ERROR]", error);

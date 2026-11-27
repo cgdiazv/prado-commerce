@@ -128,6 +128,7 @@ model Store {
   purchaseReceipts PurchaseReceipt[]
   consignments   Consignment[]
   quotes         Quote[]
+  refunds        Refund[]
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -440,6 +441,7 @@ model Order {
 
   items           OrderItem[]
   payments        CustomerPayment[]
+  refunds         Refund[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -467,6 +469,36 @@ enum PaymentStatus {
 enum FulfillmentStatus {
   UNFULFILLED
   SHIPPED
+}
+
+enum RefundType {
+  FULL
+  PARTIAL
+}
+
+model Refund {
+  id             String     @id @default(cuid())
+  storeId        String
+  store          Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  orderId        String
+  order          Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  refundNumber   Int        @unique @default(autoincrement())
+  type           RefundType @default(FULL)
+  amount         Decimal    @db.Decimal(10, 2)
+  currency       String     @default("USD")
+  restockedUnits Int        @default(0)
+  reason         String?    @db.Text
+  items          Json?
+  processedBy    String?
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([storeId])
+  @@index([orderId])
+  @@index([createdAt])
 }
 
 enum QuoteStatus {

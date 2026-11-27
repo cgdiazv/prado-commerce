@@ -439,25 +439,113 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
     }
   }
 
-  async function handleQuickRefundAndRestock() {
-    const totalUnits = order.items.reduce((sum, item) => sum + item.quantity, 0);
-    const confirmed = window.confirm(
-      isEs
-        ? `¿Confirmas reembolsar este pedido y reingresar automáticamente ${totalUnits} unidades al stock del inventario?`
-        : `Are you sure you want to refund this order and automatically restock ${totalUnits} units back into inventory?`
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [restockQuantities, setRestockQuantities] = useState<Record<string, number>>({});
+  const [refundAmountInput, setRefundAmountInput] = useState("");
+  const [isCustomRefundAmount, setIsCustomRefundAmount] = useState(false);
+  const [restockToInventory, setRestockToInventory] = useState(true);
+  const [cancelOrderOnRefund, setCancelOrderOnRefund] = useState(true);
+  const [refundReasonInput, setRefundReasonInput] = useState("");
+
+  function computeSuggestedRefundAmount(quantities: Record<string, number>): string {
+    const allFull =
+      order.items.length > 0 &&
+      order.items.every((item) => (quantities[item.id] ?? 0) >= item.quantity);
+    if (allFull) {
+      return Number(order.total).toFixed(2);
+    }
+    const itemsSum = order.items.reduce((sum, item) => {
+      const qty = Math.min(Math.max(0, quantities[item.id] ?? 0), item.quantity);
+      return sum + qty * Number(item.price);
+    }, 0);
+    return Math.min(Number(order.total), itemsSum).toFixed(2);
+  }
+
+  function openRefundModal() {
+    const initialQtys: Record<string, number> = {};
+    for (const item of order.items) {
+      initialQtys[item.id] = item.quantity;
+    }
+    setRestockQuantities(initialQtys);
+    setRefundAmountInput(Number(order.total).toFixed(2));
+    setIsCustomRefundAmount(false);
+    setRestockToInventory(true);
+    setCancelOrderOnRefund(true);
+    setRefundReasonInput("");
+    setIsRefundModalOpen(true);
+  }
+
+  function updateItemRestockQty(itemId: string, maxQty: number, nextQty: number) {
+    const clamped = Math.min(Math.max(0, Math.trunc(nextQty) || 0), maxQty);
+    setRestockQuantities((prev) => {
+      const next = { ...prev, [itemId]: clamped };
+      if (!isCustomRefundAmount) {
+        setRefundAmountInput(computeSuggestedRefundAmount(next));
+      }
+      const isFullOrder =
+        order.items.length > 0 &&
+        order.items.every((item) => (next[item.id] ?? 0) >= item.quantity);
+      setCancelOrderOnRefund(isFullOrder);
+      return next;
+    });
+  }
+
+  function selectAllRefundQuantities() {
+    const allQtys: Record<string, number> = {};
+    for (const item of order.items) {
+      allQtys[item.id] = item.quantity;
+    }
+    setRestockQuantities(allQtys);
+    setIsCustomRefundAmount(false);
+    setRefundAmountInput(Number(order.total).toFixed(2));
+    setCancelOrderOnRefund(true);
+  }
+
+  function clearAllRefundQuantities() {
+    const zeroQtys: Record<string, number> = {};
+    for (const item of order.items) {
+      zeroQtys[item.id] = 0;
+    }
+    setRestockQuantities(zeroQtys);
+    if (!isCustomRefundAmount) {
+      setRefundAmountInput("0.00");
+    }
+    setCancelOrderOnRefund(false);
+  }
+
+  async function handleConfirmRefundAndRestock() {
+    const totalOrderAmount = Number(order.total);
+    const parsedRefundAmount = Math.min(
+      Math.max(0, Number.parseFloat(refundAmountInput) || 0),
+      totalOrderAmount,
     );
-    if (!confirmed) return;
+    const selectedItemsToRestock = restockToInventory
+      ? order.items
+          .map((item) => ({
+            itemId: item.id,
+            variantId: item.variantId ?? null,
+            quantity: Math.min(Math.max(0, restockQuantities[item.id] ?? 0), item.quantity),
+          }))
+          .filter((entry) => entry.quantity > 0)
+      : [];
+    const selectedUnitsCount = selectedItemsToRestock.reduce((sum, entry) => sum + entry.quantity, 0);
+    const isPartialRefund =
+      parsedRefundAmount < totalOrderAmount - 0.009 ||
+      order.items.some((item) => (restockQuantities[item.id] ?? 0) < item.quantity);
 
     setIsSaving(true);
     setSaveStatus(null);
     try {
+      const nextStatus = cancelOrderOnRefund ? "CANCELLED" : order.status;
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           paymentStatus: "REFUNDED",
-          status: "CANCELLED",
-          restock: true,
+          status: nextStatus,
+          restockItems: selectedItemsToRestock,
+          refundAmount: parsedRefundAmount,
+          refundReason: refundReasonInput.trim() || undefined,
         }),
       });
 
@@ -468,16 +556,20 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
 
       setOrder((current) => ({
         ...current,
-        status: payload.order?.status ?? "CANCELLED",
+        status: payload.order?.status ?? nextStatus,
         paymentStatus: payload.order?.paymentStatus ?? "REFUNDED",
       }));
-      setStatus((payload.order?.status as Order["status"]) ?? "CANCELLED");
+      setStatus((payload.order?.status as Order["status"]) ?? nextStatus);
       setPaymentStatus("REFUNDED");
       setRestockInventory(false);
+      setIsRefundModalOpen(false);
+
+      const formattedAmount = formatter.format(parsedRefundAmount);
+      const restockedUnits = payload.restockedCount ?? selectedUnitsCount;
       setSaveStatus(
         isEs
-          ? `¡Pedido reembolsado con éxito! Se reingresaron ${payload.restockedCount ?? totalUnits} unidades al inventario.`
-          : `Order successfully refunded! ${payload.restockedCount ?? totalUnits} units were restocked into inventory.`
+          ? `¡${isPartialRefund ? "Reembolso parcial" : "Reembolso total"} de ${formattedAmount} procesado con éxito!${restockedUnits > 0 ? ` Se reingresaron ${restockedUnits} unidades al inventario.` : ""}`
+          : `${isPartialRefund ? "Partial refund" : "Full refund"} of ${formattedAmount} processed successfully!${restockedUnits > 0 ? ` ${restockedUnits} units were restocked into inventory.` : ""}`,
       );
       router.refresh();
     } catch (error) {
@@ -486,7 +578,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           ? error.message
           : isEs
             ? "Error al procesar la devolución"
-            : "Failed to process refund"
+            : "Failed to process refund",
       );
     } finally {
       setIsSaving(false);
@@ -1415,7 +1507,7 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 </div>
               )}
 
-              {/* 1-Click Refund & Restock Action Card */}
+              {/* Refund & Restock Action Card */}
               <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-4">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-purple-100 p-2 text-purple-700">
@@ -1427,18 +1519,18 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                     </h3>
                     <p className="mt-0.5 text-xs text-purple-800">
                       {isEs
-                        ? "1 clic para marcar la orden como reembolsada y reingresar automáticamente todas las unidades al inventario disponible."
-                        : "1-click action to mark this order as refunded and return all purchased units directly back into available inventory."}
+                        ? "Selecciona las cantidades a reingresar al inventario o el monto a devolver para realizar reembolsos parciales o totales."
+                        : "Select the item quantities to restock or the money amount to refund for partial or full order refunds."}
                     </p>
                     <button
                       type="button"
-                      onClick={handleQuickRefundAndRestock}
-                      disabled={isSaving || order.paymentStatus === "REFUNDED"}
+                      onClick={openRefundModal}
+                      disabled={isSaving}
                       className="mt-3 inline-flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-300"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       {order.paymentStatus === "REFUNDED"
-                        ? (isEs ? "Ya reembolsado y reingresado" : "Already refunded & restocked")
+                        ? (isEs ? "Reembolsar / Reingresar más unidades" : "Refund / Restock Additional Units")
                         : (isEs ? "Reembolsar y Reingresar Unidades al Stock" : "Refund & Restock Units to Stock")}
                     </button>
                   </div>
@@ -1551,6 +1643,302 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           </article>
         </div>
       </div>
+
+      {isRefundModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+          onClick={() => {
+            if (!isSaving) setIsRefundModalOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-950">
+                    {isEs ? "Reembolso y Retorno al Inventario" : "Refund & Restock Inventory"}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {isEs
+                      ? `Pedido #${order.orderNumber} • Total del pedido: ${formatter.format(Number(order.total))}`
+                      : `Order #${order.orderNumber} • Order total: ${formatter.format(Number(order.total))}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => setIsRefundModalOpen(false)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-5">
+              {/* Items & Quantities to Restock */}
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    {isEs ? "Cantidades por artículo a devolver / reingresar" : "Item quantities to refund / restock"}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={selectAllRefundQuantities}
+                      className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 transition hover:bg-purple-100"
+                    >
+                      {isEs ? "Todo el pedido" : "Full order"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearAllRefundQuantities}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                    >
+                      {isEs ? "Poner en 0" : "Clear (0)"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/50">
+                  {order.items.map((item) => {
+                    const selectedQty = restockQuantities[item.id] ?? 0;
+                    const unitPrice = Number(item.price);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {formatter.format(unitPrice)} × {item.quantity}{" "}
+                            {isEs ? "comprados" : "ordered"}
+                            {!item.variantId ? (
+                              <span className="ml-2 text-amber-600">
+                                ({isEs ? "Artículo personalizado" : "Custom item"})
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white">
+                            <button
+                              type="button"
+                              onClick={() => updateItemRestockQty(item.id, item.quantity, selectedQty - 1)}
+                              disabled={selectedQty <= 0}
+                              className="px-2.5 py-1 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              max={item.quantity}
+                              value={selectedQty}
+                              onChange={(e) =>
+                                updateItemRestockQty(item.id, item.quantity, Number.parseInt(e.target.value, 10) || 0)
+                              }
+                              className="w-12 border-x border-slate-200 py-1 text-center text-sm font-semibold text-slate-900 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateItemRestockQty(item.id, item.quantity, selectedQty + 1)}
+                              disabled={selectedQty >= item.quantity}
+                              className="px-2.5 py-1 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="w-12 text-right text-xs font-medium text-slate-500">
+                            / {item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Refund Money Amount Input */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                      {isEs ? "Monto de dinero a reembolsar" : "Money amount to refund"}
+                    </label>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {isEs
+                        ? "Puedes reembolsar el total, el valor de las unidades seleccionadas o un monto parcial personalizado."
+                        : "Refund the full total, the value of selected units, or enter a custom partial refund amount."}
+                    </p>
+                  </div>
+                  {(() => {
+                    const currentVal = Number.parseFloat(refundAmountInput) || 0;
+                    const maxTotal = Number(order.total);
+                    const isPartial = currentVal < maxTotal - 0.009;
+                    return (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                          isPartial
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : "bg-purple-50 text-purple-700 border border-purple-200"
+                        }`}
+                      >
+                        {isPartial
+                          ? (isEs ? "Reembolso parcial" : "Partial refund")
+                          : (isEs ? "Reembolso total" : "Full refund")}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="relative flex-1 min-w-[160px]">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500">
+                      {order.currency || "USD"}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={Number(order.total)}
+                      step="0.01"
+                      value={refundAmountInput}
+                      onChange={(e) => {
+                        setIsCustomRefundAmount(true);
+                        setRefundAmountInput(e.target.value);
+                      }}
+                      className="w-full rounded-xl border border-slate-300 py-2 pl-14 pr-3 text-sm font-bold text-slate-900 outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomRefundAmount(false);
+                      setRefundAmountInput(computeSuggestedRefundAmount(restockQuantities));
+                    }}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    {isEs ? "Según unidades" : "Match selected units"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomRefundAmount(true);
+                      setRefundAmountInput(Number(order.total).toFixed(2));
+                    }}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    {isEs ? `Total (${formatter.format(Number(order.total))})` : `Full (${formatter.format(Number(order.total))})`}
+                  </button>
+                </div>
+              </div>
+
+              {/* Options Checkboxes */}
+              <div className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={restockToInventory}
+                    onChange={(e) => setRestockToInventory(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {isEs
+                        ? "Reingresar las cantidades seleccionadas al inventario"
+                        : "Restock selected quantities back into inventory"}
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      {isEs
+                        ? `Se sumarán ${Object.entries(restockQuantities).reduce((sum, [id, qty]) => {
+                            const item = order.items.find((i) => i.id === id);
+                            return item?.variantId ? sum + qty : sum;
+                          }, 0)} unidades al stock disponible.`
+                        : `${Object.entries(restockQuantities).reduce((sum, [id, qty]) => {
+                            const item = order.items.find((i) => i.id === id);
+                            return item?.variantId ? sum + qty : sum;
+                          }, 0)} units will be added back to available variant stock.`}
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={cancelOrderOnRefund}
+                    onChange={(e) => setCancelOrderOnRefund(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {isEs ? "Marcar estado del pedido como Cancelado" : "Mark order status as Cancelled"}
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      {isEs
+                        ? "Desmarca esta opción si es un reembolso parcial y el resto del pedido sigue activo."
+                        : "Uncheck this for partial refunds when the remainder of the order is still active."}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Refund Reason / Notes */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  {isEs ? "Motivo o notas del reembolso (opcional)" : "Refund reason or notes (optional)"}
+                </label>
+                <input
+                  type="text"
+                  value={refundReasonInput}
+                  onChange={(e) => setRefundReasonInput(e.target.value)}
+                  placeholder={
+                    isEs
+                      ? "Ej. Devolución del cliente, artículo dañado, ajuste de precio..."
+                      : "e.g. Customer return, damaged item, price adjustment..."
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => setIsRefundModalOpen(false)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                {isEs ? "Cancelar" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => void handleConfirmRefundAndRestock()}
+                className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                )}
+                {isSaving
+                  ? (isEs ? "Procesando..." : "Processing...")
+                  : (isEs
+                      ? `Confirmar reembolso (${formatter.format(Math.min(Math.max(0, Number.parseFloat(refundAmountInput) || 0), Number(order.total)))})`
+                      : `Confirm refund (${formatter.format(Math.min(Math.max(0, Number.parseFloat(refundAmountInput) || 0), Number(order.total)))})`)}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
 
 
