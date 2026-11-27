@@ -57,19 +57,56 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     }
 
     const body = await req.json();
-    const { status, paymentStatus, fulfillmentStatus, restock } = body as {
+    const {
+      status,
+      paymentStatus,
+      fulfillmentStatus,
+      restock,
+      shippingAddress,
+      billingAddress,
+      shipping,
+      tax,
+      items,
+    } = body as {
       status?: string;
       paymentStatus?: string;
       fulfillmentStatus?: string;
       restock?: boolean;
+      shippingAddress?: unknown;
+      billingAddress?: unknown;
+      shipping?: number | string;
+      tax?: number | string;
+      items?: Array<{
+        variantId?: string | null;
+        title?: unknown;
+        price?: number | string;
+        quantity?: number | string;
+      }>;
     };
 
-    const updates: {
-      status?: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
-      paymentStatus?: "UNPAID" | "PARTIAL" | "PAID" | "REFUNDED" | "FAILED";
-      fulfillmentStatus?: "UNFULFILLED" | "SHIPPED";
-      shippedAt?: Date | null;
-    } = {};
+    const isEditingOrderContents =
+      items !== undefined ||
+      shipping !== undefined ||
+      tax !== undefined ||
+      shippingAddress !== undefined ||
+      billingAddress !== undefined;
+
+    if (isEditingOrderContents) {
+      const provider = (order as unknown as { paymentProvider?: string | null }).paymentProvider;
+      const hasGatewayTx = Boolean(
+        (order as unknown as { stripeSessionId?: string | null }).stripeSessionId ||
+          (order as unknown as { stripePaymentId?: string | null }).stripePaymentId ||
+          (order as unknown as { gatewayTransactionId?: string | null }).gatewayTransactionId,
+      );
+      if (provider === "pos" || provider === "stripe" || provider === "authorize_net" || hasGatewayTx) {
+        return NextResponse.json(
+          { error: "Online gateway and POS orders cannot have their items or totals edited." },
+          { status: 403 },
+        );
+      }
+    }
+
+    const updates: Record<string, unknown> = {};
 
     const validStatuses = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
     const validPaymentStatuses = ["UNPAID", "PARTIAL", "PAID", "REFUNDED", "FAILED"] as const;
@@ -115,18 +152,155 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       }
     }
 
-    if (Object.keys(updates).length === 0 && !restock) {
+    if (shippingAddress !== undefined) {
+      updates.shippingAddress = shippingAddress ?? null;
+    }
+
+    if (billingAddress !== undefined) {
+      updates.billingAddress = billingAddress ?? null;
+    }
+
+    type ParsedEditItem = {
+      variantId: string | null;
+      title: string;
+      price: number;
+      quantity: number;
+      costPrice: number | null;
+    };
+    let parsedEditItems: ParsedEditItem[] | null = null;
+
+    if (items !== undefined) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return NextResponse.json({ error: "Order must have at least one item" }, { status: 400 });
+      }
+
+      const rawParsed: Array<{ variantId: string | null; title: string; price: number; quantity: number }> = [];
+      for (const item of items) {
+        const title = String(item?.title ?? "").trim();
+        const price = Math.round((Number(item?.price ?? 0) || 0) * 100) / 100;
+        const quantity = Math.trunc(Number(item?.quantity ?? 0) || 0);
+        if (!title || price < 0 || quantity < 1) {
+          return NextResponse.json(
+            { error: "Each item requires a title, a valid non-negative price, and quantity of at least 1." },
+            { status: 400 },
+          );
+        }
+        rawParsed.push({
+          variantId: typeof item?.variantId === "string" && item.variantId.trim() ? item.variantId.trim() : null,
+          title,
+          price,
+          quantity,
+        });
+      }
+
+      const variantIds = Array.from(
+        new Set(rawParsed.map((i) => i.variantId).filter((v): v is string => Boolean(v))),
+      );
+      const variants = variantIds.length > 0
+        ? await prisma.productVariant.findMany({
+            where: { id: { in: variantIds }, product: { storeId: order.storeId } },
+            select: { id: true, costPrice: true },
+          })
+        : [];
+      if (variants.length !== variantIds.length) {
+        return NextResponse.json({ error: "One or more selected products do not belong to this store." }, { status: 400 });
+      }
+      const variantCostMap = new Map(
+        variants.map((v) => [v.id, v.costPrice !== null && v.costPrice !== undefined ? Number(v.costPrice) : null]),
+      );
+
+      parsedEditItems = rawParsed.map((i) => ({
+        ...i,
+        costPrice: i.variantId ? (variantCostMap.get(i.variantId) ?? null) : null,
+      }));
+    }
+
+    const nextSubtotal = parsedEditItems
+      ? Math.round(parsedEditItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
+      : Number(order.subtotal);
+
+    const nextShipping = shipping !== undefined
+      ? Math.round(Math.max(0, Number(shipping) || 0) * 100) / 100
+      : Number(order.shipping);
+
+    const nextTax = tax !== undefined
+      ? Math.round(Math.max(0, Number(tax) || 0) * 100) / 100
+      : Number(order.tax);
+
+    if (parsedEditItems || shipping !== undefined || tax !== undefined) {
+      const taxToAdd = (order as unknown as { taxIncluded?: boolean }).taxIncluded ? 0 : nextTax;
+      updates.subtotal = nextSubtotal;
+      updates.shipping = nextShipping;
+      updates.tax = nextTax;
+      updates.total = Math.round((nextSubtotal + nextShipping + taxToAdd) * 100) / 100;
+    }
+
+    if (Object.keys(updates).length === 0 && !restock && !parsedEditItems) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
     let restockedCount = 0;
     const updatedOrder = await prisma.$transaction(async (tx) => {
+      if (parsedEditItems) {
+        const isCancelledOrRefunded =
+          order.status === "CANCELLED" ||
+          order.paymentStatus === "REFUNDED" ||
+          updates.status === "CANCELLED" ||
+          updates.paymentStatus === "REFUNDED";
+
+        if (!isCancelledOrRefunded) {
+          const oldQtyByVariant = new Map<string, number>();
+          for (const item of order.items) {
+            if (item.variantId) {
+              oldQtyByVariant.set(item.variantId, (oldQtyByVariant.get(item.variantId) ?? 0) + item.quantity);
+            }
+          }
+          const newQtyByVariant = new Map<string, number>();
+          for (const item of parsedEditItems) {
+            if (item.variantId) {
+              newQtyByVariant.set(item.variantId, (newQtyByVariant.get(item.variantId) ?? 0) + item.quantity);
+            }
+          }
+          const allVariantIds = new Set([...oldQtyByVariant.keys(), ...newQtyByVariant.keys()]);
+          for (const variantId of allVariantIds) {
+            const delta = (newQtyByVariant.get(variantId) ?? 0) - (oldQtyByVariant.get(variantId) ?? 0);
+            if (delta > 0) {
+              await tx.productVariant.updateMany({
+                where: { id: variantId, stockStatus: "IN_STOCK" },
+                data: { inventory: { decrement: delta } },
+              });
+            } else if (delta < 0) {
+              await tx.productVariant.updateMany({
+                where: { id: variantId, stockStatus: "IN_STOCK" },
+                data: { inventory: { increment: Math.abs(delta) } },
+              });
+            }
+          }
+        }
+
+        await tx.orderItem.deleteMany({ where: { orderId: id } });
+        await tx.orderItem.createMany({
+          data: parsedEditItems.map((item) => ({
+            orderId: id,
+            variantId: item.variantId,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            costPrice: item.costPrice ?? null,
+          })),
+        });
+      }
+
       const saved = Object.keys(updates).length > 0
         ? await tx.order.update({
             where: { id },
             data: updates,
+            include: { items: true },
           })
-        : order;
+        : await tx.order.findUniqueOrThrow({
+            where: { id },
+            include: { items: true },
+          });
 
       if (restock) {
         for (const item of order.items) {
@@ -181,6 +355,19 @@ export async function PATCH(req: Request, { params }: RouteContext) {
         status: updatedOrder.status,
         paymentStatus: updatedOrder.paymentStatus,
         fulfillmentStatus: updatedOrder.fulfillmentStatus,
+        subtotal: updatedOrder.subtotal.toString(),
+        tax: updatedOrder.tax.toString(),
+        shipping: updatedOrder.shipping.toString(),
+        total: updatedOrder.total.toString(),
+        shippingAddress: updatedOrder.shippingAddress,
+        billingAddress: updatedOrder.billingAddress,
+        items: updatedOrder.items.map((item) => ({
+          id: item.id,
+          variantId: item.variantId ?? null,
+          title: item.title,
+          price: item.price.toString(),
+          quantity: item.quantity,
+        })),
       },
       restocked: Boolean(restock),
       restockedCount,

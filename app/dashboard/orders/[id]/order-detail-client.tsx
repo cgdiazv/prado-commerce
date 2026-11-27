@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer, RotateCcw } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer, RotateCcw, Pencil, Plus, Trash2, Search, Check, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Address = {
@@ -36,18 +36,84 @@ function parseOriginContact(origin: unknown) {
 
 type OrderItem = {
   id: string;
+  variantId?: string | null;
   title: string;
   price: string;
   quantity: number;
 };
 
+type EditableOrderItem = {
+  id?: string;
+  variantId: string | null;
+  title: string;
+  price: string;
+  quantity: string;
+  query: string;
+  isSearchOpen: boolean;
+};
+
+type CatalogProductOption = {
+  variantId: string;
+  title: string;
+  sku: string | null;
+  barcode: string | null;
+  price: number;
+};
+
+type AddressFormState = {
+  firstName: string;
+  lastName: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  phone: string;
+};
+
+function toAddressFormState(addr: Address): AddressFormState {
+  return {
+    firstName: addr?.firstName ?? "",
+    lastName: addr?.lastName ?? "",
+    line1: addr?.line1 ?? "",
+    line2: addr?.line2 ?? "",
+    city: addr?.city ?? "",
+    state: addr?.state ?? "",
+    postalCode: addr?.postalCode ?? "",
+    country: addr?.country ?? "",
+    phone: addr?.phone ?? "",
+  };
+}
+
+function serializeAddressForm(form: AddressFormState): Exclude<Address, null> | null {
+  const cleaned = {
+    firstName: form.firstName.trim() || undefined,
+    lastName: form.lastName.trim() || undefined,
+    line1: form.line1.trim() || undefined,
+    line2: form.line2.trim() || undefined,
+    city: form.city.trim() || undefined,
+    state: form.state.trim() || undefined,
+    postalCode: form.postalCode.trim() || undefined,
+    country: form.country.trim() || undefined,
+    phone: form.phone.trim() || undefined,
+  };
+  const hasAny = Object.values(cleaned).some(Boolean);
+  return hasAny ? cleaned : null;
+}
+
 type Order = {
   id: string;
+  storeId?: string;
   orderNumber: number;
   customerEmail: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
   fulfillmentStatus: "UNFULFILLED" | "SHIPPED";
+  paymentProvider?: string | null;
+  stripeSessionId?: string | null;
+  stripePaymentId?: string | null;
+  gatewayTransactionId?: string | null;
   trackingNumber: string | null;
   trackingCarrier: string | null;
   trackingUrl: string | null;
@@ -111,6 +177,178 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [restockInventory, setRestockInventory] = useState(false);
+
+  const isEditableOrder =
+    order.paymentProvider !== "pos" &&
+    order.paymentProvider !== "stripe" &&
+    order.paymentProvider !== "authorize_net" &&
+    !order.stripeSessionId &&
+    !order.stripePaymentId &&
+    !order.gatewayTransactionId;
+
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [isSavingOrderEdits, setIsSavingOrderEdits] = useState(false);
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProductOption[]>([]);
+  const [editItems, setEditItems] = useState<EditableOrderItem[]>(() =>
+    initialOrder.items.map((item) => ({
+      id: item.id,
+      variantId: item.variantId ?? null,
+      title: item.title,
+      price: Number(item.price).toFixed(2),
+      quantity: String(item.quantity),
+      query: item.title,
+      isSearchOpen: false,
+    })),
+  );
+  const [editShippingCost, setEditShippingCost] = useState(() => Number(initialOrder.shipping).toFixed(2));
+  const [editTaxCost, setEditTaxCost] = useState(() => Number(initialOrder.tax).toFixed(2));
+  const [editShippingAddr, setEditShippingAddr] = useState<AddressFormState>(() =>
+    toAddressFormState(parseAddress(initialOrder.shippingAddress)),
+  );
+  const [editBillingAddr, setEditBillingAddr] = useState<AddressFormState>(() =>
+    toAddressFormState(parseAddress(initialOrder.billingAddress)),
+  );
+
+  useEffect(() => {
+    if (!isEditingOrder || !order.storeId) return;
+    const controller = new AbortController();
+    fetch(`/api/products?storeId=${encodeURIComponent(order.storeId)}&status=ACTIVE`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const products = (await res.json()) as Array<{
+          title: string;
+          variants: Array<{
+            id: string;
+            title: string;
+            sku: string | null;
+            barcode: string | null;
+            price: string | number;
+          }>;
+        }>;
+        setCatalogProducts(
+          products.flatMap((product) =>
+            product.variants.map((variant) => ({
+              variantId: variant.id,
+              title: product.variants.length > 1 ? `${product.title} (${variant.title})` : product.title,
+              sku: variant.sku,
+              barcode: variant.barcode,
+              price: Number(variant.price),
+            })),
+          ),
+        );
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isEditingOrder, order.storeId]);
+
+  function startEditingOrder() {
+    setEditItems(
+      order.items.map((item) => ({
+        id: item.id,
+        variantId: item.variantId ?? null,
+        title: item.title,
+        price: Number(item.price).toFixed(2),
+        quantity: String(item.quantity),
+        query: item.title,
+        isSearchOpen: false,
+      })),
+    );
+    setEditShippingCost(Number(order.shipping).toFixed(2));
+    setEditTaxCost(Number(order.tax).toFixed(2));
+    setEditShippingAddr(toAddressFormState(parseAddress(order.shippingAddress)));
+    setEditBillingAddr(toAddressFormState(parseAddress(order.billingAddress)));
+    setSaveStatus(null);
+    setIsEditingOrder(true);
+  }
+
+  function updateEditItem(index: number, patch: Partial<EditableOrderItem>) {
+    setEditItems((current) =>
+      current.map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+    );
+  }
+
+  const editSubtotal = useMemo(() => {
+    return editItems.reduce((sum, item) => {
+      const price = Number.parseFloat(item.price);
+      const qty = Number.parseInt(item.quantity, 10);
+      return Number.isFinite(price) && price >= 0 && Number.isFinite(qty) && qty >= 1
+        ? sum + price * qty
+        : sum;
+    }, 0);
+  }, [editItems]);
+
+  const editTotal = useMemo(() => {
+    return editSubtotal + (Number.parseFloat(editShippingCost) || 0) + (Number.parseFloat(editTaxCost) || 0);
+  }, [editSubtotal, editShippingCost, editTaxCost]);
+
+  async function handleSaveOrderDetails() {
+    if (editItems.length === 0 || editItems.some((item) => !item.title.trim() || (Number.parseInt(item.quantity, 10) || 0) < 1)) {
+      setSaveStatus(
+        isEs
+          ? "Cada artículo debe tener un nombre y una cantidad de al menos 1."
+          : "Each item must have a title and a quantity of at least 1.",
+      );
+      return;
+    }
+
+    setIsSavingOrderEdits(true);
+    setSaveStatus(null);
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          items: editItems.map((item) => ({
+            variantId: item.variantId,
+            title: item.title.trim(),
+            price: Number.parseFloat(item.price) || 0,
+            quantity: Math.max(1, Number.parseInt(item.quantity, 10) || 1),
+          })),
+          shipping: Number.parseFloat(editShippingCost) || 0,
+          tax: Number.parseFloat(editTaxCost) || 0,
+          shippingAddress: serializeAddressForm(editShippingAddr),
+          billingAddress: serializeAddressForm(editBillingAddr),
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || (isEs ? "No se pudo actualizar el pedido" : "Failed to update order"));
+      }
+
+      setOrder((current) => ({
+        ...current,
+        subtotal: payload.order.subtotal ?? current.subtotal,
+        tax: payload.order.tax ?? current.tax,
+        shipping: payload.order.shipping ?? current.shipping,
+        total: payload.order.total ?? current.total,
+        shippingAddress: payload.order.shippingAddress,
+        billingAddress: payload.order.billingAddress,
+        items: payload.order.items ?? current.items,
+      }));
+      setIsEditingOrder(false);
+      setSaveStatus(
+        isEs
+          ? "¡Detalles del pedido actualizados con éxito!"
+          : "Order details updated successfully!",
+      );
+      router.refresh();
+    } catch (error) {
+      setSaveStatus(
+        error instanceof Error
+          ? error.message
+          : isEs
+            ? "Error al guardar los cambios del pedido"
+            : "Failed to save order changes",
+      );
+    } finally {
+      setIsSavingOrderEdits(false);
+    }
+  }
 
   const getStatusLabel = (s: string) => {
     if (!isEs) return s;
@@ -278,23 +516,41 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
-            {order.paymentStatus !== "REFUNDED" ? (
+            {isEditableOrder && !isEditingOrder ? (
               <button
                 type="button"
-                onClick={handleQuickRefundAndRestock}
+                onClick={startEditingOrder}
                 disabled={isSaving}
-                className="inline-flex items-center gap-2 rounded-full border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 shadow-sm disabled:opacity-50"
-                title={isEs ? "Reembolsar y Reingresar Unidades al Stock en 1 clic" : "Refund and restock inventory in 1-click"}
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 shadow-sm disabled:opacity-50 cursor-pointer"
               >
-                <RotateCcw className="h-4 w-4 text-purple-600" />
-                {isEs ? "Reembolsar y Devolver al Stock" : "Refund & Restock Units"}
+                <Pencil className="h-4 w-4 text-cyan-700" />
+                {isEs ? "Editar Pedido" : "Edit Order"}
               </button>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700">
-                <RotateCcw className="h-3.5 w-3.5 text-purple-600" />
-                {isEs ? "Reembolsado y Restituido" : "Refunded & Restocked"}
-              </span>
-            )}
+            ) : null}
+            {isEditableOrder && isEditingOrder ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveOrderDetails()}
+                  disabled={isSavingOrderEdits}
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  <Check className="h-4 w-4" />
+                  {isSavingOrderEdits
+                    ? isEs ? "Guardando..." : "Saving..."
+                    : isEs ? "Guardar Pedido" : "Save Order"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingOrder(false)}
+                  disabled={isSavingOrderEdits}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+                >
+                  <X className="h-4 w-4 text-slate-500" />
+                  {isEs ? "Cancelar edición" : "Cancel edit"}
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={() => window.open(`/dashboard/orders/${order.id}/invoice?autoPrint=true`, "_blank")}
@@ -324,24 +580,183 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         <div className="space-y-6">
           {/* Items Purchased */}
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              <Package className="h-4 w-4 text-slate-400" /> {isEs ? "Artículos comprados" : "Items purchased"}
-            </h2>
-            <div className="mt-4 divide-y divide-slate-100">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.title}</p>
-                    <p className="text-xs text-slate-500">
-                      {formatter.format(Number(item.price))} × {item.quantity}
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <Package className="h-4 w-4 text-slate-400" /> {isEs ? "Artículos comprados" : "Items purchased"}
+              </h2>
+              {isEditableOrder && !isEditingOrder ? (
+                <button
+                  type="button"
+                  onClick={startEditingOrder}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800 cursor-pointer"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {isEs ? "Editar productos / precios" : "Edit products / prices"}
+                </button>
+              ) : isEditingOrder ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditItems((current) => [
+                      ...current,
+                      {
+                        variantId: null,
+                        title: "",
+                        price: "0.00",
+                        quantity: "1",
+                        query: "",
+                        isSearchOpen: true,
+                      },
+                    ])
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {isEs ? "Agregar producto" : "Add product"}
+                </button>
+              ) : null}
+            </div>
+
+            {isEditingOrder ? (
+              <div className="mt-4 space-y-3">
+                <div className="hidden sm:grid sm:grid-cols-12 sm:gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-1">
+                  <span className="col-span-6">{isEs ? "Producto" : "Product"}</span>
+                  <span className="col-span-3">{isEs ? "Precio Unit." : "Unit Price"}</span>
+                  <span className="col-span-2">{isEs ? "Cant." : "Qty"}</span>
+                  <span className="col-span-1" />
+                </div>
+                {editItems.map((item, index) => {
+                  const q = item.query.trim().toLowerCase();
+                  const matches = catalogProducts
+                    .filter((p) =>
+                      [p.title, p.sku, p.barcode]
+                        .filter(Boolean)
+                        .some((v) => v?.toLowerCase().includes(q)),
+                    )
+                    .slice(0, 8);
+
+                  return (
+                    <div key={item.id ?? `new-${index}`} className="grid grid-cols-12 gap-2 items-start">
+                      <div
+                        className="relative col-span-12 sm:col-span-6"
+                        onBlur={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                            updateEditItem(index, { isSearchOpen: false });
+                          }
+                        }}
+                      >
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) =>
+                              updateEditItem(index, {
+                                title: e.target.value,
+                                query: e.target.value,
+                                isSearchOpen: true,
+                              })
+                            }
+                            onFocus={() => updateEditItem(index, { isSearchOpen: true })}
+                            placeholder={isEs ? "Buscar o escribir producto..." : "Search or enter product..."}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm outline-none focus:border-slate-400"
+                          />
+                        </div>
+                        {item.isSearchOpen && matches.length > 0 ? (
+                          <div className="absolute inset-x-0 top-full z-30 mt-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                            {matches.map((product) => (
+                              <button
+                                key={product.variantId}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() =>
+                                  updateEditItem(index, {
+                                    variantId: product.variantId,
+                                    title: product.title,
+                                    query: product.title,
+                                    price: product.price.toFixed(2),
+                                    isSearchOpen: false,
+                                  })
+                                }
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-slate-50"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate font-semibold text-slate-900">
+                                    {product.title}
+                                  </span>
+                                  {product.sku ? (
+                                    <span className="block truncate text-[11px] text-slate-500">
+                                      SKU: {product.sku}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                <span className="shrink-0 font-semibold text-slate-900">
+                                  {formatter.format(product.price)}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="col-span-6 sm:col-span-3">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.price}
+                          onChange={(e) => updateEditItem(index, { price: e.target.value })}
+                          placeholder={isEs ? "Precio" : "Price"}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+                        />
+                      </div>
+
+                      <div className="col-span-4 sm:col-span-2">
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={(e) => updateEditItem(index, { quantity: e.target.value })}
+                          placeholder={isEs ? "Cant." : "Qty"}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+                        />
+                      </div>
+
+                      <div className="col-span-2 sm:col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          disabled={editItems.length <= 1}
+                          onClick={() =>
+                            setEditItems((current) => current.filter((_, idx) => idx !== index))
+                          }
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 text-rose-600 transition hover:bg-rose-50 disabled:opacity-40"
+                          aria-label={isEs ? "Eliminar artículo" : "Remove item"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-4 divide-y divide-slate-100">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.title}</p>
+                      <p className="text-xs text-slate-500">
+                        {formatter.format(Number(item.price))} × {item.quantity}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-slate-900">
+                      {formatter.format(Number(item.price) * item.quantity)}
                     </p>
                   </div>
-                  <p className="font-semibold text-slate-900">
-                    {formatter.format(Number(item.price) * item.quantity)}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </article>
 
           {/* Customer Details */}
@@ -366,10 +781,88 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
           {/* Shipping and Billing addresses */}
           <div className="grid gap-6 md:grid-cols-2">
             <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                <MapPin className="h-4 w-4 text-slate-400" /> {isEs ? "Dirección de envío" : "Shipping address"}
-              </h2>
-              {parsedShipping && (parsedShipping.line1 || parsedShipping.city) ? (
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <MapPin className="h-4 w-4 text-slate-400" /> {isEs ? "Dirección de envío" : "Shipping address"}
+                </h2>
+                {isEditableOrder && !isEditingOrder ? (
+                  <button
+                    type="button"
+                    onClick={startEditingOrder}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800 cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    {isEs ? "Editar" : "Edit"}
+                  </button>
+                ) : null}
+              </div>
+              {isEditingOrder ? (
+                <div className="mt-4 grid grid-cols-2 gap-2.5 text-xs">
+                  <input
+                    type="text"
+                    value={editShippingAddr.firstName}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, firstName: e.target.value }))}
+                    placeholder={isEs ? "Nombre" : "First name"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.lastName}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, lastName: e.target.value }))}
+                    placeholder={isEs ? "Apellido" : "Last name"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.line1}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, line1: e.target.value }))}
+                    placeholder={isEs ? "Dirección (calle y número)" : "Street address (Line 1)"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.line2}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, line2: e.target.value }))}
+                    placeholder={isEs ? "Apto, local, referencia (opcional)" : "Apt, suite, etc. (Line 2)"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.city}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, city: e.target.value }))}
+                    placeholder={isEs ? "Ciudad" : "City"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.state}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, state: e.target.value }))}
+                    placeholder={isEs ? "Estado / Depto." : "State / Province"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.postalCode}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, postalCode: e.target.value }))}
+                    placeholder={isEs ? "Código postal" : "Postal code"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editShippingAddr.country}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, country: e.target.value }))}
+                    placeholder={isEs ? "País (ej. HN, US)" : "Country (e.g. US, HN)"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="tel"
+                    value={editShippingAddr.phone}
+                    onChange={(e) => setEditShippingAddr((s) => ({ ...s, phone: e.target.value }))}
+                    placeholder={isEs ? "Teléfono de contacto" : "Phone number"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                </div>
+              ) : parsedShipping && (parsedShipping.line1 || parsedShipping.city) ? (
                 <div className="mt-4 text-sm text-slate-700 space-y-1">
                   <p className="font-medium text-slate-950">
                     {[parsedShipping.firstName, parsedShipping.lastName].filter(Boolean).join(" ") || (isEs ? "Cliente" : "Customer")}
@@ -389,10 +882,96 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             </article>
 
             <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                <CreditCard className="h-4 w-4 text-slate-400" /> {isEs ? "Dirección de facturación" : "Billing address"}
-              </h2>
-              {parsedBilling && (parsedBilling.line1 || parsedBilling.city) ? (
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <CreditCard className="h-4 w-4 text-slate-400" /> {isEs ? "Dirección de facturación" : "Billing address"}
+                </h2>
+                {isEditableOrder && !isEditingOrder ? (
+                  <button
+                    type="button"
+                    onClick={startEditingOrder}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800 cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    {isEs ? "Editar" : "Edit"}
+                  </button>
+                ) : isEditingOrder ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditBillingAddr({ ...editShippingAddr })}
+                    className="text-xs font-semibold text-cyan-700 hover:underline"
+                  >
+                    {isEs ? "Copiar de envío" : "Copy shipping"}
+                  </button>
+                ) : null}
+              </div>
+              {isEditingOrder ? (
+                <div className="mt-4 grid grid-cols-2 gap-2.5 text-xs">
+                  <input
+                    type="text"
+                    value={editBillingAddr.firstName}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, firstName: e.target.value }))}
+                    placeholder={isEs ? "Nombre" : "First name"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.lastName}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, lastName: e.target.value }))}
+                    placeholder={isEs ? "Apellido" : "Last name"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.line1}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, line1: e.target.value }))}
+                    placeholder={isEs ? "Dirección (calle y número)" : "Street address (Line 1)"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.line2}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, line2: e.target.value }))}
+                    placeholder={isEs ? "Apto, local, referencia (opcional)" : "Apt, suite, etc. (Line 2)"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.city}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, city: e.target.value }))}
+                    placeholder={isEs ? "Ciudad" : "City"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.state}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, state: e.target.value }))}
+                    placeholder={isEs ? "Estado / Depto." : "State / Province"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.postalCode}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, postalCode: e.target.value }))}
+                    placeholder={isEs ? "Código postal" : "Postal code"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={editBillingAddr.country}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, country: e.target.value }))}
+                    placeholder={isEs ? "País (ej. HN, US)" : "Country (e.g. US, HN)"}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                  <input
+                    type="tel"
+                    value={editBillingAddr.phone}
+                    onChange={(e) => setEditBillingAddr((s) => ({ ...s, phone: e.target.value }))}
+                    placeholder={isEs ? "Teléfono de contacto" : "Phone number"}
+                    className="col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400"
+                  />
+                </div>
+              ) : parsedBilling && (parsedBilling.line1 || parsedBilling.city) ? (
                 <div className="mt-4 text-sm text-slate-700 space-y-1">
                   <p className="font-medium text-slate-950">
                     {[parsedBilling.firstName, parsedBilling.lastName].filter(Boolean).join(" ") || (isEs ? "Cliente" : "Customer")}
@@ -604,27 +1183,94 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
 
           {/* Financial Summary */}
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {isEs ? "Resumen financiero" : "Financial summary"}
-            </h2>
-            <div className="mt-4 space-y-2.5 text-sm text-slate-700">
-              <div className="flex justify-between">
-                <span>{isEs ? "Subtotal" : "Subtotal"}</span>
-                <span>{formatter.format(Number(order.subtotal))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{isEs ? "Envío" : "Shipping"}</span>
-                <span>{formatter.format(Number(order.shipping))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{isEs ? "Impuestos" : "Tax"}</span>
-                <span>{formatter.format(Number(order.tax))}</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-100 pt-2.5 font-bold text-slate-950 text-base">
-                <span>{isEs ? "Total" : "Total"}</span>
-                <span>{formatter.format(Number(order.total))}</span>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                {isEs ? "Resumen financiero" : "Financial summary"}
+              </h2>
+              {isEditableOrder && !isEditingOrder ? (
+                <button
+                  type="button"
+                  onClick={startEditingOrder}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800 cursor-pointer"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {isEs ? "Editar" : "Edit"}
+                </button>
+              ) : null}
             </div>
+            {isEditingOrder ? (
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
+                <div className="flex items-center justify-between">
+                  <span>{isEs ? "Subtotal" : "Subtotal"}</span>
+                  <span className="font-semibold text-slate-900">{formatter.format(editSubtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>{isEs ? "Envío" : "Shipping"}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editShippingCost}
+                    onChange={(e) => setEditShippingCost(e.target.value)}
+                    className="w-28 rounded-xl border border-slate-200 px-3 py-1.5 text-right text-sm outline-none focus:border-slate-400"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>{isEs ? "Impuestos" : "Tax"}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editTaxCost}
+                    onChange={(e) => setEditTaxCost(e.target.value)}
+                    className="w-28 rounded-xl border border-slate-200 px-3 py-1.5 text-right text-sm outline-none focus:border-slate-400"
+                  />
+                </div>
+                <div className="flex justify-between border-t border-slate-100 pt-2.5 font-bold text-slate-950 text-base">
+                  <span>{isEs ? "Total" : "Total"}</span>
+                  <span>{formatter.format(editTotal)}</span>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isSavingOrderEdits}
+                    onClick={() => setIsEditingOrder(false)}
+                    className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {isEs ? "Cancelar" : "Cancel"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSavingOrderEdits}
+                    onClick={() => void handleSaveOrderDetails()}
+                    className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {isSavingOrderEdits
+                      ? isEs ? "Guardando..." : "Saving..."
+                      : isEs ? "Guardar cambios del pedido" : "Save order edits"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-2.5 text-sm text-slate-700">
+                <div className="flex justify-between">
+                  <span>{isEs ? "Subtotal" : "Subtotal"}</span>
+                  <span>{formatter.format(Number(order.subtotal))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{isEs ? "Envío" : "Shipping"}</span>
+                  <span>{formatter.format(Number(order.shipping))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{isEs ? "Impuestos" : "Tax"}</span>
+                  <span>{formatter.format(Number(order.tax))}</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-100 pt-2.5 font-bold text-slate-950 text-base">
+                  <span>{isEs ? "Total" : "Total"}</span>
+                  <span>{formatter.format(Number(order.total))}</span>
+                </div>
+              </div>
+            )}
           </article>
         </div>
       </div>

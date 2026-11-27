@@ -99,11 +99,16 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
   const serializedOrder = JSON.parse(
     JSON.stringify({
       id: order.id,
+      storeId: (order as any).storeId,
       orderNumber: order.orderNumber,
       customerEmail: order.customerEmail,
       status: order.status,
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
+      paymentProvider: (order as any).paymentProvider ?? "manual",
+      stripeSessionId: (order as any).stripeSessionId ?? null,
+      stripePaymentId: (order as any).stripePaymentId ?? null,
+      gatewayTransactionId: (order as any).gatewayTransactionId ?? null,
       trackingNumber: order.trackingNumber,
       trackingCarrier: order.trackingCarrier,
       trackingUrl: order.trackingUrl,
@@ -121,6 +126,7 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
       createdAt: order.createdAt.toISOString(),
       items: order.items.map((item) => ({
         id: item.id,
+        variantId: (item as any).variantId ?? null,
         title: item.title,
         price: item.price.toString(),
         quantity: item.quantity,

@@ -196,3 +196,10 @@ button.rounded-lg,
 a.rounded-lg {
   border-radius: 8px !important;
 }
+
+/* Show pointer hand cursor on hover for all interactive buttons and links */
+a,
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
