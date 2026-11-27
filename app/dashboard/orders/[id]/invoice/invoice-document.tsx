@@ -167,7 +167,7 @@ export function InvoiceDocument({
       {/* Standard Letter Page Sheet */}
       <div
         id="invoice-paper"
-        className="mx-auto w-full max-w-[816px] min-h-[1056px] rounded-lg border border-slate-200 bg-white p-8 sm:p-12 shadow-xl print:m-0 print:w-full print:max-w-none print:min-h-0 print:rounded-none print:border-none print:p-0 print:shadow-none font-sans text-slate-900"
+        className="mx-auto flex flex-col w-full max-w-[816px] min-h-[1056px] rounded-lg border border-slate-200 bg-white p-8 sm:p-12 shadow-xl print:m-0 print:w-full print:max-w-none print:min-h-[265mm] print:rounded-none print:border-none print:p-0 print:shadow-none font-sans text-slate-900"
       >
         {/* Invoice Header */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-6 border-b-2 border-slate-900 pb-8">
@@ -327,73 +327,80 @@ export function InvoiceDocument({
           </table>
         </div>
 
-        {/* Calculations / Summary */}
-        <div className="mt-8 flex justify-end">
-          <div className="w-full sm:w-72 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span>
-                {order.taxIncluded
-                  ? (isEs ? "Subtotal (impuestos incluidos)" : "Subtotal (tax included)")
-                  : "Subtotal"}
-              </span>
-              <span className="font-medium text-slate-800">{formatter.format(Number(order.subtotal))}</span>
-            </div>
+        {/* Bottom-Anchored Calculations / Summary & Business Footer */}
+        <div className="mt-auto pt-10">
+          <div className="flex justify-end border-t border-slate-200 pt-4">
+            <div className="w-full sm:w-72 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>
+                  {order.taxIncluded
+                    ? (isEs ? "Subtotal (impuestos incluidos)" : "Subtotal (tax included)")
+                    : "Subtotal"}
+                </span>
+                <span className="font-medium text-slate-800">{formatter.format(Number(order.subtotal))}</span>
+              </div>
 
-            {Number(order.shipping) > 0 && (
               <div className="flex justify-between text-slate-600">
                 <span>{isEs ? "Envío" : "Shipping"}</span>
                 <span className="font-medium text-slate-800">{formatter.format(Number(order.shipping))}</span>
               </div>
-            )}
 
-            {order.taxIncluded ? (
-              <>
-                {itemTaxTotal > 0 && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>{isEs ? "Impuesto incluido en artículos" : "Tax included in items"}</span>
-                    <span className="font-medium text-slate-800">{formatter.format(itemTaxTotal)}</span>
-                  </div>
-                )}
-                {shippingTax > 0 && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>{isEs ? "Impuesto de envío" : "Shipping tax"}</span>
-                    <span className="font-medium text-slate-800">{formatter.format(shippingTax)}</span>
-                  </div>
-                )}
-              </>
-            ) : Number(order.tax) > 0 ? (
-              <div className="flex justify-between text-slate-600">
-                <span>{isEs ? "Impuestos" : "Tax"}</span>
-                <span className="font-medium text-slate-800">{formatter.format(Number(order.tax))}</span>
+              {order.taxIncluded ? (
+                <>
+                  {itemTaxTotal > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>{isEs ? "Impuesto incluido en artículos" : "Tax included in items"}</span>
+                      <span className="font-medium text-slate-800">{formatter.format(itemTaxTotal)}</span>
+                    </div>
+                  )}
+                  {shippingTax > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>{isEs ? "Impuesto de envío" : "Shipping tax"}</span>
+                      <span className="font-medium text-slate-800">{formatter.format(shippingTax)}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between text-slate-600">
+                  <span>{isEs ? "Impuestos" : "Tax"}</span>
+                  <span className="font-medium text-slate-800">{formatter.format(Number(order.tax))}</span>
+                </div>
+              )}
+
+              <div className="border-t-2 border-slate-900 pt-3 flex justify-between text-sm sm:text-base font-black text-slate-950">
+                <span>{isEs ? "TOTAL" : "TOTAL"}</span>
+                <span>{formatter.format(Number(order.total))}</span>
               </div>
-            ) : null}
-
-            <div className="border-t-2 border-slate-900 pt-3 flex justify-between text-sm sm:text-base font-black text-slate-950">
-              <span>{isEs ? "TOTAL" : "TOTAL"}</span>
-              <span>{formatter.format(Number(order.total))}</span>
             </div>
           </div>
-        </div>
 
-        {/* Terms & Footer Note */}
-        <div className="mt-14 border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
-          {order.store.invoiceFooterText ? (
-            <p className="whitespace-pre-line font-medium text-slate-800 leading-relaxed">
-              {order.store.invoiceFooterText}
-            </p>
-          ) : (
-            <p className="font-medium text-slate-800">
-              {isEs
-                ? `¡Gracias por tu compra en ${order.store.name}!`
-                : `Thank you for shopping with ${order.store.name}!`}
-            </p>
-          )}
+          {/* Terms, Business Info & Credits Footer */}
+          <div className="mt-8 border-t border-slate-200 pt-5 text-center text-xs text-slate-500 space-y-1.5">
+            {order.store.invoiceFooterText ? (
+              <p className="whitespace-pre-line font-semibold text-slate-800 leading-relaxed">
+                {order.store.invoiceFooterText}
+              </p>
+            ) : (
+              <p className="font-semibold text-slate-800">
+                {isEs ? "¡Gracias por su preferencia!" : "Thank you for your business!"}
+              </p>
+            )}
 
-          <p className="mt-2 text-[11px] text-slate-400">
-            {isEs
-              ? `Para consultas sobre esta factura, contáctenos en ${order.store.senderEmail || "atención al cliente"}.`
-              : `For questions regarding this invoice, please contact ${order.store.senderEmail || "customer support"}.`}
-          </p>
+            <p className="text-[11px] text-slate-600">
+              {[
+                order.store.name,
+                storeContact.address ? storeContact.address.replace(/\r?\n/g, ", ") : null,
+                order.store.senderEmail ? `Email: ${order.store.senderEmail}` : null,
+                storeContact.phone ? `${isEs ? "Tel" : "Phone"}: ${storeContact.phone}` : null,
+              ]
+                .filter(Boolean)
+                .join("  •  ")}
+            </p>
+
+            <p className="text-left text-[10px] font-normal text-slate-400/80">
+              Powered by Prado Commerce
+            </p>
+          </div>
         </div>
       </div>
 

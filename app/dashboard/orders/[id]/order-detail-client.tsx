@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer, RotateCcw, Pencil, Plus, Trash2, Search, Check, X } from "lucide-react";
+import { Clock, CreditCard, Mail, Phone, MapPin, Package, Truck, Printer, RotateCcw, Pencil, Plus, Trash2, Search, Check, X, ChevronDown, Download, Send, Loader2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 type Address = {
@@ -188,6 +188,8 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
 
   const [isEditingOrder, setIsEditingOrder] = useState(false);
   const [isSavingOrderEdits, setIsSavingOrderEdits] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<CatalogProductOption[]>([]);
   const [editItems, setEditItems] = useState<EditableOrderItem[]>(() =>
     initialOrder.items.map((item) => ({
@@ -493,6 +495,210 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
 
   const storeContact = parseOriginContact(order.store.shippingOrigin);
 
+  async function handleSendInvoiceEmail() {
+    setIsActionsMenuOpen(false);
+    setIsSendingInvoice(true);
+    setSaveStatus(null);
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sendInvoice: true }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          payload.error ||
+            (isEs ? "No se pudo enviar la factura por correo" : "Failed to send invoice email"),
+        );
+      }
+      setSaveStatus(
+        isEs
+          ? `¡Factura enviada con éxito a ${order.customerEmail}!`
+          : `Invoice sent successfully to ${order.customerEmail}!`,
+      );
+    } catch (error) {
+      setSaveStatus(
+        error instanceof Error
+          ? error.message
+          : isEs
+            ? "Error al enviar la factura por correo"
+            : "Failed to send invoice email",
+      );
+    } finally {
+      setIsSendingInvoice(false);
+    }
+  }
+
+  function handleDownloadInvoicePdf() {
+    setIsActionsMenuOpen(false);
+    const invoiceNum = `${(order.store.invoicePrefix || "INV-").trim()}${order.orderNumber}`;
+    const toLatin1 = (text: string) =>
+      text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]/g, " ")
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)");
+
+    const cmds: string[] = [];
+    const drawText = (x: number, y: number, size: number, bold: boolean, text: string) => {
+      cmds.push(`BT /${bold ? "F2" : "F1"} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${toLatin1(text)}) Tj ET`);
+    };
+    const drawLine = (x1: number, y1: number, x2: number, y2: number, width = 0.75) => {
+      cmds.push(`${width} w ${x1} ${y1} m ${x2} ${y2} l S`);
+    };
+
+    // Header
+    drawText(50, 740, 18, true, order.store.name.toUpperCase());
+    if (order.store.senderEmail) drawText(50, 722, 9, false, `Email: ${order.store.senderEmail}`);
+    if (storeContact.phone) drawText(50, 710, 9, false, `Tel: ${storeContact.phone}`);
+
+    drawText(450, 740, 18, true, isEs ? "FACTURA" : "INVOICE");
+    drawText(450, 722, 11, true, `#${invoiceNum}`);
+    drawText(450, 708, 9, false, `${isEs ? "Fecha" : "Date"}: ${new Date(order.createdAt).toLocaleDateString()}`);
+
+    drawLine(50, 692, 562, 692, 1.5);
+
+    // Addresses
+    drawText(50, 672, 9, true, isEs ? "FACTURAR A:" : "BILLED TO:");
+    const billName =
+      [parsedBilling?.firstName, parsedBilling?.lastName].filter(Boolean).join(" ") ||
+      [parsedShipping?.firstName, parsedShipping?.lastName].filter(Boolean).join(" ") ||
+      order.customerEmail;
+    drawText(50, 658, 10, true, billName);
+    drawText(50, 645, 9, false, order.customerEmail);
+    if (parsedBilling?.line1) drawText(50, 632, 9, false, parsedBilling.line1);
+    if (parsedBilling?.city || parsedBilling?.state) {
+      drawText(
+        50,
+        619,
+        9,
+        false,
+        [parsedBilling?.city, parsedBilling?.state, parsedBilling?.postalCode, parsedBilling?.country]
+          .filter(Boolean)
+          .join(", "),
+      );
+    }
+
+    drawText(310, 672, 9, true, isEs ? "ENVIAR A:" : "SHIPPED TO:");
+    if (parsedShipping && (parsedShipping.line1 || parsedShipping.city)) {
+      const shipName =
+        [parsedShipping.firstName, parsedShipping.lastName].filter(Boolean).join(" ") || billName;
+      drawText(310, 658, 10, true, shipName);
+      if (parsedShipping.line1) drawText(310, 645, 9, false, parsedShipping.line1);
+      drawText(
+        310,
+        632,
+        9,
+        false,
+        [parsedShipping.city, parsedShipping.state, parsedShipping.postalCode, parsedShipping.country]
+          .filter(Boolean)
+          .join(", "),
+      );
+      if (parsedShipping.phone) drawText(310, 619, 9, false, `Tel: ${parsedShipping.phone}`);
+    } else {
+      drawText(310, 658, 9, false, isEs ? "Igual que facturacion" : "Same as billing address");
+    }
+
+    drawLine(50, 600, 562, 600, 0.75);
+
+    // Items Table Header
+    let y = 580;
+    drawText(50, y, 9, true, isEs ? "ARTICULO" : "ITEM DESCRIPTION");
+    drawText(360, y, 9, true, isEs ? "CANT." : "QTY");
+    drawText(420, y, 9, true, isEs ? "PRECIO" : "UNIT PRICE");
+    drawText(500, y, 9, true, isEs ? "TOTAL" : "AMOUNT");
+    drawLine(50, y - 8, 562, y - 8, 1);
+
+    y -= 24;
+    for (const item of order.items.slice(0, 18)) {
+      const unitPrice = Number(item.price);
+      const lineTotal = unitPrice * item.quantity;
+      drawText(50, y, 9.5, false, item.title.slice(0, 52));
+      drawText(365, y, 9.5, false, String(item.quantity));
+      drawText(420, y, 9.5, false, `${order.currency} ${unitPrice.toFixed(2)}`);
+      drawText(500, y, 9.5, true, `${order.currency} ${lineTotal.toFixed(2)}`);
+      drawLine(50, y - 7, 562, y - 7, 0.3);
+      y -= 20;
+    }
+
+    // Bottom-anchored Totals Block (above footer)
+    let totalsY = Math.min(y - 14, 182);
+    drawLine(375, totalsY + 14, 562, totalsY + 14, 0.5);
+    drawText(390, totalsY, 10, false, "Subtotal:");
+    drawText(485, totalsY, 10, false, `${order.currency} ${Number(order.subtotal).toFixed(2)}`);
+    totalsY -= 16;
+    drawText(390, totalsY, 10, false, isEs ? "Envio:" : "Shipping:");
+    drawText(485, totalsY, 10, false, `${order.currency} ${Number(order.shipping).toFixed(2)}`);
+    totalsY -= 16;
+    drawText(390, totalsY, 10, false, isEs ? "Impuestos:" : "Tax:");
+    drawText(485, totalsY, 10, false, `${order.currency} ${Number(order.tax).toFixed(2)}`);
+    totalsY -= 8;
+    drawLine(390, totalsY, 562, totalsY, 1.2);
+    totalsY -= 16;
+    drawText(390, totalsY, 11, true, "TOTAL:");
+    drawText(485, totalsY, 11, true, `${order.currency} ${Number(order.total).toFixed(2)}`);
+
+    // Bottom Footer with Store / Business Details & Credits
+    drawLine(50, 96, 562, 96, 0.75);
+    const footerNote = order.store.invoiceFooterText
+      ? order.store.invoiceFooterText.replace(/\r?\n/g, " · ").slice(0, 95)
+      : isEs
+        ? "Gracias por su preferencia!"
+        : "Thank you for your business!";
+    drawText(50, 80, 9.5, true, footerNote);
+
+    const businessDetails = [
+      order.store.name,
+      storeContact.address ? storeContact.address.replace(/\r?\n/g, ", ") : "",
+      order.store.senderEmail ? `Email: ${order.store.senderEmail}` : "",
+      storeContact.phone ? `Tel: ${storeContact.phone}` : "",
+    ]
+      .filter(Boolean)
+      .join("  |  ")
+      .slice(0, 110);
+    drawText(50, 65, 8.5, false, businessDetails);
+
+    cmds.push("0.58 0.64 0.72 rg");
+    drawText(50, 50, 7.5, false, "Powered by Prado Commerce");
+    cmds.push("0 0 0 rg");
+
+    const stream = cmds.join("\n");
+    const objects = [
+      "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+      "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+      "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n",
+      "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
+      "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
+      `6 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`,
+    ];
+
+    let pdf = "%PDF-1.4\n";
+    const offsets: number[] = [0];
+    for (const obj of objects) {
+      offsets.push(pdf.length);
+      pdf += obj;
+    }
+    const xrefStart = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    for (let i = 1; i <= objects.length; i++) {
+      pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${invoiceNum}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <section className="min-w-0 space-y-6 print:hidden">
@@ -516,17 +722,6 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
-            {isEditableOrder && !isEditingOrder ? (
-              <button
-                type="button"
-                onClick={startEditingOrder}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 rounded-full border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                <Pencil className="h-4 w-4 text-cyan-700" />
-                {isEs ? "Editar Pedido" : "Edit Order"}
-              </button>
-            ) : null}
             {isEditableOrder && isEditingOrder ? (
               <>
                 <button
@@ -551,14 +746,96 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
                 </button>
               </>
             ) : null}
-            <button
-              type="button"
-              onClick={() => window.open(`/dashboard/orders/${order.id}/invoice?autoPrint=true`, "_blank")}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
+            <div
+              className="relative"
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setIsActionsMenuOpen(false);
+                }
+              }}
             >
-              <Printer className="h-4 w-4 text-slate-600" />
-              {isEs ? "Imprimir Factura" : "Print Invoice"}
-            </button>
+              <button
+                type="button"
+                disabled={isSendingInvoice}
+                onClick={() => setIsActionsMenuOpen((open) => !open)}
+                aria-expanded={isActionsMenuOpen}
+                aria-haspopup="menu"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSendingInvoice ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                    <span>{isEs ? "Enviando..." : "Sending..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{isEs ? "Acciones" : "Actions"}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-slate-500 transition-transform ${
+                        isActionsMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </>
+                )}
+              </button>
+
+              {isActionsMenuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-40 mt-1.5 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+                >
+                  {isEditableOrder ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        startEditingOrder();
+                      }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Pencil className="h-4 w-4 text-cyan-600" />
+                      <span>{isEs ? "Editar Pedido" : "Edit Order"}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      window.open(`/dashboard/orders/${order.id}/invoice?autoPrint=true`, "_blank");
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Printer className="h-4 w-4 text-slate-500" />
+                    <span>{isEs ? "Imprimir" : "Print"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleDownloadInvoicePdf}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Download className="h-4 w-4 text-slate-500" />
+                    <span>{isEs ? "Descargar PDF" : "Download PDF"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={isSendingInvoice}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => void handleSendInvoiceEmail()}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4 text-cyan-600" />
+                    <span>{isEs ? "Enviar" : "Send"}</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               onClick={() => router.back()}
@@ -1366,36 +1643,50 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
         </table>
       </div>
 
-      {/* Financial Totals */}
-      <div className="mt-6 flex justify-end border-t border-slate-300 pt-4">
-        <div className="w-64 space-y-2 text-sm text-slate-700">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span className="font-medium text-slate-900">{formatter.format(Number(order.subtotal))}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Shipping:</span>
-            <span className="font-medium text-slate-900">{formatter.format(Number(order.shipping))}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tax:</span>
-            <span className="font-medium text-slate-900">{formatter.format(Number(order.tax))}</span>
-          </div>
-          <div className="flex justify-between border-t border-slate-400 pt-2 text-base font-bold text-slate-950">
-            <span>Total Paid:</span>
-            <span>{formatter.format(Number(order.total))}</span>
+      {/* Bottom-Anchored Financial Totals & Business Footer */}
+      <div className="mt-auto pt-10">
+        <div className="flex justify-end border-t border-slate-300 pt-4">
+          <div className="w-64 space-y-2 text-sm text-slate-700">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span className="font-medium text-slate-900">{formatter.format(Number(order.subtotal))}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Shipping:</span>
+              <span className="font-medium text-slate-900">{formatter.format(Number(order.shipping))}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax:</span>
+              <span className="font-medium text-slate-900">{formatter.format(Number(order.tax))}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-400 pt-2 text-base font-bold text-slate-950">
+              <span>Total:</span>
+              <span>{formatter.format(Number(order.total))}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
-        {order.store.invoiceFooterText ? (
-          <p className="whitespace-pre-line font-medium text-slate-700">{order.store.invoiceFooterText}</p>
-        ) : (
-          <p className="font-medium text-slate-700">Thank you for shopping with {order.store.name}!</p>
-        )}
-        <p className="mt-1">If you have any questions about this invoice, please contact {order.store.senderEmail || "customer support"}.</p>
+        {/* Footer */}
+        <div className="mt-8 border-t border-slate-200 pt-5 text-center text-xs text-slate-500 space-y-1.5">
+          {order.store.invoiceFooterText ? (
+            <p className="whitespace-pre-line font-semibold text-slate-800">{order.store.invoiceFooterText}</p>
+          ) : (
+            <p className="font-semibold text-slate-800">Thank you for your business!</p>
+          )}
+          <p className="text-[11px] text-slate-600">
+            {[
+              order.store.name,
+              storeContact.address ? storeContact.address.replace(/\r?\n/g, ", ") : null,
+              order.store.senderEmail ? `Email: ${order.store.senderEmail}` : null,
+              storeContact.phone ? `Tel: ${storeContact.phone}` : null,
+            ]
+              .filter(Boolean)
+              .join("  •  ")}
+          </p>
+          <p className="text-left text-[10px] font-normal text-slate-400/80">
+            Powered by Prado Commerce
+          </p>
+        </div>
       </div>
     </div>
 

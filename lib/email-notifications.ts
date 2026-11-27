@@ -35,8 +35,12 @@ type InvoiceEmailInput = {
   to: string;
   firstName?: string | null;
   orderNumber: number;
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
   total: number;
   currency: string;
+  items?: Array<{ title: string; quantity: number; price: number }>;
 };
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -456,17 +460,54 @@ export async function sendOrderConfirmationEmail(input: OrderConfirmationEmailIn
 }
 
 export async function sendInvoiceEmail(input: InvoiceEmailInput) {
+  const itemsTableHtml =
+    input.items && input.items.length > 0
+      ? `
+      <table role="presentation" style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0;">
+        <thead>
+          <tr style="background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;">
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #e2e8f0;">Item</th>
+            <th style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0;">Qty</th>
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0;">Price</th>
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${input.items
+            .map(
+              (item) => `
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #f1f5f9;">${escapeHtml(item.title)}</td>
+              <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:center;">${item.quantity}</td>
+              <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;">${formatMoney(input.currency, item.price)}</td>
+              <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;">${formatMoney(input.currency, item.price * item.quantity)}</td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>`
+      : "";
+
+  const breakdownHtml =
+    typeof input.subtotal === "number"
+      ? `<p style="margin:0 0 4px 0;"><strong>Subtotal:</strong> ${formatMoney(input.currency, input.subtotal)}</p>
+         ${typeof input.shipping === "number" && input.shipping > 0 ? `<p style="margin:0 0 4px 0;"><strong>Shipping:</strong> ${formatMoney(input.currency, input.shipping)}</p>` : ""}
+         ${typeof input.tax === "number" && input.tax > 0 ? `<p style="margin:0 0 8px 0;"><strong>Tax:</strong> ${formatMoney(input.currency, input.tax)}</p>` : ""}`
+      : "";
+
   const html = baseHtmlShell(
     input.store,
     `Invoice for order #${input.orderNumber}`,
     `<p style="margin:0 0 12px 0;">Hi ${displayName(input.firstName)},</p>
-     <p style="margin:0 0 12px 0;">Your invoice is ready for order #${input.orderNumber}.</p>
-     <p style="margin:0 0 12px 0;"><strong>Amount:</strong> ${formatMoney(input.currency, input.total)}</p>
-     <p style="margin:0;">Thank you for shopping with ${input.store.name}.</p>`,
+     <p style="margin:0 0 12px 0;">Here is the invoice for your order #${input.orderNumber} from <strong>${escapeHtml(input.store.name)}</strong>.</p>
+     ${itemsTableHtml}
+     ${breakdownHtml}
+     <p style="margin:0 0 12px 0;font-size:16px;"><strong>Total Amount:</strong> ${formatMoney(input.currency, input.total)}</p>
+     <p style="margin:0;">Thank you for shopping with ${escapeHtml(input.store.name)}.</p>`,
     "View storefront",
   );
 
-  await sendEmail(input.store, input.to, `Invoice for order #${input.orderNumber}`, html);
+  return await sendEmail(input.store, input.to, `Invoice for order #${input.orderNumber}`, html);
 }
 
 function escapeHtml(value: string) {

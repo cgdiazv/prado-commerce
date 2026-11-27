@@ -67,6 +67,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       shipping,
       tax,
       items,
+      sendInvoice,
     } = body as {
       status?: string;
       paymentStatus?: string;
@@ -76,6 +77,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       billingAddress?: unknown;
       shipping?: number | string;
       tax?: number | string;
+      sendInvoice?: boolean;
       items?: Array<{
         variantId?: string | null;
         title?: unknown;
@@ -235,7 +237,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       updates.total = Math.round((nextSubtotal + nextShipping + taxToAdd) * 100) / 100;
     }
 
-    if (Object.keys(updates).length === 0 && !restock && !parsedEditItems) {
+    if (Object.keys(updates).length === 0 && !restock && !parsedEditItems && !sendInvoice) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
@@ -324,20 +326,34 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     const becamePaid = updates.paymentStatus === "PAID" && order.paymentStatus !== "PAID";
     const becameCompleted = updates.status === "COMPLETED" && order.status !== "COMPLETED";
 
-    if (becamePaid || becameCompleted) {
+    if (sendInvoice || becamePaid || becameCompleted) {
       const storeConfig = await getStoreEmailConfig(order.storeId);
 
-      if (storeConfig?.invoiceEmailEnabled) {
+      if (storeConfig && (sendInvoice || storeConfig.invoiceEmailEnabled)) {
         try {
           await sendInvoiceEmail({
             store: storeConfig,
             to: order.customerEmail,
             orderNumber: updatedOrder.orderNumber,
+            subtotal: Number(updatedOrder.subtotal),
+            tax: Number(updatedOrder.tax),
+            shipping: Number(updatedOrder.shipping),
             total: Number(updatedOrder.total),
             currency: updatedOrder.currency,
+            items: updatedOrder.items.map((item) => ({
+              title: item.title,
+              quantity: item.quantity,
+              price: Number(item.price),
+            })),
           });
         } catch (emailError) {
           console.error("[INVOICE_EMAIL_ERROR]", emailError);
+          if (sendInvoice) {
+            return NextResponse.json(
+              { error: emailError instanceof Error ? emailError.message : "Failed to send invoice email" },
+              { status: 500 },
+            );
+          }
         }
       }
     }
