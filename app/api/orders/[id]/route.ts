@@ -340,6 +340,9 @@ export async function PATCH(req: Request, { params }: RouteContext) {
             shipping: Number(updatedOrder.shipping),
             total: Number(updatedOrder.total),
             currency: updatedOrder.currency,
+            createdAt: updatedOrder.createdAt,
+            shippingAddress: updatedOrder.shippingAddress,
+            billingAddress: updatedOrder.billingAddress,
             items: updatedOrder.items.map((item) => ({
               title: item.title,
               quantity: item.quantity,

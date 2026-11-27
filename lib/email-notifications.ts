@@ -13,6 +13,9 @@ export type StoreEmailConfig = {
   senderName: string | null;
   senderEmail: string | null;
   replyToEmail: string | null;
+  invoicePrefix?: string | null;
+  invoiceFooterText?: string | null;
+  shippingOrigin?: unknown;
 };
 
 export type WelcomeEmailInput = {
@@ -40,6 +43,9 @@ type InvoiceEmailInput = {
   shipping?: number;
   total: number;
   currency: string;
+  createdAt?: Date | string | null;
+  shippingAddress?: unknown;
+  billingAddress?: unknown;
   items?: Array<{ title: string; quantity: number; price: number }>;
 };
 
@@ -263,7 +269,13 @@ function baseHtmlShell(store: StoreEmailConfig, heading: string, bodyHtml: strin
   `;
 }
 
-async function sendEmail(store: StoreEmailConfig, to: string, subject: string, html: string) {
+async function sendEmail(
+  store: StoreEmailConfig,
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: Array<{ filename: string; content: Buffer }>,
+) {
   if (!resend) {
     console.warn("[EMAIL_NOTIFICATIONS_DISABLED] RESEND_API_KEY is not configured.");
     return { ok: true, simulated: true };
@@ -275,6 +287,10 @@ async function sendEmail(store: StoreEmailConfig, to: string, subject: string, h
     subject,
     html,
   };
+
+  if (attachments && attachments.length > 0) {
+    payload.attachments = attachments;
+  }
 
   const replyTo = getReplyTo(store);
   if (replyTo) {
@@ -300,6 +316,9 @@ export async function getStoreEmailConfig(storeId: string): Promise<StoreEmailCo
         senderName: true,
         senderEmail: true,
         replyToEmail: true,
+        invoicePrefix: true,
+        invoiceFooterText: true,
+        shippingOrigin: true,
       },
     });
 
@@ -459,6 +478,185 @@ export async function sendOrderConfirmationEmail(input: OrderConfirmationEmailIn
   await sendEmail(input.store, input.to, `Order #${input.orderNumber} confirmed`, html);
 }
 
+function buildInvoicePdfAttachment(input: InvoiceEmailInput): { filename: string; content: Buffer } {
+  const invoiceNum = `${(input.store.invoicePrefix || "INV-").trim()}${input.orderNumber}`;
+  const toLatin1 = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x20-\x7E]/g, " ")
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)");
+
+  const parseAddr = (value: unknown) =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, string | undefined>)
+      : null;
+
+  let originAddress = "";
+  let originPhone = "";
+  if (input.store.shippingOrigin && typeof input.store.shippingOrigin === "object") {
+    const o = input.store.shippingOrigin as Record<string, unknown>;
+    if (typeof o.address === "string") originAddress = o.address;
+    if (typeof o.phone === "string") originPhone = o.phone;
+  }
+
+  const parsedBilling = parseAddr(input.billingAddress);
+  const parsedShipping = parseAddr(input.shippingAddress);
+
+  const cmds: string[] = [];
+  const drawText = (x: number, y: number, size: number, bold: boolean, text: string) => {
+    cmds.push(`BT /${bold ? "F2" : "F1"} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${toLatin1(text)}) Tj ET`);
+  };
+  const drawLine = (x1: number, y1: number, x2: number, y2: number, width = 0.75) => {
+    cmds.push(`${width} w ${x1} ${y1} m ${x2} ${y2} l S`);
+  };
+
+  const issuedDate = input.createdAt ? new Date(input.createdAt) : new Date();
+
+  drawText(50, 740, 18, true, input.store.name.toUpperCase());
+  if (input.store.senderEmail) drawText(50, 722, 9, false, `Email: ${input.store.senderEmail}`);
+  if (originPhone) drawText(50, 710, 9, false, `Tel: ${originPhone}`);
+
+  drawText(450, 740, 18, true, "INVOICE");
+  drawText(450, 722, 11, true, `#${invoiceNum}`);
+  drawText(450, 708, 9, false, `Date: ${issuedDate.toLocaleDateString("en-US")}`);
+
+  drawLine(50, 692, 562, 692, 1.5);
+
+  drawText(50, 672, 9, true, "BILLED TO:");
+  const billName =
+    [parsedBilling?.firstName, parsedBilling?.lastName].filter(Boolean).join(" ") ||
+    [parsedShipping?.firstName, parsedShipping?.lastName].filter(Boolean).join(" ") ||
+    input.firstName?.trim() ||
+    input.to;
+  drawText(50, 658, 10, true, billName);
+  drawText(50, 645, 9, false, input.to);
+  if (parsedBilling?.line1) drawText(50, 632, 9, false, parsedBilling.line1);
+  if (parsedBilling?.city || parsedBilling?.state) {
+    drawText(
+      50,
+      619,
+      9,
+      false,
+      [parsedBilling?.city, parsedBilling?.state, parsedBilling?.postalCode, parsedBilling?.country]
+        .filter(Boolean)
+        .join(", "),
+    );
+  }
+
+  drawText(310, 672, 9, true, "SHIPPED TO:");
+  if (parsedShipping && (parsedShipping.line1 || parsedShipping.city)) {
+    const shipName =
+      [parsedShipping.firstName, parsedShipping.lastName].filter(Boolean).join(" ") || billName;
+    drawText(310, 658, 10, true, shipName);
+    if (parsedShipping.line1) drawText(310, 645, 9, false, parsedShipping.line1);
+    drawText(
+      310,
+      632,
+      9,
+      false,
+      [parsedShipping.city, parsedShipping.state, parsedShipping.postalCode, parsedShipping.country]
+        .filter(Boolean)
+        .join(", "),
+    );
+    if (parsedShipping.phone) drawText(310, 619, 9, false, `Tel: ${parsedShipping.phone}`);
+  } else {
+    drawText(310, 658, 9, false, "Same as billing address");
+  }
+
+  drawLine(50, 600, 562, 600, 0.75);
+
+  let y = 580;
+  drawText(50, y, 9, true, "ITEM DESCRIPTION");
+  drawText(360, y, 9, true, "QTY");
+  drawText(420, y, 9, true, "UNIT PRICE");
+  drawText(500, y, 9, true, "AMOUNT");
+  drawLine(50, y - 8, 562, y - 8, 1);
+
+  y -= 24;
+  for (const item of (input.items || []).slice(0, 18)) {
+    const unitPrice = Number(item.price);
+    const lineTotal = unitPrice * item.quantity;
+    drawText(50, y, 9.5, false, item.title.slice(0, 52));
+    drawText(365, y, 9.5, false, String(item.quantity));
+    drawText(420, y, 9.5, false, `${input.currency} ${unitPrice.toFixed(2)}`);
+    drawText(500, y, 9.5, true, `${input.currency} ${lineTotal.toFixed(2)}`);
+    drawLine(50, y - 7, 562, y - 7, 0.3);
+    y -= 20;
+  }
+
+  let totalsY = Math.min(y - 14, 182);
+  const subVal = typeof input.subtotal === "number" ? input.subtotal : input.total;
+  const shipVal = typeof input.shipping === "number" ? input.shipping : 0;
+  const taxVal = typeof input.tax === "number" ? input.tax : 0;
+
+  drawLine(375, totalsY + 14, 562, totalsY + 14, 0.5);
+  drawText(390, totalsY, 10, false, "Subtotal:");
+  drawText(485, totalsY, 10, false, `${input.currency} ${subVal.toFixed(2)}`);
+  totalsY -= 16;
+  drawText(390, totalsY, 10, false, "Shipping:");
+  drawText(485, totalsY, 10, false, `${input.currency} ${shipVal.toFixed(2)}`);
+  totalsY -= 16;
+  drawText(390, totalsY, 10, false, "Tax:");
+  drawText(485, totalsY, 10, false, `${input.currency} ${taxVal.toFixed(2)}`);
+  totalsY -= 8;
+  drawLine(390, totalsY, 562, totalsY, 1.2);
+  totalsY -= 16;
+  drawText(390, totalsY, 11, true, "TOTAL:");
+  drawText(485, totalsY, 11, true, `${input.currency} ${Number(input.total).toFixed(2)}`);
+
+  drawLine(50, 96, 562, 96, 0.75);
+  const footerNote = input.store.invoiceFooterText
+    ? input.store.invoiceFooterText.replace(/\r?\n/g, " · ").slice(0, 95)
+    : "Thank you for your business!";
+  drawText(50, 80, 9.5, true, footerNote);
+
+  const businessDetails = [
+    input.store.name,
+    originAddress ? originAddress.replace(/\r?\n/g, ", ") : "",
+    input.store.senderEmail ? `Email: ${input.store.senderEmail}` : "",
+    originPhone ? `Tel: ${originPhone}` : "",
+  ]
+    .filter(Boolean)
+    .join("  |  ")
+    .slice(0, 110);
+  drawText(50, 65, 8.5, false, businessDetails);
+
+  cmds.push("0.58 0.64 0.72 rg");
+  drawText(50, 50, 7.5, false, "Powered by Prado Commerce");
+  cmds.push("0 0 0 rg");
+
+  const stream = cmds.join("\n");
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
+    "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
+    `6 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`,
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [0];
+  for (const obj of objects) {
+    offsets.push(pdf.length);
+    pdf += obj;
+  }
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) {
+    pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return {
+    filename: `${invoiceNum}.pdf`,
+    content: Buffer.from(pdf, "latin1"),
+  };
+}
+
 export async function sendInvoiceEmail(input: InvoiceEmailInput) {
   const itemsTableHtml =
     input.items && input.items.length > 0
@@ -507,7 +705,15 @@ export async function sendInvoiceEmail(input: InvoiceEmailInput) {
     "View storefront",
   );
 
-  return await sendEmail(input.store, input.to, `Invoice for order #${input.orderNumber}`, html);
+  const pdfAttachment = buildInvoicePdfAttachment(input);
+
+  return await sendEmail(
+    input.store,
+    input.to,
+    `Invoice for order #${input.orderNumber}`,
+    html,
+    [pdfAttachment],
+  );
 }
 
 function escapeHtml(value: string) {
