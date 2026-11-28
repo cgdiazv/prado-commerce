@@ -749,6 +749,9 @@ export function CustomersDashboard({
                       </button>
                     </th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      {isEs ? "Tienda" : "Store"}
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("email")}
@@ -815,11 +818,9 @@ export function CustomersDashboard({
                         </td>
                         <td className="px-4 py-3 align-top text-xs text-slate-700">
                           <div>{fullName || "-"}</div>
-                          {activeStoreId === "ALL" && stores.length > 1 && (
-                            <div className="text-[11px] text-slate-400 font-normal">
-                              {stores.find((s) => s.id === customer.storeId)?.name}
-                            </div>
-                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top text-xs text-slate-700">
+                          {stores.find((s) => s.id === customer.storeId)?.name || "—"}
                         </td>
                         <td className="px-4 py-3 align-top text-xs text-slate-700">{customer.email}</td>
                         <td className="px-4 py-3 align-top text-xs text-slate-700">{customer.phone || "-"}</td>

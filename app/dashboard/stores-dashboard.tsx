@@ -284,6 +284,7 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                     <thead className="bg-slate-50">
                       <tr>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Tienda" : "Store"}</th>
+                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Slug</th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Dominio" : "Domain"}</th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Moneda" : "Currency"}</th>
                         <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Zona horaria" : "Timezone"}</th>
@@ -301,11 +302,13 @@ export function StoresDashboard({ initialStores, currentPlan = "STARTER", setupE
                             <td className="px-4 py-3 align-top text-xs text-slate-700">
                               <Link
                                 href={`/dashboard/stores/${store.id}`}
-                                className="hover:text-slate-900 hover:underline"
+                                className="font-semibold text-slate-900 hover:underline"
                               >
-                                <div>{store.name}</div>
-                                <div className="text-slate-500">/{store.slug}</div>
+                                {store.name}
                               </Link>
+                            </td>
+                            <td className="px-4 py-3 align-top text-xs text-slate-500">
+                              /{store.slug}
                             </td>
                             <td className="px-4 py-3 align-top text-xs text-slate-700">
                               <a

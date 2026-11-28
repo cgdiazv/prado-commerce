@@ -423,23 +423,23 @@ export function OrdersDashboard({
         </div>
       ) : null}
 
-      <div className="min-w-0 space-y-4">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="min-w-0 space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {isEs ? "Administrador de Pedidos" : "Orders Manager"}
             </h1>
-            <p className="mt-1 max-w-xl text-sm text-slate-500">
+            <p className="mt-0.5 max-w-xl text-sm text-slate-500">
               {isEs
                 ? "Administra y rastrea todos los pedidos de tus clientes aquí."
                 : "Manage and track all your customer orders here."}
             </p>
           </div>
 
-          <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
             <Link
               href={posHref}
-              className="hidden items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm lg:inline-flex"
+              className="hidden items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-400 shadow-sm lg:inline-flex"
             >
               <Store className="h-4 w-4 text-cyan-600" />
               {isEs ? "Punto de Venta (POS)" : "Point of Sale (POS)"}
@@ -447,7 +447,7 @@ export function OrdersDashboard({
 
             <Link
               href={createHref}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               {isEs ? "Nuevo pedido" : "New order"}
@@ -456,15 +456,15 @@ export function OrdersDashboard({
         </div>
 
         {/* Desktop Controls (lg+) */}
-        <div className="mt-6 hidden w-full flex-col gap-4 lg:flex lg:flex-row lg:items-center">
-          <div className="w-full shrink-0 lg:w-56">
+        <div className="hidden w-full flex-col gap-2.5 lg:flex lg:flex-row lg:items-center">
+          <div className="w-full shrink-0 lg:w-52">
             <div className="relative">
-              <Store className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <select
                 value={activeStoreId}
                 onChange={(event) => void handleStoreChange(event.target.value)}
                 aria-label={isEs ? "Seleccionar tienda" : "Select store"}
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 shadow-2xs appearance-none cursor-pointer"
               >
                 <option value="ALL">{isEs ? "Todas las tiendas" : "All Stores"}</option>
                 {stores.map((store) => (
@@ -478,7 +478,7 @@ export function OrdersDashboard({
           </div>
 
           <label className="relative w-full min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
               aria-label={isEs ? "Buscar" : "Search"}
@@ -488,11 +488,11 @@ export function OrdersDashboard({
                 setCurrentPage(1);
               }}
               placeholder={isEs ? "Cliente, estado o pago" : "Customer, status, or payment"}
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
             />
           </label>
 
-          <div className="flex w-full items-center gap-3 shrink-0 lg:ml-auto lg:w-auto">
+          <div className="flex w-full items-center gap-2 shrink-0 lg:ml-auto lg:w-auto">
             <button
               type="button"
               onClick={() => void handleApplyBulkAction()}
@@ -744,7 +744,7 @@ export function OrdersDashboard({
           </div>
         ) : null}
 
-        <div className="mt-8 min-w-0 overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <div className="min-w-0 overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
           {totalOrders === 0 ? (
             <div className="p-10 text-center text-slate-500">
               {searchQuery.trim()

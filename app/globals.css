@@ -203,3 +203,126 @@ button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]) {
   cursor: pointer;
 }
+
+/* Global compact spacing & padding across dashboard containers and elements */
+[data-route-kind="dashboard"] .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-block-start: 0.875rem !important;
+  margin-block-end: 0px !important;
+}
+
+[data-route-kind="dashboard"] .space-y-6 > :not([hidden]) ~ :not([hidden]),
+[data-route-kind="dashboard"] .space-y-5 > :not([hidden]) ~ :not([hidden]),
+[data-route-kind="dashboard"] .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-block-start: 0.75rem !important;
+  margin-block-end: 0px !important;
+}
+
+[data-route-kind="dashboard"] .mt-10,
+[data-route-kind="dashboard"] .mt-8,
+[data-route-kind="dashboard"] .mt-6 {
+  margin-top: 0.75rem !important;
+}
+
+[data-route-kind="dashboard"] .mb-10,
+[data-route-kind="dashboard"] .mb-8,
+[data-route-kind="dashboard"] .mb-6 {
+  margin-bottom: 0.75rem !important;
+}
+
+[data-route-kind="dashboard"] .gap-8,
+[data-route-kind="dashboard"] .gap-6 {
+  gap: 0.75rem !important;
+}
+
+[data-route-kind="dashboard"] .gap-5,
+[data-route-kind="dashboard"] .gap-4 {
+  gap: 0.625rem !important;
+}
+
+[data-route-kind="dashboard"] .p-8,
+[data-route-kind="dashboard"] .p-6 {
+  padding: 0.875rem !important;
+}
+
+[data-route-kind="dashboard"] .p-5 {
+  padding: 0.75rem !important;
+}
+
+[data-route-kind="dashboard"] .py-10,
+[data-route-kind="dashboard"] .py-8 {
+  padding-top: 0.875rem !important;
+  padding-bottom: 0.875rem !important;
+}
+
+/* Unified Orders Table format & style across all tables in the site */
+[data-route-kind="dashboard"] table:not(.print\:block *) {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) thead {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) thead th {
+  padding: 0.625rem 0.875rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  white-space: nowrap;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) thead th button {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody {
+  background-color: #ffffff;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody tr {
+  transition: background-color 150ms ease;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody tr:hover {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody td {
+  padding: 0.625rem 0.875rem !important;
+  vertical-align: middle !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody td .text-sm,
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody td .text-base {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody td span.rounded-full,
+[data-route-kind="dashboard"] table:not(.print\:block *) tbody td span.rounded-md {
+  border-radius: 6px !important;
+  padding: 0.125rem 0.5rem !important;
+  font-size: 11px !important;
+  line-height: 1.125rem !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+

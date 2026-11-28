@@ -355,6 +355,11 @@ export default function POListClient({
                     </button>
                   </th>
 
+                  {/* 2. Store */}
+                  <th className="px-5 py-3.5">
+                    {isEs ? "Tienda" : "Store"}
+                  </th>
+
                   {/* 2. Vendor */}
                   <th className="px-5 py-3.5">
                     <button
@@ -365,6 +370,11 @@ export default function POListClient({
                       {isEs ? "Proveedor" : "Vendor"}
                       <SortIndicator active={sortField === "vendor"} direction={sortDirection} />
                     </button>
+                  </th>
+
+                  {/* 3. Email */}
+                  <th className="px-5 py-3.5">
+                    {isEs ? "Correo" : "Email"}
                   </th>
 
                   {/* 3. Created date */}
@@ -436,18 +446,24 @@ export default function POListClient({
                     <tr key={po.id} className="transition hover:bg-slate-50/80">
                       {/* 1. PO No. */}
                       <td className="px-5 py-4 text-xs text-slate-700">
-                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="hover:text-slate-900 hover:underline">
+                        <Link href={`/dashboard/procurement/purchase-orders/${po.id}`} className="font-semibold text-slate-900 hover:underline">
                           {po.poNumber}
                         </Link>
-                        <p className="text-slate-500">{po.store.name}</p>
+                      </td>
+
+                      {/* 2. Store */}
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        {po.store.name}
                       </td>
 
                       {/* 2. Vendor */}
                       <td className="px-5 py-4 text-xs text-slate-700">
                         <div>{po.vendor.name}</div>
-                        {po.vendor.contactEmail && (
-                          <p className="text-slate-500">{po.vendor.contactEmail}</p>
-                        )}
+                      </td>
+
+                      {/* 3. Email */}
+                      <td className="px-5 py-4 text-xs text-slate-700">
+                        {po.vendor.contactEmail || "—"}
                       </td>
 
                       {/* 3. Created date */}

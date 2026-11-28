@@ -355,7 +355,6 @@ export default function DashboardLayout({
       label: t.dashboard.procurement,
       icon: Truck,
       children: [
-        { href: "/dashboard/procurement", label: t.dashboard.procurementOverview },
         { href: "/dashboard/procurement/purchase-orders", label: t.dashboard.purchaseOrders },
         { href: "/dashboard/procurement/receipts", label: t.dashboard.receivingHistory },
         { href: "/dashboard/procurement/vendors", label: t.dashboard.vendors },
@@ -689,7 +688,11 @@ export default function DashboardLayout({
                                 ? pathname.startsWith("/dashboard/orders/quotes")
                                 : child.href === "/dashboard/orders/consignments"
                                   ? pathname.startsWith("/dashboard/orders/consignments") || pathname.startsWith("/dashboard/consignments")
-                                  : pathname === "/dashboard/orders"
+                                  : child.href === "/dashboard/orders/abandoned-carts"
+                                    ? pathname.startsWith("/dashboard/orders/abandoned-carts")
+                                    : child.href === "/dashboard/orders/refunds"
+                                      ? pathname.startsWith("/dashboard/orders/refunds")
+                                      : child.href === "/dashboard/orders" && pathname === "/dashboard/orders"
                           : item.href === "/dashboard/products"
                             ? child.href === "/dashboard/products/new"
                               ? pathname === "/dashboard/products/new"
@@ -712,9 +715,11 @@ export default function DashboardLayout({
                                 : child.href.endsWith("/pages")
                                   ? pathname.startsWith("/dashboard/stores/") && pathname.endsWith("/pages")
                                   : pathname === "/dashboard/stores"
-                              : item.href === "/dashboard/tools"
-                                ? pathname === child.href
-                              : pathname === child.href;
+                              : item.href === "/dashboard/procurement"
+                                ? pathname.startsWith(child.href)
+                                : item.href === "/dashboard/tools"
+                                  ? pathname === child.href
+                                : pathname === child.href;
 
                       return (
                         <Link
@@ -1129,22 +1134,8 @@ export default function DashboardLayout({
           </aside>
         )}
 
-        <main className={`min-w-0 flex-1 bg-[#f8fafc] px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 print:bg-white print:p-0 ${currentUser?.isCashier ? "!px-3 !py-4 sm:!px-6" : ""}`}>
-          <div
-            className={`flex min-w-0 w-full flex-col ${
-              pathname === "/dashboard" ||
-              pathname.startsWith("/dashboard/stores") ||
-              pathname.startsWith("/dashboard/products") ||
-              pathname.startsWith("/dashboard/orders") ||
-              pathname.startsWith("/dashboard/procurement") ||
-              pathname.startsWith("/dashboard/reports") ||
-              pathname.startsWith("/dashboard/customers") ||
-              pathname.startsWith("/dashboard/help") ||
-              pathname.startsWith("/dashboard/settings/pos")
-                ? ""
-                : "mx-auto max-w-4xl"
-            }`}
-          >
+        <main className={`min-w-0 flex-1 bg-[#f8fafc] px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-4 print:bg-white print:p-0 ${currentUser?.isCashier ? "!px-3 !py-3 sm:!px-4" : ""}`}>
+          <div className="flex min-w-0 w-full flex-col">
             {currentUser?.isTrial && currentUser?.trialStartsAt && (
               <Suspense fallback={null}>
                 <TrialBanner

@@ -27,6 +27,7 @@ export default async function QuotesPage({ searchParams }: Props) {
     quoteNumber: number;
     customerEmail: string;
     customerName: string | null;
+    customerPhone: string | null;
     status: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CONVERTED";
     total: string;
     currency: string;
@@ -57,7 +58,7 @@ export default async function QuotesPage({ searchParams }: Props) {
         storeId: true,
         quoteNumber: true,
         customerEmail: true,
-        customer: { select: { firstName: true, lastName: true } },
+        customer: { select: { firstName: true, lastName: true, phone: true } },
         status: true,
         total: true,
         currency: true,
@@ -71,6 +72,7 @@ export default async function QuotesPage({ searchParams }: Props) {
           customerName:
             [quote.customer?.firstName, quote.customer?.lastName].filter(Boolean).join(" ") ||
             null,
+          customerPhone: quote.customer?.phone ?? null,
           total: quote.total.toString(),
           validUntil: quote.validUntil?.toISOString() ?? null,
           createdAt: quote.createdAt.toISOString(),

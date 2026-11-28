@@ -418,16 +418,16 @@ export function AbandonedCartsDashboard({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+              <thead className="bg-slate-100/80 text-xs font-semibold text-slate-600">
                 <tr>
-                  <th className="px-4 py-3">{isEs ? "Fecha" : "Date"}</th>
-                  <th className="px-4 py-3">{isEs ? "Carrito" : "Cart"}</th>
-                  <th className="px-4 py-3">{isEs ? "Cliente" : "Customer"}</th>
-                  <th className="px-4 py-3">{isEs ? "Estado" : "Status"}</th>
-                  <th className="px-4 py-3">{isEs ? "Artículos" : "Items"}</th>
-                  <th className="px-4 py-3 text-right">{isEs ? "Valor" : "Value"}</th>
-                  <th className="px-4 py-3 text-right">{isEs ? "Acciones" : "Actions"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Fecha" : "Date"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Carrito" : "Cart"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Cliente" : "Customer"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Estado" : "Status"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Artículos" : "Items"}</th>
+                  <th className="px-3.5 py-2.5 text-right">{isEs ? "Valor" : "Value"}</th>
+                  <th className="px-3.5 py-2.5 text-right">{isEs ? "Acciones" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

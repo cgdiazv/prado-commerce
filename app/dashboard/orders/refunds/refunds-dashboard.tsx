@@ -558,16 +558,16 @@ export function RefundsDashboard({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+              <thead className="bg-slate-100/80 text-xs font-semibold text-slate-600">
                 <tr>
-                  <th className="px-4 py-3">{isEs ? "Fecha" : "Date"}</th>
-                  <th className="px-4 py-3">{isEs ? "Reembolso" : "Refund"}</th>
-                  <th className="px-4 py-3">{isEs ? "Pedido" : "Order"}</th>
-                  <th className="px-4 py-3">{isEs ? "Tipo" : "Type"}</th>
-                  <th className="px-4 py-3">{isEs ? "Motivo / Notas" : "Reason / Notes"}</th>
-                  <th className="px-4 py-3 text-right">{isEs ? "Monto" : "Amount"}</th>
-                  <th className="px-4 py-3 text-right">{isEs ? "Acciones" : "Actions"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Fecha" : "Date"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Reembolso" : "Refund"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Pedido" : "Order"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Tipo" : "Type"}</th>
+                  <th className="px-3.5 py-2.5">{isEs ? "Motivo / Notas" : "Reason / Notes"}</th>
+                  <th className="px-3.5 py-2.5 text-right">{isEs ? "Monto" : "Amount"}</th>
+                  <th className="px-3.5 py-2.5 text-right">{isEs ? "Acciones" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

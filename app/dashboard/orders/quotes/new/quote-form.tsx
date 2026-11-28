@@ -579,21 +579,21 @@ export function QuoteForm({
             <span className="text-sm font-medium text-slate-700">{isEs ? "Válida hasta" : "Valid until"}</span>
             <input type="date" value={validUntil} disabled={isReadOnly} onChange={(event) => setValidUntil(event.target.value)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-500" />
           </label>
-          {isEditing && !isReadOnly ? (
-            <label className="flex flex-col gap-2">
+          {isEditing ? (
+            <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-slate-700">{isEs ? "Estado" : "Status"}</span>
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as QuoteStatus)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-              >
-                <option value="DRAFT">{isEs ? "Borrador" : "Draft"}</option>
-                <option value="SENT">{isEs ? "Enviada" : "Sent"}</option>
-                <option value="ACCEPTED">{isEs ? "Aceptada" : "Accepted"}</option>
-                <option value="REJECTED">{isEs ? "Rechazada" : "Rejected"}</option>
-                <option value="EXPIRED">{isEs ? "Vencida" : "Expired"}</option>
-              </select>
-            </label>
+              <div className="flex h-[46px] items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                {status === "SENT"
+                  ? isEs ? "Enviada" : "Sent"
+                  : status === "CONVERTED" || status === "ACCEPTED"
+                    ? isEs ? "Convertida" : "Converted"
+                    : status === "REJECTED"
+                      ? isEs ? "Rechazada" : "Rejected"
+                      : status === "EXPIRED"
+                        ? isEs ? "Vencida" : "Expired"
+                        : isEs ? "Borrador" : "Draft"}
+              </div>
+            </div>
           ) : null}
         </div>
 

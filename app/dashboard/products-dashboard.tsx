@@ -1087,6 +1087,8 @@ export function ProductsDashboard({
                           <SortIndicator active={sortKey === "name"} direction={sortDirection} />
                         </button>
                       </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Slug</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">{isEs ? "Tienda" : "Store"}</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("featured")} className="flex items-center gap-1 transition hover:text-slate-950">
                           {isEs ? "Destacado" : "Featured"}
@@ -1098,6 +1100,9 @@ export function ProductsDashboard({
                           SKU
                           <SortIndicator active={sortKey === "sku"} direction={sortDirection} />
                         </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                        {isEs ? "Código de barra" : "Barcode"}
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">
                         <button type="button" onClick={() => handleSort("inventory")} className="flex items-center gap-1 transition hover:text-slate-950">
@@ -1193,14 +1198,14 @@ export function ProductsDashboard({
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">
                             <p className="font-medium text-slate-900">{product.title}</p>
-                            <p className="text-slate-500">
-                              /{product.slug}
-                              {activeStoreId === "ALL" && stores.length > 1 && product.storeId && (
-                                <span className="ml-1 text-slate-400">
-                                  • {stores.find((s) => s.id === product.storeId)?.name}
-                                </span>
-                              )}
-                            </p>
+                          </td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-500">
+                            /{product.slug}
+                          </td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">
+                            {product.storeId
+                              ? stores.find((s) => s.id === product.storeId)?.name || "—"
+                              : stores[0]?.name || "—"}
                           </td>
                           <td className="px-4 py-3 align-top">
                             <button
@@ -1225,11 +1230,15 @@ export function ProductsDashboard({
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">
                             <span className="font-medium text-slate-900">{displaySku}</span>
-                            {displayBarcode && (
-                              <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-slate-500" title={isEs ? "Código de barra" : "Barcode"}>
+                          </td>
+                          <td className="px-4 py-3 align-top text-xs text-slate-700">
+                            {displayBarcode ? (
+                              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600">
                                 <ScanBarcode className="h-3 w-3 shrink-0 text-slate-400" />
                                 <span className="truncate max-w-[130px]">{displayBarcode}</span>
-                              </p>
+                              </span>
+                            ) : (
+                              "—"
                             )}
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-slate-700">{inventoryTotal}</td>

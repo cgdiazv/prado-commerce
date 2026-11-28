@@ -942,6 +942,8 @@ export default function ReportsDashboardClient({
                 <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   <tr>
                     <th className="px-5 py-3.5">{isEs ? "Cliente" : "Customer"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Correo" : "Email"}</th>
+                    <th className="px-5 py-3.5">{isEs ? "Teléfono" : "Phone"}</th>
                     <th className="px-5 py-3.5">{isEs ? "Total Comprado" : "Total Spent"}</th>
                     <th className="px-5 py-3.5">{isEs ? "Pedidos" : "Orders"}</th>
                     <th className="px-5 py-3.5">{isEs ? "Ventas Anuales (Desglose)" : "Annual Breakdown"}</th>
@@ -961,11 +963,17 @@ export default function ReportsDashboardClient({
                         <tr className="hover:bg-slate-50/60 transition">
                           {/* Customer */}
                           <td className="px-5 py-4 text-xs text-slate-700">
-                            <div>{customer.customerName}</div>
-                            <div className="text-slate-500">{customer.customerEmail}</div>
-                            {customer.customerPhone && (
-                              <div className="text-slate-400">{customer.customerPhone}</div>
-                            )}
+                            <div className="font-medium text-slate-900">{customer.customerName}</div>
+                          </td>
+
+                          {/* Email */}
+                          <td className="px-5 py-4 text-xs text-slate-700">
+                            {customer.customerEmail || "—"}
+                          </td>
+
+                          {/* Phone */}
+                          <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-700">
+                            {customer.customerPhone || "—"}
                           </td>
 
                           {/* Total Spent */}
@@ -1020,7 +1028,7 @@ export default function ReportsDashboardClient({
                         {/* Expanded Orders and Products History */}
                         {isExpanded && (
                           <tr className="bg-slate-50/80">
-                            <td colSpan={6} className="px-6 py-4">
+                            <td colSpan={8} className="px-6 py-4">
                               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-5">
                                 {/* Aggregated Purchased Products by Customer */}
                                 <div>
@@ -1354,6 +1362,8 @@ export default function ReportsDashboardClient({
                   <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <tr>
                       <th className="px-5 py-3.5">{isEs ? "Producto" : "Product"}</th>
+                      <th className="px-5 py-3.5">SKU</th>
+                      <th className="px-5 py-3.5">{isEs ? "Tienda" : "Store"}</th>
                       <th className="px-5 py-3.5">{isEs ? "Categoría" : "Category"}</th>
                       <th className="px-5 py-3.5">{isEs ? "Stock" : "Stock"}</th>
                       <th className="px-5 py-3.5">{isEs ? "Costo Unit." : "Unit Cost"}</th>
@@ -1373,12 +1383,12 @@ export default function ReportsDashboardClient({
                           >
                             {item.title}
                           </Link>
-                          <div className="text-slate-500 mt-0.5">
-                            {item.sku ? `SKU: ${item.sku}` : isEs ? "Sin SKU" : "No SKU"}
-                            {selectedStoreId === "ALL" && stores.length > 1 && (
-                              <span className="ml-1 text-slate-400">• {item.storeName}</span>
-                            )}
-                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600">
+                          {item.sku || "—"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600">
+                          {item.storeName || "—"}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600">
                           {item.categoryName || (isEs ? "Sin categoría" : "Uncategorized")}

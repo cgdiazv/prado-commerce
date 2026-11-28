@@ -1,31 +1,45 @@
 "use client";
 
+import { useState } from "react";
+import { LifeBuoy } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { HelpdeskTicketForm } from "./helpdesk-ticket-form";
 
 export default function DashboardHelpPage() {
   const { language } = useLanguage();
   const isEs = language === "es";
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          {isEs ? "Centro de Ayuda del Panel" : "Dashboard Help Center"}
-        </h1>
-        <p className="mt-2 text-xs font-medium tracking-[0.02em] text-slate-500">
-          {isEs ? "Última actualización: 16 de octubre de 2026" : "Last updated: October 16, 2026"}
-        </p>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          {isEs
-            ? "Encuentra orientación práctica para gestionar productos, pedidos, punto de venta (POS), compras, clientes, grupos, tiendas, facturación y la seguridad de tu cuenta en Prado Commerce."
-            : "Find practical guidance for managing products, orders, point of sale (POS), procurement, customers, groups, stores, invoicing, and account security in Prado Commerce."}
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            {isEs ? "Centro de Ayuda del Panel" : "Dashboard Help Center"}
+          </h1>
+          <p className="mt-2 text-xs font-medium tracking-[0.02em] text-slate-500">
+            {isEs ? "Última actualización: 16 de octubre de 2026" : "Last updated: October 16, 2026"}
+          </p>
+          <p className="mt-1 max-w-3xl text-sm text-slate-500">
+            {isEs
+              ? "Encuentra orientación práctica para gestionar productos, pedidos, punto de venta (POS), compras, clientes, grupos, tiendas, facturación y la seguridad de tu cuenta en Prado Commerce."
+              : "Find practical guidance for managing products, orders, point of sale (POS), procurement, customers, groups, stores, invoicing, and account security in Prado Commerce."}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsTicketModalOpen(true)}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
+        >
+          <LifeBuoy className="h-4 w-4" />
+          {isEs ? "Abrir un Ticket de Soporte" : "Open a Helpdesk Ticket"}
+        </button>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        {/* Documentation Content - Left Column */}
-        <article className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-7">
+      <div>
+        {/* Documentation Content */}
+        <article className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           {/* Latest Updates Highlight */}
           <section className="space-y-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4">
             <h2 className="text-base font-semibold text-cyan-950">
@@ -427,23 +441,43 @@ export default function DashboardHelpPage() {
           </section>
 
           {/* Need More Help */}
-          <section className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h2 className="text-base font-semibold text-slate-900">
-              {isEs ? "¿Necesitas más ayuda?" : "Need more help?"}
-            </h2>
-            <p className="text-sm text-slate-700">
-              {isEs
-                ? "Para preguntas técnicas adicionales o soporte, utiliza el formulario de la derecha para abrir un ticket o escribe directamente a support@pradocommerce.com."
-                : "For additional technical questions or support, use the form on the right to open a helpdesk ticket or email support@pradocommerce.com directly."}
-            </p>
+          <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">
+                {isEs ? "¿Necesitas más ayuda?" : "Need more help?"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-700">
+                {isEs
+                  ? "Para preguntas técnicas adicionales o soporte, abre un ticket de soporte o escribe directamente a support@pradocommerce.com."
+                  : "For additional technical questions or support, open a helpdesk ticket or email support@pradocommerce.com directly."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsTicketModalOpen(true)}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              <LifeBuoy className="h-4 w-4" />
+              {isEs ? "Abrir un Ticket de Soporte" : "Open a Helpdesk Ticket"}
+            </button>
           </section>
         </article>
-
-        {/* Helpdesk Ticket Form - Right Column */}
-        <div className="lg:sticky lg:top-20 lg:col-span-5">
-          <HelpdeskTicketForm />
-        </div>
       </div>
+
+      {/* Helpdesk Ticket Modal */}
+      {isTicketModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+          onClick={() => setIsTicketModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HelpdeskTicketForm onClose={() => setIsTicketModalOpen(false)} />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
