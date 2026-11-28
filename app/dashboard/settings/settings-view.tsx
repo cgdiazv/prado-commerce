@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { ManagePlanPanel } from "./manage-plan-panel";
 import { DeleteAccountPanel } from "./delete-account-panel";
+import { SubscriptionBillingInvoicesCard } from "./subscription-billing-invoices-card";
 
 interface SettingsViewProps {
   user: {
@@ -13,7 +14,7 @@ interface SettingsViewProps {
   } | null;
 }
 
-type SettingsTab = "general" | "security" | "api" | "account";
+type SettingsTab = "general" | "security" | "api" | "billing" | "account";
 
 export function SettingsView({ user }: SettingsViewProps) {
   const { language } = useLanguage();
@@ -113,12 +114,16 @@ export function SettingsView({ user }: SettingsViewProps) {
                   label: isEs ? "Configuración general" : "General Settings",
                 },
                 {
-                  id: "security",
-                  label: isEs ? "Seguridad" : "Security",
-                },
-                {
                   id: "api",
                   label: isEs ? "Acceso a la API" : "API Access",
+                },
+                {
+                  id: "billing",
+                  label: isEs ? "Facturación y Facturas" : "Billing & Invoices",
+                },
+                {
+                  id: "security",
+                  label: isEs ? "Seguridad" : "Security",
                 },
                 {
                   id: "account",
@@ -217,6 +222,10 @@ export function SettingsView({ user }: SettingsViewProps) {
                 </Link>
               </div>
             </article>
+          ) : null}
+
+          {activeTab === "billing" ? (
+            <SubscriptionBillingInvoicesCard currentPlan={user?.plan ?? null} />
           ) : null}
 
           {activeTab === "account" ? (
