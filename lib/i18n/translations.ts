@@ -156,6 +156,7 @@ export interface Translations {
     vendors: string;
     receivingHistory: string;
     consignments: string;
+    abandonedCarts: string;
     refunds: string;
     reports: string;
     salesByCustomer: string;
@@ -509,6 +510,7 @@ export const translations: Record<Language, Translations> = {
       vendors: "Proveedores",
       receivingHistory: "Historial de ingresos",
       consignments: "Consignaciones",
+      abandonedCarts: "Carritos abandonados",
       refunds: "Reembolsos",
       reports: "Reportes",
       salesByCustomer: "Ventas por cliente",
@@ -860,6 +862,7 @@ export const translations: Record<Language, Translations> = {
       vendors: "Vendors",
       receivingHistory: "Receiving History",
       consignments: "Consignments",
+      abandonedCarts: "Abandoned Carts",
       refunds: "Refunds",
       reports: "Reports",
       salesByCustomer: "Sales by Customer",

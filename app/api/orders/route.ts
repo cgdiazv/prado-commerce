@@ -67,6 +67,35 @@ function parseItems(value: unknown): OrderItemInput[] {
   return parsed;
 }
 
+function resolveCustomerName(order: {
+  customer?: { firstName: string | null; lastName: string | null } | null;
+  shippingAddress?: unknown;
+  billingAddress?: unknown;
+}): string | null {
+  const fromCustomer = [order.customer?.firstName, order.customer?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  if (fromCustomer) return fromCustomer;
+
+  for (const addr of [order.shippingAddress, order.billingAddress]) {
+    if (addr && typeof addr === "object" && !Array.isArray(addr)) {
+      const a = addr as { firstName?: unknown; lastName?: unknown; name?: unknown };
+      const full = [
+        typeof a.firstName === "string" ? a.firstName.trim() : "",
+        typeof a.lastName === "string" ? a.lastName.trim() : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      if (full) return full;
+      if (typeof a.name === "string" && a.name.trim()) return a.name.trim();
+    }
+  }
+
+  return null;
+}
+
 function serializeOrder(order: {
   id: string;
   storeId: string;
@@ -75,6 +104,13 @@ function serializeOrder(order: {
   customer?: { firstName: string | null; lastName: string | null } | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
   paymentStatus: "UNPAID" | "PARTIAL" | "PAID" | "REFUNDED" | "FAILED";
+  fulfillmentStatus?: "UNFULFILLED" | "SHIPPED";
+  paymentProvider?: string | null;
+  paymentMethod?: string | null;
+  trackingNumber?: string | null;
+  shippingAddress?: unknown;
+  billingAddress?: unknown;
+  items?: Array<{ quantity: number }>;
   subtotal: { toString(): string };
   tax: { toString(): string };
   shipping: { toString(): string };
@@ -82,14 +118,41 @@ function serializeOrder(order: {
   currency: string;
   createdAt: Date;
 }) {
+  const itemsCount = Array.isArray(order.items)
+    ? order.items.reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
+  const shippingNum = Number(order.shipping.toString());
+  const isPos = order.paymentProvider === "pos";
+  const channel = isPos ? "POS" : "Online Store";
+  const deliveryMethod = isPos
+    ? "In-Store Pickup"
+    : shippingNum <= 0
+      ? "Free Shipping"
+      : "Standard Shipping";
+  const fulfillmentStatus = order.fulfillmentStatus ?? "UNFULFILLED";
+  const deliveryStatus =
+    fulfillmentStatus === "SHIPPED" || order.status === "COMPLETED"
+      ? order.trackingNumber
+        ? "In transit"
+        : "Delivered"
+      : order.trackingNumber
+        ? "Tracking added"
+        : "";
+
   return {
     id: order.id,
     storeId: order.storeId,
     orderNumber: order.orderNumber,
     customerEmail: order.customerEmail,
-    customerName: [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ") || null,
+    customerName: resolveCustomerName(order),
     status: order.status,
     paymentStatus: order.paymentStatus,
+    fulfillmentStatus,
+    channel,
+    itemsCount,
+    deliveryStatus,
+    deliveryMethod,
+    tags: [] as string[],
     subtotal: order.subtotal.toString(),
     tax: order.tax.toString(),
     shipping: order.shipping.toString(),
@@ -151,12 +214,23 @@ export async function GET(request: Request) {
           },
           status: true,
           paymentStatus: true,
+          fulfillmentStatus: true,
+          paymentProvider: true,
+          paymentMethod: true,
+          trackingNumber: true,
+          shippingAddress: true,
+          billingAddress: true,
           subtotal: true,
           tax: true,
           shipping: true,
           total: true,
           currency: true,
           createdAt: true,
+          items: {
+            select: {
+              quantity: true,
+            },
+          },
         },
       });
 
@@ -190,12 +264,23 @@ export async function GET(request: Request) {
         },
         status: true,
         paymentStatus: true,
+        fulfillmentStatus: true,
+        paymentProvider: true,
+        paymentMethod: true,
+        trackingNumber: true,
+        shippingAddress: true,
+        billingAddress: true,
         subtotal: true,
         tax: true,
         shipping: true,
         total: true,
         currency: true,
         createdAt: true,
+        items: {
+          select: {
+            quantity: true,
+          },
+        },
       },
     });
 
@@ -395,12 +480,23 @@ export async function POST(request: Request) {
           customerEmail: true,
           status: true,
           paymentStatus: true,
+          fulfillmentStatus: true,
+          paymentProvider: true,
+          paymentMethod: true,
+          trackingNumber: true,
+          shippingAddress: true,
+          billingAddress: true,
           subtotal: true,
           tax: true,
           shipping: true,
           total: true,
           currency: true,
           createdAt: true,
+          items: {
+            select: {
+              quantity: true,
+            },
+          },
         },
       });
 

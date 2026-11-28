@@ -1343,4 +1343,83 @@ export async function sendCustomerBroadcastEmail(input: BroadcastEmailInput) {
   };
 }
 
+export type AbandonedCartRecoveryEmailInput = {
+  to: string;
+  customerName?: string | null;
+  customMessage?: string | null;
+  store: {
+    name: string;
+    slug: string;
+    senderName?: string | null;
+    senderEmail?: string | null;
+    replyToEmail?: string | null;
+  };
+  currency: string;
+  subtotal: number;
+  items: Array<{ title: string; quantity: number; price: number }>;
+};
+
+export async function sendAbandonedCartRecoveryEmail(
+  input: AbandonedCartRecoveryEmailInput,
+): Promise<{ simulated: boolean }> {
+  const customerName = escapeHtml(input.customerName?.trim() || "there");
+  const storeUrl = `${resolveAppBaseUrl()}/store/${encodeURIComponent(input.store.slug)}`;
+  const itemRows = input.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a;">${escapeHtml(item.title)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#475569;">${item.quantity}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0f172a;">${formatMoney(input.currency, item.price * item.quantity)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  const customNoteHtml = input.customMessage?.trim()
+    ? `<p style="margin:0 0 16px 0;padding:12px 14px;background:#f8fafc;border-left:3px solid #0f172a;color:#334155;font-size:14px;">${escapeHtml(input.customMessage.trim())}</p>`
+    : "";
+
+  const html = `
+    <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;color:#0f172a;">
+      <h2 style="margin:0 0 8px;">You left items in your cart at ${escapeHtml(input.store.name)}</h2>
+      <p style="margin:0 0 16px;color:#475569;">Hi ${customerName}, your selected items are still waiting for you:</p>
+      ${customNoteHtml}
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#f8fafc;text-align:left;">
+            <th style="padding:10px 8px;">Item</th>
+            <th style="padding:10px 8px;text-align:center;">Qty</th>
+            <th style="padding:10px 8px;text-align:right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <p style="margin:4px 0 20px;text-align:right;font-size:16px;"><strong>Cart Subtotal: ${formatMoney(input.currency, input.subtotal)}</strong></p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${storeUrl}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 24px;border-radius:8px;">Return to ${escapeHtml(input.store.name)}</a>
+      </div>
+      <p style="margin:24px 0 0;font-size:11px;color:#94a3b8;">Powered by Prado Commerce</p>
+    </div>
+  `;
+
+  const subject = `Complete your purchase at ${input.store.name}`;
+
+  if (!resend) {
+    console.log(`[SIMULATED_ABANDONED_CART_EMAIL] To: ${input.to} | Subject: ${subject}`);
+    return { simulated: true };
+  }
+
+  await resend.emails.send({
+    from: `${input.store.senderName?.trim() || input.store.name} <${SENDER_FROM_EMAIL}>`,
+    to: input.to,
+    replyTo: input.store.replyToEmail?.trim() || input.store.senderEmail?.trim() || undefined,
+    subject,
+    html,
+  });
+
+  return { simulated: false };
+}
+
+
 

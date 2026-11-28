@@ -13,14 +13,20 @@ type Store = {
   currency: string;
 };
 
-type Order = {
+export type Order = {
   id: string;
   storeId: string;
   orderNumber: number;
   customerEmail: string;
   customerName: string | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
-  paymentStatus: "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+  paymentStatus: "UNPAID" | "PARTIAL" | "PAID" | "REFUNDED" | "FAILED";
+  fulfillmentStatus?: "UNFULFILLED" | "SHIPPED";
+  channel?: string;
+  itemsCount?: number;
+  deliveryStatus?: string;
+  deliveryMethod?: string;
+  tags?: string[];
   subtotal: string;
   tax: string;
   shipping: string;
@@ -28,6 +34,48 @@ type Order = {
   currency: string;
   createdAt: string | Date;
 };
+
+function formatOrderTableDate(value: string | Date, isEs: boolean): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate();
+
+  const timeStr = date
+    .toLocaleTimeString(isEs ? "es-ES" : "en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toLowerCase();
+
+  if (isSameDay) {
+    return isEs ? `Hoy a las ${timeStr}` : `Today at ${timeStr}`;
+  }
+  if (isYesterday) {
+    return isEs ? `Ayer a las ${timeStr}` : `Yesterday at ${timeStr}`;
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const datePart = date.toLocaleDateString(isEs ? "es-ES" : "en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+
+  return isEs ? `${datePart} a las ${timeStr}` : `${datePart} at ${timeStr}`;
+}
 
 type OrdersDashboardProps = {
   initialStores: Store[];
@@ -90,8 +138,17 @@ export function OrdersDashboard({
         return true;
       }
 
-      return [order.customerName ?? "", order.customerEmail, order.status, order.paymentStatus]
-        .some((value) => value.toLowerCase().includes(normalizedQuery));
+      return [
+        `#${order.orderNumber}`,
+        String(order.orderNumber),
+        order.customerName ?? "",
+        order.customerEmail,
+        order.status,
+        order.paymentStatus,
+        order.fulfillmentStatus ?? "",
+        order.channel ?? "",
+        order.deliveryMethod ?? "",
+      ].some((value) => value.toLowerCase().includes(normalizedQuery));
     });
     
     return [...filtered].sort((a, b) => {
@@ -729,10 +786,10 @@ export function OrdersDashboard({
               </div>
 
               <div className="w-full max-w-full overflow-x-auto overscroll-x-contain">
-                <table className="min-w-[760px] divide-y divide-slate-200 text-sm md:min-w-full">
-                <thead className="bg-slate-50">
+                <table className="min-w-[1080px] divide-y divide-slate-200 text-xs md:min-w-full">
+                <thead className="bg-slate-100/80">
                   <tr>
-                    <th className="w-12 whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="w-10 whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
                       <input
                         ref={selectAllRef}
                         type="checkbox"
@@ -742,7 +799,7 @@ export function OrdersDashboard({
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                       />
                     </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("orderNumber")}
@@ -752,55 +809,70 @@ export function OrdersDashboard({
                         <SortIndicator active={sortField === "orderNumber"} direction={sortDirection} />
                       </button>
                     </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
-                      <button
-                        type="button"
-                        onClick={() => handleSort("customerEmail")}
-                        className="flex items-center gap-1 transition hover:text-slate-950"
-                      >
-                        {isEs ? "Cliente" : "Customer"}
-                        <SortIndicator active={sortField === "customerEmail"} direction={sortDirection} />
-                      </button>
-                    </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
-                      <button
-                        type="button"
-                        onClick={() => handleSort("status")}
-                        className="flex items-center gap-1 transition hover:text-slate-950"
-                      >
-                        {isEs ? "Estado" : "Status"}
-                        <SortIndicator active={sortField === "status"} direction={sortDirection} />
-                      </button>
-                    </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
-                      <button
-                        type="button"
-                        onClick={() => handleSort("paymentStatus")}
-                        className="flex items-center gap-1 transition hover:text-slate-950"
-                      >
-                        {isEs ? "Pago" : "Payment"}
-                        <SortIndicator active={sortField === "paymentStatus"} direction={sortDirection} />
-                      </button>
-                    </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
-                      <button
-                        type="button"
-                        onClick={() => handleSort("total")}
-                        className="flex items-center gap-1 transition hover:text-slate-950"
-                      >
-                        Total
-                        <SortIndicator active={sortField === "total"} direction={sortDirection} />
-                      </button>
-                    </th>
-                    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold text-slate-600">
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
                       <button
                         type="button"
                         onClick={() => handleSort("createdAt")}
                         className="flex items-center gap-1 transition hover:text-slate-950"
                       >
-                        {isEs ? "Fecha" : "Created"}
+                        {isEs ? "Fecha" : "Date"}
                         <SortIndicator active={sortField === "createdAt"} direction={sortDirection} />
                       </button>
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("customerName")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        {isEs ? "Cliente" : "Customer"}
+                        <SortIndicator active={sortField === "customerName"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      {isEs ? "Canal" : "Channel"}
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-right font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("total")}
+                        className="ml-auto flex items-center justify-end gap-1 transition hover:text-slate-950"
+                      >
+                        Total
+                        <SortIndicator active={sortField === "total"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="w-px whitespace-nowrap px-2 py-2.5 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("paymentStatus")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        {isEs ? "Estado del pago" : "Payment status"}
+                        <SortIndicator active={sortField === "paymentStatus"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="w-px whitespace-nowrap px-2 py-2.5 text-left font-semibold text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleSort("fulfillmentStatus")}
+                        className="flex items-center gap-1 transition hover:text-slate-950"
+                      >
+                        {isEs ? "Estado de preparación" : "Fulfillment status"}
+                        <SortIndicator active={sortField === "fulfillmentStatus"} direction={sortDirection} />
+                      </button>
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      {isEs ? "Artículos" : "Items"}
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      {isEs ? "Estado de entrega" : "Delivery status"}
+                    </th>
+                    <th className="whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      {isEs ? "Método de entrega" : "Delivery method"}
+                    </th>
+                    <th className="w-40 min-w-[140px] whitespace-nowrap px-3.5 py-2.5 text-left font-semibold text-slate-600">
+                      {isEs ? "Etiquetas" : "Tags"}
                     </th>
                   </tr>
                 </thead>
@@ -810,28 +882,100 @@ export function OrdersDashboard({
                       style: "currency",
                       currency: order.currency || "USD",
                     });
-                    
-                    const statusLabels: Record<string, string> = {
-                      PENDING: isEs ? "Pendiente" : "Pending",
-                      PROCESSING: isEs ? "En proceso" : "Processing",
-                      COMPLETED: isEs ? "Completado" : "Completed",
-                      CANCELLED: isEs ? "Cancelado" : "Cancelled",
-                    };
 
                     const paymentLabels: Record<string, string> = {
                       UNPAID: isEs ? "No pagado" : "Unpaid",
+                      PARTIAL: isEs ? "Parcial" : "Partially paid",
                       PAID: isEs ? "Pagado" : "Paid",
                       REFUNDED: isEs ? "Reembolsado" : "Refunded",
                       FAILED: isEs ? "Fallido" : "Failed",
                     };
 
+                    const paymentBadgeStyles: Record<string, { pill: string; dot: string }> = {
+                      UNPAID: {
+                        pill: "bg-amber-100/90 text-amber-900 border-amber-200/80",
+                        dot: "border-[1.5px] border-amber-800 bg-transparent",
+                      },
+                      PARTIAL: {
+                        pill: "bg-amber-100/90 text-amber-900 border-amber-200/80",
+                        dot: "border-[1.5px] border-amber-800 bg-amber-500/40",
+                      },
+                      PAID: {
+                        pill: "bg-slate-100 text-slate-700 border-slate-200/80",
+                        dot: "bg-slate-600",
+                      },
+                      REFUNDED: {
+                        pill: "bg-slate-100 text-slate-700 border-slate-200/80",
+                        dot: "bg-slate-500",
+                      },
+                      FAILED: {
+                        pill: "bg-rose-100 text-rose-800 border-rose-200",
+                        dot: "bg-rose-600",
+                      },
+                    };
+
+                    const isFulfilled =
+                      order.fulfillmentStatus === "SHIPPED" || order.status === "COMPLETED";
+                    const fulfillmentLabel = isFulfilled
+                      ? isEs
+                        ? "Preparado"
+                        : "Fulfilled"
+                      : isEs
+                        ? "No preparado"
+                        : "Unfulfilled";
+
+                    const itemCount = order.itemsCount ?? 0;
+                    const itemsLabel = isEs
+                      ? `${itemCount} ${itemCount === 1 ? "artículo" : "artículos"}`
+                      : `${itemCount} ${itemCount === 1 ? "item" : "items"}`;
+
+                    const channelLabel =
+                      order.channel === "POS"
+                        ? isEs
+                          ? "Punto de Venta"
+                          : "Point of Sale"
+                        : isEs
+                          ? "Tienda online"
+                          : "Online Store";
+
+                    const deliveryMethodLabel =
+                      order.deliveryMethod === "In-Store Pickup"
+                        ? isEs
+                          ? "En tienda"
+                          : "In-Store Pickup"
+                        : order.deliveryMethod === "Standard Shipping"
+                          ? isEs
+                            ? "Envío estándar"
+                            : "Standard Shipping"
+                          : isEs
+                            ? "Envío gratis"
+                            : "Free Shipping";
+
+                    const deliveryStatusLabel =
+                      order.deliveryStatus === "In transit"
+                        ? isEs
+                          ? "En tránsito"
+                          : "In transit"
+                        : order.deliveryStatus === "Delivered"
+                          ? isEs
+                            ? "Entregado"
+                            : "Delivered"
+                          : order.deliveryStatus === "Tracking added"
+                            ? isEs
+                              ? "Guía añadida"
+                              : "Tracking added"
+                            : "";
+
+                    const pStyle =
+                      paymentBadgeStyles[order.paymentStatus] ?? paymentBadgeStyles.UNPAID;
+
                     return (
                     <tr
                       key={order.id}
                       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-                      className={`cursor-pointer transition-colors ${selectedOrderIds.includes(order.id) ? "bg-cyan-50/60" : "hover:bg-cyan-50/40"}`}
+                      className={`cursor-pointer transition-colors ${selectedOrderIds.includes(order.id) ? "bg-cyan-50/60" : "hover:bg-slate-50/90"}`}
                     >
-                      <td className="whitespace-nowrap px-4 py-3 align-top">
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle">
                         <input
                           type="checkbox"
                           checked={selectedOrderIds.includes(order.id)}
@@ -841,24 +985,61 @@ export function OrdersDashboard({
                           className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                         />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
-                        <div className="font-semibold text-slate-900">#{order.orderNumber}</div>
-                        {activeStoreId === "ALL" && stores.length > 1 && (
-                          <div className="text-[11px] text-slate-400 font-normal">
-                            {stores.find((s) => s.id === order.storeId)?.name}
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle">
+                        <span className="font-bold text-slate-900">#{order.orderNumber}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-700">
+                        {formatOrderTableDate(order.createdAt, isEs)}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle font-medium text-slate-800">
+                        {order.customerName || order.customerEmail}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-600">
+                        {channelLabel}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 text-right align-middle font-medium text-slate-800">
+                        {formatter.format(Number(order.total))}
+                      </td>
+                      <td className="w-px whitespace-nowrap px-2 py-2.5 align-middle">
+                        <span
+                          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium ${pStyle.pill}`}
+                        >
+                          {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="w-px whitespace-nowrap px-2 py-2.5 align-middle">
+                        <span
+                          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                            isFulfilled
+                              ? "border-slate-200/80 bg-slate-100 text-slate-700"
+                              : "border-amber-200/80 bg-amber-100/90 text-amber-900"
+                          }`}
+                        >
+                          {fulfillmentLabel}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-700">
+                        {itemsLabel}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-600">
+                        {deliveryStatusLabel}
+                      </td>
+                      <td className="whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-700">
+                        {deliveryMethodLabel}
+                      </td>
+                      <td className="w-40 min-w-[140px] whitespace-nowrap px-3.5 py-2.5 align-middle text-slate-500">
+                        {order.tags && order.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {order.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600"
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">{order.customerEmail}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
-                        {statusLabels[order.status] ?? order.status}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
-                        {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">{formatter.format(Number(order.total))}</td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-slate-700">
-                        {new Date(order.createdAt).toLocaleDateString(isEs ? "es-ES" : "en-US")}
+                        ) : null}
                       </td>
                     </tr>
                     );
